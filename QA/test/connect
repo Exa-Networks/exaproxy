@@ -1,0 +1,2 @@
+#!/bin/sh
+(echo "GET /ip HTTP/1.1"; echo "Host: www.exa-networks.co.uk" ; echo "X-Forwarded-For: 127.0.0.1"; echo "Connection: close";  echo; sleep 100) | telnet 127.0.0.1 3128

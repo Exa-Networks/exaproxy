@@ -1,0 +1,2 @@
+#!/bin/sh
+exec nice --4 env PYTHONPATH=/opt/bgp/lib setuidgid nobody /opt/bgp/daemon/exaproxy 2>&1

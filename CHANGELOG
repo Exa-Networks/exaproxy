@@ -1,0 +1,7 @@
+Version explained:
+ major : codebase
+ minor : increase on new features
+ bug   : increase on bug fixes
+
+Version 1.0.0 - --th of December 2011
+ * Initial release

@@ -1,0 +1,19 @@
+Before reelase :
+ - fix all XXX:
+ - fix all bug
+ - check any possible socket issues, to make sure all exception were traped (all errno are covered)
+ - some of the code should be moved down in lower class (multiple . deference)
+ - have a 127.0.0.1:port webpage with status (like squid to know what is happening)
+
+still true ??
+ - sometimes it look like the workers do not get the work even if the logs says we are pushing it to them
+
+
+questions:
+ - is EBADF a blocking errno to ignore ?
+
+PYPY changing the FD of a socket to -1 !! Can we still work with pypy ?
+
+The connection class track open connections co-routing which is good but does not work well.
+In server we need to transition the download from having read to being just a buffer to send,
+Those states are uncessary and this is were the design hurts.
