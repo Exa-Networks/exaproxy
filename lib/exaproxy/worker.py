@@ -43,26 +43,27 @@ class Worker (Thread):
 		self.running = True                           # the thread is active
 		Thread.__init__(self)
 
-	def _init (self):
+	def createProcess (self):
 		try:
-			self.process = subprocess.Popen([self.program,],
+			process = subprocess.Popen([self.program,],
 				stdin=subprocess.PIPE,
 				stdout=subprocess.PIPE,
 				universal_newlines=True,
 			)
 			logger.worker('spawn process %s' % self.program, 'worker %d' % self.wid)
-			return True
 		except KeyboardInterrupt:
-			return False
+			process = None
 		except (subprocess.CalledProcessError,OSError,ValueError):
 			logger.worker('could not spawn process %s' % self.program, 'worker %d' % self.wid)
-			return False
+			process = None
+
+		return process
 	
-	def _cleanup (self):
+	def _cleanup (self, process):
 		logger.worker('terminating process', 'worker %d' % self.wid)
 		try:
-			self.process.terminate()
-			self.process.wait()
+			process.terminate()
+			process.wait()
 		except OSError, e:
 			# No such processs
 			if e[0] != errno.ESRCH:
@@ -75,8 +76,12 @@ class Worker (Thread):
 		if not self.running:
 			logger.worker('can not start', 'worker %d' % self.wid)
 			return
+
 		logger.worker('starting', 'worker %d' % self.wid)
-		self.running = self._init()
+		process = self.createProcess()
+		if not process:
+			self.running = False
+
 		while self.running:
 			try:
 				cid,peer,request = self.request_box.get(timeout=1)
@@ -136,5 +141,6 @@ class Worker (Thread):
 			##logger.worker('[%s %s %s %d %s]' % (cid,'request',ip,80,request), 'worker %d' % self.wid)
 			self.last_worked = time.time()
 			logger.worker('waiting for some work', 'worker %d' % self.wid)
-		self._cleanup()
+
+		self._cleanup(process)
 	
