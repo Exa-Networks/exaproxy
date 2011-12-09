@@ -29,16 +29,19 @@ class Worker (Thread):
 	
 	# TODO : if the program is a function, fork and run :)
 	
-	def __init__ (self,name,request_box,download_pipe,program):
+	def __init__ (self, name, request_box, program):
+		self.wid = name                               # a unique name
 		self.creation = time.time()                   # when the thread was created
 		self.last_worked = self.creation              # when the thread last picked a task
-		self.running = True                           # the thread is active
 		self.request_box = request_box                # queue with HTTP headers to process
-		self.download_pipe = download_pipe              # queue with HTTP response (later File Descritor)
-		self.program = program                        # the squid redirector program to fork 
 
+		r, w = os.pipe()                              # pipe for communication with the main thread
+		self.response_box_write = w                   # results are written here
+		self.response_box = r                         # read from the main thread
+
+		self.program = program                        # the squid redirector program to fork 
+		self.running = True                           # the thread is active
 		Thread.__init__(self)
-		self.wid = name                              # a unique name
 
 	def _init (self):
 		try:
@@ -86,7 +89,7 @@ class Worker (Thread):
 			r = regex.destination.match(request)
 			if not r:
 				# XXX: send some http error
-				#self.download_pipe.put()
+				#self.response_box_write.put()
 				continue
 
 			# XXX: we want to have these returned to us rather than knowing
@@ -102,8 +105,8 @@ class Worker (Thread):
 				ip = socket.gethostbyname(host)
 			except socket.error,e:
 				logger.worker('could not resolve %s' % host, 'worker %d' % self.wid)
-				self.download_pipe.write('%s %s %s %d %s\n' % (cid,'response','-',0,'NO_DNS'))
-				self.download_pipe.flush()
+				self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response','-',0,'NO_DNS'))
+				self.response_box_write.flush()
 				continue
 
 			if path.startswith('http://'):
@@ -128,8 +131,8 @@ class Worker (Thread):
 				response = host
 
 			logger.worker('need to download data on %s at %s' % (host,ip), 'worker %d' % self.wid)
-			self.download_pipe.write('%s %s %s %d %s\n' % (cid,'request',ip,80,request.replace('\n','\\n').replace('\r','\\r')))
-			self.download_pipe.flush()
+			self.response_box_write.write('%s %s %s %d %s\n' % (cid,'request',ip,80,request.replace('\n','\\n').replace('\r','\\r')))
+			self.response_box_write.flush()
 			##logger.worker('[%s %s %s %d %s]' % (cid,'request',ip,80,request), 'worker %d' % self.wid)
 			self.last_worked = time.time()
 			logger.worker('waiting for some work', 'worker %d' % self.wid)
