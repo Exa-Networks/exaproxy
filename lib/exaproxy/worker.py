@@ -80,7 +80,7 @@ class Worker (Thread):
 		logger.worker('starting', 'worker %d' % self.wid)
 		process = self.createProcess()
 		if not process:
-			self.running = False
+			self.stop()
 
 		while self.running:
 			try:
