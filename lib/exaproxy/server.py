@@ -171,7 +171,6 @@ class Server (object):
 					# request classification
 					self.request_box.put((name, peer, request))
 
-			print "FETCHERS ========", self.download.fetchers
 			for fetcher in set(read_download).intersection(read):
 				# the connection to the client is still open
 				if fetcher.cid in self.browsers.established_id():
@@ -201,7 +200,6 @@ class Server (object):
 
 			# some socket are now available for write
 			for fetcher in set(write_open).intersection(write):
-				print fetcher
 				if fetcher.request():
 					self.download.available(fetcher)
 

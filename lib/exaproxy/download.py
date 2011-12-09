@@ -55,9 +55,9 @@ class Download (object):
 		self.open.remove(fetcher)
 	
 	def finish (self,cid):
-		self.connected = set()
-		self.open = set()
-		self.fetchers = set()
+		self.connect.discard(cid)
+		self.open.discard(cid)
+		self.fetchers.discard(cid)
 
 	def stop (self):
 		self.connect = set()
