@@ -91,6 +91,17 @@ class Worker (Thread):
 
 		return method, path, host, client
 		
+	def resolveHost(self, host):
+		# Do the hostname resolution before the backend check
+		# We may block the page but filling the OS DNS cache can not harm :)
+		try:
+			#raise socket.error('UNCOMMENT TO TEST DNS RESOLUTION FAILURE')
+			ip = socket.gethostbyname(host)
+		except socket.error,e:
+			logger.worker('could not resolve %s' % host, 'worker %d' % self.wid)
+			self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response','-',0,'NO_DNS'))
+			self.response_box_write.flush()
+			continue
 
 	def stop (self):
 		self.running = False
@@ -120,25 +131,17 @@ class Worker (Thread):
 			logger.worker('request %s' % ' '.join(request.split('\n',3)[:2]), 'worker %d' % self.wid)
 
 			method, path, host, client = self.parseRequest(request)
-
-			r = regex.destination.match(request)
-			if not r:
-				# XXX: send some http error
-				#self.response_box_write.put()
+			if method is None:
+				self.sendError(cid, 'invalid request')
 				continue
 
-
-			# Do the hostname resolution before the backend check
-			# We may block the page but filling the OS DNS cache can not harm :)
-			try:
-				#raise socket.error('UNCOMMENT TO TEST DNS RESOLUTION FAILURE')
-				ip = socket.gethostbyname(host)
-			except socket.error,e:
-				logger.worker('could not resolve %s' % host, 'worker %d' % self.wid)
-				self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response','-',0,'NO_DNS'))
-				self.response_box_write.flush()
+			ip = self.resolveHost(host)
+			if not ip:
+				self.sendError(cid, 'no dns record')
 				continue
 
+			# XXX: look at the regex I suggested to retrieve information from the request
+			# XXX: there should be no need to do this here
 			if path.startswith('http://'):
 				url = path
 			else:
