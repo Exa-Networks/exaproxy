@@ -124,9 +124,9 @@ class Worker (Thread):
 			squid = '%s %s - %s -' % (url,client,method)
 			##logger.worker('sending to classifier : [%s]' % squid, 'worker %d' % self.wid)
 			try:
-				self.process.stdin.write('%s%s' % (squid,os.linesep))
-				self.process.stdin.flush()
-				response = self.process.stdout.readline()
+				process.stdin.write('%s%s' % (squid,os.linesep))
+				process.stdin.flush()
+				response = process.stdout.readline()
 			except IOError,e:
 				logger.worker('IO/Error when sending to process, %s' % str(e), 'worker %d' % self.wid)
 				# XXX: Do something
