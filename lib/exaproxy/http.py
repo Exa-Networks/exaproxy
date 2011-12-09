@@ -16,6 +16,8 @@ logger = Logger()
 
 from . import html
 
+DEFAULT_READ_BUFFER_SIZE=4096
+
 class regex:
 	# XXX: Should this regex contain TRACE/CONNECT ?
 	destination = re.compile("(GET|POST|PUT|HEAD|DELETE|OPTIONS|TRACE|CONNECT) (http://[^/]*|)(/[^ \r]*)(.*HTTP/.*\r?\nHost: ?)([^\r]*)(|\r?\n)", re.IGNORECASE)
@@ -23,9 +25,19 @@ class regex:
 	# Should we simply eat everything between : and \n to accept IPv6 address 
 	x_forwarded_for = re.compile("(|\n)X-Forwarded-For: ?(((1?\d?\d)|(2([0-4]\d|5[0-5])))\.)(((1?\d?\d)|(2([0-4]\d|5[0-5])))\.)(((1?\d?\d)|(2([0-4]\d|5[0-5])))\.)((2([0-4]\d|5[0-5]))|(1?\d?\d))", re.IGNORECASE)
 
-######################
+def _http (message):
+	return """\
+HTTP/1.1 200 OK
+Date: Fri, 02 Dec 2011 09:29:44 GMT
+Server: exaproxy/""" + str(version) + """ ("""+  sys.platform +""")
+Content-Length: %d
+Connection: close
+Content-Type: text/html
+Cache-control: private
+Pragma: no-cache
 
-DEFAULT_READ_BUFFER_SIZE=4096
+%s""" % (len(message),message)
+
 
 class HTTPFetcher (object):
 	def __init__  (self,request,cid,host,port):
@@ -130,6 +142,6 @@ class HTTPResponse (object):
 		return self._recv.next()
 
 	def _fetch (self):
-		yield html.response[self.response]
+		yield _http(html.response[self.response])
 		yield None
 
