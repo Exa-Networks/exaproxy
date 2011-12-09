@@ -25,6 +25,8 @@ class regex:
 	# Should we simply eat everything between : and \n to accept IPv6 address 
 	x_forwarded_for = re.compile("(|\n)X-Forwarded-For: ?(((1?\d?\d)|(2([0-4]\d|5[0-5])))\.)(((1?\d?\d)|(2([0-4]\d|5[0-5])))\.)(((1?\d?\d)|(2([0-4]\d|5[0-5])))\.)((2([0-4]\d|5[0-5]))|(1?\d?\d))", re.IGNORECASE)
 
+	connection = re.compile("\nConnection\s*:\s*([^\r\n]*)\s*\r?\n", re.IGNORECASE)
+
 def _http (message):
 	return """\
 HTTP/1.1 200 OK

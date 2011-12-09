@@ -127,6 +127,13 @@ class Worker (Thread):
 			if response == '\n':
 				response = host
 
+			# prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
+
+			if regex.connection.match(request):
+				request = re.sub('close',request)
+			else:
+				request = request.rstrip() + '\r\nConnection: Close\r\n\r\n'
+
 			logger.worker('need to download data on %s at %s' % (host,ip), 'worker %d' % self.wid)
 			self.download_pipe.write('%s %s %s %d %s\n' % (cid,'request',ip,80,request.replace('\n','\\n').replace('\r','\\r')))
 			self.download_pipe.flush()
