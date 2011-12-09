@@ -84,9 +84,14 @@ class Worker (Thread):
 
 		while self.running:
 			try:
-				cid,peer,request = self.request_box.get(timeout=1)
+				data = self.request_box.get(1)
+				cid,peer,request = data
+			except (ValueError, IndexError):
+				logger.worker('received invalid message: %s' % data, 'worker %d' % self.wid)
+				continue
 			except Empty:
 				continue
+
 			logger.worker('some work came', 'worker %d' % self.wid)
 			logger.worker('peer %s' % str(peer), 'worker %d' % self.wid)
 			logger.worker('request %s' % ' '.join(request.split('\n',3)[:2]), 'worker %d' % self.wid)
