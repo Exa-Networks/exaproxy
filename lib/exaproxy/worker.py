@@ -69,6 +69,29 @@ class Worker (Thread):
 			if e[0] != errno.ESRCH:
 				logger.worker('PID %s died' % pid, 'worker %d' % self.wid)
 
+	def parseRequest(self, request):
+		r = regex.destination.match(request)
+		if r is not None:
+			# XXX: we want to have these returned to us rather than knowing
+			# XXX: which group indexes we're interested in
+			method = r.groups()[0]
+			path = r.groups()[2]
+			host = r.groups()[4]
+		else:
+			method = None
+			path = None
+			host = None
+
+		# XXX: this should be done in the same regex
+		if method is not None:
+			r = regex.x_forwarded_for.match(request)
+			client = r.group(0) if r else '0.0.0.0'
+		else:
+			client = None
+
+		return method, path, host, client
+		
+
 	def stop (self):
 		self.running = False
 
@@ -96,17 +119,14 @@ class Worker (Thread):
 			logger.worker('peer %s' % str(peer), 'worker %d' % self.wid)
 			logger.worker('request %s' % ' '.join(request.split('\n',3)[:2]), 'worker %d' % self.wid)
 
+			method, path, host, client = self.parseRequest(request)
+
 			r = regex.destination.match(request)
 			if not r:
 				# XXX: send some http error
 				#self.response_box_write.put()
 				continue
 
-			# XXX: we want to have these returned to us rather than knowing
-			# XXX: which group indexes we're interested in
-			method = r.groups()[0]
-			path = r.groups()[2]
-			host = r.groups()[4]
 
 			# Do the hostname resolution before the backend check
 			# We may block the page but filling the OS DNS cache can not harm :)
@@ -123,8 +143,6 @@ class Worker (Thread):
 				url = path
 			else:
 				url = 'http://' + host + path
-			r = regex.x_forwarded_for.match(request)
-			client = r.group(0) if r else '0.0.0.0'
 	
 			squid = '%s %s - %s -' % (url,client,method)
 			##logger.worker('sending to classifier : [%s]' % squid, 'worker %d' % self.wid)
