@@ -17,19 +17,21 @@ logger = Logger()
 # Do we really need to call join() on the thread as we are stoppin on our own ? 
 
 class Manager (object):
-	def __init__ (self,request_box,download_pipe,program,low=4,high=40):
+	def __init__ (self,request_box,program,low=4,high=40):
 		self.nextid = 1                   # incremental number to make the name of the next worker
 		self.request_box = request_box    # queue with HTTP headers to process
-		self.download_pipe = download_pipe  # queue with HTTP response (later File Descritor)
 		self.program = program            # what program speaks the squid redirector API
 		self.low = low                    # minimum number of workers at all time
 		self.high = high                  # maximum numbe of workers at all time
 		self.worker = {}                  # our workers threads
+		self.results = {}                 # pipes connected to each worker
 		self.running = True               # we are running
 
 	def _spawn (self):
 		"""add one worker to the pool"""
-		self.worker[self.nextid] = Worker(self.nextid,self.request_box,self.download_pipe,self.program)
+		worker = Worker(self.nextid,self.request_box,self.download_pipe,self.program)
+		self.worker[self.nextid] = worker
+		self.results[worker.response_box] = self.worker
 		logger.worker("added a worker")
 		logger.worker("we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
 		self.worker[self.nextid].start()
@@ -38,6 +40,7 @@ class Manager (object):
 	def _reap (self,wid):
 		return # to test if a bug is related to killing (we must make sure the worker is idle)
 		self.worker[wid].stop()
+		del self.results[self.worker[wid].response_box]
 		del self.worker[wid]
 		logger.worker("removed a worker")
 		logger.worker("we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))

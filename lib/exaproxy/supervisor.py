@@ -34,10 +34,9 @@ class Supervisor(object):
 		self.daemon = Daemon()
 
 		request_box = Queue()
-		download_pipe = os.pipe()
 
-		self.manager = Manager(request_box,os.fdopen(download_pipe[1],'w'),configuration.PROGRAM)
-		self.download = Download(os.fdopen(download_pipe[0],'r'))
+		self.manager = Manager(request_box,configuration.PROGRAM)
+		self.download = Download()
 		self.server = Server(self.download,request_box,'127.0.0.1',3128,5,200,configuration.SPEED)
 
 		self._shutdown = False
