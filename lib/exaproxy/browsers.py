@@ -26,19 +26,27 @@ class Browser (object):
 		r_buffer = ''
 		r_size = yield ''
 
+		# XXX: if the REQUEST is too big : http://tools.ietf.org/html/rfc2616#section-3.2.1
+		# XXX: retun 414 (Request-URI Too Long)
+
 		while True: # multiple requests per connection?
 			buff = sock.recv(r_size or read_size) # XXX: can raise socket.error
-			if not buff:
-				yield None # signal that we will not be providing any further requests
-				break
+
+			if not buff:  # read failed - should abord
+				yield None
+				return
 
 			r_buffer += buff
 			if self.eor in r_buffer: # we have a full request
 				request, r_buffer = r_buffer.split(self.eor, 1)
 				yield request + self.eor
-			else:
-				yield '' # no request yet
+				break
+			yield '' # no request yet
 
+		# our client is pipelining
+		while sock.recv(r_size or read_size):
+			yield ''
+		yield None
 		
 	def write(self, sock):
 		"""corouting that write to the socket the data it is sent"""
