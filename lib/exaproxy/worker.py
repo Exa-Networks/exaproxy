@@ -106,7 +106,7 @@ class Worker (Thread):
 				self.download_pipe.flush()
 				continue
 
-			if path.startswith('http://') or path.startswith('https://'):
+			if path.startswith('http://'):
 				url = path
 			else:
 				url = 'http://' + host + path
