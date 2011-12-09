@@ -17,15 +17,14 @@ from .http import HTTPFetcher,HTTPResponse
 
 class Download (object):
 	"""A Thread which download pages"""
-	def __init__(self, download_pipe):
-		self.download_pipe = download_pipe      # A queue used by the workers to tell us what to download
+	def __init__(self):
 		self._download_loop = None              # The download co-routine
 		self.connect = set()                    # New connections to establish
 		self.open = set()                       # Connection established but not yet write able
 		self.fetchers = set()                   # the http object to now use
 
-	def newFetcher (self):
-		_cid,action,host,_port,request = self.download_pipe.readline().replace('\\n','\n').replace('\\r','\r').split(' ',4)
+	def newFetcher (self, data):
+		_cid,action,host,_port,request = data.replace('\\n','\n').replace('\\r','\r').split(' ',4)
 		cid = int(_cid)
 		port = int(_port)
 
