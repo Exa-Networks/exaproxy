@@ -24,7 +24,7 @@ import logging.handlers
 
 from threading import Lock
 
-from .configuration import Configuration
+from .configuration import Configuration,log
 
 def hex_string (value):
 	return '%s' % [(hex(ord(_))) for _ in value]
@@ -113,7 +113,11 @@ class _Logger (object):
 		for line in message.split('\n'):
 			if self._syslog:
 				self._syslog.debug(self._prefixed(level,source,line))
-			elif configuration.DEBUG.LOG >= 8:
+			elif self.DEBUG.LOG >=log.LOG_DEBUG:
+				print
+				print self.DEBUG.LOG
+				print log.LOG_DEBUG
+				print
 				print self._prefixed(level,source,line)
 				sys.stdout.flush()
 
@@ -121,7 +125,7 @@ class _Logger (object):
 		for line in message.split('\n'):
 			if self._syslog:
 				self._syslog.info(self._prefixed(level,source,line))
-			elif configuration.DEBUG.LOG >= 7:
+			elif self.DEBUG.LOG >=log.LOG_INFO:
 				print self._prefixed(level,source,line)
 				sys.stdout.flush()
 
@@ -131,7 +135,7 @@ class _Logger (object):
 		for line in message.split('\n'):
 			if self._syslog:
 				self._syslog.warning(self._prefixed(level,source,line))
-			elif configuration.DEBUG.LOG >= 5:
+			elif self.DEBUG.LOG >=log.LOG_WARNING:
 				print self._prefixed(level,source,line)
 				sys.stdout.flush()
 
@@ -139,7 +143,7 @@ class _Logger (object):
 		for line in message.split('\n'):
 			if self._syslog:
 				self._syslog.error(self._prefixed(level,source,line))
-			elif configuration.DEBUG.LOG >= 4:
+			elif self.DEBUG.LOG >=log.LOG_ERR:
 				print self._prefixed(level,source,line)
 				sys.stdout.flush()
 
@@ -147,7 +151,7 @@ class _Logger (object):
 		for line in message.split('\n'):
 			if self._syslog:
 				self._syslog.critical(self._prefixed(level,source,line))
-			elif configuration.DEBUG.LOG >= 3:
+			elif self.DEBUG.LOG >=log.LOG_CRIT:
 				print self._prefixed(level,source,line)
 				sys.stdout.flush()
 
