@@ -192,7 +192,7 @@ class Server (object):
 				# the client closed the connection
 				else:
 					# XXX: Handle cleanup automatically in the download class
-					self.download.finish(fetcher.cid)
+					self.download.finish(fetcher)
 
 			# should only be the one which are free to write
 			for cid in self.browsers.canReply():
