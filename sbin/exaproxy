@@ -19,7 +19,7 @@ PYPY=`which pypy`
 if [ -f "$PYPY" ]
 then
 	INTERPRETER=$PYTHON
-	INTERPRETER=$PYTHON
+	INTERPRETER=$PYPY
 elif [ -f "$PYTHON" ]
 then
 	INTERPRETER=$PYTHON
