@@ -15,6 +15,8 @@ import sys
 _enabled = ('1','yes','Yes','YES','on','ON')
 _all = os.environ.get('DEBUG_ALL','0') != '0'
 
+_priorities = ('LOG_NOTHING', 'LOG_EMERG', 'LOG_ALERT', 'LOG_CRIT', 'LOG_ERR', 'LOG_WARNING', 'LOG_NOTICE', 'LOG_INFO', 'LOG_DEBUG')
+
 class _Configuration (object):
 	_instance = None
 	
@@ -27,15 +29,17 @@ class _Configuration (object):
 	SPEED = 2 # 0.01
 
 	class DEBUG:
+		_log = os.environ.get('LOG','LOG_ERR')
 		# XXX: All set to one for the development period
-		DAEMON     = os.environ.get('DEBUG_DAEMON','1') in _enabled or _all,
-		SUPERVISOR = os.environ.get('DEBUG_SUPERVISOR','1') in _enabled or _all,
-		MANAGER    = os.environ.get('DEBUG_MANAGER','1') in _enabled or _all,
-		WORKER     = os.environ.get('DEBUG_WORKER','1') in _enabled or _all,
-		SERVER     = os.environ.get('DEBUG_SERVER','1') in _enabled or _all,
-		CLIENT     = os.environ.get('DEBUG_CLIENT','1') in _enabled or _all,
-		HTTP       = os.environ.get('DEBUG_HTTP','1') in _enabled or _all,
-		DOWNLOAD   = os.environ.get('DEBUG_DOWNLOAD','1') in _enabled or _all,
+		LOG        = _priorities.index(_log) if _log in _priorities else 4 
+		DAEMON     = os.environ.get('DEBUG_DAEMON','1') in _enabled or _all
+		SUPERVISOR = os.environ.get('DEBUG_SUPERVISOR','1') in _enabled or _all
+		MANAGER    = os.environ.get('DEBUG_MANAGER','1') in _enabled or _all
+		WORKER     = os.environ.get('DEBUG_WORKER','1') in _enabled or _all
+		SERVER     = os.environ.get('DEBUG_SERVER','1') in _enabled or _all
+		CLIENT     = os.environ.get('DEBUG_CLIENT','1') in _enabled or _all
+		HTTP       = os.environ.get('DEBUG_HTTP','1') in _enabled or _all
+		DOWNLOAD   = os.environ.get('DEBUG_DOWNLOAD','1') in _enabled or _all
 		PROFILE    = os.environ.get('PROFILE','0')
 		PDB        = os.environ.get('PDB','0')
 
