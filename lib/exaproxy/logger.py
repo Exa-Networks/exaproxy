@@ -114,10 +114,6 @@ class _Logger (object):
 			if self._syslog:
 				self._syslog.debug(self._prefixed(level,source,line))
 			elif self.DEBUG.LOG >=log.LOG_DEBUG:
-				print
-				print self.DEBUG.LOG
-				print log.LOG_DEBUG
-				print
 				print self._prefixed(level,source,line)
 				sys.stdout.flush()
 
