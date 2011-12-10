@@ -166,6 +166,11 @@ class Worker (Thread):
 				response = host
 
 			# prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
+			# XXX: We may have more than one Connection header : http://tools.ietf.org/html/rfc2616#section-14.10
+			# XXX: We may need to remove every step-by-step http://tools.ietf.org/html/rfc2616#section-13.5.1
+			# XXX: We NEED to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45
+			# XXX: We NEED to respect Keep-Alive rules http://tools.ietf.org/html/rfc2068#section-19.7.1
+			# XXX: We may look at Max-Forwards
 
 			if regex.connection.match(request):
 				request = re.sub('close',request)

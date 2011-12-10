@@ -1,3 +1,6 @@
+Allow Proxy Authentification :
+ - http://tools.ietf.org/html/rfc2068#section-13.5.1
+
 Before reelase :
  - fix all XXX:
  - fix all bug

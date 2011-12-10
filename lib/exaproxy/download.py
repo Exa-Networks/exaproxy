@@ -15,6 +15,10 @@ logger = Logger()
 
 from .http import HTTPFetcher,HTTPResponse
 
+# http://tools.ietf.org/html/rfc2616#section-8.2.3
+# Says we SHOULD keep track of the server version and deal with 100-continue
+# I say I am too lazy - and if you want the feature use this software as as rev-proxy :D
+
 class Download (object):
 	"""A Thread which download pages"""
 	def __init__(self):
