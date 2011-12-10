@@ -101,9 +101,6 @@ class Worker (Thread):
 			#raise socket.error('UNCOMMENT TO TEST DNS RESOLUTION FAILURE')
 			return socket.gethostbyname(host)
 		except socket.error,e:
-			logger.worker('could not resolve %s' % host, 'worker %d' % self.wid)
-			self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response','-',0,'NO_DNS'))
-			self.response_box_write.flush()
 			return None
 
 	def stop (self):
@@ -142,6 +139,9 @@ class Worker (Thread):
 			if not ip:
 				# XXX: Things are done in resolveHost ...
 				#self.sendError(cid, 'no dns record')
+				logger.worker('could not resolve %s' % host, 'worker %d' % self.wid)
+				self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response','-',0,'NO_DNS'))
+				self.response_box_write.flush()
 				continue
 
 			# XXX: look at the regex I suggested to retrieve information from the request
