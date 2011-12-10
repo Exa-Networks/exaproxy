@@ -82,9 +82,6 @@ class Server (object):
 			self.close()
 
 	def select (self,read,write):
-		import time
-		time.sleep(0.3)
-		
 		logger.server("select on read  %s" % str(read))
 		logger.server("select on write %s" % str(write))
 		try:
