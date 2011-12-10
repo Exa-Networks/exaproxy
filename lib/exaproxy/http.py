@@ -68,7 +68,6 @@ class HTTPFetcher (object):
 			return True
 		except socket.error,e:
 			if e.errno in (errno.EINPROGRESS,):
-				print "errno.EINPROGRESS -----------------------------------", self.host, self.port
 				return True
 			logger.debug('problem create a connection to %s:%d' % (self.host,self.port), 'http %d' %self.cid)
 			self.close()
