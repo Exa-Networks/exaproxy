@@ -153,10 +153,10 @@ class Server (object):
 			read_workers = list(self.manager.workers)
 			write_open = list(self.download.open) # socket connected but not yet ready for write
 
-			print "read_browser ", read_browser
-			print "read_downlaod", read_download
-			print "read_workers ", read_workers
-			print "write_open   ", write_open 
+#			print "read_browser ", read_browser
+#			print "read_downlaod", read_download
+#			print "read_workers ", read_workers
+#			print "write_open   ", write_open 
 
 			read,write = self.select([self.io] + read_workers + read_browser + read_download, write_open)
 
@@ -182,7 +182,6 @@ class Server (object):
 				# the connection to the client is still open
 				if fetcher.cid in self.browsers.established_id():
 					webpage = fetcher.fetch()
-					print "WEBPAGE", webpage
 					# The webserver finished sending and closed the connection
 					if webpage:
 						logger.server('we fetched %d byte of data for client id %d' % (len(webpage),fetcher.cid))
