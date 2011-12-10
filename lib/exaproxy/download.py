@@ -34,10 +34,10 @@ class Download (object):
 
 		if action == 'request':
 			logger.download('we need to download something on %s:%d' % (host,port))
-			self.connect.add(HTTPFetcher(request,cid,host,int(port)))
+			self.connect.add(HTTPFetcher(cid,host,port,request))
 		elif action == 'response':
 			logger.download('direct response to %s' % cid)
-			self.fetchers.add(HTTPResponse(request,cid,host,int(port)))
+			self.fetchers.add(HTTPResponse(cid,host.replace('_',' '),request))
 		else:
 			raise RuntimeError('%s is an invalid action' % action)
 

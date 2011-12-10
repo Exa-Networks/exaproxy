@@ -7,6 +7,7 @@ Created by Thomas Mangin on 2011-12-02.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
+import sys
 import re
 import socket
 import errno
@@ -14,6 +15,7 @@ import errno
 from .logger import Logger
 logger = Logger()
 
+from .version import version
 from . import html
 
 DEFAULT_READ_BUFFER_SIZE=4096
@@ -42,7 +44,7 @@ Pragma: no-cache
 
 
 class HTTPFetcher (object):
-	def __init__  (self,request,cid,host,port):
+	def __init__  (self,cid,host,port,request):
 		self.io = None
 		self._request = request
 		self.cid = cid
@@ -129,9 +131,10 @@ class HTTPFetcher (object):
 		self.runnning = False
 
 class HTTPResponse (object):
-	def __init__ (self,response,cid,*args):
+	def __init__  (self,cid,title,body):
 		self.cid = cid
-		self.response = response
+		self.title = title
+		self.body = body
 		self._recv = self._fetch()
 
 	def fileno (self):
@@ -144,6 +147,5 @@ class HTTPResponse (object):
 		return self._recv.next()
 
 	def _fetch (self):
-		yield _http(html.response[self.response])
+		yield _http(html._html(self.title,self.body))
 		yield None
-

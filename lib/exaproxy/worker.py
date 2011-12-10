@@ -140,7 +140,7 @@ class Worker (Thread):
 				# XXX: Things are done in resolveHost ...
 				#self.sendError(cid, 'no dns record')
 				logger.worker('could not resolve %s' % host, 'worker %d' % self.wid)
-				self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response','-',0,'NO_DNS'))
+				self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response','NO_DNS',0,'could not resolve DNS for %s' % host))
 				self.response_box_write.flush()
 				continue
 
