@@ -23,8 +23,9 @@ class Download (object):
 		self.open = set()                       # Connection established but not yet write able
 		self.fetchers = set()                   # the http object to now use
 
-	def newFetcher (self, data):
-		_cid,action,host,_port,request = data.replace('\\n','\n').replace('\\r','\r').split(' ',4)
+	def newFetcher (self, pipe):
+		# XXX: readline could fail
+		_cid,action,host,_port,request = pipe.readline().replace('\\n','\n').replace('\\r','\r').split(' ',4)
 		cid = int(_cid)
 		port = int(_port)
 
@@ -53,10 +54,10 @@ class Download (object):
 		self.fetchers.add(fetcher)
 		self.open.remove(fetcher)
 	
-	def finish (self,cid):
-		self.connect.discard(cid)
-		self.open.discard(cid)
-		self.fetchers.discard(cid)
+	def finish (self,fetcher):
+		self.connect.discard(fetcher.cid)
+		self.open.discard(fetcher.cid)
+		self.fetchers.discard(fetcher)
 
 	def stop (self):
 		self.connect = set()

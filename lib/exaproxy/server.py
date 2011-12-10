@@ -26,9 +26,10 @@ class SelectError (Exception):
 	pass
 
 class Server (object):
-	def __init__ (self,download,request_box,ip,port,timeout,backlog,speed):
+	def __init__ (self,download,manager,request_box,ip,port,timeout,backlog,speed):
 		self.request_box = request_box  # were HTTP request should sent
 		self.download = download        # the Download manager
+		self.manager = manager
 		
 		self.io = None                  # The socket on which we are listening
 		self.speed = speed              # How long do we wait in select when no data is available
@@ -149,9 +150,15 @@ class Server (object):
 		while self.running:
 			read_browser = self.browsers.established() # Newly established connections
 			read_download = list(self.download.fetchers) # Currently established connections
+			read_workers = list(self.manager.workers)
 			write_open = list(self.download.open) # socket connected but not yet ready for write
 
-			read,write = self.select([self.io] + [self.download.download_pipe] + read_browser + read_download, write_open)
+			print "read_browser ", read_browser
+			print "read_downlaod", read_download
+			print "read_workers ", read_workers
+			print "write_open   ", write_open 
+
+			read,write = self.select([self.io] + read_workers + read_browser + read_download, write_open)
 
 			# we have new connections
 			if self.io in read:
@@ -175,12 +182,13 @@ class Server (object):
 				# the connection to the client is still open
 				if fetcher.cid in self.browsers.established_id():
 					webpage = fetcher.fetch()
+					print "WEBPAGE", webpage
 					# The webserver finished sending and closed the connection
 					if webpage:
 						logger.server('we fetched %d byte of data for client id %d' % (len(webpage),fetcher.cid))
 						self.browsers.sendData(fetcher.cid, webpage)
 						continue
-					self.download.finish(fetcher.cid)
+					self.download.finish(fetcher)
 					self.browsers.completed(fetcher.cid)
 				# the client closed the connection
 				else:
@@ -191,11 +199,8 @@ class Server (object):
 			for cid in self.browsers.canReply():
 				left = self.browsers.sendData(cid,'')
 
-			# some worker classfied some pages and request the content to be downloaded
-			if self.download.download_pipe in read:
-				# XXX: should this try to download more than one message ?
-				# XXX: should the message pipe be locked ?
-				self.download.newFetcher()
+			for pipe in set(read_workers).intersection(read):
+				self.download.newFetcher(pipe)
 			self.download.connectFetchers()
 
 			# some socket are now available for write

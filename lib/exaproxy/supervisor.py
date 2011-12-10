@@ -34,10 +34,11 @@ class Supervisor(object):
 		self.daemon = Daemon()
 
 		request_box = Queue()
-
+		
+		# XXX : Should manager and Download moved into server ?
 		self.manager = Manager(request_box,configuration.PROGRAM)
 		self.download = Download()
-		self.server = Server(self.download,request_box,'127.0.0.1',3128,5,200,configuration.SPEED)
+		self.server = Server(self.download,self.manager,request_box,'127.0.0.1',3128,5,200,configuration.SPEED)
 
 		self._shutdown = False
 		self._reload = False

@@ -35,9 +35,10 @@ class Worker (Thread):
 		self.last_worked = self.creation              # when the thread last picked a task
 		self.request_box = request_box                # queue with HTTP headers to process
 
+		# XXX: all this could raise things
 		r, w = os.pipe()                              # pipe for communication with the main thread
-		self.response_box_write = w                   # results are written here
-		self.response_box = r                         # read from the main thread
+		self.response_box_write = os.fdopen(w,'w')    # results are written here
+		self.response_box_read = os.fdopen(r,'r')     # read from the main thread
 
 		self.program = program                        # the squid redirector program to fork 
 		self.running = True                           # the thread is active
@@ -61,6 +62,8 @@ class Worker (Thread):
 	
 	def _cleanup (self, process):
 		logger.worker('terminating process', 'worker %d' % self.wid)
+		# XXX: can raise
+		self.response_box_read.close()
 		try:
 			process.terminate()
 			process.wait()
@@ -96,12 +99,12 @@ class Worker (Thread):
 		# We may block the page but filling the OS DNS cache can not harm :)
 		try:
 			#raise socket.error('UNCOMMENT TO TEST DNS RESOLUTION FAILURE')
-			ip = socket.gethostbyname(host)
+			return socket.gethostbyname(host)
 		except socket.error,e:
 			logger.worker('could not resolve %s' % host, 'worker %d' % self.wid)
 			self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response','-',0,'NO_DNS'))
 			self.response_box_write.flush()
-			continue
+			return None
 
 	def stop (self):
 		self.running = False
@@ -137,7 +140,8 @@ class Worker (Thread):
 
 			ip = self.resolveHost(host)
 			if not ip:
-				self.sendError(cid, 'no dns record')
+				# XXX: Things are done in resolveHost ...
+				#self.sendError(cid, 'no dns record')
 				continue
 
 			# XXX: look at the regex I suggested to retrieve information from the request

@@ -26,12 +26,14 @@ class Manager (object):
 		self.worker = {}                  # our workers threads
 		self.results = {}                 # pipes connected to each worker
 		self.running = True               # we are running
+		self.workers = set()
 
 	def _spawn (self):
 		"""add one worker to the pool"""
-		worker = Worker(self.nextid,self.request_box,self.download_pipe,self.program)
+		worker = Worker(self.nextid,self.request_box,self.program)
+		self.workers.add(worker.response_box_read)
 		self.worker[self.nextid] = worker
-		self.results[worker.response_box] = self.worker
+		self.results[worker.response_box_read] = self.worker
 		logger.worker("added a worker")
 		logger.worker("we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
 		self.worker[self.nextid].start()
@@ -42,6 +44,7 @@ class Manager (object):
 		self.worker[wid].stop()
 		del self.results[self.worker[wid].response_box]
 		del self.worker[wid]
+		self.workers.remove(worker)
 		logger.worker("removed a worker")
 		logger.worker("we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
 
