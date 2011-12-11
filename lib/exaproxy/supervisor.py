@@ -67,42 +67,29 @@ class Supervisor(object):
 			logger.supervisor('Could not drop privileges to \'%s\' refusing to run as root' % self.daemon.user)
 			logger.supervisor('Set the environmemnt value USER to change the unprivileged user')
 			return
-		self.daemon.daemonise()
-		self.pid.save()
 
-		# only start listening once we know we were able to fork our worker processes
-
-		# start our threads (a normal class)
-		self.manager.start()
-		# start our TCP listener (a coroutine)
-		self.server.start()
+		self.initialise()
 
 		while True:
 			try:
-				while self.manager.running:
-					if self._shutdown:
-						self._shutdown = False
-						self.shutdown()
-					elif self._reload and reload_completed:
-						self._reload = False
-						self.reload()
+				if self._shutdown:
+					self._shutdown = False
+					self.shutdown()
+					break
+				elif self._reload and reload_completed:
+					self._reload = False
+					self.reload()
 
-					if self.increase_spawn_limit:
-						if self.manager.low == self.manager.high: self.manager.high += 1
-						self.manager.low = min(self.manager.high,self.manager.low+1)
-						self.increase_spawn_limit = False
+				if self.increase_spawn_limit:
+					if self.manager.low == self.manager.high: self.manager.high += 1
+					self.manager.low = min(self.manager.high,self.manager.low+1)
+					self.increase_spawn_limit = False
 
-					# make sure we have enough workers
-					self.manager.provision()
-					# check for IO change with select
-					self.server.run()
+				# make sure we have enough workers
+				self.manager.provision()
+				# check for IO change with select
+				self.server.run()
 
-				self.server.stop()
-				self.manager.stop()
-				self.download.stop()
-
-				self.pid.remove()
-				break
 			except KeyboardInterrupt:
 				logger.supervisor('^C received')
 				self._shutdown = True
@@ -116,11 +103,21 @@ class Supervisor(object):
 #				obj = objgraph.by_type('ReceivedRoute')[random.randint(0,2000)]
 #				objgraph.show_backrefs([obj], max_depth=10)
 
+	def initialise (self):
+		self.daemon.daemonise()
+		self.pid.save()
+		# start our threads (a normal class)
+		self.manager.start()
+		# only start listening once we know we were able to fork our worker processes
+		self.server.start()
+
 	def shutdown (self):
 		"""terminate all the current BGP connections"""
 		logger.info('Performing shutdown','supervisor')
-		self.manager.stop()
 		self.server.stop()
+		self.manager.stop()
+		self.download.stop()
+		self.pid.remove()
 
 	def reload (self):
 		logger.info('Performing reload of exaproxy %s' % configuration.VERSION ,'supervisor')

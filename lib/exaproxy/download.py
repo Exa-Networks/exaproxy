@@ -66,5 +66,11 @@ class Download (object):
 
 	def stop (self):
 		self.connect = set()
+		for fetcher in self.connect:
+			fetcher.close()
 		self.open = set()
+		for fetcher in self.open:
+			fetcher.close()
 		self.fetchers = set()
+		for fetcher in self.fetchers:
+			fetcher.close()

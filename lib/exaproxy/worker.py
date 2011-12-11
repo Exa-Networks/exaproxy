@@ -30,15 +30,17 @@ class Worker (HTTPParser,Thread):
 	# TODO : if the program is a function, fork and run :)
 	
 	def __init__ (self, name, request_box, program):
-		self.wid = name                               # a unique name
-		self.creation = time.time()                   # when the thread was created
-		self.last_worked = self.creation              # when the thread last picked a task
-		self.request_box = request_box                # queue with HTTP headers to process
+		self.process = None                           # the forked program to handle classification
 
 		# XXX: all this could raise things
 		r, w = os.pipe()                              # pipe for communication with the main thread
 		self.response_box_write = os.fdopen(w,'w')    # results are written here
 		self.response_box_read = os.fdopen(r,'r')     # read from the main thread
+
+		self.wid = name                               # a unique name
+		self.creation = time.time()                   # when the thread was created
+		self.last_worked = self.creation              # when the thread last picked a task
+		self.request_box = request_box                # queue with HTTP headers to process
 
 		self.program = program                        # the squid redirector program to fork 
 		self.running = True                           # the thread is active
@@ -60,13 +62,15 @@ class Worker (HTTPParser,Thread):
 
 		return process
 
-	def _cleanup (self, process):
+	def _cleanup (self):
 		logger.worker('terminating process', 'worker %d' % self.wid)
 		# XXX: can raise
 		self.response_box_read.close()
+		self.response_box_write.close()
 		try:
-			process.terminate()
-			process.wait()
+			if self.process:
+				self.process.terminate()
+				self.process.wait()
 		except OSError, e:
 			# No such processs
 			if e[0] != errno.ESRCH:
@@ -84,15 +88,15 @@ class Worker (HTTPParser,Thread):
 
 	def stop (self):
 		self.running = False
+		self.request_box.put(None)
 
-	def _classify (self,process,cid,client,method,url):
-		# XXX: should process be self.process ?
+	def _classify (self,cid,client,method,url):
 		squid = '%s %s - %s -' % (url,client,method)
 		logger.worker('sending to classifier : [%s]' % squid, 'worker %d' % self.wid)
 		try:
-			process.stdin.write('%s%s' % (squid,os.linesep))
-			process.stdin.flush()
-			response = process.stdout.readline()
+			self.process.stdin.write('%s%s' % (squid,os.linesep))
+			self.process.stdin.flush()
+			response = self.process.stdout.readline()
 
 			logger.worker('received from classifier : [%s]' % response.strip(), 'worker %d' % self.wid)
 			if response == '\n':
@@ -130,26 +134,33 @@ class Worker (HTTPParser,Thread):
 			return
 
 		logger.worker('starting', 'worker %d' % self.wid)
-		process = self._createProcess()
-		if not process:
+		self.process = self._createProcess()
+		if not self.process:
 			# LOG SOMETHING !
 			self.stop()
 
 		while True:
 			try:
 				logger.worker('waiting for some work', 'worker %d' % self.wid)
+
+				# XXX: For some reason, even if we have a timeout, pypy does block here
 				data = self.request_box.get(1)
+
+				# better to check here as we most likely will receive a stop during sleeping
+				if not self.running:
+					break
+
 				cid,peer,request = data
 				logger.worker('peer %s request %s' % (str(peer),' '.join(request.split('\n',3)[:2])), 'worker %d' % self.wid)
 			except (ValueError, IndexError):
 				logger.worker('received invalid message: %s' % data, 'worker %d' % self.wid)
+				if not self.running:
+					break
 				continue
 			except Empty:
+				if not self.running:
+					break
 				continue
-
-			# better to check here as we most likely will receive a stop during sleeping
-			if not self.running:
-				break
 
 			method, url, host, client = self.parseRequest(request)
 			if method is None:
@@ -164,7 +175,7 @@ class Worker (HTTPParser,Thread):
 
 			# classify and return the filtered page
 			if method in ('GET','PUT','POST'):
-				response = self._classify(process,cid,client,method,url)
+				response = self._classify(cid,client,method,url)
 				self._request(cid,ip,request)
 				continue
 
@@ -176,14 +187,15 @@ class Worker (HTTPParser,Thread):
 			# do not bother classfying things which do not return pages
 			if method in ('HEAD','OPTIONS','DELETE'):
 				if False: # It should be an option to be able to force all request
-					response = self._classify(process,cid,client,method,url)
+					response = self._classify(cid,client,method,url)
 				self._request(cid,ip,request)
 				continue
 
 			if method in ('TRACE',):
 				self._reply(cid,501,'TRACE NOT IMPLEMENTED','This is bad .. we are sorry.')
 				continue
-
+		
+		self._cleanup()
 			# prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
 			# XXX: We may have more than one Connection header : http://tools.ietf.org/html/rfc2616#section-14.10
 			# XXX: We may need to remove every step-by-step http://tools.ietf.org/html/rfc2616#section-13.5.1
@@ -192,5 +204,3 @@ class Worker (HTTPParser,Thread):
 			# XXX: We may look at Max-Forwards
 			# XXX: We need to reply to "Proxy-Connection: keep-alive", with "Proxy-Connection: close"
 			# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
-
-		self._cleanup(process)

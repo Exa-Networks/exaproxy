@@ -40,12 +40,12 @@ class Manager (object):
 		self.nextid += 1
 
 	def _reap (self,wid):
-		return # to test if a bug is related to killing (we must make sure the worker is idle)
-		self.worker[wid].stop()
-		del self.results[self.worker[wid].response_box]
+		worker = self.worker[wid]
+		self.workers.remove(worker.response_box_read)
+		del self.results[worker.response_box_read]
 		del self.worker[wid]
-		self.workers.remove(worker)
-		logger.worker("removed a worker")
+		worker.stop()
+		logger.worker("removed worker %d" % wid)
 		logger.worker("we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
 
 	def spawn (self,number):
@@ -69,10 +69,13 @@ class Manager (object):
 	def stop (self):
 		"""tell all our worker to stop reading the queue and stop"""
 		self.running = False
+		threads = [w for _,w in self.worker.iteritems()]
 		if len(self.worker):
 			logger.worker("stopping %d workers." % len(self.worker))
 			for wid in set(self.worker):
 				self._reap(wid)
+			for thread in threads:
+				thread.join()
 
 	def _oldest (self):
 		"""find the oldest worker"""
