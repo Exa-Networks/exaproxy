@@ -91,7 +91,7 @@ class Supervisor(object):
 				self.server.run()
 
 				# Quit on problems which can not be fixed (like running out of file descriptor)
-				self._shutdown = self.server.running
+				self._shutdown = not self.server.running
 
 			except KeyboardInterrupt:
 				logger.supervisor('^C received')
