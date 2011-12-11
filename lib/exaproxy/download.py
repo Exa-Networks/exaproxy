@@ -29,9 +29,10 @@ class Download (object):
 
 	def newFetcher (self, pipe):
 		# XXX: readline could fail
-		_cid,action,host,_port,request = pipe.readline().replace('\\n','\n').replace('\\r','\r').split(' ',4)
+		received = pipe.readline() # helps when PDB starts and you want to know what is wrong :)
+		_cid,action,host,_port,request = received.replace('\\n','\n').replace('\\r','\r').split(' ',4)
 		cid = int(_cid)
-		port = int(_port)
+		port = int(_port) # or http response code
 
 		# XXX: what to do ..
 		# http://tools.ietf.org/html/rfc2616#section-14.10
@@ -41,7 +42,7 @@ class Download (object):
 			self.connect.add(HTTPFetcher(cid,host,port,request))
 		elif action == 'response':
 			logger.download('direct response to %s' % cid)
-			self.fetchers.add(HTTPResponse(cid,host.replace('_',' '),request))
+			self.fetchers.add(HTTPResponse(cid,port,host.replace('_',' '),request))
 		else:
 			raise RuntimeError('%s is an invalid action' % action)
 

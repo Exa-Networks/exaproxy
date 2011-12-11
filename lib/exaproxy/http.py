@@ -29,18 +29,51 @@ class regex:
 
 	connection = re.compile("\nConnection\s*:\s*([^\r\n]*)\s*\r?\n", re.IGNORECASE)
 
-def _http (message):
+#450 Blocked by Windows Parental Controls
+#A Microsoft extension. This error is given when Windows Parental Controls are turned on and are blocking access to the given webpage.
+#598 Network read timeout error
+#This status code is not specified in any RFCs, but is used by some[which?] HTTP proxies to signal a network read timeout behind the proxy to a client in front of the proxy.
+#599 Network connect timeout error
+#This status code is not specified in any RFCs, but is used by some[which?] HTTP proxies to signal a network connect timeout behind the proxy to a client in front of the proxy.
+
+
+# XXX: Replace the OK with a message related to the code :p
+
+def _http (code,message):
 	return """\
-HTTP/1.1 200 OK
+HTTP/1.1 %d OK
 Date: Fri, 02 Dec 2011 09:29:44 GMT
-Server: exaproxy/""" + str(version) + """ ("""+  sys.platform +""")
+Server: exaproxy/%s (%s)
 Content-Length: %d
 Connection: close
 Content-Type: text/html
 Cache-control: private
 Pragma: no-cache
 
-%s""" % (len(message),message)
+%s""" % (code,str(version),sys.platform,len(message),message)
+
+class HTTPParser (object):
+	def parseRequest(self, request):
+		r = regex.destination.match(request)
+		if r is not None:
+			# XXX: we want to have these returned to us rather than knowing
+			# XXX: which group indexes we're interested in
+			method = r.groups()[0]
+			path = r.groups()[2]
+			host = r.groups()[4]
+		else:
+			return None,None,None,None
+
+		r = regex.x_forwarded_for.match(request)
+		client = r.group(0) if r else '0.0.0.0'
+
+		# David said ...
+		# XXX: look at the regex I suggested to retrieve information from the request
+		# XXX: there should be no need to do this here
+		if not path.startswith('http://'):
+			path = 'http://' + host + path
+
+		return method, path, host, client
 
 
 class HTTPFetcher (object):
@@ -130,8 +163,9 @@ class HTTPFetcher (object):
 		self.runnning = False
 
 class HTTPResponse (object):
-	def __init__  (self,cid,title,body):
+	def __init__  (self,cid,code,title,body):
 		self.cid = cid
+		self.code = code
 		self.title = title
 		self.body = body
 		self._recv = self._fetch()
@@ -146,5 +180,5 @@ class HTTPResponse (object):
 		return self._recv.next()
 
 	def _fetch (self):
-		yield _http(html._html(self.title,self.body))
+		yield _http(self.code,html._html(self.title,self.body))
 		yield None

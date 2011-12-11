@@ -17,7 +17,7 @@ import socket
 
 from Queue import Empty
 
-from .http import regex
+from .http import HTTPParser,regex
 
 from .logger import Logger
 logger = Logger()
@@ -25,7 +25,7 @@ logger = Logger()
 from .configuration import Configuration
 configuration = Configuration()
 
-class Worker (Thread):
+class Worker (HTTPParser,Thread):
 	
 	# TODO : if the program is a function, fork and run :)
 	
@@ -72,28 +72,6 @@ class Worker (Thread):
 			if e[0] != errno.ESRCH:
 				logger.worker('PID %s died' % pid, 'worker %d' % self.wid)
 
-	def parseRequest(self, request):
-		r = regex.destination.match(request)
-		if r is not None:
-			# XXX: we want to have these returned to us rather than knowing
-			# XXX: which group indexes we're interested in
-			method = r.groups()[0]
-			path = r.groups()[2]
-			host = r.groups()[4]
-		else:
-			method = None
-			path = None
-			host = None
-
-		# XXX: this should be done in the same regex
-		if method is not None:
-			r = regex.x_forwarded_for.match(request)
-			client = r.group(0) if r else '0.0.0.0'
-		else:
-			client = None
-
-		return method, path, host, client
-		
 	def resolveHost(self, host):
 		# Do the hostname resolution before the backend check
 		# We may block the page but filling the OS DNS cache can not harm :)
@@ -106,9 +84,9 @@ class Worker (Thread):
 	def stop (self):
 		self.running = False
 
-	def _reply (self,cid,title,body):
+	def _reply (self,cid,code,title,body):
 		logger.worker(body, 'worker %d' % self.wid)
-		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response',title.replace('','_'),0,body))
+		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response',title.replace(' ','_'),code,body))
 		self.response_box_write.flush()
 
 	def run (self):
@@ -135,33 +113,29 @@ class Worker (Thread):
 			logger.worker('peer %s' % str(peer), 'worker %d' % self.wid)
 			logger.worker('request %s' % ' '.join(request.split('\n',3)[:2]), 'worker %d' % self.wid)
 
-			method, path, host, client = self.parseRequest(request)
+			method, url, host, client = self.parseRequest(request)
 			if method is None:
-				self._reply(cid, 'INVALID REQUEST','invalid request <!-- %s -->' % request)
+				self._reply(cid, 400, 'INVALID REQUEST','invalid request <!-- %s -->' % request)
 				continue
 
 			ip = self.resolveHost(host)
 			if not ip:
-				self._reply('NO DNS','could not resolve DNS for %s' % host)
+				logger.worker('Could not resolve %s' % host, 'worker %d' % self.wid)
+				self._reply(cid,503,'NO DNS','could not resolve DNS for %s' % host)
 				continue
 
-			# XXX: look at the regex I suggested to retrieve information from the request
-			# XXX: there should be no need to do this here
-			if path.startswith('http://'):
-				url = path
-			else:
-				url = 'http://' + host + path
-	
 			squid = '%s %s - %s -' % (url,client,method)
-			##logger.worker('sending to classifier : [%s]' % squid, 'worker %d' % self.wid)
+			logger.worker('sending to classifier : [%s]' % squid, 'worker %d' % self.wid)
 			try:
 				process.stdin.write('%s%s' % (squid,os.linesep))
 				process.stdin.flush()
 				response = process.stdout.readline()
 			except IOError,e:
 				logger.worker('IO/Error when sending to process, %s' % str(e), 'worker %d' % self.wid)
+				self._reply(cid,500,'Interal Problem','could get a classification for %s' % host)
 				# XXX: Do something
 				return
+
 			logger.worker('received from classifier : [%s]' % response.strip(), 'worker %d' % self.wid)
 			if response == '\n':
 				response = host
@@ -172,6 +146,8 @@ class Worker (Thread):
 			# XXX: We NEED to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45
 			# XXX: We NEED to respect Keep-Alive rules http://tools.ietf.org/html/rfc2068#section-19.7.1
 			# XXX: We may look at Max-Forwards
+			# XXX: We need to reply to "Proxy-Connection: keep-alive", with "Proxy-Connection: close"
+			# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
 
 			if regex.connection.match(request):
 				request = re.sub('close',request)
