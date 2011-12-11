@@ -75,6 +75,7 @@ class Worker (HTTPParser,Thread):
 	def _resolveHost(self, host):
 		# Do the hostname resolution before the backend check
 		# We may block the page but filling the OS DNS cache can not harm :)
+		# XXX: we really need an async dns .. sigh, another thread ?? 
 		try:
 			#raise socket.error('UNCOMMENT TO TEST DNS RESOLUTION FAILURE')
 			return socket.gethostbyname(host)
@@ -134,7 +135,7 @@ class Worker (HTTPParser,Thread):
 			# LOG SOMETHING !
 			self.stop()
 
-		while self.running:
+		while True:
 			try:
 				logger.worker('waiting for some work', 'worker %d' % self.wid)
 				data = self.request_box.get(1)
@@ -145,6 +146,10 @@ class Worker (HTTPParser,Thread):
 				continue
 			except Empty:
 				continue
+
+			# better to check here as we most likely will receive a stop during sleeping
+			if not self.running:
+				break
 
 			method, url, host, client = self.parseRequest(request)
 			if method is None:
