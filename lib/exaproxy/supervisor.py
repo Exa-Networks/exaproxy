@@ -90,6 +90,9 @@ class Supervisor(object):
 				# check for IO change with select
 				self.server.run()
 
+				# Quit on problems which can not be fixed (like running out of file descriptor)
+				self._shutdown = self.server.running
+
 			except KeyboardInterrupt:
 				logger.supervisor('^C received')
 				self._shutdown = True
