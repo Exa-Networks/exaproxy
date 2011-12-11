@@ -26,6 +26,7 @@ class Download (object):
 		self.connect = set()                    # New connections to establish
 		self.open = set()                       # Connection established but not yet write able
 		self.fetchers = set()                   # the http object to now use
+		self.connect = set()
 
 	def newFetcher (self, pipe):
 		# XXX: readline could fail
@@ -38,11 +39,14 @@ class Download (object):
 		# http://tools.ietf.org/html/rfc2616#section-14.10
 
 		if action == 'request':
-			logger.download('we need to download something on %s:%d' % (host,port))
+			logger.download('we need to download something on %s:%d for %s' % (host,port,cid))
 			self.connect.add(HTTPFetcher(cid,host,port,request))
 		elif action == 'response':
-			logger.download('direct response to %s' % cid)
+			logger.download('direct response for %s' % cid)
 			self.fetchers.add(HTTPResponse(cid,port,host.replace('_',' '),request))
+		elif action == 'connect':
+			logger.download('CONNNECT proxy connection for %s' % cid)
+			self.fetchers.add(HTTPConnect(cid,ip,port))
 		else:
 			raise RuntimeError('%s is an invalid action' % action)
 

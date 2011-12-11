@@ -1,0 +1,3 @@
+#!/bin/sh
+env PDB=1 ./sbin/exaproxy ./redirector/parrot
+

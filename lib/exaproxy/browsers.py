@@ -43,8 +43,15 @@ class Browser (object):
 				break
 			yield '' # no request yet
 
-		# our client is pipelining
-		while sock.recv(r_size or read_size):
+
+		# our client is pipelining (or using CONNECT)
+		while True:
+			data = sock.recv(r_size or read_size)
+			if not data:
+				break
+			if configuration.CONNECT:
+				yield data
+				continue
 			yield ''
 		yield None
 		

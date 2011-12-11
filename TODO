@@ -4,6 +4,8 @@ Allow Proxy Authentification :
 Before reelase :
  - fix all XXX:
  - fix all bug
+   * Bad regex to extract CONNECT DATA (no http://)
+   * We are sending twice connection:close, if there ?
  - check any possible socket issues, to make sure all exception were traped (all errno are covered)
  - some of the code should be moved down in lower class (multiple . deference)
  - have a 127.0.0.1:port webpage with status (like squid to know what is happening)

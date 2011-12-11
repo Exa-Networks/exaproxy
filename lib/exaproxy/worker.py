@@ -108,24 +108,24 @@ class Worker (HTTPParser,Thread):
 			# XXX: Do something
 			return ''
 
-	def _request (self,cid,ip,request):
+	def _request (self,cid,ip,port,request):
 		if regex.connection.match(request):
 			request = re.sub('close',request)
 		else:
 			request = request.rstrip() + '\r\nConnection: Close\r\n\r\n'
 
 		logger.worker('need to download data at %s' % str(ip), 'worker %d' % self.wid)
-		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'request',ip,80,request.replace('\n','\\n').replace('\r','\\r')))
+		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'request',ip,port,request.replace('\n','\\n').replace('\r','\\r')))
 		self.response_box_write.flush()
 		##logger.worker('[%s %s %s %d %s]' % (cid,'request',ip,80,request), 'worker %d' % self.wid)
 		self.last_worked = time.time()
 	
-	def _connect (self,cid,ip,request):
-		self._reply(cid,500,'NO DNS','could not resolve DNS for %s' % host)
+	def _connect (self,cid,ip,port,request):
+		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'connect',ip,port,''))
+		self.response_box_write.flush()
 
 	def _reply (self,cid,code,title,body):
-		logger.worker(body, 'worker %d' % self.wid)
-		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response',title.replace(' ','_'),code,body))
+		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response',title.replace(' ','_'),code,body.replace('\n','\\n').replace('\r','\\r')))
 		self.response_box_write.flush()
 
 	def run (self):
@@ -165,19 +165,30 @@ class Worker (HTTPParser,Thread):
 
 			method, url, host, client = self.parseRequest(request)
 			if method is None:
-				self._reply(cid, 400, 'INVALID REQUEST','invalid request <!-- %s -->' % request)
+				self._reply(cid, 400, 'INVALID REQUEST','invalid request <!--\nCDATA[[%s]]\n-->' % request)
 				continue
+
+			url_host = url.split('/')[2]
+			if url_host.count(':'):
+				url_port = url_host.split(':')[1]
+				if url_port.isdigit():
+					port = int(url_port)
+				else:
+					logger.worker('Could extract port from url %s' % url, 'worker %d' % self.wid)
+					self._reply(cid,503,'INVALID URL','this is url is invalid %s' % url)
+			else:
+				port = 80
 
 			ip = self._resolveHost(host)
 			if not ip:
 				logger.worker('Could not resolve %s' % host, 'worker %d' % self.wid)
-				self._reply(cid,503,'NO DNS','could not resolve DNS for %s' % host)
+				self._reply(cid,503,'NO DNS','could not resolve DNS for [%s]' % host)
 				continue
 
 			# classify and return the filtered page
 			if method in ('GET','PUT','POST'):
 				response = self._classify(cid,client,method,url)
-				self._request(cid,ip,request)
+				self._request(cid,ip,port,request)
 				continue
 
 			# someone want to use use as https proxy
@@ -189,7 +200,7 @@ class Worker (HTTPParser,Thread):
 			if method in ('HEAD','OPTIONS','DELETE'):
 				if False: # It should be an option to be able to force all request
 					response = self._classify(cid,client,method,url)
-				self._request(cid,ip,request)
+				self._request(cid,ip,port,request)
 				continue
 
 			if method in ('TRACE',):

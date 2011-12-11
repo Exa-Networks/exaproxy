@@ -169,8 +169,8 @@ class Server (object):
 						logger.server('new connection, %s' % str(peer))
 
 			# some new connection became available to read
-			for fetcher in set(read_browser).intersection(read):
-				name, peer, request = self.browsers.readRequest(fetcher)
+			for browser in set(read_browser).intersection(read):
+				name, peer, request = self.browsers.readRequest(browser)
 				if request:
 					# request classification
 					self.request_box.put((name, peer, request))
