@@ -104,7 +104,7 @@ class Worker (HTTPParser,Thread):
 			return response
 		except IOError,e:
 			logger.worker('IO/Error when sending to process, %s' % str(e), 'worker %d' % self.wid)
-			self._reply(cid,500,'Interal Problem','could get a classification for %s' % host)
+			self._reply(cid,500,'Interal Problem','could get a classification for %s' % url)
 			# XXX: Do something
 			return ''
 
@@ -147,7 +147,8 @@ class Worker (HTTPParser,Thread):
 				data = self.request_box.get(1)
 
 				# better to check here as we most likely will receive a stop during sleeping
-				if not self.running:
+				# as well we can get data as None and self.running still True !
+				if not self.running or data is None:
 					break
 
 				cid,peer,request = data
