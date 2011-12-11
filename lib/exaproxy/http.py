@@ -20,15 +20,9 @@ from . import html
 
 DEFAULT_READ_BUFFER_SIZE=4096
 
-class regex:
-	# XXX: Should this regex contain TRACE/CONNECT ?
-	destination = re.compile("(GET|POST|PUT|HEAD|DELETE|OPTIONS|TRACE|CONNECT)\s+(http://[^/]*|)(/?[^ \r]*)\s+(HTTP/.*\r?\nHost\s*:\s*)([^\r]*)(|\r?\n)", re.IGNORECASE)
-
-	# Should we simply eat everything between : and \n to accept IPv6 address 
-	x_forwarded_for = re.compile("(|\n)X-Forwarded-For: ?(((1?\d?\d)|(2([0-4]\d|5[0-5])))\.)(((1?\d?\d)|(2([0-4]\d|5[0-5])))\.)(((1?\d?\d)|(2([0-4]\d|5[0-5])))\.)((2([0-4]\d|5[0-5]))|(1?\d?\d))", re.IGNORECASE)
-
-	connection = re.compile("\nConnection\s*:\s*([^\r\n]*)\s*\r?\n", re.IGNORECASE)
-
+#	destination = re.compile("(GET|POST|PUT|HEAD|DELETE|OPTIONS|TRACE|CONNECT)\s+(http://[^/]*|)(/?[^ \r]*)\s+(HTTP/.*\r?\nHost\s*:\s*)([^\r]*)(|\r?\n)", re.IGNORECASE)
+#	x_forwarded_for = re.compile("(|\n)X-Forwarded-For: ?(((1?\d?\d)|(2([0-4]\d|5[0-5])))\.)(((1?\d?\d)|(2([0-4]\d|5[0-5])))\.)(((1?\d?\d)|(2([0-4]\d|5[0-5])))\.)((2([0-4]\d|5[0-5]))|(1?\d?\d))", re.IGNORECASE)
+	
 #450 Blocked by Windows Parental Controls
 #A Microsoft extension. This error is given when Windows Parental Controls are turned on and are blocking access to the given webpage.
 #598 Network read timeout error
@@ -59,28 +53,37 @@ Pragma: no-cache
 
 %s""" % (code,str(version),sys.platform,len(message),message)
 
-class HTTPParser (object):
-	def parseRequest(self, request):
-		r = regex.destination.match(request)
-		if r is not None:
-			# XXX: we want to have these returned to us rather than knowing
-			# XXX: which group indexes we're interested in
-			method = r.groups()[0].upper()
-			path = r.groups()[2]
-			host = r.groups()[4].lower()
-		else:
-			return None,None,None,None
 
-		r = regex.x_forwarded_for.match(request)
-		client = r.group(0) if r else '0.0.0.0'
+class Header (dict):
+	def __init__ (self,request):
+		try:
+			lines = request.split('\r\n')
+			parts = lines.pop(0).split()
 
-		# David said ...
-		# XXX: look at the regex I suggested to retrieve information from the request
-		# XXX: there should be no need to do this here
-		if not path.startswith('http://'):
-			path = 'http://' + host + path
+			for header in lines:
+				if not header:
+					break
+				key,_ = header.split(':',1)
+				self[key.lower()] = header
 
-		return method, path, host, client
+			self.method=parts[0].upper()
+			self.path=parts[1]
+			self.version=parts[2].upper()
+
+			port = self.path.split(':',1)[-1].split('/')[0]
+			if port.isdigit():
+				self.port = int(port)
+			else:
+				self.port = 80
+
+		except KeyboardInterrupt:
+			raise
+		except Exception:
+			self.method = self.path = self.version = self.str = ''
+			raise
+
+	def __str__ (self):
+		return ' '.join((self.method,self.path,self.version,'\r\n')) + '\r\n'.join(v for k,v in self.iteritems()) + '\r\n'
 
 
 class HTTPFetcher (object):

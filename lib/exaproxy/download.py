@@ -13,7 +13,7 @@ from Queue import Empty
 from .logger import Logger
 logger = Logger()
 
-from .http import HTTPFetcher,HTTPResponse
+from .http import HTTPFetcher,HTTPResponse,HTTPConnect
 
 # http://tools.ietf.org/html/rfc2616#section-8.2.3
 # Says we SHOULD keep track of the server version and deal with 100-continue
@@ -45,8 +45,8 @@ class Download (object):
 			logger.download('direct response for %s' % cid)
 			self.fetchers.add(HTTPResponse(cid,port,host.replace('_',' '),request))
 		elif action == 'connect':
-			logger.download('CONNNECT proxy connection for %s' % cid)
-			self.fetchers.add(HTTPConnect(cid,ip,port))
+			logger.download('CONNECT proxy connection for %s' % cid)
+			self.fetchers.add(HTTPConnect(cid,host,port))
 		else:
 			raise RuntimeError('%s is an invalid action' % action)
 

@@ -12,12 +12,13 @@ import subprocess
 import errno
 
 import os
+import re
 import time
 import socket
 
 from Queue import Empty
 
-from .http import HTTPParser,regex
+from .http import Header
 
 from .logger import Logger
 logger = Logger()
@@ -25,7 +26,7 @@ logger = Logger()
 from .configuration import Configuration
 configuration = Configuration()
 
-class Worker (HTTPParser,Thread):
+class Worker (Thread):
 	
 	# TODO : if the program is a function, fork and run :)
 	
@@ -39,7 +40,7 @@ class Worker (HTTPParser,Thread):
 
 		self.wid = name                               # a unique name
 		self.creation = time.time()                   # when the thread was created
-		self.last_worked = self.creation              # when the thread last picked a task
+	#	self.last_worked = self.creation              # when the thread last picked a task
 		self.request_box = request_box                # queue with HTTP headers to process
 
 		self.program = program                        # the squid redirector program to fork 
@@ -108,19 +109,21 @@ class Worker (HTTPParser,Thread):
 			# XXX: Do something
 			return ''
 
-	def _request (self,cid,ip,port,request):
-		if regex.connection.match(request):
-			request = re.sub('close',request)
-		else:
-			request = request.rstrip() + '\r\nConnection: Close\r\n\r\n'
+	def _400 (self,cid,request):
+		self._reply(cid,400,'INVALID REQUEST','This request does not conform to HTTP/1.1 specifications <!--\nCDATA[[%s]]\n-->' % request)
 
+	def _request (self,cid,ip,port,req):
+		req['connection'] = 'Connection: close'
 		logger.worker('need to download data at %s' % str(ip), 'worker %d' % self.wid)
-		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'request',ip,port,request.replace('\n','\\n').replace('\r','\\r')))
+		print "\n\n\n\n\n"
+		print str(req).replace('\n','\\n').replace('\r','\\r')
+		print "\n\n\n\n\n"
+		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'request',ip,port,str(req).replace('\n','\\n').replace('\r','\\r')))
 		self.response_box_write.flush()
 		##logger.worker('[%s %s %s %d %s]' % (cid,'request',ip,80,request), 'worker %d' % self.wid)
-		self.last_worked = time.time()
+		#self.last_worked = time.time()
 	
-	def _connect (self,cid,ip,port,request):
+	def _connect (self,cid,ip,port):
 		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'connect',ip,port,''))
 		self.response_box_write.flush()
 
@@ -142,17 +145,10 @@ class Worker (HTTPParser,Thread):
 		while True:
 			try:
 				logger.worker('waiting for some work', 'worker %d' % self.wid)
-
 				# XXX: For some reason, even if we have a timeout, pypy does block here
 				data = self.request_box.get(1)
-
-				# better to check here as we most likely will receive a stop during sleeping
-				# as well we can get data as None and self.running still True !
 				if not self.running or data is None:
 					break
-
-				cid,peer,request = data
-				logger.worker('peer %s request %s' % (str(peer),' '.join(request.split('\n',3)[:2])), 'worker %d' % self.wid)
 			except (ValueError, IndexError):
 				logger.worker('received invalid message: %s' % data, 'worker %d' % self.wid)
 				if not self.running:
@@ -163,21 +159,24 @@ class Worker (HTTPParser,Thread):
 					break
 				continue
 
-			method, url, host, client = self.parseRequest(request)
-			if method is None:
-				self._reply(cid, 400, 'INVALID REQUEST','invalid request <!--\nCDATA[[%s]]\n-->' % request)
+			cid,peer,request = data
+			logger.worker('peer %s request %s' % (str(peer),' '.join(request.split('\n',3)[:2])), 'worker %d' % self.wid)
+
+			req = Header(request)
+			if not req.method:
+				self._400(cid,request)
 				continue
 
-			url_host = url.split('/')[2]
-			if url_host.count(':'):
-				url_port = url_host.split(':')[1]
-				if url_port.isdigit():
-					port = int(url_port)
-				else:
-					logger.worker('Could extract port from url %s' % url, 'worker %d' % self.wid)
-					self._reply(cid,503,'INVALID URL','this is url is invalid %s' % url)
-			else:
-				port = 80
+			client = req.get('x-forwarded-for',':0.0.0.0').split(':')[1].strip()
+			host = req.get('host',':').split(':')[1].strip()
+			method = req.method
+			port = req.port
+
+			if not host:
+				self._400(cid,request)
+				continue
+
+			url = req.path if req.path[:7].lower() == 'http://' else 'http://' + host + req.path
 
 			ip = self._resolveHost(host)
 			if not ip:
@@ -188,12 +187,12 @@ class Worker (HTTPParser,Thread):
 			# classify and return the filtered page
 			if method in ('GET','PUT','POST'):
 				response = self._classify(cid,client,method,url)
-				self._request(cid,ip,port,request)
+				self._request(cid,ip,port,req)
 				continue
 
 			# someone want to use use as https proxy
 			if method == 'CONNECT':
-				self._connect(cid,ip,host,request)
+				self._connect(cid,ip,port)
 				continue
 
 			# do not bother classfying things which do not return pages
