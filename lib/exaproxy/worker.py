@@ -106,6 +106,11 @@ class Worker (Thread):
 	def stop (self):
 		self.running = False
 
+	def _reply (self,cid,title,body):
+		logger.worker(body, 'worker %d' % self.wid)
+		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response',title.replace('','_'),0,body))
+		self.response_box_write.flush()
+
 	def run (self):
 		if not self.running:
 			logger.worker('can not start', 'worker %d' % self.wid)
@@ -132,16 +137,12 @@ class Worker (Thread):
 
 			method, path, host, client = self.parseRequest(request)
 			if method is None:
-				self.sendError(cid, 'invalid request')
+				self._reply(cid, 'INVALID REQUEST','invalid request <!-- %s -->' % request)
 				continue
 
 			ip = self.resolveHost(host)
 			if not ip:
-				# XXX: Things are done in resolveHost ...
-				#self.sendError(cid, 'no dns record')
-				logger.worker('could not resolve %s' % host, 'worker %d' % self.wid)
-				self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response','NO_DNS',0,'could not resolve DNS for %s' % host))
-				self.response_box_write.flush()
+				self._reply('NO DNS','could not resolve DNS for %s' % host)
 				continue
 
 			# XXX: look at the regex I suggested to retrieve information from the request
