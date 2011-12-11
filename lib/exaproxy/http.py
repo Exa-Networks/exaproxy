@@ -58,9 +58,9 @@ class HTTPParser (object):
 		if r is not None:
 			# XXX: we want to have these returned to us rather than knowing
 			# XXX: which group indexes we're interested in
-			method = r.groups()[0]
+			method = r.groups()[0].upper()
 			path = r.groups()[2]
-			host = r.groups()[4]
+			host = r.groups()[4].lower()
 		else:
 			return None,None,None,None
 

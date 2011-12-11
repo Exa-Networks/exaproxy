@@ -44,7 +44,7 @@ class Worker (HTTPParser,Thread):
 		self.running = True                           # the thread is active
 		Thread.__init__(self)
 
-	def createProcess (self):
+	def _createProcess (self):
 		try:
 			process = subprocess.Popen([self.program,],
 				stdin=subprocess.PIPE,
@@ -59,7 +59,7 @@ class Worker (HTTPParser,Thread):
 			process = None
 
 		return process
-	
+
 	def _cleanup (self, process):
 		logger.worker('terminating process', 'worker %d' % self.wid)
 		# XXX: can raise
@@ -72,7 +72,7 @@ class Worker (HTTPParser,Thread):
 			if e[0] != errno.ESRCH:
 				logger.worker('PID %s died' % pid, 'worker %d' % self.wid)
 
-	def resolveHost(self, host):
+	def _resolveHost(self, host):
 		# Do the hostname resolution before the backend check
 		# We may block the page but filling the OS DNS cache can not harm :)
 		try:
@@ -83,6 +83,38 @@ class Worker (HTTPParser,Thread):
 
 	def stop (self):
 		self.running = False
+
+	def _classify (self,process,cid,client,method,url):
+		# XXX: should process be self.process ?
+		squid = '%s %s - %s -' % (url,client,method)
+		logger.worker('sending to classifier : [%s]' % squid, 'worker %d' % self.wid)
+		try:
+			process.stdin.write('%s%s' % (squid,os.linesep))
+			process.stdin.flush()
+			response = process.stdout.readline()
+
+			logger.worker('received from classifier : [%s]' % response.strip(), 'worker %d' % self.wid)
+			if response == '\n':
+				response = host
+			return response
+		except IOError,e:
+			logger.worker('IO/Error when sending to process, %s' % str(e), 'worker %d' % self.wid)
+			self._reply(cid,500,'Interal Problem','could get a classification for %s' % host)
+			# XXX: Do something
+			return ''
+
+	def _request (self,cid,ip,host,request):
+		if regex.connection.match(request):
+			request = re.sub('close',request)
+		else:
+			request = request.rstrip() + '\r\nConnection: Close\r\n\r\n'
+
+		logger.worker('need to download data on %s at %s' % (host,ip), 'worker %d' % self.wid)
+		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'request',ip,80,request.replace('\n','\\n').replace('\r','\\r')))
+		self.response_box_write.flush()
+		##logger.worker('[%s %s %s %d %s]' % (cid,'request',ip,80,request), 'worker %d' % self.wid)
+		self.last_worked = time.time()
+		logger.worker('waiting for some work', 'worker %d' % self.wid)
 
 	def _reply (self,cid,code,title,body):
 		logger.worker(body, 'worker %d' % self.wid)
@@ -95,8 +127,9 @@ class Worker (HTTPParser,Thread):
 			return
 
 		logger.worker('starting', 'worker %d' % self.wid)
-		process = self.createProcess()
+		process = self._createProcess()
 		if not process:
+			# LOG SOMETHING !
 			self.stop()
 
 		while self.running:
@@ -118,27 +151,31 @@ class Worker (HTTPParser,Thread):
 				self._reply(cid, 400, 'INVALID REQUEST','invalid request <!-- %s -->' % request)
 				continue
 
-			ip = self.resolveHost(host)
+			ip = self._resolveHost(host)
 			if not ip:
 				logger.worker('Could not resolve %s' % host, 'worker %d' % self.wid)
 				self._reply(cid,503,'NO DNS','could not resolve DNS for %s' % host)
 				continue
 
-			squid = '%s %s - %s -' % (url,client,method)
-			logger.worker('sending to classifier : [%s]' % squid, 'worker %d' % self.wid)
-			try:
-				process.stdin.write('%s%s' % (squid,os.linesep))
-				process.stdin.flush()
-				response = process.stdout.readline()
-			except IOError,e:
-				logger.worker('IO/Error when sending to process, %s' % str(e), 'worker %d' % self.wid)
-				self._reply(cid,500,'Interal Problem','could get a classification for %s' % host)
-				# XXX: Do something
-				return
+			# classify and return the filtered page
+			if method in ('GET','PUT','POST'):
+				response = self._classify(process,cid,client,method,url)
+				self._request(cid,ip,host,request)
+				continue
 
-			logger.worker('received from classifier : [%s]' % response.strip(), 'worker %d' % self.wid)
-			if response == '\n':
-				response = host
+			# someone want to use use as https proxy
+			if method == 'CONNECT':
+				self._reply(cid,500,'NO DNS','could not resolve DNS for %s' % host)
+				continue
+
+			# do not bother classfying things which do not return pages
+			if method in ('HEAD','OPTIONS','DELETE'):
+				self._request(cid,ip,host,request)
+				continue
+
+			if method in ('TRACE',):
+				self._reply(cid,501,'TRACE NOT IMPLEMENTED','This is bad .. we are sorry.')
+				continue
 
 			# prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
 			# XXX: We may have more than one Connection header : http://tools.ietf.org/html/rfc2616#section-14.10
@@ -149,17 +186,4 @@ class Worker (HTTPParser,Thread):
 			# XXX: We need to reply to "Proxy-Connection: keep-alive", with "Proxy-Connection: close"
 			# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
 
-			if regex.connection.match(request):
-				request = re.sub('close',request)
-			else:
-				request = request.rstrip() + '\r\nConnection: Close\r\n\r\n'
-
-			logger.worker('need to download data on %s at %s' % (host,ip), 'worker %d' % self.wid)
-			self.response_box_write.write('%s %s %s %d %s\n' % (cid,'request',ip,80,request.replace('\n','\\n').replace('\r','\\r')))
-			self.response_box_write.flush()
-			##logger.worker('[%s %s %s %d %s]' % (cid,'request',ip,80,request), 'worker %d' % self.wid)
-			self.last_worked = time.time()
-			logger.worker('waiting for some work', 'worker %d' % self.wid)
-
 		self._cleanup(process)
-	
