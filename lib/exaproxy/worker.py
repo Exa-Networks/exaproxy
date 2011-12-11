@@ -103,18 +103,20 @@ class Worker (HTTPParser,Thread):
 			# XXX: Do something
 			return ''
 
-	def _request (self,cid,ip,host,request):
+	def _request (self,cid,ip,request):
 		if regex.connection.match(request):
 			request = re.sub('close',request)
 		else:
 			request = request.rstrip() + '\r\nConnection: Close\r\n\r\n'
 
-		logger.worker('need to download data on %s at %s' % (host,ip), 'worker %d' % self.wid)
+		logger.worker('need to download data at %s' % str(ip), 'worker %d' % self.wid)
 		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'request',ip,80,request.replace('\n','\\n').replace('\r','\\r')))
 		self.response_box_write.flush()
 		##logger.worker('[%s %s %s %d %s]' % (cid,'request',ip,80,request), 'worker %d' % self.wid)
 		self.last_worked = time.time()
-		logger.worker('waiting for some work', 'worker %d' % self.wid)
+	
+	def _connect (self,cid,ip,request):
+		self._reply(cid,500,'NO DNS','could not resolve DNS for %s' % host)
 
 	def _reply (self,cid,code,title,body):
 		logger.worker(body, 'worker %d' % self.wid)
@@ -134,17 +136,15 @@ class Worker (HTTPParser,Thread):
 
 		while self.running:
 			try:
+				logger.worker('waiting for some work', 'worker %d' % self.wid)
 				data = self.request_box.get(1)
 				cid,peer,request = data
+				logger.worker('peer %s request %s' % (str(peer),' '.join(request.split('\n',3)[:2])), 'worker %d' % self.wid)
 			except (ValueError, IndexError):
 				logger.worker('received invalid message: %s' % data, 'worker %d' % self.wid)
 				continue
 			except Empty:
 				continue
-
-			logger.worker('some work came', 'worker %d' % self.wid)
-			logger.worker('peer %s' % str(peer), 'worker %d' % self.wid)
-			logger.worker('request %s' % ' '.join(request.split('\n',3)[:2]), 'worker %d' % self.wid)
 
 			method, url, host, client = self.parseRequest(request)
 			if method is None:
@@ -160,17 +160,19 @@ class Worker (HTTPParser,Thread):
 			# classify and return the filtered page
 			if method in ('GET','PUT','POST'):
 				response = self._classify(process,cid,client,method,url)
-				self._request(cid,ip,host,request)
+				self._request(cid,ip,request)
 				continue
 
 			# someone want to use use as https proxy
 			if method == 'CONNECT':
-				self._reply(cid,500,'NO DNS','could not resolve DNS for %s' % host)
+				self._connect(cid,ip,host,request)
 				continue
 
 			# do not bother classfying things which do not return pages
 			if method in ('HEAD','OPTIONS','DELETE'):
-				self._request(cid,ip,host,request)
+				if False: # It should be an option to be able to force all request
+					response = self._classify(process,cid,client,method,url)
+				self._request(cid,ip,request)
 				continue
 
 			if method in ('TRACE',):
