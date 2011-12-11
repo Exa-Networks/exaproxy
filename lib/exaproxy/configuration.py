@@ -51,7 +51,7 @@ class _Configuration (object):
 
 	class DEBUG:
 		# XXX: All set to one for the development period
-		LOG        = _priorities.get(os.environ.get('LOG',None),syslog.LOG_CRIT) 
+		LOG        = _priorities.get(os.environ.get('LOG',None),syslog.LOG_DEBUG if _all else syslog.LOG_ERR) 
 		DAEMON     = os.environ.get('DEBUG_DAEMON','1') in _enabled or _all
 		SUPERVISOR = os.environ.get('DEBUG_SUPERVISOR','1') in _enabled or _all
 		MANAGER    = os.environ.get('DEBUG_MANAGER','1') in _enabled or _all
