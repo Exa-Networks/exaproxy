@@ -10,6 +10,7 @@ Before reelase :
  - some of the code should be moved down in lower class (multiple . deference)
  - have a 127.0.0.1:port webpage with status (like squid to know what is happening)
  - if a remote end does not respect connection-close, use time to kill it anyway
+ - look at all the method in http://tools.ietf.org/html/rfc4918 and see what we can do with them
 
 still true ??
  - sometimes it look like the workers do not get the work even if the logs says we are pushing it to them
