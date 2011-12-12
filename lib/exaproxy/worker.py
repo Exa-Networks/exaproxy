@@ -167,7 +167,7 @@ class Worker (Thread):
 				self._400(cid,request)
 				continue
 
-			client = req.get('x-forwarded-for',':0.0.0.0').split(':')[1].strip()
+			client = req.get('x-forwarded-for',':0.0.0.0').split(':')[1].split(',')[-1].strip()
 			host = req.get('host',':').split(':')[1].strip()
 			method = req.method
 			port = req.port
