@@ -205,7 +205,10 @@ class Worker (Thread):
 			if method in ('TRACE',):
 				self._reply(cid,501,'TRACE NOT IMPLEMENTED','This is bad .. we are sorry.')
 				continue
-		
+
+			self._reply(cid,405,'METHOD NOT ALLOWED','Method Not Allowed %s' % method)
+			continue
+
 		self._cleanup()
 			# prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
 			# XXX: We may have more than one Connection header : http://tools.ietf.org/html/rfc2616#section-14.10
