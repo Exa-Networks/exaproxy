@@ -43,6 +43,7 @@ class Download (object):
 			self.connect.add(HTTPFetcher(cid,host,port,request))
 		elif action == 'response':
 			logger.download('direct response for %s' % cid)
+			# we have our HTTP response code in the port, the title in host, the body in request
 			self.established.add(HTTPResponse(cid,port,host.replace('_',' '),request))
 		elif action == 'connect':
 			logger.download('CONNECT proxy connection for %s' % cid)
