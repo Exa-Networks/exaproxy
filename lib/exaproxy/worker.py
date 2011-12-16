@@ -115,9 +115,6 @@ class Worker (Thread):
 	def _request (self,cid,ip,port,req):
 		req['connection'] = 'Connection: close'
 		logger.worker('need to download data at %s' % str(ip), 'worker %d' % self.wid)
-		print "\n\n\n\n\n"
-		print str(req).replace('\n','\\n').replace('\r','\\r')
-		print "\n\n\n\n\n"
 		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'request',ip,port,str(req).replace('\n','\\n').replace('\r','\\r')))
 		self.response_box_write.flush()
 		##logger.worker('[%s %s %s %d %s]' % (cid,'request',ip,80,request), 'worker %d' % self.wid)
