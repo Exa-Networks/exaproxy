@@ -46,7 +46,6 @@ class Browser (object):
 				break
 			yield '' # no request yet
 
-
 		# our client is pipelining (or using CONNECT)
 		while True:
 			data = sock.recv(r_size or read_size)
@@ -74,24 +73,21 @@ class Browser (object):
 				w_buffer = w_buffer[sent:]
 			except socket.error, e:
 				if e.errno in (errno.EAGAIN, errno.EINTR,errno.EWOULDBLOCK,errno.EINTR,):
-					logger.server('write failed as it would have blocked (ignore), errno %s' % str(e.errno)) # XXX: wrong logger
+					logger.debug('write failed as it would have blocked (ignore), errno %s' % str(e.errno),'browser') # XXX: wrong logger
 					sent = 0
 				else:
-					logger.server('write failed - errno %s' % str(e.errno)) # XXX: wrong logger
+					logger.debug('write failed - errno %s' % str(e.errno),'browser') # XXX: wrong logger
 					yield None,None # stop the client connection
 					break # and don't come back
 
 class Browsers (object):
 	def __init__(self):
 		self.factory = Browser()
-		self._bysock = {}
+		self.established = {} # self._bysock
 		self._byid = {}
 		self._buffered = {}
 		self.cid = 1                    # A unique id per client
 		self._close = set()
-
-	def established (self):
-		return list(self._bysock)
 
 	def established_id (self):
 		return list(self._byid)
@@ -117,21 +113,20 @@ class Browsers (object):
 		w = self.factory.write(sock)
 		w.next()
 
-		self._bysock[sock] = cid, r, w, peer
+		self.established[sock] = cid, r, w, peer
 		self._byid[cid] = sock, r, w, peer
 		self._buffered[cid] = 0
 
 		return cid
 
 	def readRequest(self, sock, buffer_len=0):
-		cid, r, w, peer = self._bysock[sock] # raise KeyError if we gave a bad socket
+		cid, r, w, peer = self.established[sock] # raise KeyError if we gave a bad socket
 		try:
 			res = r.send(buffer_len)
 		except socket.error,e:
 			if e.errno in (errno.ECONNRESET,): # ECONNRESET : seen in real life :)
 				self._close.add(cid)
-				# XXX: debug
-				raise
+				raise # XXX: debug
 				return None,None,None
 			raise
 
@@ -142,7 +137,7 @@ class Browsers (object):
 		return cid, peer, res
 
 	def sendData (self, cid, data):
-		logger.debug('sending data to client %d (%d)' % (cid, len(data)))
+		logger.debug('sending data to client %d (%d)' % (cid, len(data)),'browser')
 		sock, r, w, peer = self._byid[cid] # XXX: raise KeyError if we gave a bad client id, yes it does, David FIXME !
 
 		buf_len, had_buffer = w.send(data)
@@ -158,32 +153,32 @@ class Browsers (object):
 
 	def close (self):
 		for cid in list(self._close):
-			if self._buffered[cid]:
-				self.sendData(cid,'')
-				continue
+			#if self._buffered[cid]:
+			#	self.sendData(cid,'')
+			#	continue
 			self.finish(cid)
 			self._close.remove(cid)
 
 	def finish (self, cid):
-		logger.debug('removing client connection %d' % cid)
+		logger.debug('removing client connection %d' % cid,'browser')
 		sock, r, w, peer = self._byid[cid] # raise KeyError if we give a bad cliend id
 		try:
 			sock.shutdown(socket.SHUT_RDWR)
 			sock.close()
 		except socket.error:
 			pass
-		self._bysock.pop(sock)
+		self.established.pop(sock)
 		self._byid.pop(cid)
 		self._buffered.pop(cid)
 
 	def stop(self):
-		logger.debug('closing all clients connections')
-		for sock in self._bysock:
+		logger.debug('closing all clients connections','browser')
+		for sock in self.established:
 			try:
 				sock.shutdown(socket.SHUT_RDWR)
 				sock.close()
 			except socket.error:
 				pass
-		self._bysock = {}
+		self.established = {}
 		self._byid = {}
 		self._buffered = {}
