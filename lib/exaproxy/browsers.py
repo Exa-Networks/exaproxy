@@ -16,8 +16,7 @@ import errno
 from .configuration import Configuration
 configuration = Configuration()
 
-from .logger import Logger,LazyFormat,hex_string,single_line
-logger = Logger()
+from .util.logger import logger,LazyFormat,hex_string,single_line
 
 class Browser (object):
 	# XXX: could eor be '\n\r\n' or the list depending on the OS - look at the RFC

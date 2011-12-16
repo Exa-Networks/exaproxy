@@ -24,7 +24,7 @@ import logging.handlers
 
 from threading import Lock
 
-from .configuration import Configuration,log
+from exaproxy.configuration import Configuration,log
 
 def hex_string (value):
 	return '%s' % [(hex(ord(_))) for _ in value]
@@ -218,6 +218,8 @@ def Logger ():
 	instance = _Logger()
 	_Logger._instance = instance
 	return instance
+
+logger = Logger()
 
 if __name__ == '__main__':
 	logger = Logger()

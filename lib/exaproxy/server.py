@@ -19,8 +19,7 @@ from select import select
 
 from .browsers import Browsers
 
-from .logger import Logger
-logger = Logger()
+from .util.logger import logger
 
 
 _block_errs = set([

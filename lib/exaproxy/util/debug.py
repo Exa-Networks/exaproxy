@@ -12,10 +12,9 @@ import sys
 
 import traceback
 
-from .logger import Logger
-logger = Logger()
+from .logger import logger
 
-from .configuration import Configuration
+from exaproxy.configuration import Configuration
 debug = Configuration().DEBUG.PDB
 
 def bug_report (type, value, trace):

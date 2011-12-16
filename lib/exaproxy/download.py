@@ -10,8 +10,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 from threading import Thread
 from Queue import Empty
 
-from .logger import Logger
-logger = Logger()
+from .util.logger import logger
 
 from .http.client import HTTPClient
 from .http.response import HTTPResponse

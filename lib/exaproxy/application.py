@@ -9,11 +9,10 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import sys
 
-from .configuration import Configuration
-from .supervisor import Supervisor
+from exaproxy.configuration import Configuration
+from exaproxy.supervisor import Supervisor
 
-from .logger import Logger
-logger = Logger()
+from exaproxy.util.logger import logger
 
 
 def version_warning ():

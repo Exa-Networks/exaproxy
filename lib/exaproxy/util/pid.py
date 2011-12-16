@@ -21,10 +21,9 @@ import sys
 import pwd
 import errno
 
-from .logger import Logger
-logger = Logger()
+from .logger import logger
 
-from .configuration import Configuration
+from exaproxy.configuration import Configuration
 configuration = Configuration()
 
 class PID (object):

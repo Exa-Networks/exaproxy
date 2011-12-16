@@ -9,8 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import os
 
-from exaproxy.logger import Logger
-logger = Logger()
+from exaproxy.util.logger import logger
 
 class HTTPResponse (object):
 	__read,__write = os.pipe()

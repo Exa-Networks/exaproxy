@@ -11,14 +11,13 @@ import os
 import signal
 from Queue import Queue
 
-from .pid import PID
-from .daemon import Daemon
+from .util.pid import PID
+from .util.daemon import Daemon
 from .classify.manager import Manager
 from .server import Server,SelectError
 from .download import Download
 
-from .logger import Logger
-logger = Logger()
+from .util.logger import logger
 
 from .configuration import Configuration
 configuration = Configuration()

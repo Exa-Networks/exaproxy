@@ -19,8 +19,7 @@ from Queue import Empty
 
 from exaproxy.http.header import Header
 
-from exaproxy.logger import Logger
-logger = Logger()
+from exaproxy.util.logger import logger
 
 from exaproxy.configuration import Configuration
 configuration = Configuration()

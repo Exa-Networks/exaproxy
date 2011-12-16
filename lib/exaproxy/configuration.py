@@ -7,7 +7,7 @@ Created by Thomas Mangin on 2011-11-29.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-from .version import version
+from .util.version import version
 
 import os
 import sys

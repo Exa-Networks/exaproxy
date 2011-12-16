@@ -27,4 +27,4 @@ else
 	INTERPRETER=python
 fi
 
-$INTERPRETER -m exaproxy.debug $path/lib/exaproxy/application.py $*
+$INTERPRETER -m exaproxy.util.debug $path/lib/exaproxy/application.py $*

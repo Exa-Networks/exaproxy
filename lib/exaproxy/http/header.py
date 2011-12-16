@@ -9,7 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import sys
 
-from exaproxy.version import version
+from exaproxy.util.version import version
 
 def _connect (code):
 	return """\

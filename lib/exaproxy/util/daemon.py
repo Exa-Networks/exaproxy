@@ -13,10 +13,9 @@ import pwd
 import errno
 import socket
 
-from .logger import Logger
-logger = Logger()
+from .logger import logger
 
-from .configuration import Configuration
+from exaproxy.configuration import Configuration
 configuration = Configuration()
 
 class Daemon (object):
@@ -81,7 +80,7 @@ class Daemon (object):
 				logger.critial('Can not fork, errno %d : %s' % (e.errno,e.strerror),'supervisor')
 
 		# do not detach if we are already supervised or run by init like process
-		if self._is_socket(sys.__stdin__.fileno()) or os.getppid() != 1:
+		if not self._is_socket(sys.__stdin__.fileno()) and not os.getppid() == 1:
 			fork_exit()
 			os.setsid()
 			fork_exit()

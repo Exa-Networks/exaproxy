@@ -10,8 +10,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import socket
 import errno
 
-from exaproxy.logger import Logger
-logger = Logger()
+from exaproxy.util.logger import logger
 
 class HTTPClient (object):
 	def __init__  (self,cid,host,port,request):
