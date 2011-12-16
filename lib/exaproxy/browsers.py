@@ -23,7 +23,7 @@ class Browser (object):
 	# XXX: could eor be '\n\r\n' or the list depending on the OS - look at the RFC
 	eor = '\r\n\r\n'
 
-	def read(self, sock, read_size=4096):
+	def read(self, sock, read_size= 16*1024):
 		"""coroutine that reads from the socket"""
 
 		r_buffer = ''
