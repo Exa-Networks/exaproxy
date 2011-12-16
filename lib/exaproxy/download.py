@@ -13,7 +13,9 @@ from Queue import Empty
 from .logger import Logger
 logger = Logger()
 
-from .http import HTTPClient,HTTPResponse,HTTPConnect
+from .http.client import HTTPClient
+from .http.response import HTTPResponse
+from .http.connect import HTTPConnect
 
 # http://tools.ietf.org/html/rfc2616#section-8.2.3
 # Says we SHOULD keep track of the server version and deal with 100-continue

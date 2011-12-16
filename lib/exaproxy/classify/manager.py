@@ -11,7 +11,7 @@ import time
 
 from .worker import Worker
 
-from .logger import Logger
+from exaproxy.logger import Logger
 logger = Logger()
 
 # Do we really need to call join() on the thread as we are stoppin on our own ? 

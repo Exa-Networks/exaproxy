@@ -12,18 +12,17 @@ import subprocess
 import errno
 
 import os
-import re
 import time
 import socket
 
 from Queue import Empty
 
-from .http import Header
+from exaproxy.http.header import Header
 
-from .logger import Logger
+from exaproxy.logger import Logger
 logger = Logger()
 
-from .configuration import Configuration
+from exaproxy.configuration import Configuration
 configuration = Configuration()
 
 class Worker (Thread):

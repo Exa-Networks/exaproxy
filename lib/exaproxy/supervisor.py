@@ -13,7 +13,7 @@ from Queue import Queue
 
 from .pid import PID
 from .daemon import Daemon
-from .manager import Manager
+from .classify.manager import Manager
 from .server import Server,SelectError
 from .download import Download
 
