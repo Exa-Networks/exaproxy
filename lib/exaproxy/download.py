@@ -24,8 +24,8 @@ class Download (object):
 	def __init__(self):
 		self._download_loop = None              # The download co-routine
 		self.connect = set()                    # New connections to establish
-		self.open = set()                       # Connection established but not yet write able
-		self.fetchers = set()                   # the http object to now use
+		self.opening = set()                       # Connection established but not yet write able
+		self.established = set()                # the http object to now use
 		self.connect = set()
 
 	def newFetcher (self, pipe):
@@ -43,7 +43,7 @@ class Download (object):
 			self.connect.add(HTTPFetcher(cid,host,port,request))
 		elif action == 'response':
 			logger.download('direct response for %s' % cid)
-			self.fetchers.add(HTTPResponse(cid,port,host.replace('_',' '),request))
+			self.established.add(HTTPResponse(cid,port,host.replace('_',' '),request))
 		elif action == 'connect':
 			logger.download('CONNECT proxy connection for %s' % cid)
 			self.connect.add(HTTPConnect(cid,host,port))
@@ -57,24 +57,24 @@ class Download (object):
 			if fetcher.connect():
 				# We now need to read from this object in the select loop
 				self.connect.remove(fetcher)
-				self.open.add(fetcher)
+				self.opening.add(fetcher)
 
 	def available (self,fetcher):
-		self.fetchers.add(fetcher)
-		self.open.remove(fetcher)
+		self.established.add(fetcher)
+		self.opening.remove(fetcher)
 	
 	def finish (self,fetcher):
 		self.connect.discard(fetcher.cid)
-		self.open.discard(fetcher.cid)
-		self.fetchers.discard(fetcher)
+		self.opening.discard(fetcher.cid)
+		self.established.discard(fetcher)
 
 	def stop (self):
 		self.connect = set()
 		for fetcher in self.connect:
 			fetcher.close()
-		self.open = set()
-		for fetcher in self.open:
+		self.opening = set()
+		for fetcher in self.opening:
 			fetcher.close()
-		self.fetchers = set()
-		for fetcher in self.fetchers:
+		self.established = set()
+		for fetcher in self.established:
 			fetcher.close()
