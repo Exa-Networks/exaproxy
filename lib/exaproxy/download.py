@@ -46,7 +46,7 @@ class Download (object):
 			self.fetchers.add(HTTPResponse(cid,port,host.replace('_',' '),request))
 		elif action == 'connect':
 			logger.download('CONNECT proxy connection for %s' % cid)
-			self.fetchers.add(HTTPConnect(cid,host,port))
+			self.connect.add(HTTPConnect(cid,host,port))
 		else:
 			raise RuntimeError('%s is an invalid action' % action)
 
