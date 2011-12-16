@@ -169,7 +169,7 @@ class Worker (Thread):
 			method = req.method
 			port = req.port
 
-			if not host:
+			if method != 'CONNECT' and not host:
 				self._400(cid,request)
 				continue
 
@@ -189,8 +189,12 @@ class Worker (Thread):
 
 			# someone want to use use as https proxy
 			if method == 'CONNECT':
-				self._connect(cid,ip,port)
-				continue
+				if configuration.CONNECT:
+					self._connect(cid,ip,port)
+					continue
+				else:
+					self._reply(cid,501,'CONNECT NOT ALLOWED','We are an HTTP only proxy')
+					continue
 
 			# do not bother classfying things which do not return pages
 			if method in ('HEAD','OPTIONS','DELETE'):

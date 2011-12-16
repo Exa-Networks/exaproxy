@@ -7,6 +7,7 @@ Created by Thomas Mangin on 2011-12-02.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
+import os
 import sys
 import re
 import socket
@@ -76,6 +77,9 @@ class Header (dict):
 			else:
 				self.port = 80
 
+			if self.method == 'CONNECT':
+				if not self.has_key('host'):
+					self['host'] = 'Host:%s' % self.path.split(':',1)[0]
 		except KeyboardInterrupt:
 			raise
 		except Exception:
@@ -262,6 +266,8 @@ class HTTPConnect (object):
 
 
 class HTTPResponse (object):
+	__read,__write = os.pipe()
+
 	def __init__  (self,cid,code,title,body):
 		self.cid = cid
 		self.code = code
@@ -270,7 +276,7 @@ class HTTPResponse (object):
 		self._recv = self._fetch()
 
 	def fileno (self):
-		return 0
+		return self.__read
 
 	def request (self):
 		return True
