@@ -13,7 +13,7 @@ from Queue import Empty
 from .logger import Logger
 logger = Logger()
 
-from .http import HTTPFetcher,HTTPResponse,HTTPConnect
+from .http import HTTPClient,HTTPResponse,HTTPConnect
 
 # http://tools.ietf.org/html/rfc2616#section-8.2.3
 # Says we SHOULD keep track of the server version and deal with 100-continue
@@ -40,7 +40,7 @@ class Download (object):
 
 		if action == 'request':
 			logger.download('we need to download something on %s:%d for %s' % (host,port,cid))
-			self.connect.add(HTTPFetcher(cid,host,port,request))
+			self.connect.add(HTTPClient(cid,host,port,request))
 		elif action == 'response':
 			logger.download('direct response for %s' % cid)
 			# we have our HTTP response code in the port, the title in host, the body in request
