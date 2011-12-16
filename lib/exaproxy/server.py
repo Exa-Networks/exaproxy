@@ -22,6 +22,16 @@ from .browsers import Browsers
 from .logger import Logger
 logger = Logger()
 
+
+_block_errs = set([
+	errno.EAGAIN, errno.EWOULDBLOCK, errno.EINTR
+])
+_close_errs = set([
+	errno.EBADF, errno.ECONNRESET, errno.ESHUTDOWN,
+	errno.ECONNABORTED, errno.ECONNREFUSED,
+	errno.ENOTCONN, errno.EPIPE, errno.ECONNRESET,
+])
+
 class SelectError (Exception):
 	pass
 
@@ -82,12 +92,12 @@ class Server (object):
 			self.close()
 
 	def select (self,read,write):
-		logger.server("select on read  %s" % str(read))
-		logger.server("select on write %s" % str(write))
+		#logger.server("select on read  %s" % str(read))
+		#logger.server("select on write %s" % str(write))
 		try:
 			r,w,e = select(read,write,read+write,self.speed)
-			logger.server("ready on read   %s" % str(r))
-			logger.server("ready on write  %s" % str(w))
+			#logger.server("ready on read   %s" % str(r))
+			#logger.server("ready on write  %s" % str(w))
 			# XXX: check for errors on e
 			return r + [_ for _ in read if _.fileno() == 0], w
 		except socket.error, e:
@@ -145,7 +155,7 @@ class Server (object):
 
 	def _run (self):
 		while self.running:
-			read_browser = self.browsers.established() # Newly established connections
+			read_browser = list(self.browsers.established) # Newly established connections
 			read_download = list(self.download.fetchers) # Currently established connections
 			read_workers = list(self.manager.workers)
 			write_open = list(self.download.open) # socket connected but not yet ready for write
@@ -156,6 +166,9 @@ class Server (object):
 #			print "write_open   ", write_open 
 
 			read,write = self.select([self.io] + read_workers + read_browser + read_download, write_open)
+
+			if read: print "read   [%s]" % read
+			if write: print "write [%s]" % write
 
 			# we have new connections
 			if self.io in read:
@@ -203,6 +216,15 @@ class Server (object):
 			for fetcher in set(write_open).intersection(write):
 				if fetcher.request():
 					self.download.available(fetcher)
+
+#				response = fetcher.request()
+#				if response:
+#					self.download.available(fetcher)
+#					continue
+#				if response is None:
+#					self.browsers.completed(fetcher.cid)
+#					self.download.finish(fetcher)
+#					continue
 
 			self.browsers.close()
 			yield None
