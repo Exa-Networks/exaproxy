@@ -155,17 +155,18 @@ class Server (object):
 
 	def _run (self):
 		while self.running:
-			read_browser = list(self.browsers.established) # Newly established connections
-			read_download = list(self.download.fetchers) # Currently established connections
 			read_workers = list(self.manager.workers)
-			write_open = list(self.download.open) # socket connected but not yet ready for write
+
+			read_browser = list(self.browsers.established) # Newly established connections
+			read_download = list(self.download.established) # Currently established connections
+			write_opening = list(self.download.opening) # socket connected but not yet ready for write
 
 #			print "read_browser ", read_browser
 #			print "read_downlaod", read_download
 #			print "read_workers ", read_workers
-#			print "write_open   ", write_open 
+#			print "write_opening   ", write_opening 
 
-			read,write = self.select([self.io] + read_workers + read_browser + read_download, write_open)
+			read,write = self.select([self.io] + read_workers + read_browser + read_download, write_opening)
 
 			if read: print "read   [%s]" % read
 			if write: print "write [%s]" % write
@@ -213,7 +214,7 @@ class Server (object):
 			self.download.connectFetchers()
 
 			# some socket are now available for write
-			for fetcher in set(write_open).intersection(write):
+			for fetcher in set(write_opening).intersection(write):
 				if fetcher.request():
 					self.download.available(fetcher)
 
