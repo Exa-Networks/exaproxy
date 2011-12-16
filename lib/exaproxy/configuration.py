@@ -48,7 +48,7 @@ class _Configuration (object):
 	VERSION = version
 	PROGRAM = dict(zip(range(len(sys.argv)),sys.argv)).get(2,'') # I must like perl :)
 	SPEED = 2 # 0.01
-	CONNECT = os.environ.get('CONNECT','0') in _enabled
+	CONNECT = os.environ.get('CONNECT','1') in _enabled
 
 	class DEBUG:
 		# XXX: All set to one for the development period
