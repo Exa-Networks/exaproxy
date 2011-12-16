@@ -190,11 +190,11 @@ class HTTPConnect (object):
 		logger.debug('connecting to server %s:%d' % (self.host,self.port), 'connect %d' %self.cid)
 		try:
 			self.io = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+			self.io.setblocking(0)
 		except socket.error,e:
 			logger.debug('problem create a connection to %s:%d' % (self.host,self.port), 'connect %d' %self.cid)
 			return False
 		try:
-			self.io.setblocking(0)
 			self.io.connect((self.host, self.port))
 			return True
 		except socket.error,e:
@@ -206,6 +206,8 @@ class HTTPConnect (object):
 
 	def request (self):
 		try:
+			if not self._request:
+				return True
 			logger.debug('send data to the server','connect %d' % self.cid)
 			number = self.io.send(self._request)
 			logger.debug('sent %d bytes' % number,'connect %d' % self.cid)
