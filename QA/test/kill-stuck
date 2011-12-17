@@ -1,3 +1,3 @@
 #!/bin/sh
-ps x | grep -- "-m exaproxy.debug" | grep -v grep | awk '{ print $1 }' | xargs kill -9
+ps x | grep -- "-m exaproxy.util.debug" | grep -v grep | awk '{ print $1 }' | xargs kill -9
 
