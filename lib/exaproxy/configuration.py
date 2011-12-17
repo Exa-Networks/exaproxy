@@ -57,14 +57,10 @@ class _Configuration (object):
 		if os.environ.get('SYSLOG',None):
 			logger.syslog()
 		logger.level = _priorities.get(os.environ.get('LOG',None),syslog.LOG_DEBUG if _all else syslog.LOG_ERR)
-		logger.debug_supervisor = os.environ.get('DEBUG_SUPERVISOR','1').lower() in _enabled or _all
-		logger.debug_daemon = os.environ.get('DEBUG_DAEMON','1').lower() in _enabled or _all
-		logger.debug_server = os.environ.get('DEBUG_SERVER','1').lower() in _enabled or _all
-		logger.debug_client = os.environ.get('DEBUG_CLIENT','1').lower() in _enabled or _all
-		logger.debug_manager = os.environ.get('DEBUG_MANAGER','1').lower() in _enabled or _all
-		logger.debug_worker = os.environ.get('DEBUG_WORKER','1').lower() in _enabled or _all
-		logger.debug_download = os.environ.get('DEBUG_DOWNLOAD','1').lower() in _enabled or _all
-		logger.debug_http = os.environ.get('DEBUG_HTTP','1').lower() in _enabled or _all
+		
+		for section in ('main','supervisor','daemon','server','client','manager','worker','download','http','browser'):
+			enabled = os.environ.get('DEBUG_%s' % section.upper(),'0').lower() in _enabled or _all
+			logger.status[section] = enabled
 
 def Configuration ():
 	if _Configuration._instance:

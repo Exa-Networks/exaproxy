@@ -74,6 +74,7 @@ def main ():
 	sys.exit(0)
 
 if __name__ == '__main__':
+	logger.info('main','starting %s' % sys.argv[0])
 	profiled = configuration.PROFILE
 	if profiled == '0':
 		main()
@@ -92,11 +93,11 @@ if __name__ == '__main__':
 				notice = 'profile can not use this filename as outpout, it already exists (%s)' % profiled
 
 			if not notice:
-				logger.supervisor('profiling ....')
+				logger.debug('supervisor','profiling ....')
 				profile.run('main()',filename=profiled)
 			else:
-				logger.supervisor("-"*len(notice))
-				logger.supervisor(notice)
-				logger.supervisor("-"*len(notice))
+				logger.debug('supervisor',"-"*len(notice))
+				logger.debug('supervisor',notice)
+				logger.debug('supervisor',"-"*len(notice))
 				main()
 	sys.exit(0)

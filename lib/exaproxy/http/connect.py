@@ -26,12 +26,12 @@ class HTTPConnect (object):
 		return self.io.fileno()
 
 	def connect (self):
-		logger.debug('connecting to server %s:%d' % (self.host,self.port), 'connect %d' %self.cid)
+		logger.debug('connect','connecting to server %s:%d' % (self.host,self.port), 'connect %d' %self.cid)
 		try:
 			self.io = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 			self.io.setblocking(0)
 		except socket.error,e:
-			logger.debug('problem create a connection to %s:%d' % (self.host,self.port), 'connect %d' %self.cid)
+			logger.error('connect','problem create a connection to %s:%d' % (self.host,self.port), 'connect %d' %self.cid)
 			return False
 		try:
 			self.io.connect((self.host, self.port))
@@ -39,7 +39,7 @@ class HTTPConnect (object):
 		except socket.error,e:
 			if e.errno in (errno.EINPROGRESS,):
 				return True
-			logger.debug('problem create a connection to %s:%d' % (self.host,self.port), 'connect %d' %self.cid)
+			logger.error('connect','problem create a connection to %s:%d' % (self.host,self.port), 'connect %d' %self.cid)
 			self.close()
 			return False
 
@@ -47,9 +47,9 @@ class HTTPConnect (object):
 		try:
 			if not self._request:
 				return True
-			logger.debug('send data to the server','connect %d' % self.cid)
+			logger.debug('connect','send data to the server','connect %d' % self.cid)
 			number = self.io.send(self._request)
-			logger.debug('sent %d bytes' % number,'connect %d' % self.cid)
+			logger.debug('connect','sent %d bytes' % number,'connect %d' % self.cid)
 			self._request = self._request[number:]
 			return True
 		except socket.error,e:
@@ -59,10 +59,10 @@ class HTTPConnect (object):
 #				yield False
 #				continue
 			if e.errno in (errno.EAGAIN,errno.EWOULDBLOCK,errno.EINTR,errno.ENOTCONN):
-				logger.debug('http client not ready yet for reading', 'connect %d' %self.cid)
+				logger.info('connect','http client not ready yet for reading', 'connect %d' %self.cid)
 				return False
 			# XXX: This may well be very incorrect
-			logger.debug("problem sending request to %s:%d - %s" % (self.host,self.port,str(e)),'connect %d' % self.cid)
+			logger.error('connect',"problem sending request to %s:%d - %s" % (self.host,self.port,str(e)),'connect %d' % self.cid)
 			self.close()
 			return None
 
@@ -71,7 +71,7 @@ class HTTPConnect (object):
 		return self._recv.next()
 
 	def _fetch (self):
-		logger.debug("waiting for data from %s:%d" % (self.host,self.port),'connect %d' % self.cid)
+		logger.debug('connect',"waiting for data from %s:%d" % (self.host,self.port),'connect %d' % self.cid)
 		# Send the HTTP request to the remote website and yield True while working, otherwise yield None (and why not False ?)
 		while True:
 			try:
@@ -84,13 +84,13 @@ class HTTPConnect (object):
 				if e.errno in (errno.EAGAIN,errno.EWOULDBLOCK,errno.EINTR,):
 					yield ''
 					continue
-				logger.debug('connection closed','connect %d' % self.cid)
+				logger.debug('connect','connection closed','connect %d' % self.cid)
 				break
 		self.close()
 		yield None
 
 	def close (self):
-		logger.debug('closing connection','connect %d' % self.cid)
+		logger.debug('connect','closing connection','connect %d' % self.cid)
 		try:
 			self.io.shutdown(socket.SHUT_RDWR)
 			self.io.close()

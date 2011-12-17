@@ -70,10 +70,10 @@ class Browser (object):
 				w_buffer = w_buffer[sent:]
 			except socket.error, e:
 				if e.errno in (errno.EAGAIN, errno.EINTR,errno.EWOULDBLOCK,errno.EINTR,):
-					logger.debug('write failed as it would have blocked (ignore), errno %s' % str(e.errno),'browser') # XXX: wrong logger
+					logger.error('browser','write failed as it would have blocked (ignore), errno %s' % str(e.errno))
 					sent = 0
 				else:
-					logger.debug('write failed - errno %s' % str(e.errno),'browser') # XXX: wrong logger
+					logger.error('browser','write failed - errno %s' % str(e.errno))
 					yield None,None # stop the client connection
 					break # and don't come back
 
@@ -100,7 +100,7 @@ class Browsers (object):
 		"""set up the coroutines to read and write, add the new connection"""
 
 		# XXX: wrong logger
-		logger.server("new client %s" % str(peer))
+		logger.info('browser','new client %s' % str(peer))
 
 		cid = self.cid
 		self.cid += 1
@@ -134,7 +134,7 @@ class Browsers (object):
 		return cid, peer, res
 
 	def sendData (self, cid, data):
-		logger.debug('sending data to client %d (%d)' % (cid, len(data)),'browser')
+		logger.debug('browser','sending data to client %d (%d)' % (cid, len(data)))
 		sock, r, w, peer = self._byid[cid] # XXX: raise KeyError if we gave a bad client id, yes it does, David FIXME !
 
 		buf_len, had_buffer = w.send(data)
@@ -157,7 +157,7 @@ class Browsers (object):
 			self._close.remove(cid)
 
 	def finish (self, cid):
-		logger.debug('removing client connection %d' % cid,'browser')
+		logger.info('browser','removing client connection %d' % cid)
 		sock, r, w, peer = self._byid[cid] # raise KeyError if we give a bad cliend id
 		try:
 			sock.shutdown(socket.SHUT_RDWR)
@@ -169,7 +169,7 @@ class Browsers (object):
 		self._buffered.pop(cid)
 
 	def stop(self):
-		logger.debug('closing all clients connections','browser')
+		logger.info('browser','closing all clients connections')
 		for sock in self.established:
 			try:
 				sock.shutdown(socket.SHUT_RDWR)

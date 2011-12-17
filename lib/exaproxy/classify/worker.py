@@ -50,17 +50,17 @@ class Worker (Thread):
 				stdout=subprocess.PIPE,
 				universal_newlines=True,
 			)
-			logger.worker('spawn process %s' % self.program, 'worker %d' % self.wid)
+			logger.debug('worker %d' % self.wid,'spawn process %s' % self.program)
 		except KeyboardInterrupt:
 			process = None
 		except (subprocess.CalledProcessError,OSError,ValueError):
-			logger.worker('could not spawn process %s' % self.program, 'worker %d' % self.wid)
+			logger.error('worker %d' % self.wid,'could not spawn process %s' % self.program)
 			process = None
 
 		return process
 
 	def _cleanup (self):
-		logger.worker('terminating process', 'worker %d' % self.wid)
+		logger.info('worker %d' % self.wid,'terminating process')
 		# XXX: can raise
 		self.response_box_read.close()
 		self.response_box_write.close()
@@ -71,7 +71,7 @@ class Worker (Thread):
 		except OSError, e:
 			# No such processs
 			if e[0] != errno.ESRCH:
-				logger.worker('PID %s died' % pid, 'worker %d' % self.wid)
+				logger.error('worker %d' % self.wid,'PID %s died' % pid)
 
 	def _resolveHost(self, host):
 		# Do the hostname resolution before the backend check
@@ -89,18 +89,18 @@ class Worker (Thread):
 
 	def _classify (self,cid,client,method,url):
 		squid = '%s %s - %s -' % (url,client,method)
-		logger.worker('sending to classifier : [%s]' % squid, 'worker %d' % self.wid)
+		logger.info('worker %d' % self.wid,'sending to classifier : [%s]' % squid)
 		try:
 			self.process.stdin.write('%s%s' % (squid,os.linesep))
 			self.process.stdin.flush()
 			response = self.process.stdout.readline()
 
-			logger.worker('received from classifier : [%s]' % response.strip(), 'worker %d' % self.wid)
+			logger.info('worker %d' % self.wid,'received from classifier : [%s]' % response.strip())
 			if response == '\n':
 				response = host
 			return response
 		except IOError,e:
-			logger.worker('IO/Error when sending to process, %s' % str(e), 'worker %d' % self.wid)
+			logger.error('worker %d' % self.wid,'IO/Error when sending to process, %s' % str(e))
 			self._reply(cid,500,'Interal Problem','could get a classification for %s' % url)
 			# XXX: Do something
 			return ''
@@ -110,10 +110,10 @@ class Worker (Thread):
 
 	def _request (self,cid,ip,port,req):
 		req['connection'] = 'Connection: close'
-		logger.worker('need to download data at %s' % str(ip), 'worker %d' % self.wid)
+		logger.debug('worker %d' % self.wid,'need to download data at %s' % str(ip))
 		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'request',ip,port,str(req).replace('\n','\\n').replace('\r','\\r')))
 		self.response_box_write.flush()
-		##logger.worker('[%s %s %s %d %s]' % (cid,'request',ip,80,request), 'worker %d' % self.wid)
+		##logger.debug('worker %d' % self.wid,'[%s %s %s %d %s]' % (cid,'request',ip,80,request))
 		#self.last_worked = time.time()
 	
 	def _connect (self,cid,ip,port):
@@ -126,10 +126,10 @@ class Worker (Thread):
 
 	def run (self):
 		if not self.running:
-			logger.worker('can not start', 'worker %d' % self.wid)
+			logger.error('worker %d' % self.wid,'can not start')
 			return
 
-		logger.worker('starting', 'worker %d' % self.wid)
+		logger.info('worker %d' % self.wid,'starting')
 		self.process = self._createProcess()
 		if not self.process:
 			# LOG SOMETHING !
@@ -137,13 +137,13 @@ class Worker (Thread):
 
 		while True:
 			try:
-				logger.worker('waiting for some work', 'worker %d' % self.wid)
+				logger.debug('worker %d' % self.wid,'waiting for some work')
 				# XXX: For some reason, even if we have a timeout, pypy does block here
 				data = self.request_box.get(1)
 				if not self.running or data is None:
 					break
 			except (ValueError, IndexError):
-				logger.worker('received invalid message: %s' % data, 'worker %d' % self.wid)
+				logger.error('worker %d' % self.wid,'received invalid message: %s' % data)
 				if not self.running:
 					break
 				continue
@@ -153,7 +153,7 @@ class Worker (Thread):
 				continue
 
 			cid,peer,request = data
-			logger.worker('peer %s request %s' % (str(peer),' '.join(request.split('\n',3)[:2])), 'worker %d' % self.wid)
+			logger.debug('worker %d' % self.wid,'peer %s request %s' % (str(peer),' '.join(request.split('\n',3)[:2])))
 
 			req = Header(request)
 			if not req.method:
@@ -173,7 +173,7 @@ class Worker (Thread):
 
 			ip = self._resolveHost(host)
 			if not ip:
-				logger.worker('Could not resolve %s' % host, 'worker %d' % self.wid)
+				logger.error('worker %d' % self.wid,'Could not resolve %s' % host)
 				self._reply(cid,503,'NO DNS','could not resolve DNS for [%s]' % host)
 				continue
 

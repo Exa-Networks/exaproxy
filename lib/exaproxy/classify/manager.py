@@ -33,8 +33,8 @@ class Manager (object):
 		self.workers.add(worker.response_box_read)
 		self.worker[self.nextid] = worker
 		self.results[worker.response_box_read] = self.worker
-		logger.worker("added a worker")
-		logger.worker("we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
+		logger.debug('manager',"added a worker")
+		logger.debug('manager',"we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
 		self.worker[self.nextid].start()
 		self.nextid += 1
 
@@ -44,12 +44,12 @@ class Manager (object):
 		del self.results[worker.response_box_read]
 		del self.worker[wid]
 		worker.stop()
-		logger.worker("removed worker %d" % wid)
-		logger.worker("we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
+		logger.info('manager',"removed worker %d" % wid)
+		logger.debug('manager',"we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
 
 	def spawn (self,number):
 		"""create the set number of worker"""
-		logger.worker("spawning %d more worker" % number)
+		logger.info('manager',"spawning %d more worker" % number)
 		for _ in range(number):
 			self._spawn()
 
@@ -62,7 +62,7 @@ class Manager (object):
 
 	def start (self):
 		"""spawn our minimum number of workers"""
-		logger.worker("starting workers.")
+		logger.info('manager',"starting workers.")
 		self.spawn(max(0,self.low-len(self.worker)))
 
 	def stop (self):
@@ -70,7 +70,7 @@ class Manager (object):
 		self.running = False
 		threads = [w for _,w in self.worker.iteritems()]
 		if len(self.worker):
-			logger.worker("stopping %d workers." % len(self.worker))
+			logger.info('manager',"stopping %d workers." % len(self.worker))
 			for wid in set(self.worker):
 				self._reap(wid)
 			for thread in threads:
@@ -98,9 +98,9 @@ class Manager (object):
 		# we are now overprovisioned
 		if size < num_workers:
 			if size <= self.low:
-				#logger.worker("no changes in the number of worker required")
+				logger.debug('manager',"no changes in the number of worker required")
 				return
-			logger.worker("we have too many workers, killing one")
+			logger.info('manager',"we have too many workers, killing one")
 			# if we have to kill one, at least stop the one who had the most chance to memory leak :)
 			worker = self._oldest()
 			if worker:
@@ -109,15 +109,15 @@ class Manager (object):
 		else:
 			# bad we are bleeding workers !
 			if num_workers < self.low:
-				logger.worker("we lost some workers, respawing")
+				logger.info('manager',"we lost some workers, respawing")
 				self.respawn()
 			# nothing we can do we have reach our limit
 			if num_workers >= self.high:
-				logger.worker("we need more workers by we reach our ceiling ! help !")
+				logger.warning('manager',"we need more workers by we reach our ceiling ! help !")
 				return
 			# try to figure a good number to add .. 
 			# no less than one, no more than to reach self.high, lower between self.low and a quarter of the allowed growth
 			nb_to_add = int(min(max(1,min(self.low,(self.high-self.low)/4)),self.high-num_workers))
-			logger.worker("we are low on workers, adding a few (%d)" % nb_to_add)
+			logger.warning('manager',"we are low on workers, adding a few (%d)" % nb_to_add)
 			self.spawn(nb_to_add)
 			

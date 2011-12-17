@@ -78,10 +78,10 @@ class Server (object):
 				self.io.listen(self.backlog)
 		except socket.error, e:
 			if e.errno == errno.EADDRINUSE:
-				logger.server('could not listen, connection in use %s:%d' % (self.ip,self.port))
+				logger.debug('server','could not listen, connection in use %s:%d' % (self.ip,self.port))
 			if e.errno == errno.EADDRNOTAVAIL:
-				logger.server('could not listen, invalid address %s:%d' % (self.ip,self.port))
-			logger.server('could not listen on %s:%d - %s' % (self.ip,self.port,str(e)))
+				logger.debug('server','could not listen, invalid address %s:%d' % (self.ip,self.port))
+			logger.debug('server','could not listen on %s:%d - %s' % (self.ip,self.port,str(e)))
 			self.close()
 
 	def newClients (self):

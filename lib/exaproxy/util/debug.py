@@ -14,7 +14,7 @@ import traceback
 
 from .logger import logger
 
-debug = os.environ.get('PDB','0')
+debug = os.environ.get('PDB',None)
 
 def bug_report (type, value, trace):
 	print >> sys.stderr, ''
@@ -50,17 +50,18 @@ if debug is None:
 	def intercept (type, value, trace):
 		bug_report(type, value, trace)
 	sys.excepthook = intercept
+	logger.pdb = True
 elif debug not in ['0','']:
 	def intercept (type, value, trace):
 		bug_report(type, value, trace)
 		import pdb
 		pdb.pm()
 	sys.excepthook = intercept
+	logger.pdb = True
 
 del sys.argv[0]
 
 if sys.argv:
 	__file__ = os.path.abspath(sys.argv[0])
 	__name__ = '__main__'
-	logger.debug('%s' % sys.argv[0],'starting')
 	execfile(sys.argv[0])

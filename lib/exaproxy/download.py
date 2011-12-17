@@ -40,21 +40,21 @@ class Download (object):
 		# http://tools.ietf.org/html/rfc2616#section-14.10
 
 		if action == 'request':
-			logger.download('we need to download something on %s:%d for %s' % (host,port,cid))
+			logger.debug('download','we need to download something on %s:%d for %s' % (host,port,cid))
 			self.connect.add(HTTPClient(cid,host,port,request))
 		elif action == 'response':
-			logger.download('direct response for %s' % cid)
+			logger.debug('download','direct response for %s' % cid)
 			# we have our HTTP response code in the port, the title in host, the body in request
 			self.established.add(HTTPResponse(cid,port,host.replace('_',' '),request))
 		elif action == 'connect':
-			logger.download('CONNECT proxy connection for %s' % cid)
+			logger.debug('download','CONNECT proxy connection for %s' % cid)
 			self.connect.add(HTTPConnect(cid,host,port))
 		else:
 			raise RuntimeError('%s is an invalid action' % action)
 
 	def connectFetchers (self):
 		for fetcher in set(self.connect):
-			logger.download('sending request on behalf of %s' % fetcher.cid)
+			logger.debug('download','sending request on behalf of %s' % fetcher.cid)
 			# True if we finished sending the request to the web server
 			if fetcher.connect():
 				# We now need to read from this object in the select loop

@@ -48,21 +48,21 @@ class Supervisor(object):
 
 		
 	def sigterm (self,signum, frame):
-		logger.supervisor('SIG TERM received')
+		logger.info('supervisor','SIG TERM received')
 		self._shutdown = True
 
 	def sighup (self,signum, frame):
-		logger.supervisor('SIG HUP received')
+		logger.info('supervisor','SIG HUP received')
 		self._reload = True
 
 	def sigalrm (self,signum, frame):
-		logger.supervisor('SIG ALRM received')
+		logger.info('supervisor','SIG ALRM received')
 		self.increase_spawn_limit = True
 
 	def run (self):
 		if self.daemon.drop_privileges():
-			logger.supervisor('Could not drop privileges to \'%s\' refusing to run as root' % self.daemon.user)
-			logger.supervisor('Set the environmemnt value USER to change the unprivileged user')
+			logger.warning('supervisor','Could not drop privileges to \'%s\' refusing to run as root' % self.daemon.user)
+			logger.warning('supervisor','Set the environmemnt value USER to change the unprivileged user')
 			return
 
 		self.initialise()
@@ -91,10 +91,10 @@ class Supervisor(object):
 				self._shutdown = not self.server.running
 
 			except KeyboardInterrupt:
-				logger.supervisor('^C received')
+				logger.info('supervisor','^C received')
 				self._shutdown = True
 			except SelectError:
-				logger.supervisor('problem with the network')
+				logger.error('supervisor','problem with the network')
 				self._shutdown = True
 #			finally:
 #				from leak import objgraph
@@ -113,12 +113,12 @@ class Supervisor(object):
 
 	def shutdown (self):
 		"""terminate all the current BGP connections"""
-		logger.info('Performing shutdown','supervisor')
+		logger.info('supervisor','Performing shutdown')
 		self.server.stop()
 		self.manager.stop()
 		self.download.stop()
 		self.pid.remove()
 
 	def reload (self):
-		logger.info('Performing reload of exaproxy %s' % configuration.VERSION ,'supervisor')
+		logger.info('supervisor','Performing reload of exaproxy %s' % configuration.VERSION ,'supervisor')
 		self.manager.respawn()
