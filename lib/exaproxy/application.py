@@ -9,11 +9,10 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import sys
 
-from exaproxy.configuration import Configuration
 from exaproxy.supervisor import Supervisor
 
 from exaproxy.util.logger import logger
-
+from exaproxy.configuration import configuration
 
 def version_warning ():
 	sys.stdout.write('\n')
@@ -30,8 +29,6 @@ def help ():
 	sys.stdout.write('set the following environment values to gather information and report bugs\n')
 	sys.stdout.write('\n')
 	sys.stdout.write('DEBUG_ALL : debug everything\n')
-	sys.stdout.write('DEBUG_PROCESSES : handling of forked processes (default: yes))\n')
-	sys.stdout.write('DEBUG_WIRE : the packet sent and received\n')
 	sys.stdout.write('\n')
 	sys.stdout.write('PROFILE : (1,true,on,yes,enable) profiling info on exist\n')
 	sys.stdout.write('          use a filename to dump the outpout in a file\n')
@@ -77,7 +74,7 @@ def main ():
 	sys.exit(0)
 
 if __name__ == '__main__':
-	profiled = Configuration().DEBUG.PROFILE
+	profiled = configuration.PROFILE
 	if profiled == '0':
 		main()
 	else:

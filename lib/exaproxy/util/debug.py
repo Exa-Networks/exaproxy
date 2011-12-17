@@ -14,8 +14,7 @@ import traceback
 
 from .logger import logger
 
-from exaproxy.configuration import Configuration
-debug = Configuration().DEBUG.PDB
+debug = os.environ.get('PDB','0')
 
 def bug_report (type, value, trace):
 	print >> sys.stderr, ''

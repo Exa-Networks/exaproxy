@@ -19,8 +19,7 @@ from .download import Download
 
 from .util.logger import logger
 
-from .configuration import Configuration
-configuration = Configuration()
+from .configuration import configuration
 
 class Supervisor(object):
 	# import os
@@ -28,9 +27,8 @@ class Supervisor(object):
 	clear = ''.join([chr(int(c,16)) for c in ['0x1b', '0x5b', '0x48', '0x1b', '0x5b', '0x32', '0x4a']])
 
 	def __init__ (self):
-
-		self.pid = PID()
-		self.daemon = Daemon()
+		self.pid = PID(configuration.PID)
+		self.daemon = Daemon(configuration.DAEMONIZE,configuration.USER)
 
 		request_box = Queue()
 		

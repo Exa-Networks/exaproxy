@@ -13,9 +13,7 @@ import time
 import socket
 import errno
 
-from .configuration import Configuration
-configuration = Configuration()
-
+from .configuration import configuration
 from .util.logger import logger,LazyFormat,hex_string,single_line
 
 class Browser (object):

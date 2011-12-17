@@ -23,12 +23,9 @@ import errno
 
 from .logger import logger
 
-from exaproxy.configuration import Configuration
-configuration = Configuration()
-
 class PID (object):
-	def __init__ (self):
-		self.pid_file = configuration.PID
+	def __init__ (self,pid_file):
+		self.pid_file = pid_file
 		mask = os.umask(0137)
 		self._saved_pid = False
 

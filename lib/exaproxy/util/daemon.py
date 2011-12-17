@@ -15,13 +15,10 @@ import socket
 
 from .logger import logger
 
-from exaproxy.configuration import Configuration
-configuration = Configuration()
-
 class Daemon (object):
-	def __init__ (self):
-		self.daemonize = configuration.DAEMONIZE
-		self.user = configuration.USER
+	def __init__ (self,daemonize,user):
+		self.daemonize = daemonize
+		self.user = user
 		mask = os.umask(0137)
 
 	def drop_privileges (self):

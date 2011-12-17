@@ -9,14 +9,14 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import sys
 
-from exaproxy.util.version import version
+from exaproxy.configuration import configuration
 
 def _connect (code):
 	return """\
 HTTP/1.0 %d Connect Reply
 Proxy-agent: exaproxy/%s (%s)
 
-""" % (code,str(version),sys.platform)
+""" % (code,str(configuration.version),sys.platform)
 
 # XXX: Replace the OK with a message related to the code :p
 
