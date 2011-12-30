@@ -15,10 +15,11 @@ from exaproxy.util.logger import logger
 
 # Do we really need to call join() on the thread as we are stoppin on our own ? 
 
+
 class Manager (object):
-	def __init__ (self,request_box,program,low=4,high=40):
+	def __init__ (self,program,low=4,high=40):
 		self.nextid = 1                   # incremental number to make the name of the next worker
-		self.request_box = request_box    # queue with HTTP headers to process
+		self.request_box = queue.Queue()  # queue with HTTP headers to process
 		self.program = program            # what program speaks the squid redirector API
 		self.low = low                    # minimum number of workers at all time
 		self.high = high                  # maximum numbe of workers at all time
