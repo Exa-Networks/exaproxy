@@ -9,12 +9,12 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # http://code.google.com/speed/articles/web-metrics.html
 
-from nettools import bound_tcp_socket
+from nettools import bound_tcp_socket, socket
 from .util.logger import logger
 
 
 class Server(object):
-	socket = static_method(bound_tcp_socket)
+	socket = staticmethod(bound_tcp_socket)
 
 	def __init__(self):
 		self.socks = {}
@@ -30,18 +30,18 @@ class Server(object):
 		sock = self.socket(ip, port)
 		if sock is not None:
 			sock.settimeout(timeout)
-			sock.setblocking(0)
 			sock.listen(backlog)
 			
-		self.socks[sock] = True
+			self.socks[sock] = True
 		return sock
 
 	def accept(self, sock):
 		try:
-			while True:
-				# should we check to make sure it's a socket we provided
-				s, p = sock.accept()
-				yield self.name_generator.next(), s, p
+			# should we check to make sure it's a socket we provided
+			s, p = sock.accept()
+			s.setblocking(0)
+			# XXX: we really should try to handle the entire queue at once
+			yield self.name_generator.next(), s, p
 		except socket.error, e:
 			# It doesn't really matter if accept fails temporarily. We will
 			# try again next loop

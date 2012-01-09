@@ -19,12 +19,17 @@ PYPY=`which pypy`
 if [ -f "$PYPY" ]
 then
 	INTERPRETER=$PYTHON
-	INTERPRETER=$PYPY
+	INTERPRETER=$PYTHON
 elif [ -f "$PYTHON" ]
 then
 	INTERPRETER=$PYTHON
 else
 	INTERPRETER=python
+fi
+
+if [ -d "$path/etc/content" ]
+then
+	export CONTENT=$path/etc/content
 fi
 
 $INTERPRETER -m exaproxy.util.debug $path/lib/exaproxy/application.py $*

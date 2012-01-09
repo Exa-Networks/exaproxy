@@ -9,6 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # http://code.google.com/speed/articles/web-metrics.html
 
+import time
 import errno
 
 from poller import poller_select
@@ -36,10 +37,10 @@ class Reactor(object):
 
 		while running:
 			read_socks = list(self.server.socks)		# listening sockets
-			read_workers = list(self.decider.queues)	# pipes carrying responses from the child processes
+			read_workers = list(self.decider.workers)	# pipes carrying responses from the child processes
 
 			read_browser = list(self.browsers.clients)	# active clients
-			write_browser = list(self.browsers.buffers)	# active clients that we already have buffered data to send to
+			write_browser = list(self.browsers.buffered)	# active clients that we already have buffered data to send to
 
 			read_download = list(self.download.established) # Currently established connections
 			write_download = list(self.download.opening)	# socket connected but not yet ready for write
@@ -47,18 +48,31 @@ class Reactor(object):
 			retry_download = list(self.download.retry)	# rewritten destination info that we were unable to connect to
 
 			# wait until we have something to do
-			read, write = self.select(read_socks + read_workers + read_browser + read_download, write_download + write_browser, speed)
+			read, write, x = self.select(read_socks + read_workers + read_browser + read_download, write_download + write_browser, speed)
+
+
+			if read_browser:
+				print time.time(), "ACTIVE CLIENTS ARE", [str(f.fileno()) for f in read_browser]
+
+			if write_browser:
+				print time.time(), "BUFFERED CLIENTS ARE", [str(f.fileno()) for f in write_browser]
+
 
 			# handle new connections before anything else
 			for sock in set(read_socks).intersection(read):
+				print "**** NEW CONNECTION"
 				for name, s, peer in self.server.accept(sock):
 					logger.debug('server', 'new connection from %s' % str(peer))
 					self.browsers.newConnection(name, s, peer)
 
+			# XXX: Need to make sure we do not check the browser for data after we
+			#      have the request, since we're not going to read it anyway
 			# incoming data from browsers
 			for browser in set(read_browser).intersection(read):
+				print "**** DATA FROM BROWSER"
 				client_id, peer, request = self.browsers.readRequest(browser)
 				if request:
+					print "*** REQUEST FROM BROWSER"
 					# request classification
 					self.decider.putRequest(client_id, peer, request)
 				elif request is None:
@@ -67,30 +81,34 @@ class Reactor(object):
 
 			# incoming data - web pages
 			for fetcher in set(read_download).intersection(read):
+				print "**** INCOMING CONTENT"
 				client_id, page_data = self.download.readData(fetcher)
+
 				if page_data is not None:
 					logger.debug('server', 'we fetched %d bytes of data for client id %s' % (len(page_data), client_id))
-					# send received data to the client that requested it
-					sending = self.browsers.sendData(client_id, page_data)
+				else:
+					logger.debug('server', 'lost connection to server while downloading for client id %s' % client_id)
 
-					# check to see if the client went away
-					if sending is None:
-						logger.debug('server', 'client %s went away but we kept on downloading data' % client_id)
-						# should we use the fetcher (socket) as an index here rather than the client id?
-						# should we just wait for the next loop when we'll be notified of the client disconnect?
-						self.download.endClientDownload(client_id)
-					continue
+				# send received data to the client that requested it
+				sending = self.browsers.sendData(client_id, page_data)
 
-				#XXX: handle this within the download manager
-				#self.download.finish(client_id)
-				#self.browsers.finish(client_id)
+				# check to see if the client went away
+				if sending is None and page_data is not None:
+					logger.debug('server', 'client %s went away but we kept on downloading data' % client_id)
+					# should we use the fetcher (socket) as an index here rather than the client id?
+					# should we just wait for the next loop when we'll be notified of the client disconnect?
+					self.download.endClientDownload(client_id)
 
 			# decisions made by the child processes
 			for worker in set(read_workers).intersection(read):
+				print "*** INCOMING DECISION"
 				client_id, decision = self.decider.getDecision(worker)
+				print "*** GOT DECISION", client_id in self.browsers
 				# check that the client didn't get bored and go away
 				if client_id in self.browsers:
+					print '++++++++++', client_id, decision
 					response = self.download.getContent(client_id, decision)
+					print 'RESPONSE START IS', response
 					# signal to the client that we'll be streaming data to it or
 					# give it the location of the local content to return
 					sending = self.browsers.startData(client_id, response)
@@ -109,6 +127,7 @@ class Reactor(object):
 
 			# fully connected connections to remote web servers
 			for fetcher in set(write_download).intersection(write):
+				print "*** STARTING DOWNLOAD"
 				self.download.startDownload(fetcher)
 
 			# retry connecting - opportunistic 

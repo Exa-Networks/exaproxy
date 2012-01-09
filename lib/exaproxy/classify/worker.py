@@ -15,24 +15,100 @@ import os
 import time
 import socket
 
-from Queue import Empty
+from Queue import Queue, Empty
+import fcntl
 
 from exaproxy.http.header import Header
 
 from exaproxy.util.logger import logger
 from exaproxy.configuration import configuration
 
+
+
+def resolve_host(host):
+	# Do the hostname resolution before the backend check
+	# We may block the page but filling the OS DNS cache can not harm :)
+	# XXX: we really need an async dns .. sigh, another thread ?? 
+	try:
+		ip = socket.gethostbyname(host)
+	except socket.error, e:
+		ip = None
+
+	return ip
+
+
+
+class WorkerManager(object):
+	min_worker_count = 4
+	max_worker_count = 10
+
+	def __init__(self, low=None, high=None):
+		self.workers = {}
+		self.queue = Queue()
+		self._nextid = 0
+
+		self.low = low or self.min_worker_count
+		self.high = max(high or self.max_worker_count, self.low)
+
+	@property
+	def nextid(self):
+		self._nextid += 1
+		return self._nextid
+
+	def provision(self, program, count=None):
+		required = count or max(self.low - len(self.workers), 0)
+
+		for _ in xrange(required):
+			worker = Worker(self.nextid, self.queue, program)
+			self.workers[worker.response_box_read] = worker
+			worker.start()
+			
+	def putRequest(self, client_id, peer, request):
+		return self.queue.put((client_id, peer, request))
+
+	def getDecision(self, worker):
+		print "READING DECISION FROM", worker.fileno()
+	#	decision = []
+	#	try:
+	#		while True:
+	#			decision.append(worker.read(1))
+	#	except:
+	#		pass
+		response = worker.readline()
+
+		print "READ DECISION"
+		try:
+			client_id, decision = response.split('\0', 1)
+		except (ValueError, TypeError), e:
+			client_id = None
+			decision = None
+
+		return client_id, decision
+
+	def stop(self):
+		raise NotImplementedError, 'worker manager was asked to stop'
+
+
+
+
 class Worker (Thread):
-	
+	commands = {
+		'BLOCK': (503, 'banned'),
+		'CENSOR': (503, 'banned'),
+		'CLASSIFYING': (503, 'classifying'),
+		'ERROR': (500, 'error'),
+	}
+
 	# TODO : if the program is a function, fork and run :)
 	
 	def __init__ (self, name, request_box, program):
-		self.process = None                           # the forked program to handle classification
-
 		# XXX: all this could raise things
 		r, w = os.pipe()                              # pipe for communication with the main thread
 		self.response_box_write = os.fdopen(w,'w')    # results are written here
 		self.response_box_read = os.fdopen(r,'r')     # read from the main thread
+
+		#fl = fcntl.fcntl(self.response_box_read.fileno(), fcntl.F_GETFL)
+		#fcntl.fcntl(self.response_box_read.fileno(), fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
 		self.wid = name                               # a unique name
 		self.creation = time.time()                   # when the thread was created
@@ -41,6 +117,8 @@ class Worker (Thread):
 
 		self.program = program                        # the squid redirector program to fork 
 		self.running = True                           # the thread is active
+
+		self.process = self._createProcess()          # the forked program to handle classification
 		Thread.__init__(self)
 
 	def _createProcess (self):
@@ -73,140 +151,120 @@ class Worker (Thread):
 			if e[0] != errno.ESRCH:
 				logger.error('worker %d' % self.wid,'PID %s died' % pid)
 
-	def _resolveHost(self, host):
-		# Do the hostname resolution before the backend check
-		# We may block the page but filling the OS DNS cache can not harm :)
-		# XXX: we really need an async dns .. sigh, another thread ?? 
-		try:
-			#raise socket.error('UNCOMMENT TO TEST DNS RESOLUTION FAILURE')
-			return socket.gethostbyname(host)
-		except socket.error,e:
-			return None
 
 	def stop (self):
 		self.running = False
-		self.request_box.put(None)
 
-	def _classify (self,cid,client,method,url):
-		squid = '%s %s - %s -' % (url,client,method)
-		logger.info('worker %d' % self.wid,'sending to classifier : [%s]' % squid)
+	def getClassification(self, client_ip, method, url):
+		squid = '%s %s - %s -' % (url, client_ip, method)
+		logger.info('worker %d' % self.wid, 'sending to classifier: [%s]' % squid)
 		try:
-			self.process.stdin.write('%s%s' % (squid,os.linesep))
-			self.process.stdin.flush()
-			response = self.process.stdout.readline()
+			self.process.stdin.write(squid + os.linesep)
 
-			logger.info('worker %d' % self.wid,'received from classifier : [%s]' % response.strip())
-			if response == '\n':
-				response = host
-			return response
-		except IOError,e:
-			logger.error('worker %d' % self.wid,'IO/Error when sending to process, %s' % str(e))
-			self._reply(cid,500,'Interal Problem','could get a classification for %s' % url)
-			# XXX: Do something
-			return ''
+			response = self.process.stdout.readline().strip()
+			logger.info('worker %d' % self.wid, 'received from classifier: [%s]' % response)
 
-	def _400 (self,cid,request):
-		self._reply(cid,400,'INVALID REQUEST','This request does not conform to HTTP/1.1 specifications <!--\nCDATA[[%s]]\n-->' % request)
+			if response in self.commands:
+				code, command = self.commands[response]
+				host, path = None, None
+			else:
+				code, command = None, None
+				host, path = response.split('/', 1) if '/' in response else (None, None)
+		except IOError, e:
+			logger.error('worker %d' % self.wid, 'IO/Error when sending to process: %s' % str(e))
+			code, command = self.commands['ERROR']
+			host, path = None, None
 
-	def _request (self,cid,ip,port,req):
-		req['connection'] = 'Connection: close'
-		logger.debug('worker %d' % self.wid,'need to download data at %s' % str(ip))
-		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'request',ip,port,str(req).replace('\n','\\n').replace('\r','\\r')))
+		return code, command, host, path
+
+
+	def respond(self, response):
+		print "WRITING TO", self.response_box_write.fileno()
+		self.response_box_write.write(response + os.linesep)
 		self.response_box_write.flush()
-		##logger.debug('worker %d' % self.wid,'[%s %s %s %d %s]' % (cid,'request',ip,80,request))
-		#self.last_worked = time.time()
+
+	def respond_proxy(self, client_id, ip, port, request):
+		request['connection'] = 'Connection: close'
+		header = request.toString(linesep='\0')
+		self.respond('\0'.join((client_id, 'download', ip, str(port), header)))
 	
-	def _connect (self,cid,ip,port):
-		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'connect',ip,port,''))
-		self.response_box_write.flush()
+	def respond_connect(self, client_id, ip, port):
+		self.respond('\0'.join((client_id, 'connect', ip, str(port))))
 
-	def _reply (self,cid,code,title,body):
-		self.response_box_write.write('%s %s %s %d %s\n' % (cid,'response',title.replace(' ','_'),code,body.replace('\n','\\n').replace('\r','\\r')))
-		self.response_box_write.flush()
+	def respond_local(self, client_id, code, reason):
+		self.respond('\0'.join((client_id, 'local', str(code), reason)))
 
-	def run (self):
-		if not self.running:
-			logger.error('worker %d' % self.wid,'can not start')
-			return
+	def respond_data(self, client_id, code, *data):
+		self.respond('\0'.join((client_id, 'data', str(code))+data))
 
-		logger.info('worker %d' % self.wid,'starting')
-		self.process = self._createProcess()
-		if not self.process:
-			# LOG SOMETHING !
-			self.stop()
 
-		while True:
+	def run(self):
+		while self.running:
 			try:
 				logger.debug('worker %d' % self.wid,'waiting for some work')
-				# XXX: For some reason, even if we have a timeout, pypy does block here
+				# XXX: pypy ignores the timeout
 				data = self.request_box.get(1)
-				if not self.running or data is None:
-					break
-			except (ValueError, IndexError):
-				logger.error('worker %d' % self.wid,'received invalid message: %s' % data)
-				if not self.running:
-					break
-				continue
+				client_id, peer, header = data
 			except Empty:
-				if not self.running:
-					break
+				continue
+			except (ValueError, TypeError), e:
+				logger.debug('worker %d' % self.wid, 'Received invalid message: %s' % data)
+
+			if not self.running:
+				logger.debug('worker %d' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')
+
+			request = Header(header)
+			if not request.isValid():
+				self.respond_data(client_id, 400, 'This request does not conform to HTTP/1.1 specifications <!--\nCDATA[[%s]]\n-->' % str(request))
 				continue
 
-			cid,peer,request = data
-			logger.debug('worker %d' % self.wid,'peer %s request %s' % (str(peer),' '.join(request.split('\n',3)[:2])))
-
-			req = Header(request)
-			if not req.method:
-				self._400(cid,request)
-				continue
-
-			client = req.get('x-forwarded-for',':0.0.0.0').split(':')[1].split(',')[-1].strip()
-			host = req.get('host',':').split(':')[1].strip()
-			method = req.method
-			port = req.port
-
-			if method != 'CONNECT' and not host:
-				self._400(cid,request)
-				continue
-
-			url = req.path if req.path[:7].lower() == 'http://' else 'http://' + host + req.path
-
-			ip = self._resolveHost(host)
-			if not ip:
+			ipaddr = resolve_host(request.host)
+			if not ipaddr:
 				logger.error('worker %d' % self.wid,'Could not resolve %s' % host)
-				self._reply(cid,503,'NO DNS','could not resolve DNS for [%s]' % host)
+				code, command = self.commands['DNS']
+				self.respond_local(client_id, code, command)
 				continue
 
 			# classify and return the filtered page
-			if method in ('GET','PUT','POST'):
-				response = self._classify(cid,client,method,url)
-				self._request(cid,ip,port,req)
+			if request.method in ('GET', 'PUT', 'POST') or request.method in ('HEAD', 'OPTIONS', 'DELETE'):
+				if request.method in ('GET', 'PUT', 'POST') or options.CLASSIFY_ALL:
+					code, command, host, path = self.getClassification(ipaddr, request.method, request.url)
+
+					# check to see if surfprotect told us to handle the request locally
+					if command is not None:
+						self.respond_local(client_id, code, command)
+						continue
+
+					# check to see if the hostname was rewritten
+					if host and host <> request.host:
+						# XXX: pop cookies and any other unwanted information here
+						request.host = host
+
+					if path and path <> request.path:
+						request.path = path
+
+				# we will proxy the content
+				self.respond_proxy(client_id, ipaddr, request.port, request)
 				continue
 
-			# someone want to use use as https proxy
-			if method == 'CONNECT':
+			# someone want to use us as https proxy
+			if request.method == 'CONNECT':
 				if configuration.CONNECT:
-					self._connect(cid,ip,port)
+					self.respond_connect(client_id, ipaddr, port)
 					continue
 				else:
-					self._reply(cid,501,'CONNECT NOT ALLOWED','We are an HTTP only proxy')
+					self.respond_data(client_id, 501, 'CONNECT NOT ALLOWED', 'We are an HTTP only proxy')
 					continue
 
-			# do not bother classfying things which do not return pages
-			if method in ('HEAD','OPTIONS','DELETE'):
-				if False: # It should be an option to be able to force all request
-					response = self._classify(cid,client,method,url)
-				self._request(cid,ip,port,request)
-				continue
-
 			if method in ('TRACE',):
-				self._reply(cid,501,'TRACE NOT IMPLEMENTED','This is bad .. we are sorry.')
+				self.respond_data(client_id, 501, 'TRACE NOT IMPLEMENTED', 'This is bad .. we are sorry.')
 				continue
 
-			self._reply(cid,405,'METHOD NOT ALLOWED','Method Not Allowed %s' % method)
+			self.respond_data(client_id, 405, 'METHOD NOT ALLOWED', 'Method Not Allowed')
 			continue
 
 		self._cleanup()
+
 			# prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
 			# XXX: We may have more than one Connection header : http://tools.ietf.org/html/rfc2616#section-14.10
 			# XXX: We may need to remove every step-by-step http://tools.ietf.org/html/rfc2616#section-13.5.1

@@ -13,9 +13,14 @@ from Queue import Queue
 
 from .util.pid import PID
 from .util.daemon import Daemon
-from .classify.manager import Manager
-from .server import Server,SelectError
-from .download import Download
+
+from .classify.worker import WorkerManager
+from .content.download import DownloadManager
+from .server import Server
+from .browsers import Browsers
+
+from .reactor import Reactor
+
 
 from .util.logger import logger
 
@@ -30,12 +35,13 @@ class Supervisor(object):
 		self.pid = PID(configuration.PID)
 		self.daemon = Daemon(configuration.DAEMONIZE,configuration.USER)
 
-		request_box = Queue()
-		
 		# XXX : Should manager and Download moved into server ?
-		self.manager = Manager(request_box,configuration.PROGRAM)
-		self.download = Download()
-		self.server = Server(self.download,self.manager,request_box,'127.0.0.1',3128,5,200,configuration.SPEED)
+		self.manager = WorkerManager()
+		self.download = DownloadManager(configuration.CONTENT)
+		self.browsers = Browsers()
+		self.server = Server()
+
+		self.reactor = Reactor(self.server, self.manager, self.download, self.browsers)
 
 		self._shutdown = False
 		self._reload = False
@@ -83,19 +89,19 @@ class Supervisor(object):
 					self.increase_spawn_limit = False
 
 				# make sure we have enough workers
-				self.manager.provision()
+				self.manager.provision(configuration.PROGRAM)
 				# check for IO change with select
-				self.server.run()
+				self.reactor.run(2)
 
 				# Quit on problems which can not be fixed (like running out of file descriptor)
-				self._shutdown = not self.server.running
+				self._shutdown = not self.reactor.running
 
 			except KeyboardInterrupt:
 				logger.info('supervisor','^C received')
 				self._shutdown = True
-			except SelectError:
-				logger.error('supervisor','problem with the network')
-				self._shutdown = True
+
+			# XXX: need to handle errors from select()
+
 #			finally:
 #				from leak import objgraph
 #				print objgraph.show_most_common_types(limit=20)
@@ -106,17 +112,19 @@ class Supervisor(object):
 	def initialise (self):
 		self.daemon.daemonise()
 		self.pid.save()
-		# start our threads (a normal class)
-		self.manager.start()
+		# start our threads
+		self.manager.provision(configuration.PROGRAM)
+
 		# only start listening once we know we were able to fork our worker processes
-		self.server.start()
+		self.server.listen('127.0.0.1', 3128, 5, 200)
 
 	def shutdown (self):
 		"""terminate all the current BGP connections"""
 		logger.info('supervisor','Performing shutdown')
-		self.server.stop()
-		self.manager.stop()
-		self.download.stop()
+		self.server.stop()   # accept no new connections
+		self.manager.stop()  # shut down redirector children
+		self.download.stop() # stop downloading data
+		self.browsers.stop() # close client connections
 		self.pid.remove()
 
 	def reload (self):

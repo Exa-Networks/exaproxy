@@ -7,18 +7,29 @@ Created by Thomas Mangin on 2011-12-01.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-from .util.logger import logger
+from exaproxy.util.logger import logger
+from exaproxy.nettools import connected_tcp_socket
+
+import socket
 
 # http://tools.ietf.org/html/rfc2616#section-8.2.3
 # Says we SHOULD keep track of the server version and deal with 100-continue
 # I say I am too lazy - and if you want the feature use this software as as rev-proxy :D
 
 
+DEFAULT_READ_BUFFER_SIZE = 4096
+
 
 class DownloadManager(object):
-	def __init__(self, download, location):
-		self.download = download
+	def __init__(self, location):
+		self.download = Download()
 		self.location = location
+		self.retry = []
+
+		# XXX: clean this up
+		self.established = self.download.connections
+		self.opening = self.download.connecting
+		self.byclientid = self.download.byclientid
 
 	def getLocalContent(self, name):
 		filename = os.path.join(self.location, name)
@@ -30,31 +41,59 @@ class DownloadManager(object):
 
 		return content
 
+
 	def getContent(self, client_id, decision):
 		try:
 			command, args = decision.split('\0', 1)
 
 			if command in ('download', 'connect'):
-				host, port, request = args.split('\0')
-				result = self.download.newConnection(client_id, host, port, request)
-				content = ('stream', '') if result is not None else None
+				host, port, request = args.split('\0', 2)
+				print '='*60
+				print request.replace('\0', '\r\n')
+				print '='*60
 
-			elif command == 'respond':
-				content = self.local.getContent(args)
+
+				result = self.download.newConnection(client_id, host, int(port), request.replace('\0', '\r\n'))
+				print "++++++++++++++++ NEW CONNETION RESULT IS", result
+				content = ('stream', '') if result is True else None
+
+			elif command == 'data':
+				code, data = args.split('\0', 1)
+				content = ('stream', data.replace('\0', '\r\n'))
+
+			elif command == 'local':
+				code, reason = args.split('\0', 1)
+				content = self.getLocalContent(reason)
 
 		except (ValueError, TypeError), e:
+			print "******** PROBLEM GETTING CONTENT"
+			print "********", type(e),str(e)
 			# XXX: log 
 			content = None
 
 		return content
 
+	def startDownload(self, sock):
+		return self.download.start(sock)
+
+	def retryDownload(self, client_id, decision):
+		return None
+
+        def readData(self, sock, bufsize=0):
+		return self.download.readData(sock, bufsize)
+
+        def endClientDownload(self, client_id):
+		return self.download.endClientDownload(client_id)
+
+
 
 class Download(object):
+	socket = staticmethod(connected_tcp_socket)
+
 	def __init__(self):
 		self.connections = {}
 		self.connecting = {}
 		self.byclientid = {}
-		self.retry = []
 
 	def _download(self, sock, request, default_buffer_size=DEFAULT_READ_BUFFER_SIZE):
 		"""Coroutine that manages our connection to the remote server"""
@@ -79,18 +118,14 @@ class Download(object):
 		yield None
 
 	def newConnection(self, client_id, host, port, request):
-		try:
-			sock = self.socket(host, port)
-		except socket.error, e:
-			return False
+		sock = self.socket(host, port)
 
 		# sock will be None if there was a temporary error
 		if sock is not None:
 			self.connecting[sock] = client_id, request
-		else:
-			self.retry.append((client_id, decision, 1))
 
-		return True
+		print "+++++++ GOT SOCKET ", sock
+		return True if sock is not None else None
 
 	def start(self, sock):
 		# the socket is now open
@@ -132,10 +167,14 @@ class Download(object):
 		return client_id, data
 
 	def endClientDownload(self, client_id):
-		fetcher, sock = self.connections.get(sock, None)
+		fetcher, sock = self.byclientid.get(client_id, (None, None))
 		if fetcher is not None:
 			res = fetcher.send(None)
 			response = res is None
+
+			# XXX: written in a hurry - check this is right
+			self.connections.pop(sock, None)
+			self.byclientid.pop(client_id, None)
 		else:
 			response = None
 

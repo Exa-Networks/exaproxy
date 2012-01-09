@@ -19,11 +19,11 @@ import select as select
 from .util.logger import logger
 
 
-if hasattr(select, 'epoll'):
-	poll = select.epoll
-elif hasattr(select, 'poll'):
-	poll = select.poll
-elif hasattr(select, 'select'):
+#if hasattr(select, 'epoll'):
+#	poll = select.epoll
+#if hasattr(select, 'poll'):
+#	poll = select.poll
+if hasattr(select, 'select'):
 	poll = select.select
 else:
 	raise ImportError, 'what kind of select module is this'

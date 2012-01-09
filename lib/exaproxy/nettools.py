@@ -34,7 +34,7 @@ def is_ipv6(addr):
 def bound_tcp_socket(ip, port):
 	if is_ipv6(ip):
 		sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP)
-	elif is_ipv6(ip):
+	elif is_ipv4(ip):
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 	else:
 		sock = None
@@ -56,6 +56,24 @@ def bound_tcp_socket(ip, port):
 			else:
 				logger.error('server','could not listen on %s:%d - %s' % (ip,port,str(e)))
 
+			sock = None
+
+	return sock
+
+def connected_tcp_socket(ip, port):
+	if is_ipv6(ip):
+		sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+	elif is_ipv4(ip):
+		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+	else:
+		print "BAD IP - SOCKET IS NONE"
+		sock = None
+
+	if sock is not None:
+		try:
+			sock.connect((ip, port))
+		except socket.error, e:
+			print "ERROR - SOCKET IS NONE", type(e), e
 			sock = None
 
 	return sock

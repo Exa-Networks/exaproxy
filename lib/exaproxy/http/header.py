@@ -7,64 +7,81 @@ Created by Thomas Mangin on 2011-12-02.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-import sys
+from future_collections import OrderedDict
 
-from exaproxy.configuration import configuration
+class HostMismatch(Exception):
+	pass
 
-def _connect (code):
-	return """\
-HTTP/1.0 %d Connect Reply
-Proxy-agent: exaproxy/%s (%s)
-
-""" % (code,str(configuration.version),sys.platform)
-
-# XXX: Replace the OK with a message related to the code :p
-
-def _http (code,message):
-	return """\
-HTTP/1.1 %d OK
-Date: Fri, 02 Dec 2011 09:29:44 GMT
-Server: exaproxy/%s (%s)
-Content-Length: %d
-Connection: close
-Content-Type: text/html
-Cache-control: private
-Pragma: no-cache
-
-%s""" % (code,str(version),sys.platform,len(message),message)
+class Header(OrderedDict):
+	def __init__(self, header):	
+		OrderedDict.__init__(self)
 
 
-class Header (dict):
-	def __init__ (self,request):
+		print "********************************************* HEADER"
+		print header
+		print "********************************************* "
+
 		try:
-			lines = request.split('\r\n')
-			parts = lines.pop(0).split()
+			request, remaining = header.split('\r\n',1)
 
-			for header in lines:
-				if not header:
-					break
-				key,_ = header.split(':',1)
-				self[key.lower()] = header
+			method, path, version = request.split()
+			method = method.upper()
+			version = version.upper()
 
-			self.method=parts[0].upper()
-			self.path=parts[1]
-			self.version=parts[2].upper()
+			if '://' in path:
+				path = path.split('://', 1)[1]
 
-			port = self.path.split(':',1)[-1].split('/')[0]
-			if port.isdigit():
-				self.port = int(port)
+			if ':' in path:
+				host, port = path.split(':', 1)
+				port, path = port.split('/',1)
+				path = '/'+path
 			else:
-				self.port = 80
+				host = None
+				port = None
 
-			if self.method == 'CONNECT':
-				if not self.has_key('host'):
-					self['host'] = 'Host:%s' % self.path.split(':',1)[0]
+			if method == 'CONNECT' and host:
+				self['host'] = 'Host: ' + host is not None
+
+
+			for line in remaining.split('\r\n'):
+				key = line.split(':',1)[0].lower().strip()
+				if not key:
+					continue
+					
+				self[key] = line
+
+
+			if method <> 'CONNECT':
+				requested_host = self.get('host', ':').split(':', 1)[1].strip()
+				if host is not None and requested_host <> host:
+					raise HostMismatch, 'make up your mind: %s - %s' % (requested_host, host)
+
+				host = requested_host
+
+			client = self.get('x-forwarded-for', ':0.0.0.0').split(':')[1].split(',')[-1].strip()
+			url = host + ((':'+port) if port is not None else '') + path
+			port = port if port is not None else 80
 		except KeyboardInterrupt:
 			raise
-		except Exception:
-			self.method = self.path = self.version = self.str = ''
-			raise
+		except Exception, e:
+			print '+'*60
+			print e
+			print '+'*60
+			method, path, version = None, None, None
+			host, port, url = None, None, None
+			client = None
 
-	def __str__ (self):
-		return ' '.join((self.method,self.path,self.version,'\r\n')) + '\r\n'.join(v for k,v in self.iteritems()) + '\r\n'
+		self.request = request
+		self.method = method
+		self.path = path
+		self.version = version
+		self.host = host
+		self.port = port
+		self.url = url
+		self.client = client
 
+	def isValid(self):
+		return self.method is not None and self.host is not None and self.path is not None
+
+	def toString(self, linesep='\r\n'):
+		return self.request + linesep + linesep.join(self.itervalues()) + linesep + linesep

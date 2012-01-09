@@ -15,7 +15,7 @@ import errno
 from .configuration import configuration
 from .util.logger import logger
 
-BLOCKING_ERRORr = (errno.EAGAIN,errno.EINTR,errno.EWOULDBLOCK,errno.EINTR)
+BLOCKING_ERRORS = (errno.EAGAIN,errno.EINTR,errno.EWOULDBLOCK,errno.EINTR)
 
 class Browsers(object):
 	eor = '\r\n\r\n'
@@ -24,6 +24,9 @@ class Browsers(object):
 		self.clients = {}
 		self.byname = {}
 		self.buffered = []
+
+	def __contains__(self, item):
+		return item in self.byname
 
 	def _read(self, sock, read_size=16*1024):
 		request = ''
@@ -82,10 +85,24 @@ class Browsers(object):
 			found = None
 
 		data = yield found
+		finished = False
 
 		while True:
 			had_buffer = True if w_buffer else False
-			w_buffer = w_buffer + data
+
+			if data is not None:
+				w_buffer = w_buffer + data
+			else:
+				# we've finished downloading, even if the client hasn't yet
+				finished = True
+
+			if finished and not w_buffer:
+				yield None # stop the client connection
+				print 'HAD BUFFER IS', had_buffer
+				print "IN BUFFERED IS", sock in self.buffered
+				if had_buffer:
+					yield None
+				break # and don't come back
 
 			try:
 				sent = sock.send(w_buffer)
@@ -126,75 +143,94 @@ class Browsers(object):
 		return name, peer, res
 
 	def startData(self, name, data):
-		sock, r, w, peer = self.byname.get(name, EMPTY_BYNAME)
+		sock, r, w, peer = self.byname.get(name, (None, None, None))
 		if sock is None:
 			return None
 
+
+		print "(((((((((( STARTING BUFFERED IS", self.buffered
+
 		w.next() # start the _write coroutine
 		if data is None:
+			print "******** NO DATA SO CLEANING UP CLIENT"
 			return self.cleanup(sock, name)
 
 		try:
 			command, d = data
 		except (ValueError, TypeError):
 			logger.error('browser', 'invalid command sent to client %s' % name)
+			print "******* INVALID COMMAND SO CLEANING UP CLIENT"
 			return self.cleanup(sock, name)
 
 		if command == 'stream':
 			w.send(None) # no local file
 			res = w.send(d)
 
-			self.buffers.add(sock) # buffer immediately populated with the full local content
 		elif command == 'local':
 			res = w.send(d) # use local file
+			self.buffered.append(sock) # buffer immediately populated with the full local content
 
 		if res is None:
+			print "******* ERROR DURING SEND SO CLEANING UP CLIENT"
 			return self.cleanup(sock, name)
 
 		buf_len, had_buffer = res
 
 		if buf_len:
-			self.buffers.add(sock)
-		elif had_buffer and sock in self.buffers:
-			self.buffers.remove(sock)
+			print "(((((((((( ADDING TO BUFFERED IN startData"
+			self.buffered.append(sock)
+		elif had_buffer and sock in self.buffered:
+			self.buffered.remove(sock)
 
 		return True
 
 
 
 	def sendData(self, name, data):
+		print "sendData", len(data or '')
 		sock, r, w, peer = self.byname[name] # raise KeyError if we gave a bad name
 		res = w.send(data)
 
+		print "(((((((((( sendData BUFFERED IS", self.buffered
 		if res is None:
-			return self.cleanup(sock, name)
+			print "******** TELLING BROWSER TO STOP"
+			# XXX: this is messy
+			# do not clean up the socket if we know it is still referenced
+			if sock not in self.buffered:
+				return self.cleanup(sock, name)
+			return None
 
 		buf_len, had_buffer = res
 
 		if buf_len:
-			self.buffers.add(sock)
-		elif had_buffer and sock in self.buffers:
-			self.buffers.remove(sock)
+			print "(((((((((( ADDING TO BUFFERED IN sendData"
+			self.buffered.append(sock)
+		elif had_buffer and sock in self.buffered:
+			self.buffered.remove(sock)
 
 		return buf_len
 
 	def sendSocketData(self, sock, data):
+		print "sendSocketData"
 		name, r, w, peer = self.clients[sock] # raise KeyError if we gave a bad name
 		res = w.send(data)
 
+		print "(((((((((( sendSocketData BUFFERED IS", self.buffered
 		if res is None:
 			return self.cleanup(sock, name)
 
 		buf_len, had_buffer = res
 
 		if buf_len:
-			self.buffers.add(sock)
-		elif had_buffer and sock in self.buffers:
-			self.buffers.remove(sock)
+			print "(((((((((( ADDING TO BUFFERED IN sendSocketData"
+			self.buffered.append(sock)
+		elif had_buffer and sock in self.buffered:
+			self.buffered.remove(sock)
 
 		return buf_len
 
 	def cleanup(self, sock, name=None):
+		print "CLEANUP " * 10
 		try:
 			sock.shutdown(socket.SHUT_RDWR)
 			sock.close()
