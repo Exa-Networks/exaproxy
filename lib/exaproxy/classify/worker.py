@@ -236,11 +236,11 @@ class Worker (Thread):
 						continue
 
 					# check to see if the hostname was rewritten
-					if host and host <> request.host:
+					if host and host != request.host:
 						# XXX: pop cookies and any other unwanted information here
 						request.host = host
 
-					if path and path <> request.path:
+					if path and path != request.path:
 						request.path = path
 
 				# we will proxy the content

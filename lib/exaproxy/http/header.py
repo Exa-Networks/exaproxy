@@ -51,9 +51,9 @@ class Header(OrderedDict):
 				self[key] = line
 
 
-			if method <> 'CONNECT':
+			if method != 'CONNECT':
 				requested_host = self.get('host', ':').split(':', 1)[1].strip()
-				if host is not None and requested_host <> host:
+				if host is not None and requested_host != host:
 					raise HostMismatch, 'make up your mind: %s - %s' % (requested_host, host)
 
 				host = requested_host
