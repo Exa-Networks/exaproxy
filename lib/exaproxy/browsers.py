@@ -78,7 +78,7 @@ class Browsers(object):
 				with open(filename) as fd:
 					w_buffer = fd.read()
 
-				found = True
+				found = True, False
 			except IOError:
 				found = None
 		else:
@@ -103,6 +103,7 @@ class Browsers(object):
 				if had_buffer:
 					yield None
 				break # and don't come back
+
 
 			try:
 				sent = sock.send(w_buffer)
@@ -134,7 +135,12 @@ class Browsers(object):
 		return peer
 
 	def readRequest(self, sock, buffer_len=0):
-		name, r, w, peer = self.clients[sock] # raise KeyError if we gave a bad socket
+		name, r, w, peer = self.clients.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad socket
+
+		if name is None:
+			print "TRYING TO READ FROM A CLIENT THAT DOES NOT EXIST", sock
+			return None
+
 		res = r.send(buffer_len)
 
 		if res is None:
@@ -166,13 +172,24 @@ class Browsers(object):
 			w.send(None) # no local file
 			res = w.send(d)
 
+		elif command == 'data':
+			w.send(None) # no local file
+			w.send(d)
+			res = w.send(None)
+
 		elif command == 'local':
 			res = w.send(d) # use local file
+			w.send(None)    # close the connection once our buffer is empty
+			print "ADDING SOCKET TO BUFFER LIST", sock
 			self.buffered.append(sock) # buffer immediately populated with the full local content
+			return 
 
 		if res is None:
-			print "******* ERROR DURING SEND SO CLEANING UP CLIENT"
-			return self.cleanup(sock, name)
+                        # XXX: this is messy
+                        # do not clean up the socket if we know it is still referenced
+                        if sock not in self.buffered:
+                                return self.cleanup(sock, name)
+
 
 		buf_len, had_buffer = res
 
@@ -187,13 +204,14 @@ class Browsers(object):
 
 
 	def sendData(self, name, data):
-		print "sendData", len(data or '')
-		sock, r, w, peer = self.byname[name] # raise KeyError if we gave a bad name
+		sock, r, w, peer = self.byname.get(name, (None, None, None, None)) # raise KeyError if we gave a bad name
+		if sock is None:
+			print "TRYING TO SEND DATA USING AN ID THAT DOES NOT EXIST:", name
+			return None
+
 		res = w.send(data)
 
-		print "(((((((((( sendData BUFFERED IS", self.buffered
 		if res is None:
-			print "******** TELLING BROWSER TO STOP"
 			# XXX: this is messy
 			# do not clean up the socket if we know it is still referenced
 			if sock not in self.buffered:
@@ -203,27 +221,31 @@ class Browsers(object):
 		buf_len, had_buffer = res
 
 		if buf_len:
-			print "(((((((((( ADDING TO BUFFERED IN sendData"
-			self.buffered.append(sock)
+			if sock not in self.buffered:
+				self.buffered.append(sock)
 		elif had_buffer and sock in self.buffered:
 			self.buffered.remove(sock)
 
 		return buf_len
 
 	def sendSocketData(self, sock, data):
-		print "sendSocketData"
-		name, r, w, peer = self.clients[sock] # raise KeyError if we gave a bad name
+		name, r, w, peer = self.clients.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad name
+		if name is None:
+			print "TRYING TO SEND DATA TO A SOCKET THAT DOES NOT EXIST:", sock
+			return None
+
 		res = w.send(data)
 
-		print "(((((((((( sendSocketData BUFFERED IS", self.buffered
 		if res is None:
+			if sock in self.buffered:
+				self.buffered.remove(sock)
 			return self.cleanup(sock, name)
 
 		buf_len, had_buffer = res
 
 		if buf_len:
-			print "(((((((((( ADDING TO BUFFERED IN sendSocketData"
-			self.buffered.append(sock)
+			if sock not in self.buffered:
+				self.buffered.append(sock)
 		elif had_buffer and sock in self.buffered:
 			self.buffered.remove(sock)
 

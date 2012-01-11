@@ -49,6 +49,7 @@ class WorkerManager(object):
 
 		self.low = low or self.min_worker_count
 		self.high = max(high or self.max_worker_count, self.low)
+		self.running = True
 
 	@property
 	def nextid(self):
@@ -56,27 +57,29 @@ class WorkerManager(object):
 		return self._nextid
 
 	def provision(self, program, count=None):
-		required = count or max(self.low - len(self.workers), 0)
+		if self.running is True:
+			required = count or max(self.low - len(self.workers), 0)
+		else:
+			required = 0
 
 		for _ in xrange(required):
 			worker = Worker(self.nextid, self.queue, program)
 			self.workers[worker.response_box_read] = worker
 			worker.start()
+
+		return self.running is True
 			
 	def putRequest(self, client_id, peer, request):
 		return self.queue.put((client_id, peer, request))
 
-	def getDecision(self, worker):
-		print "READING DECISION FROM", worker.fileno()
-	#	decision = []
-	#	try:
-	#		while True:
-	#			decision.append(worker.read(1))
-	#	except:
-	#		pass
-		response = worker.readline()
+	def getDecision(self, box):
+		response = box.readline().strip()
 
-		print "READ DECISION"
+		if response == 'shutdown':
+			worker = self.workers.get(box, None)
+			if worker is not None:
+				worker.shutdown()
+
 		try:
 			client_id, decision = response.split('\0', 1)
 		except (ValueError, TypeError), e:
@@ -86,9 +89,20 @@ class WorkerManager(object):
 		return client_id, decision
 
 	def stop(self):
-		raise NotImplementedError, 'worker manager was asked to stop'
+		# XXX: need to check that the workers do not get stuck
+		for worker in self.workers:
+			self.queue.put('shutdown')
 
-
+	#def reprovision(self, program, count=None):
+	#	queue = self.queue
+	#
+	#	# XXX: need to check that the workers do not get stuck
+	#
+	#	# any new requests will be directed away from the old workers
+	#	self.queue = Queue()
+	#
+	#	for worker in self.workers:
+	#		queue.put('shutdown')
 
 
 class Worker (Thread):
@@ -97,6 +111,7 @@ class Worker (Thread):
 		'CENSOR': (503, 'banned'),
 		'CLASSIFYING': (503, 'classifying'),
 		'ERROR': (500, 'error'),
+		'DNS': (500, 'dns'),
 	}
 
 	# TODO : if the program is a function, fork and run :)
@@ -107,6 +122,9 @@ class Worker (Thread):
 		self.response_box_write = os.fdopen(w,'w')    # results are written here
 		self.response_box_read = os.fdopen(r,'r')     # read from the main thread
 
+		# XXX: Not setting non blocking because it's incompatible with readline()
+		# XXX: If responses are not properly terminated then the main process can block
+		# XXX: http://bugs.python.org/issue1175#msg56041
 		#fl = fcntl.fcntl(self.response_box_read.fileno(), fcntl.F_GETFL)
 		#fcntl.fcntl(self.response_box_read.fileno(), fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
@@ -137,11 +155,18 @@ class Worker (Thread):
 
 		return process
 
-	def _cleanup (self):
-		logger.info('worker %d' % self.wid,'terminating process')
+	def _shutdown (self):
 		# XXX: can raise
 		self.response_box_read.close()
 		self.response_box_write.close()
+
+		if self.process:
+			logger.info('worker %d' % self.wid, 'Shutting down but the child process is still running. Stopping it')
+			self._stop()
+			
+	def _stop(self):
+		logger.info('worker %d' % self.wid,'terminating process')
+
 		try:
 			if self.process:
 				self.process.terminate()
@@ -150,10 +175,6 @@ class Worker (Thread):
 			# No such processs
 			if e[0] != errno.ESRCH:
 				logger.error('worker %d' % self.wid,'PID %s died' % pid)
-
-
-	def stop (self):
-		self.running = False
 
 	def getClassification(self, client_ip, method, url):
 		squid = '%s %s - %s -' % (url, client_ip, method)
@@ -185,6 +206,7 @@ class Worker (Thread):
 
 	def respond_proxy(self, client_id, ip, port, request):
 		request['connection'] = 'Connection: close'
+		request['proxy-connection'] = 'Connection: close'
 		header = request.toString(linesep='\0')
 		self.respond('\0'.join((client_id, 'download', ip, str(port), header)))
 	
@@ -197,13 +219,22 @@ class Worker (Thread):
 	def respond_data(self, client_id, code, *data):
 		self.respond('\0'.join((client_id, 'data', str(code))+data))
 
+	def respond_shutdown(self):
+		self.respond('shutdown')
+
 
 	def run(self):
 		while self.running:
 			try:
 				logger.debug('worker %d' % self.wid,'waiting for some work')
 				# XXX: pypy ignores the timeout
-				data = self.request_box.get(1)
+				data = self.request_box.get(3)
+
+				# check if we were told to stop
+				if data == 'shutdown':
+					logger.debug('worker %d' % self.wid, 'Received command to stop')
+					break
+
 				client_id, peer, header = data
 			except Empty:
 				continue
@@ -215,12 +246,12 @@ class Worker (Thread):
 
 			request = Header(header)
 			if not request.isValid():
-				self.respond_data(client_id, 400, 'This request does not conform to HTTP/1.1 specifications <!--\nCDATA[[%s]]\n-->' % str(request))
+				self.respond_data(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)).replace(os.linesep, '\0'))
 				continue
 
 			ipaddr = resolve_host(request.host)
 			if not ipaddr:
-				logger.error('worker %d' % self.wid,'Could not resolve %s' % host)
+				logger.error('worker %d' % self.wid,'Could not resolve %s' % request.host)
 				code, command = self.commands['DNS']
 				self.respond_local(client_id, code, command)
 				continue
@@ -263,7 +294,11 @@ class Worker (Thread):
 			self.respond_data(client_id, 405, 'METHOD NOT ALLOWED', 'Method Not Allowed')
 			continue
 
-		self._cleanup()
+		# stop the child process
+		self._stop()
+
+		# tell the reactor that we've stopped
+		self.respond_shutdown()
 
 			# prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
 			# XXX: We may have more than one Connection header : http://tools.ietf.org/html/rfc2616#section-14.10

@@ -46,3 +46,12 @@ class Server(object):
 			# It doesn't really matter if accept fails temporarily. We will
 			# try again next loop
 			logger.debug('server', 'failure on accept %s' % str(e))
+
+	def stop(self):
+		for sock in self.socks:
+			try:
+				sock.close()
+			except socket.error, e:
+				pass
+
+		self.socks = {}

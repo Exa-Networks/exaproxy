@@ -50,12 +50,8 @@ class Reactor(object):
 			# wait until we have something to do
 			read, write, x = self.select(read_socks + read_workers + read_browser + read_download, write_download + write_browser, speed)
 
-
-			if read_browser:
-				print time.time(), "ACTIVE CLIENTS ARE", [str(f.fileno()) for f in read_browser]
-
-			if write_browser:
-				print time.time(), "BUFFERED CLIENTS ARE", [str(f.fileno()) for f in write_browser]
+			if x:
+				print x
 
 
 			# handle new connections before anything else
@@ -69,8 +65,8 @@ class Reactor(object):
 			#      have the request, since we're not going to read it anyway
 			# incoming data from browsers
 			for browser in set(read_browser).intersection(read):
-				print "**** DATA FROM BROWSER"
 				client_id, peer, request = self.browsers.readRequest(browser)
+				print "**** DATA FROM BROWSER", request
 				if request:
 					print "*** REQUEST FROM BROWSER"
 					# request classification
@@ -81,12 +77,9 @@ class Reactor(object):
 
 			# incoming data - web pages
 			for fetcher in set(read_download).intersection(read):
-				print "**** INCOMING CONTENT"
 				client_id, page_data = self.download.readData(fetcher)
 
-				if page_data is not None:
-					logger.debug('server', 'we fetched %d bytes of data for client id %s' % (len(page_data), client_id))
-				else:
+				if page_data is None:
 					logger.debug('server', 'lost connection to server while downloading for client id %s' % client_id)
 
 				# send received data to the client that requested it
@@ -115,8 +108,8 @@ class Reactor(object):
 
 					# check to see if the client went away
 					if sending is None:
-						logger.debug('server', 'client %s went away before we could start responding' % client_id)
-						# should we just wait for the next loop when we'll be notified of the client disconnect?
+						# XXX: should we just wait for the next loop when we'll be notified of the client disconnect?
+						# XXX: always results in a miss if there is no download process
 						self.download.endClientDownload(client_id)
 				else:
 					logger.debug('server', 'a decision was made for unknown client %s - perhaps it already disconnected?' % client_id)

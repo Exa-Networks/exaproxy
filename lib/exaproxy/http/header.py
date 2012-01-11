@@ -32,9 +32,23 @@ class Header(OrderedDict):
 				path = path.split('://', 1)[1]
 
 			if ':' in path:
-				host, port = path.split(':', 1)
-				port, path = port.split('/',1)
-				path = '/'+path
+				host_part, port_part = path.split(':', 1)
+				if '/' not in host_part:
+					host = host_part
+					port = port_part
+				else:
+					host = path
+					port = None
+
+				if port:
+					if '/' in port:
+						port, path = port.split('/', 1)
+						path = '/' + path
+				else:
+					if '/' in host:
+						host, path = host.split('/', 1)
+						path = '/' + path
+
 			else:
 				host = None
 				port = None
@@ -69,7 +83,7 @@ class Header(OrderedDict):
 			print '+'*60
 			method, path, version = None, None, None
 			host, port, url = None, None, None
-			client = None
+			client, request = None, None
 
 		self.request = request
 		self.method = method

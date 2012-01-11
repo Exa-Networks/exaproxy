@@ -60,6 +60,7 @@ def bound_tcp_socket(ip, port):
 
 	return sock
 
+
 def connected_tcp_socket(ip, port):
 	if is_ipv6(ip):
 		sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP)

@@ -43,12 +43,14 @@ def poller_select(read, write, timeout=None):
 		r, w, x = poll(read, write, read + write, timeout)
 
 	except socket.error, e:
-		if e.errno in _block_errs:
+		if e.errno in _block_errors:
 			logger.error('server', 'select not ready, errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
 			r, w, x = [], [], []
 
 		elif e.errno in _fatal_errors:
 			logger.error('server', 'select problem, errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
+			print "POLLING", read, write
+			raise SelectError, str(e)
 
 		else:
 			logger.error('server', 'select problem, debug it. errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))

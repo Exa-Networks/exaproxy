@@ -10,6 +10,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 from exaproxy.util.logger import logger
 from exaproxy.nettools import connected_tcp_socket
 
+import os
 import socket
 
 # http://tools.ietf.org/html/rfc2616#section-8.2.3
@@ -54,12 +55,11 @@ class DownloadManager(object):
 
 
 				result = self.download.newConnection(client_id, host, int(port), request.replace('\0', '\r\n'))
-				print "++++++++++++++++ NEW CONNETION RESULT IS", result
 				content = ('stream', '') if result is True else None
 
 			elif command == 'data':
 				code, data = args.split('\0', 1)
-				content = ('stream', data.replace('\0', '\r\n'))
+				content = ('data', data.replace('\0', os.linesep))
 
 			elif command == 'local':
 				code, reason = args.split('\0', 1)
@@ -155,10 +155,11 @@ class Download(object):
 	# XXX: track the total number of bytes read in the content
 	# XXX: (not including headers)
 	def readData(self, sock, bufsize=0):
-		fetcher, client_id = self.connections.get(sock, None)
+		fetcher, client_id = self.connections.get(sock, (None,None))
 		if fetcher is not None:
 			data = fetcher.send(bufsize)
 		else:
+			print "NO FETCHER FOR", sock
 			data = None
 
 		if fetcher and data is None:
@@ -167,6 +168,7 @@ class Download(object):
 		return client_id, data
 
 	def endClientDownload(self, client_id):
+		print "+++++++++++++++++++++++++++++++++ END CLIENT DOWNLOAD %s %s" % (client_id, client_id in self.byclientid)
 		fetcher, sock = self.byclientid.get(client_id, (None, None))
 		if fetcher is not None:
 			res = fetcher.send(None)
