@@ -88,35 +88,45 @@ class Browsers(object):
 		finished = False
 
 		while True:
-			had_buffer = True if w_buffer else False
-
-			if data is not None:
-				w_buffer = w_buffer + data
-			else:
-				# we've finished downloading, even if the client hasn't yet
-				finished = True
-
-			if finished and not w_buffer:
-				yield None # stop the client connection
-				print 'HAD BUFFER IS', had_buffer
-				print "IN BUFFERED IS", sock in self.buffered
-				if had_buffer:
-					yield None
-				break # and don't come back
-
-
 			try:
-				sent = sock.send(w_buffer)
+				print "STARTING LOOP"
+				while True:
+					had_buffer = True if w_buffer else False
+
+					if data is not None:
+						w_buffer = w_buffer + data
+					else:
+						# we've finished downloading, even if the client hasn't yet
+						finished = True
+
+					if finished and not w_buffer:
+						print "FINISHED ????"
+						yield None # stop the client connection
+						print 'HAD BUFFER IS', had_buffer
+						print "IN BUFFERED IS", sock in self.buffered
+						if had_buffer:
+							yield None
+						break # and don't come back
+
+					if not had_buffer or not data:
+						sent = sock.send(w_buffer)
+						w_buffer = w_buffer[sent:]
+
+					data = yield (True if w_buffer else False), had_buffer
+
+				# break out of the outer loop as soon as we leave the inner loop
+				# through normal execution
+				break
+
 			except socket.error, e:
 				if e.errno in BLOCKING_ERRORS:
 					logger.error('browser', 'Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
-					sent = 0
+					print "DATA TO SEND WAS", len(data)
+					data = yield (True if w_buffer else False), had_buffer
 				else:
+					print "????? ARRGH ?????"
 					yield None # stop the client connection
 					break # and don't come back
-
-			w_buffer = w_buffer[sent:]
-			data = yield len(w_buffer), had_buffer
 
 
 	def newConnection(self, name, sock, peer):
