@@ -51,7 +51,7 @@ class Reactor(object):
 			read, write, x = self.select(read_socks + read_workers + read_browser + read_download, write_download + write_browser, speed)
 
 			if x:
-				print x
+				print "EXCEPTIONAL", x
 
 
 			# handle new connections before anything else
@@ -65,7 +65,7 @@ class Reactor(object):
 			#      have the request, since we're not going to read it anyway
 			# incoming data from browsers
 			for browser in set(read_browser).intersection(read):
-				client_id, peer, request = self.browsers.readRequest(browser)
+				client_id, peer, request, data = self.browsers.readRequest(browser)
 				print "**** DATA FROM BROWSER", request
 				if request:
 					print "*** REQUEST FROM BROWSER"
@@ -128,3 +128,4 @@ class Reactor(object):
 				# if we have a temporary error, the others are likely to be too
 				if not self.download.retryDownload(client_id, decision):
 					break
+

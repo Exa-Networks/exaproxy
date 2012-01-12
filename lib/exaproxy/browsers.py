@@ -46,18 +46,18 @@ class Browsers(object):
 			# stream all data received after the request in case
 			# the client is using CONNECT
 			if request:
-				yield buff
+				yield '', buff
 				continue
 
 			r_buffer += buff
 
 			if self.eor in r_buffer: # we have a full request
 				request, r_buffer = r_buffer.split(self.eor, 1)
-				yield request + self.eor
-				yield r_buffer # client is using CONNECT if we are here
+				yield request + self.eor, ''
+				yield '', r_buffer # client is using CONNECT if we are here
 				r_buffer = ''
 			else:
-				r_size = yield '' # no request yet
+				r_size = yield '', '' # no request yet
 
 	def _write(self, sock):
 		"""coroutine managing data sent back to the browser"""
@@ -153,10 +153,14 @@ class Browsers(object):
 
 		res = r.send(buffer_len)
 
-		if res is None:
+		if res is not None:
+			request, extra = res
+		else:
 			self.cleanup(sock, name)
+			request = None
+			extra = None
 
-		return name, peer, res
+		return name, peer, request, extra
 
 	def startData(self, name, data):
 		sock, r, w, peer = self.byname.get(name, (None, None, None))
