@@ -190,12 +190,22 @@ class Worker (Thread):
 				host, path = None, None
 			else:
 				code, command = None, None
+				if response.startswith('http://'):
+					response = response[7:]
 				host, path = response.split('/', 1) if '/' in response else (None, None)
+				if host == 'redirector.surfprotect.co.uk':
+					if path.startswith('banned'):
+						code = 400
+						command = 'banned'
+					elif path.startswith('pending'):
+						code = 400
+						command = 'pending'
 		except IOError, e:
 			logger.error('worker %d' % self.wid, 'IO/Error when sending to process: %s' % str(e))
 			code, command = self.commands['ERROR']
 			host, path = None, None
 
+		print "REDIRECTING TO", code, command, host, path
 		return code, command, host, path
 
 
@@ -267,12 +277,12 @@ class Worker (Thread):
 						continue
 
 					# check to see if the hostname was rewritten
-					if host and host != request.host:
+					if False and host and host != request.host:
 						# XXX: pop cookies and any other unwanted information here
-						request.host = host
+						request.redirect(host, path)
 
-					if path and path != request.path:
-						request.path = path
+					elif False and path and path != request.path:
+						request.redirect(host, path)
 
 				# we will proxy the content
 				self.respond_proxy(client_id, ipaddr, request.port, request)

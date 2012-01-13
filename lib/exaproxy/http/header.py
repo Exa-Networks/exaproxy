@@ -93,6 +93,18 @@ class Header(dict):
 		self.url = url
 		self.client = client
 
+
+	def redirect(self, host, path):
+		self.host = host if host is not None else self.host
+		self.path = path if path is not None else self.path
+
+		# XXX: need to handle port switch
+		if path is not None:
+			self.request = self.method + ' ' + path + 'HTTP/1.1'
+
+		if host is not None:
+			self['host'] = 'Host: ' + host
+
 	def isValid(self):
 		return self.method is not None and self.host is not None and self.path is not None
 
