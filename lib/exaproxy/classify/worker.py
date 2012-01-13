@@ -291,7 +291,7 @@ class Worker (Thread):
 			# someone want to use us as https proxy
 			if request.method == 'CONNECT':
 				if configuration.CONNECT:
-					self.respond_connect(client_id, ipaddr, port)
+					self.respond_connect(client_id, ipaddr, request.port)
 					continue
 				else:
 					self.respond_data(client_id, 501, 'CONNECT NOT ALLOWED', 'We are an HTTP only proxy')
