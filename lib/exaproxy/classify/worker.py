@@ -220,8 +220,9 @@ class Worker (Thread):
 		header = request.toString(linesep='\0')
 		self.respond('\0'.join((client_id, 'download', ip, str(port), header)))
 	
-	def respond_connect(self, client_id, ip, port):
-		self.respond('\0'.join((client_id, 'connect', ip, str(port))))
+	def respond_connect(self, client_id, ip, port, request):
+		header = request.toString(linesep='\0')
+		self.respond('\0'.join((client_id, 'connect', ip, str(port), header)))
 
 	def respond_local(self, client_id, code, reason):
 		self.respond('\0'.join((client_id, 'local', str(code), reason)))
@@ -291,7 +292,7 @@ class Worker (Thread):
 			# someone want to use us as https proxy
 			if request.method == 'CONNECT':
 				if configuration.CONNECT:
-					self.respond_connect(client_id, ipaddr, request.port)
+					self.respond_connect(client_id, ipaddr, request.port, request)
 					continue
 				else:
 					self.respond_data(client_id, 501, 'CONNECT NOT ALLOWED', 'We are an HTTP only proxy')
