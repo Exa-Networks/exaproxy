@@ -204,8 +204,9 @@ class Worker (Thread):
 		self.response_box_write.flush()
 
 	def respond_proxy(self, client_id, ip, port, request):
-		#request['connection'] = 'Connection: close'
-		#request['proxy-connection'] = 'Connection: close'
+		if 'proxy-connection' in request:
+			request['connection'] = 'Connection: close'
+			request['proxy-connection'] = 'Connection: close'
 		header = request.toString(linesep='\0')
 		self.respond('\0'.join((client_id, 'download', ip, str(port), header)))
 	
