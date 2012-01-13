@@ -159,11 +159,8 @@ class Download(object):
 							yield None
 						break
 
-					w_buffer += data
-
 					if not had_buffer or not data:
 						sent = sock.send(w_buffer)
-						print " " * 10, "*" * 10, " ", "+"*10
 						print "SENT %s of %s BYTES OF DATA: %s" % (sent, len(data), sock)
 						w_buffer = w_buffer[sent:]
 
