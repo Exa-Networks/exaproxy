@@ -21,33 +21,34 @@ class Header(dict):
 		try:
 			request, remaining = header.split('\r\n',1)
 
-			method, path, version = request.split()
+			method, fullpath, version = request.split()
 			method = method.upper()
 			version = version.upper()
 
-			if '://' in path:
-				path = path.split('://', 1)[1]
 
-			if ':' in path:
-				host_part, port_part = path.split(':', 1)
-				if '/' not in host_part:
-					host = host_part
-					port = port_part
-				else:
-					host = path
-					port = None
+			if '://' in fullpath:
+				x, b = fullpath.split('://', 1)
+				if '/' not in x:
+					fullpath = b
 
-				if port:
-					if '/' in port:
-						port, path = port.split('/', 1)
-						path = '/' + path
-				else:
-					if '/' in host:
-						host, path = host.split('/', 1)
-						path = '/' + path
 
+			if '/' in fullpath:
+				_before, path = fullpath.split('/', 1)
+				path = '/' + path
 			else:
-				host = None
+				path = '/'
+
+
+			if ':' in _before:
+				host, port = _before.split(':', 1)
+				if not port.isdigit():
+					host = None
+					port = None
+					path = None
+				else:
+					port = int(port)
+			else:
+				host = _before
 				port = None
 
 			if method == 'CONNECT' and host:
@@ -109,4 +110,5 @@ class Header(dict):
 		return self.method is not None and self.host is not None and self.path is not None
 
 	def toString(self, linesep='\r\n'):
-		return self.request + linesep + linesep.join(self[key] for key in self.order) + linesep + linesep
+		request = str(self.method) + ' ' + str(self.path) + ' HTTP/1.1'
+		return request + linesep + linesep.join(self[key] for key in self.order) + linesep + linesep
