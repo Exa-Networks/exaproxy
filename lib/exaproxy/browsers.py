@@ -53,6 +53,7 @@ class Browsers(object):
 
 			if self.eor in r_buffer: # we have a full request
 				request, r_buffer = r_buffer.split(self.eor, 1)
+				print "GOT %s BYTE REQUEST FROM CLIENT: %s" % (len(request + self.eor), sock)
 				yield request + self.eor, ''
 				yield '', r_buffer # client is using CONNECT if we are here
 				r_buffer = ''
@@ -89,7 +90,6 @@ class Browsers(object):
 
 		while True:
 			try:
-				print "STARTING LOOP"
 				while True:
 					had_buffer = True if w_buffer else False
 
@@ -100,10 +100,7 @@ class Browsers(object):
 						finished = True
 
 					if finished and not w_buffer:
-						print "FINISHED ????"
 						yield None # stop the client connection
-						print 'HAD BUFFER IS', had_buffer
-						print "IN BUFFERED IS", sock in self.buffered
 						if had_buffer:
 							yield None
 						break # and don't come back
@@ -142,6 +139,8 @@ class Browsers(object):
 
 		self.clients[sock] = name, r, w, peer
 		self.byname[name] = sock, r, w, peer
+
+		print "NEW BROWSER HAS ID %s: %s" % (name, sock)
 		return peer
 
 	def readRequest(self, sock, buffer_len=0):
@@ -167,12 +166,9 @@ class Browsers(object):
 		if sock is None:
 			return None
 
-
-		print "(((((((((( STARTING BUFFERED IS", self.buffered
-
 		w.next() # start the _write coroutine
 		if data is None:
-			print "******** NO DATA SO CLEANING UP CLIENT"
+			print "TERMINATING CLIENT %s BEFORE IT COULD BEGIN: %s" % (name, sock)
 			return self.cleanup(sock, name)
 
 		try:
@@ -194,7 +190,6 @@ class Browsers(object):
 		elif command == 'local':
 			res = w.send(d) # use local file
 			w.send(None)    # close the connection once our buffer is empty
-			print "ADDING SOCKET TO BUFFER LIST", sock
 			self.buffered.append(sock) # buffer immediately populated with the full local content
 			return 
 
@@ -208,7 +203,6 @@ class Browsers(object):
 		buf_len, had_buffer = res
 
 		if buf_len:
-			print "(((((((((( ADDING TO BUFFERED IN startData"
 			self.buffered.append(sock)
 		elif had_buffer and sock in self.buffered:
 			self.buffered.remove(sock)
@@ -223,6 +217,8 @@ class Browsers(object):
 			print "TRYING TO SEND DATA USING AN ID THAT DOES NOT EXIST:", name
 			return None
 
+
+		print "SENDING %s BYTES OF DATA TO CLIENT %s: %s" % (len(data) if data is not None else None, name, sock)
 		res = w.send(data)
 
 		if res is None:
@@ -245,10 +241,11 @@ class Browsers(object):
 	def sendSocketData(self, sock, data):
 		name, r, w, peer = self.clients.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad name
 		if name is None:
-			print "TRYING TO SEND DATA TO A SOCKET THAT DOES NOT EXIST:", sock
+			print "TRYING TO SEND DATA TO A SOCKET THAT DOES NOT EXIST:", sock, type(data), data
 			return None
 
 		res = w.send(data)
+		print "FLUSHING DATA TO %s: %s" % (name, sock)
 
 		if res is None:
 			if sock in self.buffered:

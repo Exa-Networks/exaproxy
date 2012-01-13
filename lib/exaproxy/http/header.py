@@ -17,9 +17,9 @@ class Header(OrderedDict):
 		OrderedDict.__init__(self)
 
 
-		print "********************************************* HEADER"
-		print header
-		print "********************************************* "
+		#print "********************************************* HEADER"
+		#print header
+		#print "********************************************* "
 
 		try:
 			request, remaining = header.split('\r\n',1)

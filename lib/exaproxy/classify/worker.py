@@ -178,12 +178,12 @@ class Worker (Thread):
 
 	def getClassification(self, client_ip, method, url):
 		squid = '%s %s - %s -' % (url, client_ip, method)
-		logger.info('worker %d' % self.wid, 'sending to classifier: [%s]' % squid)
+		#logger.info('worker %d' % self.wid, 'sending to classifier: [%s]' % squid)
 		try:
 			self.process.stdin.write(squid + os.linesep)
 
 			response = self.process.stdout.readline().strip()
-			logger.info('worker %d' % self.wid, 'received from classifier: [%s]' % response)
+			#logger.info('worker %d' % self.wid, 'received from classifier: [%s]' % response)
 
 			if response in self.commands:
 				code, command = self.commands[response]
@@ -200,13 +200,12 @@ class Worker (Thread):
 
 
 	def respond(self, response):
-		print "WRITING TO", self.response_box_write.fileno()
 		self.response_box_write.write(response + os.linesep)
 		self.response_box_write.flush()
 
 	def respond_proxy(self, client_id, ip, port, request):
-		request['connection'] = 'Connection: close'
-		request['proxy-connection'] = 'Connection: close'
+		#request['connection'] = 'Connection: close'
+		#request['proxy-connection'] = 'Connection: close'
 		header = request.toString(linesep='\0')
 		self.respond('\0'.join((client_id, 'download', ip, str(port), header)))
 	

@@ -42,13 +42,24 @@ class Reactor(object):
 			read_browser = list(self.browsers.clients)	# active clients
 			write_browser = list(self.browsers.buffered)	# active clients that we already have buffered data to send to
 
+
 			read_download = list(self.download.established) # Currently established connections
-			write_download = list(self.download.opening)	# socket connected but not yet ready for write
+			write_download = list(self.download.buffered)   # established connections to servers for which we have data to send
+			opening_download = list(self.download.opening)	# socket connected but not yet ready for write
 
 			retry_download = list(self.download.retry)	# rewritten destination info that we were unable to connect to
 
+
+
+			#print "*"*100
+			#print "READABLE DOWNLOAD SOCKETS ARE:", read_download
+			#print "BUFFERED DOWNLOAD SOCKETS ARE:", write_download
+			#print "*"*100
+			#print
+			#print
+
 			# wait until we have something to do
-			read, write, x = self.select(read_socks + read_workers + read_browser + read_download, write_download + write_browser, speed)
+			read, write, x = self.select(read_socks + read_workers + read_browser + read_download, opening_download + write_download + write_browser, speed)
 
 			if x:
 				print "EXCEPTIONAL", x
@@ -66,21 +77,24 @@ class Reactor(object):
 			# incoming data from browsers
 			for browser in set(read_browser).intersection(read):
 				client_id, peer, request, data = self.browsers.readRequest(browser)
-				print "**** DATA FROM BROWSER", request
 				if request:
-					print "*** REQUEST FROM BROWSER"
 					# request classification
 					self.decider.putRequest(client_id, peer, request)
 				elif request is None:
 					# the client closed the connection so we stop downloading for it
 					self.download.endClientDownload(client_id)
+				elif data:
+					print "WANT TO SEND", len(data)
+					self.download.sendClientData(client_id, data)
 
 			# incoming data - web pages
+
 			for fetcher in set(read_download).intersection(read):
 				client_id, page_data = self.download.readData(fetcher)
 
 				if page_data is None:
 					logger.debug('server', 'lost connection to server while downloading for client id %s' % client_id)
+
 
 				# send received data to the client that requested it
 				sending = self.browsers.sendData(client_id, page_data)
@@ -99,7 +113,6 @@ class Reactor(object):
 				print "*** GOT DECISION", client_id in self.browsers
 				# check that the client didn't get bored and go away
 				if client_id in self.browsers:
-					print '++++++++++', client_id, decision
 					response = self.download.getContent(client_id, decision)
 					print 'RESPONSE START IS', response
 					# signal to the client that we'll be streaming data to it or
@@ -118,8 +131,13 @@ class Reactor(object):
 			for browser in set(write_browser).intersection(write):
 				self.browsers.sendSocketData(browser, '')
 
+			# remote servers we can write buffered data to
+			for download in set(write_download).intersection(write):
+				print "FLUSHING", download
+				self.download.sendSocketData(download, '')
+
 			# fully connected connections to remote web servers
-			for fetcher in set(write_download).intersection(write):
+			for fetcher in set(opening_download).intersection(write):
 				print "*** STARTING DOWNLOAD"
 				self.download.startDownload(fetcher)
 

@@ -50,6 +50,27 @@ def poller_select(read, write, timeout=None):
 		elif e.errno in _fatal_errors:
 			logger.error('server', 'select problem, errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
 			print "POLLING", read, write
+			print
+			print
+
+
+			for f in r:
+				try:
+					poll([f], [], [f], 0.1)
+				except socket.errno:
+					print "CANNOT POLL", f
+
+			for f in w:
+				try:
+					poll([], [f], [f], 0.1)
+				except socket.errno:
+					print "CANNOT POLL", f
+			
+			print
+			print "************"
+			print
+			print
+
 			raise SelectError, str(e)
 
 		else:
