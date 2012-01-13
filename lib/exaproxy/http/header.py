@@ -33,14 +33,14 @@ class Header(dict):
 
 
 			if '/' in fullpath:
-				_before, path = fullpath.split('/', 1)
+				fullpath, path = fullpath.split('/', 1)
 				path = '/' + path
 			else:
 				path = '/'
 
 
-			if ':' in _before:
-				host, port = _before.split(':', 1)
+			if ':' in fullpath:
+				host, port = fullpath.split(':', 1)
 				if not port.isdigit():
 					host = None
 					port = None
@@ -48,8 +48,9 @@ class Header(dict):
 				else:
 					port = int(port)
 			else:
-				host = _before
+				host = fullpath
 				port = None
+
 
 			if method == 'CONNECT' and host:
 				self.order.append('host')
@@ -73,7 +74,7 @@ class Header(dict):
 				host = requested_host
 
 			client = self.get('x-forwarded-for', ':0.0.0.0').split(':')[1].split(',')[-1].strip()
-			url = host + ((':'+port) if port is not None else '') + path
+			url = host + ((':'+str(port)) if port is not None else '') + path
 			port = port if port is not None else 80
 		except KeyboardInterrupt:
 			raise
