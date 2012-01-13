@@ -99,14 +99,18 @@ class Browsers(object):
 						# we've finished downloading, even if the client hasn't yet
 						finished = True
 
-					if finished and not w_buffer:
-						yield None # stop the client connection
-						if had_buffer:
-							yield None
-						break # and don't come back
 
-					if not had_buffer or not data:
+					if finished:
+						if data:
+							logger.error('browser', '*'*80 + 'Tried to send data to browser after we told it to close. Dropping it.')
+							continue
+
+						if not w_buffer:
+							break    # stop the client connection
+
+					if not had_buffer or data == '':
 						sent = sock.send(w_buffer)
+						print "SENT %s BYTES OF DATA TO BROWSER: %s" % (sent, sock)
 						w_buffer = w_buffer[sent:]
 
 					data = yield (True if w_buffer else False), had_buffer
@@ -124,6 +128,8 @@ class Browsers(object):
 					print "????? ARRGH ?????"
 					yield None # stop the client connection
 					break # and don't come back
+
+		yield None
 
 
 	def newConnection(self, name, sock, peer):
@@ -218,7 +224,7 @@ class Browsers(object):
 			return None
 
 
-		print "SENDING %s BYTES OF DATA TO CLIENT %s: %s" % (len(data) if data is not None else None, name, sock)
+		print "SENDING %s BYTES OF DATA TO BROWSER %s: %s" % (len(data) if data is not None else None, name, sock)
 		res = w.send(data)
 
 		if res is None:
