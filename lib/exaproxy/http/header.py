@@ -7,15 +7,12 @@ Created by Thomas Mangin on 2011-12-02.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-from future_collections import OrderedDict
-
 class HostMismatch(Exception):
 	pass
 
-class Header(OrderedDict):
+class Header(dict):
 	def __init__(self, header):	
-		OrderedDict.__init__(self)
-
+		self.order = []
 
 		#print "********************************************* HEADER"
 		#print header
@@ -54,6 +51,7 @@ class Header(OrderedDict):
 				port = None
 
 			if method == 'CONNECT' and host:
+				self.order.append('host')
 				self['host'] = 'Host: ' + host is not None
 
 
@@ -61,7 +59,8 @@ class Header(OrderedDict):
 				key = line.split(':',1)[0].lower().strip()
 				if not key:
 					continue
-					
+				
+				self.order.append(key)
 				self[key] = line
 
 
@@ -98,4 +97,4 @@ class Header(OrderedDict):
 		return self.method is not None and self.host is not None and self.path is not None
 
 	def toString(self, linesep='\r\n'):
-		return self.request + linesep + linesep.join(self.itervalues()) + linesep + linesep
+		return self.request + linesep + linesep.join(self[key] for key in self.order) + linesep + linesep
