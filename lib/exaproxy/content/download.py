@@ -50,10 +50,16 @@ class DownloadManager(object):
 		try:
 			command, args = decision.split('\0', 1)
 
-			if command in ('download', 'connect'):
+			if command in ('download'):
 				host, port, request = args.split('\0', 2)
 
 				result = self.download.newConnection(client_id, host, int(port), request.replace('\0', '\r\n'))
+				content = ('stream', '') if result is True else None
+
+			elif command == 'connect':
+				host, port, response = args.split('\0', 2)
+
+				result = self.download.newConnection(client_id, host, int(port), None)
 				content = ('stream', '') if result is True else None
 
 			elif command == 'data':
@@ -195,19 +201,25 @@ class Download(object):
 		if res is not None:
 			client_id, request = res
 			print "DOWNLOAD SOCKET IS NOW OPEN FOR CLIENT %s: %s" % (client_id, sock)
-			print "GOING TO SEND %s BYTE REQUEST FOR CLIENT %s: %s" % (len(request), client_id, sock)
+			print "GOING TO SEND %s BYTE REQUEST FOR CLIENT %s: %s" % (len(request or ''), client_id, sock)
 			fetcher = self._read(sock)
 			fetcher.next()       # start the fetcher coroutine
 
 			sender = self._write(sock)
 			sender.next()        # start the sender coroutine
-			sender.send(request) # immediately send the request
+
+			# XXX: We MUST send method to newConnection rather than checking for a null request
+			if request is not None:
+				sender.send(request) # immediately send the request
 
 			self.connections[sock] = fetcher, sender, client_id
 			self.byclientid[client_id] = fetcher, sender, sock
-			result = client_id
+			
+			# XXX: We MUST send method to newConnection rather than checking for a null request
+			response='HTTP/1.1 200 Connection Established\r\n\r\n' if request is None else ''
+			result = client_id, response
 		else:
-			result = client_id
+			result = None, None
 
 		return result
 

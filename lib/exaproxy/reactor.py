@@ -112,6 +112,7 @@ class Reactor(object):
 				print "*** GOT DECISION", client_id in self.browsers
 				# check that the client didn't get bored and go away
 				if client_id in self.browsers:
+					print "WANT TO GET CONTENT"
 					response = self.download.getContent(client_id, decision)
 					print 'RESPONSE START IS', response
 					# signal to the client that we'll be streaming data to it or
@@ -138,14 +139,18 @@ class Reactor(object):
 			# fully connected connections to remote web servers
 			for fetcher in set(opening_download).intersection(write):
 				print "*** STARTING DOWNLOAD"
-				client_id = self.download.startDownload(fetcher)
+				client_id, response = self.download.startDownload(fetcher)
 				# XXX: need to make sure we DO NOT read past the first request from
 				#      the browser until after we perform this read
 				# check that the client didn't get bored and go away
 				if client_id in self.browsers:
+					print "THIS READ SHOULD NOT BLOCK"
 					client_id, peer, request, data = self.browsers.readRequest(client_id)
 					if data:
 						self.download.sendClientData(client_id, data)
+
+					if response:
+						self.browsers.sendData(client_id, response)
 
 			# retry connecting - opportunistic 
 			for client_id, decision in retry_download:
