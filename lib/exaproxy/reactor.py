@@ -84,7 +84,6 @@ class Reactor(object):
 					# the client closed the connection so we stop downloading for it
 					self.download.endClientDownload(client_id)
 				elif data:
-					print "WANT TO SEND", len(data)
 					self.download.sendClientData(client_id, data)
 
 			# incoming data - web pages

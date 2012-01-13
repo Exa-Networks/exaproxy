@@ -54,13 +54,13 @@ def poller_select(read, write, timeout=None):
 			print
 
 
-			for f in r:
+			for f in read:
 				try:
 					poll([f], [], [f], 0.1)
 				except socket.errno:
 					print "CANNOT POLL", f
 
-			for f in w:
+			for f in write:
 				try:
 					poll([], [f], [f], 0.1)
 				except socket.errno:
