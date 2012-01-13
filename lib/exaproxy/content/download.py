@@ -205,11 +205,11 @@ class Download(object):
 
 			self.connections[sock] = fetcher, sender, client_id
 			self.byclientid[client_id] = fetcher, sender, sock
-			result = True
+			result = client_id
 		else:
-			result = False
+			result = client_id
 
-		return False
+		return result
 
 
 	def sendClientData(self, client_id, data):

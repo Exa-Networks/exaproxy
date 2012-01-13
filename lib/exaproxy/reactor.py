@@ -76,7 +76,7 @@ class Reactor(object):
 			#      have the request, since we're not going to read it anyway
 			# incoming data from browsers
 			for browser in set(read_browser).intersection(read):
-				client_id, peer, request, data = self.browsers.readRequest(browser)
+				client_id, peer, request, data = self.browsers.readSocketRequest(browser)
 				if request:
 					# request classification
 					self.decider.putRequest(client_id, peer, request)
@@ -138,12 +138,12 @@ class Reactor(object):
 			# fully connected connections to remote web servers
 			for fetcher in set(opening_download).intersection(write):
 				print "*** STARTING DOWNLOAD"
-				self.download.startDownload(fetcher)
+				client_id = self.download.startDownload(fetcher)
 				# XXX: need to make sure we DO NOT read past the first request from
 				#      the browser until after we perform this read
 				# check that the client didn't get bored and go away
 				if client_id in self.browsers:
-					client_id, peer, request, data = self.browsers.readRequest(browser)
+					client_id, peer, request, data = self.browsers.readRequest(client_id)
 					if data:
 						self.download.sendClientData(client_id, data)
 

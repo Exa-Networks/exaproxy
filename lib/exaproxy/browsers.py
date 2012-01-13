@@ -160,11 +160,29 @@ class Browsers(object):
 		print "NEW BROWSER HAS ID %s: %s %s" % (name, sock, sock in self.clients)
 		return peer
 
-	def readRequest(self, sock, buffer_len=0):
+	def readSocketRequest(self, sock, buffer_len=0):
 		name, r, w, peer = self.clients.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad socket
 
 		if name is None:
 			print "TRYING TO READ FROM A CLIENT THAT DOES NOT EXIST", sock
+			return None
+
+		res = r.send(buffer_len)
+
+		if res is not None:
+			request, extra = res
+		else:
+			self.cleanup(sock, name)
+			request = None
+			extra = None
+
+		return name, peer, request, extra
+
+	def readRequest(self, name, buffer_len=0):
+		sock, r, w, peer = self.byname.get(name, (None, None, None, None)) # raise KeyError if we gave a bad socket
+
+		if sock is None:
+			print "TRYING TO READ FROM A CLIENT THAT DOES NOT EXIST", name
 			return None
 
 		res = r.send(buffer_len)
