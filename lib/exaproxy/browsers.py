@@ -36,29 +36,40 @@ class Browsers(object):
 		# XXX: if the REQUEST is too big : http://tools.ietf.org/html/rfc2616#section-3.2.1
 		# XXX: retun 414 (Request-URI Too Long)
 
-		while True: # multiple requests per connection?
-			buff = sock.recv(r_size or read_size) # XXX can raise socket.error
+		while True:
+			try:
+				while True: # multiple requests per connection?
+					print "READING FROM BROWSER: %s" % sock
+					buff = sock.recv(r_size or read_size) # XXX can raise socket.error
+					print "READ %s BYTES FROM BROWSER: %s" % (len(buff), sock)
 
-			if not buff: # read failed - should abort
-				yield None
+					if not buff: # read failed - should abort
+						break
+
+					# stream all data received after the request in case
+					# the client is using CONNECT
+					if request:
+						yield '', buff
+						continue
+
+					r_buffer += buff
+
+					if self.eor in r_buffer: # we have a full request
+						request, r_buffer = r_buffer.split(self.eor, 1)
+						yield request + self.eor, ''
+						yield '', r_buffer # client is using CONNECT if we are here
+						r_buffer = ''
+					else:
+						r_size = yield '', '' # no request yet
+
 				break
+			except socket.error, e:
+				if e.errno in BLOCKING_ERRORS:
+					yield '', ''
+				else:
+					break
 
-			# stream all data received after the request in case
-			# the client is using CONNECT
-			if request:
-				yield '', buff
-				continue
-
-			r_buffer += buff
-
-			if self.eor in r_buffer: # we have a full request
-				request, r_buffer = r_buffer.split(self.eor, 1)
-				print "GOT %s BYTE REQUEST FROM CLIENT: %s" % (len(request + self.eor), sock)
-				yield request + self.eor, ''
-				yield '', r_buffer # client is using CONNECT if we are here
-				r_buffer = ''
-			else:
-				r_size = yield '', '' # no request yet
+		yield None
 
 	def _write(self, sock):
 		"""coroutine managing data sent back to the browser"""
@@ -146,7 +157,7 @@ class Browsers(object):
 		self.clients[sock] = name, r, w, peer
 		self.byname[name] = sock, r, w, peer
 
-		print "NEW BROWSER HAS ID %s: %s" % (name, sock)
+		print "NEW BROWSER HAS ID %s: %s %s" % (name, sock, sock in self.clients)
 		return peer
 
 	def readRequest(self, sock, buffer_len=0):

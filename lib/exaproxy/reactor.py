@@ -139,6 +139,13 @@ class Reactor(object):
 			for fetcher in set(opening_download).intersection(write):
 				print "*** STARTING DOWNLOAD"
 				self.download.startDownload(fetcher)
+				# XXX: need to make sure we DO NOT read past the first request from
+				#      the browser until after we perform this read
+				# check that the client didn't get bored and go away
+				if client_id in self.browsers:
+					client_id, peer, request, data = self.browsers.readRequest(browser)
+					if data:
+						self.download.sendClientData(client_id, data)
 
 			# retry connecting - opportunistic 
 			for client_id, decision in retry_download:
