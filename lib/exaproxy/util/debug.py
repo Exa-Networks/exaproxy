@@ -50,7 +50,7 @@ if debug is None:
 	def intercept (type, value, trace):
 		bug_report(type, value, trace)
 	sys.excepthook = intercept
-	logger.pdb = True
+	logger.pdb = False
 elif debug not in ['0','']:
 	def intercept (type, value, trace):
 		bug_report(type, value, trace)
