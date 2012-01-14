@@ -106,14 +106,6 @@ class WorkerManager(object):
 
 
 class Worker (Thread):
-	commands = {
-		'BLOCK': (503, 'banned'),
-		'CENSOR': (503, 'banned'),
-		'CLASSIFYING': (503, 'classifying'),
-		'ERROR': (500, 'error'),
-		'DNS': (500, 'dns'),
-	}
-
 	# TODO : if the program is a function, fork and run :)
 	
 	def __init__ (self, name, request_box, program):
@@ -185,22 +177,18 @@ class Worker (Thread):
 			response = self.process.stdout.readline().strip()
 			#logger.info('worker %d' % self.wid, 'received from classifier: [%s]' % response)
 
-			if response in self.commands:
-				code, command = self.commands[response]
-				host, path = None, None
-			else:
-				code, command = None, None
-				if response.startswith('http://'):
-					response = response[7:]
-				host, path = response.split('/', 1) if '/' in response else (None, None)
-				# XXX: Surfprotect hardcoded - need removing
-				if host == 'redirector.surfprotect.co.uk':
-					if path.startswith('banned'):
-						code = 400
-						command = 'banned'
-					elif path.startswith('pending'):
-						code = 400
-						command = 'pending'
+			code, command = None, None
+			if response.startswith('http://'):
+				response = response[7:]
+			host, path = response.split('/', 1) if '/' in response else (None, None)
+			# XXX: Surfprotect hardcoded - need removing
+			if host == 'redirector.surfprotect.co.uk':
+				if path.startswith('banned'):
+					code = 400
+					command = 'banned'
+				elif path.startswith('pending'):
+					code = 400
+					command = 'pending'
 		except IOError, e:
 			logger.error('worker %d' % self.wid, 'IO/Error when sending to process: %s' % str(e))
 			code, command = self.commands['ERROR']
@@ -263,9 +251,8 @@ class Worker (Thread):
 
 			ipaddr = resolve_host(request.host)
 			if not ipaddr:
-				logger.error('worker %d' % self.wid,'Could not resolve %s' % request.host)
-				code, command = self.commands['DNS']
-				self.respond_local(client_id, code, command)
+				logger.warning('worker %d' % self.wid,'Could not resolve %s' % request.host)
+				self.respond_html(client_id, 503, 'DNS Issue')
 				continue
 
 			# classify and return the filtered page
