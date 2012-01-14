@@ -213,11 +213,11 @@ class Worker (Thread):
 		header = request.toString(linesep='\0')
 		self.respond('\0'.join((client_id, 'connect', ip, str(port), header)))
 
-	def respond_local(self, client_id, code, reason):
-		self.respond('\0'.join((client_id, 'local', str(code), reason)))
+	def respond_file(self, client_id, code, reason):
+		self.respond('\0'.join((client_id, 'file', str(code), reason)))
 
-	def respond_data(self, client_id, code, *data):
-		self.respond('\0'.join((client_id, 'data', str(code))+data))
+	def respond_html(self, client_id, code, *data):
+		self.respond('\0'.join((client_id, 'html', str(code))+data))
 
 	def respond_shutdown(self):
 		self.respond('shutdown')
@@ -246,7 +246,7 @@ class Worker (Thread):
 
 			request = Header(header)
 			if not request.isValid():
-				self.respond_data(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)).replace(os.linesep, '\0'))
+				self.respond_html(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)).replace(os.linesep, '\0'))
 				continue
 
 			ipaddr = resolve_host(request.host)
@@ -262,7 +262,7 @@ class Worker (Thread):
 
 					# check to see if surfprotect told us to handle the request locally
 					if command is not None:
-						self.respond_local(client_id, code, command)
+						self.respond_file(client_id, code, command)
 						continue
 
 					# check to see if the hostname was rewritten
@@ -283,14 +283,14 @@ class Worker (Thread):
 					self.respond_connect(client_id, ipaddr, request.port, request)
 					continue
 				else:
-					self.respond_data(client_id, 501, 'CONNECT NOT ALLOWED', 'We are an HTTP only proxy')
+					self.respond_html(client_id, 501, 'CONNECT NOT ALLOWED', 'We are an HTTP only proxy')
 					continue
 
 			if method in ('TRACE',):
-				self.respond_data(client_id, 501, 'TRACE NOT IMPLEMENTED', 'This is bad .. we are sorry.')
+				self.respond_html(client_id, 501, 'TRACE NOT IMPLEMENTED', 'This is bad .. we are sorry.')
 				continue
 
-			self.respond_data(client_id, 405, 'METHOD NOT ALLOWED', 'Method Not Allowed')
+			self.respond_html(client_id, 405, 'METHOD NOT ALLOWED', 'Method Not Allowed')
 			continue
 
 		# stop the child process

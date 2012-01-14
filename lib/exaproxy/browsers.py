@@ -217,12 +217,12 @@ class Browsers(object):
 			w.send(None) # no local file
 			res = w.send(d)
 
-		elif command == 'data':
+		elif command == 'html':
 			w.send(None) # no local file
 			w.send(d)
 			res = w.send(None)
 
-		elif command == 'local':
+		elif command == 'file':
 			res = w.send(d) # use local file
 			w.send(None)    # close the connection once our buffer is empty
 			self.buffered.append(sock) # buffer immediately populated with the full local content

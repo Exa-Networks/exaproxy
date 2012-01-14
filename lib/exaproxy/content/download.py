@@ -62,11 +62,11 @@ class DownloadManager(object):
 				result = self.download.newConnection(client_id, host, int(port), None)
 				content = ('stream', '') if result is True else None
 
-			elif command == 'data':
+			elif command == 'html':
 				code, data = args.split('\0', 1)
-				content = ('data', data.replace('\0', os.linesep))
+				content = ('html', data.replace('\0', os.linesep))
 
-			elif command == 'local':
+			elif command == 'file':
 				code, reason = args.split('\0', 1)
 				content = self.getLocalContent(reason)
 
