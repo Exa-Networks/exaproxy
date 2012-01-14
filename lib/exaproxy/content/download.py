@@ -9,6 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 from exaproxy.util.logger import logger
 from exaproxy.nettools import connected_tcp_socket
+from exaproxy.http.response import http
 
 import os
 import socket
@@ -67,7 +68,7 @@ class DownloadManager(object):
 
 			elif command == 'html':
 				code, data = args.split('\0', 1)
-				content = ('html', data.replace('\0', os.linesep))
+				content = ('html', http(code,data.replace('\0', os.linesep)))
 
 			elif command == 'file':
 				code, reason = args.split('\0', 1)
@@ -99,7 +100,8 @@ class DownloadManager(object):
 	def sendSocketData(self, socket, data):
 		return self.download.sendSocketData(socket, data)
 
-
+	def stop (self):
+		pass
 
 class Download(object):
 	socket = staticmethod(connected_tcp_socket)
