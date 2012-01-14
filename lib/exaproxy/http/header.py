@@ -117,9 +117,6 @@ class Header(dict):
 			self['host'] = 'Host: ' + host
 
 	def isValid(self):
-		print "self.method",self.method
-		print "self.host",self.host
-		print "self.path",self.path
 		return self.method is not None and self.host is not None and self.path is not None
 
 	def toString(self, linesep='\r\n'):
