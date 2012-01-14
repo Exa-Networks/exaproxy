@@ -13,7 +13,8 @@ fi
 export PYTHONPATH=$path/lib:/usr/share/exaproxy/lib/1.0.0
 export ETC=$path/etc/exaproxy
 
-PYPY=`which python2.6`
+INTERPRETER=`which $PYTHON`
+PYPY=`which pypy`
 PYTHON27=`which python2.7`
 PYTHON26=`which python2.6`
 PYTHON25=`which python2.5`
@@ -21,7 +22,10 @@ PYTHON24=`which python2.4`
 PYTHON2=`which python2`
 PYTHON=`which python`
 
-if [ -f "$PYPY" ]
+if [ -f "$INTERPRETER" ]
+then
+		echo
+elif [ -f "$PYPY" ]
 then
   INTERPRETER=$PYPY
 elif [ -f "$PYTHON27" ]
