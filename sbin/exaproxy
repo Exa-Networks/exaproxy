@@ -24,7 +24,7 @@ PYTHON=`which python`
 
 if [ -f "$INTERPRETER" ]
 then
-		echo
+		DUMMY='need this for the then'
 elif [ -f "$PYPY" ]
 then
   INTERPRETER=$PYPY
