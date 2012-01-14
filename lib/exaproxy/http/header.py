@@ -23,8 +23,7 @@ class Header(dict):
 
 			method, fullpath, version = request.split()
 			method = method.upper()
-			version = version.upper()
-
+			version = version.split('/')[-1]
 
 			if '://' in fullpath:
 				x, b = fullpath.split('://', 1)
@@ -101,9 +100,9 @@ class Header(dict):
 		self.client = client
 
 	def __setitem__ (self,key,value):
-		dict.__setitem__ (self,key,value)
-		if key not in self.order:
+		if not key in self.order:
 			self.order.append(key)
+		dict.__setitem__ (self,key,value)
 
 	def redirect(self, host, path):
 		self.host = host if host is not None else self.host
