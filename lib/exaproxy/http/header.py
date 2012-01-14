@@ -100,6 +100,9 @@ class Header(dict):
 		self.url = url
 		self.client = client
 
+	def __setitem__ (self,key,value):
+		dict.__setitem__ (self,key,value)
+		self.order.append(key)
 
 	def redirect(self, host, path):
 		self.host = host if host is not None else self.host
