@@ -14,9 +14,9 @@ class Header(dict):
 	def __init__(self, header):	
 		self.order = []
 
-		#print "********************************************* HEADER"
-		#print header
-		#print "********************************************* "
+#		print "********************************************* HEADER"
+#		print header
+#		print "*********************************************"
 
 		try:
 			request, remaining = header.split('\r\n',1)
@@ -84,6 +84,7 @@ class Header(dict):
 			raise
 		except Exception, e:
 			print '+'*60
+			print type(e)
 			print e
 			print '+'*60
 			method, path, version = None, None, None
@@ -116,6 +117,9 @@ class Header(dict):
 			self['host'] = 'Host: ' + host
 
 	def isValid(self):
+		print "self.method",self.method
+		print "self.host",self.host
+		print "self.path",self.path
 		return self.method is not None and self.host is not None and self.path is not None
 
 	def toString(self, linesep='\r\n'):
