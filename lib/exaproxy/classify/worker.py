@@ -193,6 +193,7 @@ class Worker (Thread):
 				if response.startswith('http://'):
 					response = response[7:]
 				host, path = response.split('/', 1) if '/' in response else (None, None)
+				# XXX: Surfprotect hardcoded - need removing
 				if host == 'redirector.surfprotect.co.uk':
 					if path.startswith('banned'):
 						code = 400
