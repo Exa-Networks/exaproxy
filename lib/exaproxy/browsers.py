@@ -229,11 +229,10 @@ class Browsers(object):
 			return 
 
 		if res is None:
-                        # XXX: this is messy
-                        # do not clean up the socket if we know it is still referenced
-                        if sock not in self.buffered:
-                                return self.cleanup(sock, name)
-
+			# XXX: this is messy
+			# do not clean up the socket if we know it is still referenced
+			if sock not in self.buffered:
+				return self.cleanup(sock, name)
 
 		buf_len, had_buffer = res
 
