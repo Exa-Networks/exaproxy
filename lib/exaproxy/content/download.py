@@ -77,13 +77,16 @@ class DownloadManager(object):
 						if name.startswith('/'):
 							fname = name
 						else:
-							fname = os.path.join(self.location,name)
-						try:
-							with open(fname,'r') as f:
-								html = f.read()
-							self._html[name] = html
-						except IOError:
-							html = 'could not open %s' % name
+							fname = os.path.normpath(os.path.join(self.location,name))
+						if not fname.startswith(self.location):
+							html = 'invalid file location for %s' % name
+						else:
+							try:
+								with open(fname,'r') as f:
+									html = f.read()
+								self._html[name] = html
+							except IOError:
+								html = 'could not open %s' % name
 				else:
 					html = data.replace('\0', os.linesep)
 				content = ('html', http(code,html))
