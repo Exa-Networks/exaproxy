@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+deny.py
+
+Created by Thomas Mangin on 2012-01-14.
+Copyright (c) 2012 Exa Networks. All rights reserved.
+"""
+
+import os
+import sys
+
+cwd = os.getcwd()
+prg = sys.argv[0]
+
+if not prg.startswith('/'): # Unix only - we are bad ..
+	location = os.path.normpath(os.path.join(cwd,prg))
+else:
+	location = os.path.normpath(prg)
+
+deny = os.path.join(os.path.join(os.sep,*os.path.join(location.split(os.sep)[:-2])),'html','deny.html')
+
+try:
+	while True:
+		data = sys.stdin.readline()
+		url = data.split(' ')[0]
+		sys.stdout.write('%s\r\n' % deny)
+		sys.stdout.flush()
+except KeyboardInterrupt, e:
+	sys.stderr.write('^C keyboard interrupt. exiting.\n')
+	sys.stderr.flush()
+except Exception, e:
+	sys.stderr.write('CHILD FAILED %s\n' % str(e))
+	sys.stderr.flush()
