@@ -252,7 +252,7 @@ class Worker (Thread):
 			ipaddr = resolve_host(request.host)
 			if not ipaddr:
 				logger.warning('worker %d' % self.wid,'Could not resolve %s' % request.host)
-				self.respond_html(client_id, 503, 'DNS Issue')
+				self.respond_html(client_id, 503, 'file://dns.html')
 				continue
 
 			# classify and return the filtered page

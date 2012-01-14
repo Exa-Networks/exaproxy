@@ -26,6 +26,7 @@ DEFAULT_READ_BUFFER_SIZE = 4096
 
 class DownloadManager(object):
 	def __init__(self, location):
+		self._html = {}
 		self.download = Download()
 		self.location = location
 		self.retry = []
@@ -68,7 +69,24 @@ class DownloadManager(object):
 
 			elif command == 'html':
 				code, data = args.split('\0', 1)
-				content = ('html', http(code,data.replace('\0', os.linesep)))
+				if data.startswith('file://'):
+					name = data[7:]
+					if name in self._html:
+						html = self._html[name]
+					else:
+						if name.startswith('/'):
+							fname = name
+						else:
+							fname = os.path.join(self.location,name)
+						try:
+							with open(fname,'r') as f:
+								html = f.read()
+							self._html[name] = html
+						except IOError:
+							html = 'could not open %s' % name
+				else:
+					html = data.replace('\0', os.linesep)
+				content = ('html', http(code,html))
 
 			elif command == 'file':
 				code, reason = args.split('\0', 1)
