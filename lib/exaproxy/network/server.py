@@ -71,7 +71,7 @@ class Server (object):
 					self.io.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 					self.io.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 				except AttributeError:
-					passs
+					pass
 				self.io.settimeout(self.timeout)
 				self.io.bind((self.ip,self.port))
 				self.io.setblocking(0)
