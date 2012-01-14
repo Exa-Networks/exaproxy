@@ -128,7 +128,7 @@ class _Logger (object):
 
 		if not self.status.get(source.split(' ',1)[0],False):
 			print "--recording", level, source, message
-			self._record(time.localtime(),source,level,message)
+			self._record(time.localtime(),level,source,message)
 			return
 
 		for line in message.split('\n'):
