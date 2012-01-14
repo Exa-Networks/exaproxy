@@ -36,7 +36,10 @@ class DownloadManager(object):
 		self.buffered = self.download.buffered
 
 	def getLocalContent(self, name):
-		filename = os.path.join(self.location, name)
+		if not name.startswith('/'):
+			filename = os.path.join(self.location, name)
+		else:
+			filename = name
 		if os.path.isfile(filename):
 			content = 'local', filename
 		else: 

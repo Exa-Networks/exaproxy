@@ -52,7 +52,14 @@ class _Configuration (object):
 	SPEED     = 2 # 0.01
 	CONNECT   = os.environ.get('CONNECT','1').lower() in _enabled
 	PROFILE   = os.environ.get('PROFILE','0')
-	CONTENT   = os.environ.get('CONTENT', '/etc/content')
+
+	_location = os.path.normpath(sys.argv[0]) if sys.argv[0].startswith('/') else os.path.normpath(os.path.join(cwd,sys.argv[0]))
+	_paths = (
+		os.path.join(os.path.join(os.sep,*os.path.join(_location.split(os.sep)[:-3])),'etc','exaproxy','html'),
+		os.path.normpath('/etc/exaproxy/html'),
+	)
+
+	HTML      = [path for path in _paths if os.path.exists(path)][0] # XXX: This will fail if we can not find a configuration location
 
 	def __init__ (self):
 		if os.environ.get('SYSLOG',None):

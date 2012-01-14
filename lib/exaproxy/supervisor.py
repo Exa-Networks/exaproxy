@@ -37,7 +37,7 @@ class Supervisor(object):
 
 		# XXX : Should manager and Download moved into server ?
 		self.manager = WorkerManager()
-		self.download = DownloadManager(configuration.CONTENT)
+		self.download = DownloadManager(configuration.HTML)
 		self.browsers = Browsers()
 		self.server = Server()
 
