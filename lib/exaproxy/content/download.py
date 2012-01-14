@@ -101,6 +101,8 @@ class DownloadManager(object):
 		return self.download.sendSocketData(socket, data)
 
 	def stop (self):
+		# XXX: Fixme
+		print "STOP exists to not cause close warning"
 		pass
 
 class Download(object):

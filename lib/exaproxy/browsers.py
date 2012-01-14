@@ -330,3 +330,9 @@ class Browsers(object):
 	def finish(self, name):
 		sock, r, w, peer = self.byname[name] # raise KeyError if we give a bad name
 		print "************* IMPLEMENT ME - FINISH"
+
+	def stop (self):
+		#XXX: Fixme
+		print "JUST HERE TO NOT HAVE ERRORS"
+		pass
+		
