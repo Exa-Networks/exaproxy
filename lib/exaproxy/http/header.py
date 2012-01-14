@@ -48,6 +48,7 @@ class Header(dict):
 				else:
 					port = int(port)
 			else:
+				# fullpath will be '' if GET / HTTP/1.x is used
 				host = fullpath
 				port = None
 
@@ -58,13 +59,17 @@ class Header(dict):
 
 
 			for line in remaining.split('\r\n'):
-				key = line.split(':',1)[0].lower().strip()
+				if not line:
+					break
+				key,value = line.split(':',1)
+				key = key.strip().lower()
 				if not key:
 					continue
 				
 				self.order.append(key)
 				self[key] = line
-
+				if key == 'host' and not host:
+					host = value.strip().lower()
 
 			if method != 'CONNECT':
 				requested_host = self.get('host', ':').split(':', 1)[1].strip()
