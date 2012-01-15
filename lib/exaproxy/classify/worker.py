@@ -191,12 +191,7 @@ class Worker (Thread):
 					command = 'pending'
 		except IOError, e:
 			logger.error('worker %d' % self.wid, 'IO/Error when sending to process: %s' % str(e))
-			code, command = self.commands['ERROR']
-			host, path = None, None
-
-		print "REDIRECTING TO", code, command, host, path
-		return code, command, host, path
-
+			return 'file://internal_error.html'
 
 	def respond(self, response):
 		self.response_box_write.write(response + os.linesep)
