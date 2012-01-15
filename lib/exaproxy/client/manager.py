@@ -12,9 +12,8 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import socket
 import errno
 
-from .configuration import configuration
-from .util.logger import logger
-from .network.poller import errno_block
+from exaproxy.network.poller import errno_block
+from exaproxy.util.logger import logger
 
 class ClientManager (object):
 	eor = '\r\n\r\n'

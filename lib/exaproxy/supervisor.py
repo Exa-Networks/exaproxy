@@ -16,8 +16,8 @@ from .util.daemon import Daemon
 
 from .classify.worker import WorkerManager
 from .content.manager import ContentManager
+from .client.manager import ClientManager
 from .network.server import Server
-from .client import ClientManager
 
 from .reactor import Reactor
 
