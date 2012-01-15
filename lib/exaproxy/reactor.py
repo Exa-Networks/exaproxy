@@ -31,7 +31,7 @@ class Reactor(object):
 			read_socks = list(self.server.socks)		# listening sockets
 			read_workers = list(self.decider.workers)	# pipes carrying responses from the child processes
 
-			read_browser = list(self.browsers.clients)	# active clients
+			read_browser = list(self.browsers.bysock)	# active clients
 			write_browser = list(self.browsers.buffered)	# active clients that we already have buffered data to send to
 
 

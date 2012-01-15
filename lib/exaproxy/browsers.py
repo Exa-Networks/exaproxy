@@ -20,7 +20,7 @@ class Browsers(object):
 	eor = '\r\n\r\n'
 
 	def __init__(self):
-		self.clients = {}
+		self.bysock = {}
 		self.byname = {}
 		self.buffered = []
 
@@ -145,7 +145,7 @@ class Browsers(object):
 
 	def newConnection(self, name, sock, peer):
 		# XXX: simpler code if we merge _read() and _write()
-		#self.clients[sock] = name, self._run(socket)
+		#self.bysock[sock] = name, self._run(socket)
 
 		r = self._read(sock)
 		r.next()
@@ -154,14 +154,14 @@ class Browsers(object):
 		# starting the coroutine in startData() - helps ensure that it's called before sendData
 		#w.next()
 
-		self.clients[sock] = name, r, w, peer
+		self.bysock[sock] = name, r, w, peer
 		self.byname[name] = sock, r, w, peer
 
-		logger.info('browser','new id %s (socket %s) in clients : %s' % (name, sock, sock in self.clients))
+		logger.info('browser','new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
 		return peer
 
 	def readRequestBySocket(self, sock, buffer_len=0):
-		name, r, w, peer = self.clients.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad socket
+		name, r, w, peer = self.bysock.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad socket
 
 		if name is None:
 			logger.error('browser','trying to read from a client that does not exists %s' % sock)
@@ -271,7 +271,7 @@ class Browsers(object):
 		return buf_len
 
 	def sendDataBySocket(self, sock, data):
-		name, r, w, peer = self.clients.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad name
+		name, r, w, peer = self.bysock.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad name
 		if name is None:
 			logger.error('browser','trying to send data using an socket that does not exists %s %s %s' % (sock,type(data),data))
 			return None
@@ -302,7 +302,7 @@ class Browsers(object):
 		except socket.error:
 			pass
 
-		_name, _, __, ___ = self.clients.pop(sock, (None, None, None))
+		_name, _, __, ___ = self.bysock.pop(sock, (None, None, None))
 
 		if name is not None:
 			self.byname.pop(name, None)
@@ -313,14 +313,14 @@ class Browsers(object):
 		return None
 
 	def shutdown(self):
-		for socket in self.clients:
+		for socket in self.bysock:
 			try:
 				sock.shutdown(socket.SHUT_RDWR)
 				sock.close()
 			except socket.error:
 				pass
 
-		self.clients = {}
+		self.bysock = {}
 		self.byname = {}
 
 	# XXX: create to not change Server() too much in one go
