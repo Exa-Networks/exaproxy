@@ -9,12 +9,12 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # http://code.google.com/speed/articles/web-metrics.html
 
-from nettools import bound_tcp_socket, socket
+from network.functions import listen
 from .util.logger import logger
 
 
 class Server(object):
-	socket = staticmethod(bound_tcp_socket)
+	_listen = staticmethod(listen)
 
 	def __init__(self):
 		self.socks = {}
@@ -27,13 +27,10 @@ class Server(object):
 			name += 1
 
 	def listen(self, ip, port, timeout, backlog):
-		sock = self.socket(ip, port)
-		if sock is not None:
-			sock.settimeout(timeout)
-			sock.listen(backlog)
-			
-			self.socks[sock] = True
-		return sock
+		s = self._listen(ip, port,timeout,backlog)
+		# XXX: check s is not None
+		self.socks[s] = True
+		return s
 
 	def accept(self, sock):
 		try:

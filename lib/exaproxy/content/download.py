@@ -8,7 +8,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 from exaproxy.util.logger import logger
-from exaproxy.nettools import connected_tcp_socket
+from exaproxy.network.functions import connect
 from exaproxy.http.response import http
 
 import os
@@ -127,7 +127,7 @@ class DownloadManager(object):
 		pass
 
 class Download(object):
-	socket = staticmethod(connected_tcp_socket)
+	_connect = staticmethod(connect)
 
 	def __init__(self):
 		self.connections = {}
@@ -213,7 +213,7 @@ class Download(object):
 		yield None # close the connection
 
 	def newConnection(self, client_id, host, port, request):
-		sock = self.socket(host, port)
+		sock = self._connect(host, port)
 
 		print "NEW DOWNLOAD SOCKET FOR CLIENT %s: %s" % (client_id, sock)
 
