@@ -7,6 +7,8 @@ Created by Thomas Mangin on 2011-12-02.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
+from exaproxy.util.logger import logger
+
 class HostMismatch(Exception):
 	pass
 
@@ -14,9 +16,7 @@ class Header(dict):
 	def __init__(self, header):	
 		self.order = []
 
-#		print "********************************************* HEADER"
-#		print header
-#		print "*********************************************"
+		logger.info('header','parsing %s' % str(header))
 
 		try:
 			request, remaining = header.split('\r\n',1)
@@ -83,10 +83,7 @@ class Header(dict):
 		except KeyboardInterrupt:
 			raise
 		except Exception, e:
-			print '+'*60
-			print type(e)
-			print e
-			print '+'*60
+			logger.error('header','could not parse header %s %s' % (type(e),str(e)))
 			method, path, version = None, None, None
 			host, port, url = None, None, None
 			client, request = None, None

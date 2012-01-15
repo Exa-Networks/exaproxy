@@ -96,9 +96,7 @@ class DownloadManager(object):
 				content = self.getLocalContent(reason)
 
 		except (ValueError, TypeError), e:
-			print "******** PROBLEM GETTING CONTENT"
-			print "********", type(e),str(e)
-			# XXX: log 
+			logger.error('download', 'problem getting content %s %s' % type(e),str(e))
 			content = None
 
 		return content
@@ -156,10 +154,11 @@ class Download(object):
 
 			except socket.error, e:
 				if e.errno in BLOCKING_ERRORS:
-					logger.error('download', 'Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
+					logger.error('download','write failed as it would have blocked. Why were we woken up?')
+					logger.error('download','Error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
 					yield ''
 				else:
-					print "????? ARRGH - BAD DOWNLOADER ?????", type(e), str(e)
+					logger.error('download', 'bad downloaded ? %s %s' % (type(e),str(e)))
 					break # stop downloading
 
 		# XXX: should we indicate whether we downloaded the entire file
@@ -178,7 +177,7 @@ class Download(object):
 		#       it in memory
 
 		data = yield None # start the coroutine
-		print "DOWNLOAD WRITER STARTED WITH %s BYTES: %s" % (len(data) if data is not None else None, sock)
+		logger.info('download', 'writer started with %s bytes %s' % (len(data) if data is not None else None, sock))
 		w_buffer = ''
 
 		while True: # enter the exception handler as infrequently as possible
@@ -195,7 +194,7 @@ class Download(object):
 
 					if not had_buffer or not data:
 						sent = sock.send(w_buffer)
-						print "SENT %s of %s BYTES OF DATA: %s" % (sent, len(data), sock)
+						logger.info('download', 'sent %s of %s bytes of data : %s' % (sent, len(data), sock))
 						w_buffer = w_buffer[sent:]
 
 					data = yield (True if w_buffer else False), had_buffer
@@ -215,7 +214,7 @@ class Download(object):
 	def newConnection(self, client_id, host, port, request):
 		sock = self._connect(host, port)
 
-		print "NEW DOWNLOAD SOCKET FOR CLIENT %s: %s" % (client_id, sock)
+		logger.info('download', 'new download socket for client %s %s' % (client_id, sock))
 
 		# sock will be None if there was a temporary error
 		if sock is not None:
@@ -228,8 +227,8 @@ class Download(object):
 		res = self.connecting.pop(sock, None)
 		if res is not None:
 			client_id, request = res
-			print "DOWNLOAD SOCKET IS NOW OPEN FOR CLIENT %s: %s" % (client_id, sock)
-			print "GOING TO SEND %s BYTE REQUEST FOR CLIENT %s: %s" % (len(request or ''), client_id, sock)
+			logger.info('download', 'download socket is not open for client %s %s' % (client_id, sock))
+			logger.info('download', 'going to send %s bytes, request for client %s %s' % (len(request or ''), client_id, sock))
 			fetcher = self._read(sock)
 			fetcher.next()       # start the fetcher coroutine
 
@@ -258,14 +257,14 @@ class Download(object):
 			logger.error('download', 'Fatal? Received data from a client we do not recognise: %s' % client_id)
 			return None
 
-		print "GOING TO SEND %s BYTES OF DATA FOR CLIENT %s: %s" % (len(data) if data is not None else None, client_id, sock)
+		logger.info('download', 'going to send %s bytes of data for client %s %s' % (len(data) if data is not None else None, client_id, sock))
 		res = sender.send(data)
 
 		if res is None:
 			if sock not in self.buffered:
 				self._terminate(sock)
 			else:
-				print "SOCK WAS CLOSED BEFORE WE COULD EMPTY ITS BUFFER", sock
+				logger.warning('download', 'socket was closed before we could empty its buffer %s' % sock)
 			return None
 
 		buffered, had_buffer = res
@@ -281,19 +280,18 @@ class Download(object):
 	def sendSocketData(self, sock, data):
 		fetcher, sender, client_id = self.connections.get(sock, (None, None, None))
 		if client_id is None:
-			logger.error('download', 'Fatal? Sending data on a socket we do not recognise: %s' % sock)
-			print len(self.connections), sock in self.connections
+			logger.critical('download', 'Sending data on a socket we do not recognise: %s' % sock)
+			logger.critical('download', '#connections %s, socket in connections ? %s' % (len(self.connections), sock in self.connections))
 			return None
 
-
-		print "FLUSHING DATA WITH %s BYTES FOR CLIENT %s: %s" % (len(data) if data is not None else None, client_id, sock)
+		logger.info('flushing data with %s bytes for client %s %s' % (len(data) if data is not None else None, client_id, sock))
 
 		res = sender.send(data)
 
 		if res is None:
 			if sock in self.buffered:
 				self.buffered.remove(sock)
-			print "SEND SOCKET DATA - TERMINATING BECAUSE WE COULD NOT SEND DATA", sock
+			logger.error('download','could not send data to socket')
 			self._terminate(sock) # XXX: should return None - check that 'fixing' _terminate doesn't break anything
 			return None
 
@@ -316,7 +314,7 @@ class Download(object):
 			pass
 
 		fetcher, sender, client_id = self.connections.pop(sock, None)
-		print 'CLOSING DOWNLOAD SOCKET USED BY CLIENT %s: %s'  % (client_id, sock)
+		logger.info('download','closing download socket used by client %s %s' % (client_id, sock))
 		# XXX: log something if we did not have the client_id in self.byclientid
 		if client_id is not None:
 			self.byclientid.pop(client_id, None)
@@ -336,22 +334,21 @@ class Download(object):
 		if fetcher is not None:
 			data = fetcher.send(bufsize)
 		else:
-			print "NO FETCHER FOR", sock
+			logger.error('download','no fetcher for %s' % sock)
 			data = None
 
-
-		print "DOWNLOADED %s BYTES OF DATA FOR CLIENT %s: %s" % (len(data) if data is not None else None, client_id, sock)
+		logger.info('download','downloaded %s bytes of data for client %s %s' % (len(data) if data is not None else None, client_id, sock))
 
 		if fetcher and data is None:
 			self._terminate(sock)
 		elif data is None:
-			print "NOT TERMINATING BECAUSE THERE IS NO FETCHER"
+			logger.info('download','not terminating because there is no fetcher')
 
 		return client_id, data
 
 	def endClientDownload(self, client_id):
 		fetcher, sender, sock = self.byclientid.get(client_id, (None, None, None))
-		print "ENDING DOWNLOAD FOR CLIENT %s: %s" % (client_id, sock)
+		logger.info('download','ending download for client %s %s' % (client_id, sock))
 		if fetcher is not None:
 			res = fetcher.send(None)
 			response = res is None

@@ -127,7 +127,7 @@ class _Logger (object):
 			pdb.set_trace()
 
 		if not self.status.get(source.split(' ',1)[0],False):
-			print "--recording", level, source, message
+			#print "--recording", level, source, message
 			self._record(time.localtime(),level,source,message)
 			return
 

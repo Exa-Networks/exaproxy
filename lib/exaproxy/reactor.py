@@ -49,25 +49,15 @@ class Reactor(object):
 
 			retry_download = list(self.download.retry)	# rewritten destination info that we were unable to connect to
 
-
-
-			#print "*"*100
-			#print "READABLE DOWNLOAD SOCKETS ARE:", read_download
-			#print "BUFFERED DOWNLOAD SOCKETS ARE:", write_download
-			#print "*"*100
-			#print
-			#print
-
 			# wait until we have something to do
-			read, write, x = self.poller(read_socks + read_workers + read_browser + read_download, opening_download + write_download + write_browser, speed)
+			read, write, exceptional = self.poller(read_socks + read_workers + read_browser + read_download, opening_download + write_download + write_browser, speed)
 
-			if x:
-				print "EXCEPTIONAL", x
-
+			if exceptional:
+				logger.error('server','select returns some exceptional sockets %s' % str(exceptional))
 
 			# handle new connections before anything else
 			for sock in set(read_socks).intersection(read):
-				print "**** NEW CONNECTION"
+				logger.info('server','new connection')
 				for name, s, peer in self.server.accept(sock):
 					logger.debug('server', 'new connection from %s' % str(peer))
 					self.browsers.newConnection(name, s, peer)
@@ -107,14 +97,11 @@ class Reactor(object):
 
 			# decisions made by the child processes
 			for worker in set(read_workers).intersection(read):
-				print "*** INCOMING DECISION"
+				logger.info('server','incoming decision')
 				client_id, decision = self.decider.getDecision(worker)
-				print "*** GOT DECISION", client_id in self.browsers
 				# check that the client didn't get bored and go away
 				if client_id in self.browsers:
-					print "WANT TO GET CONTENT"
 					response = self.download.getContent(client_id, decision)
-					print 'RESPONSE START IS', response
 					# signal to the client that we'll be streaming data to it or
 					# give it the location of the local content to return
 					sending = self.browsers.startData(client_id, response)
@@ -138,7 +125,7 @@ class Reactor(object):
 
 			# fully connected connections to remote web servers
 			for fetcher in set(opening_download).intersection(write):
-				print "*** STARTING DOWNLOAD"
+				logger.info('server','starting download')
 				client_id, response = self.download.startDownload(fetcher)
 				# XXX: need to make sure we DO NOT read past the first request from
 				#      the browser until after we perform this read
