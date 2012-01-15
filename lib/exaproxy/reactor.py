@@ -18,11 +18,11 @@ from .util.logger import logger
 class Reactor(object):
 	poller = staticmethod(poller)
 
-	def __init__(self, server, decider, content, browsers):
+	def __init__(self, server, decider, content, client):
 		self.server = server		# Manage listening sockets
 		self.decider = decider		# Task manager for handling child decider processes
 		self.content = content	# the Content Download manager
-		self.browsers = browsers	# currently open client connections
+		self.client = client	# currently open client connections
 
 	def run(self, speed):
 		running = True
@@ -31,8 +31,8 @@ class Reactor(object):
 			read_socks = list(self.server.socks)		# listening sockets
 			read_workers = list(self.decider.workers)	# pipes carrying responses from the child processes
 
-			read_browser = list(self.browsers.bysock)	# active clients
-			write_browser = list(self.browsers.buffered)	# active clients that we already have buffered data to send to
+			read_client = list(self.client.bysock)	# active clients
+			write_client = list(self.client.buffered)	# active clients that we already have buffered data to send to
 
 
 			read_download = list(self.content.established) # Currently established connections
@@ -42,7 +42,7 @@ class Reactor(object):
 			retry_download = list(self.content.retry)	# rewritten destination info that we were unable to connect to
 
 			# wait until we have something to do
-			read, write, exceptional = self.poller(read_socks + read_workers + read_browser + read_download, opening_download + write_download + write_browser, speed)
+			read, write, exceptional = self.poller(read_socks + read_workers + read_client + read_download, opening_download + write_download + write_client, speed)
 
 			if exceptional:
 				logger.error('server','select returns some exceptional sockets %s' % str(exceptional))
@@ -52,13 +52,13 @@ class Reactor(object):
 				logger.info('server','new connection')
 				for name, s, peer in self.server.accept(sock):
 					logger.debug('server', 'new connection from %s' % str(peer))
-					self.browsers.newConnection(name, s, peer)
+					self.client.newConnection(name, s, peer)
 
-			# XXX: Need to make sure we do not check the browser for data after we
+			# XXX: Need to make sure we do not check the client for data after we
 			#      have the request, since we're not going to read it anyway
-			# incoming data from browsers
-			for browser in set(read_browser).intersection(read):
-				client_id, peer, request, data = self.browsers.readRequestBySocket(browser)
+			# incoming data from clients
+			for client in set(read_client).intersection(read):
+				client_id, peer, request, data = self.client.readRequestBySocket(client)
 				if request:
 					# request classification
 					self.decider.putRequest(client_id, peer, request)
@@ -78,7 +78,7 @@ class Reactor(object):
 
 
 				# send received data to the client that requested it
-				sending = self.browsers.sendDataByName(client_id, page_data)
+				sending = self.client.sendDataByName(client_id, page_data)
 
 				# check to see if the client went away
 				if sending is None and page_data is not None:
@@ -92,11 +92,11 @@ class Reactor(object):
 				logger.info('server','incoming decision')
 				client_id, decision = self.decider.getDecision(worker)
 				# check that the client didn't get bored and go away
-				if client_id in self.browsers:
+				if client_id in self.client:
 					response = self.content.getContent(client_id, decision)
 					# signal to the client that we'll be streaming data to it or
 					# give it the location of the local content to return
-					sending = self.browsers.startData(client_id, response)
+					sending = self.client.startData(client_id, response)
 
 					# check to see if the client went away
 					if sending is None:
@@ -106,9 +106,9 @@ class Reactor(object):
 				else:
 					logger.debug('server', 'a decision was made for unknown client %s - perhaps it already disconnected?' % client_id)
 
-			# browsers we can write buffered data to
-			for browser in set(write_browser).intersection(write):
-				self.browsers.sendDataBySocket(browser, '')
+			# clients we can write buffered data to
+			for client in set(write_client).intersection(write):
+				self.client.sendDataBySocket(client, '')
 
 			# remote servers we can write buffered data to
 			for download in set(write_download).intersection(write):
@@ -120,16 +120,16 @@ class Reactor(object):
 				logger.info('server','starting download')
 				client_id, response = self.content.startDownload(fetcher)
 				# XXX: need to make sure we DO NOT read past the first request from
-				#      the browser until after we perform this read
+				#      the client until after we perform this read
 				# check that the client didn't get bored and go away
-				if client_id in self.browsers:
+				if client_id in self.client:
 					logger.info('server','this read should not block')
-					client_id, peer, request, data = self.browsers.readRequestByName(client_id)
+					client_id, peer, request, data = self.client.readRequestByName(client_id)
 					if data:
 						self.content.sendClientData(client_id, data)
 
 					if response:
-						self.browsers.sendDataByName(client_id, response)
+						self.client.sendDataByName(client_id, response)
 
 			# retry connecting - opportunistic 
 			for client_id, decision in retry_download:

@@ -16,7 +16,7 @@ from .configuration import configuration
 from .util.logger import logger
 from .network.poller import errno_block
 
-class Browsers(object):
+class ClientManager (object):
 	eor = '\r\n\r\n'
 
 	def __init__(self):
@@ -38,9 +38,9 @@ class Browsers(object):
 		while True:
 			try:
 				while True: # multiple requests per connection?
-					logger.info('browser', 'reading socket %s' % str(sock))
+					logger.info('client', 'reading socket %s' % str(sock))
 					buff = sock.recv(r_size or read_size) # XXX can raise socket.error
-					logger.info('browser', 'reading socket %s done, have %d bytes' % (str(sock),len(buff)))
+					logger.info('client', 'reading socket %s done, have %d bytes' % (str(sock),len(buff)))
 
 					if not buff: # read failed - should abort
 						break
@@ -71,7 +71,7 @@ class Browsers(object):
 		yield None
 
 	def _write(self, sock):
-		"""coroutine managing data sent back to the browser"""
+		"""coroutine managing data sent back to the client"""
 
 		# XXX:
 		# TODO: use an open file for buffering data rather than storing
@@ -112,7 +112,7 @@ class Browsers(object):
 
 					if finished:
 						if data:
-							logger.error('browser', '*'*80 + 'Tried to send data to browser after we told it to close. Dropping it.')
+							logger.error('client', '*'*80 + 'Tried to send data to client after we told it to close. Dropping it.')
 							continue
 
 						if not w_buffer:
@@ -120,7 +120,7 @@ class Browsers(object):
 
 					if not had_buffer or data == '':
 						sent = sock.send(w_buffer)
-						logger.info('browser', 'wrote to socket %s sent %d bytes' % (str(sock),sent))
+						logger.info('client', 'wrote to socket %s sent %d bytes' % (str(sock),sent))
 						w_buffer = w_buffer[sent:]
 
 					data = yield (True if w_buffer else False), had_buffer
@@ -131,12 +131,12 @@ class Browsers(object):
 
 			except socket.error, e:
 				if e.errno in errno_block:
-					logger.error('browser','failed to sent %d bytes' % len(data))
-					logger.error('browser','it would have blocked, why were we woken up !?!')
-					logger.error('browser','error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
+					logger.error('client','failed to sent %d bytes' % len(data))
+					logger.error('client','it would have blocked, why were we woken up !?!')
+					logger.error('client','error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
 					data = yield (True if w_buffer else False), had_buffer
 				else:
-					logger.critical('browser','????? ARRGH ?????')
+					logger.critical('client','????? ARRGH ?????')
 					yield None # stop the client connection
 					break # and don't come back
 
@@ -157,14 +157,14 @@ class Browsers(object):
 		self.bysock[sock] = name, r, w, peer
 		self.byname[name] = sock, r, w, peer
 
-		logger.info('browser','new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
+		logger.info('client','new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
 		return peer
 
 	def readRequestBySocket(self, sock, buffer_len=0):
 		name, r, w, peer = self.bysock.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad socket
 
 		if name is None:
-			logger.error('browser','trying to read from a client that does not exists %s' % sock)
+			logger.error('client','trying to read from a client that does not exists %s' % sock)
 			return None
 
 		res = r.send(buffer_len)
@@ -182,7 +182,7 @@ class Browsers(object):
 		sock, r, w, peer = self.byname.get(name, (None, None, None, None)) # raise KeyError if we gave a bad socket
 
 		if sock is None:
-			logger.error('browser','trying to read request from a client that does not exists %s' % sock)
+			logger.error('client','trying to read request from a client that does not exists %s' % sock)
 			return None
 
 		res = r.send(buffer_len)
@@ -203,13 +203,13 @@ class Browsers(object):
 
 		w.next() # start the _write coroutine
 		if data is None:
-			logger.info('browser','terminating client %s before it could begin %s' % (name, sock))
+			logger.info('client','terminating client %s before it could begin %s' % (name, sock))
 			return self.cleanup(sock, name)
 
 		try:
 			command, d = data
 		except (ValueError, TypeError):
-			logger.error('browser', 'invalid command sent to client %s' % name)
+			logger.error('client', 'invalid command sent to client %s' % name)
 			return self.cleanup(sock, name)
 
 		if command == 'stream':
@@ -247,10 +247,10 @@ class Browsers(object):
 	def sendDataByName(self, name, data):
 		sock, r, w, peer = self.byname.get(name, (None, None, None, None)) # raise KeyError if we gave a bad name
 		if sock is None:
-			logger.error('browser','trying to send data using an id that does not exists %s' % name)
+			logger.error('client','trying to send data using an id that does not exists %s' % name)
 			return None
 
-		logger.info('browser','sending %s bytes to browser %s: %s' % (len(data) if data is not None else None, name, sock))
+		logger.info('client','sending %s bytes to client %s: %s' % (len(data) if data is not None else None, name, sock))
 		res = w.send(data)
 
 		if res is None:
@@ -273,7 +273,7 @@ class Browsers(object):
 	def sendDataBySocket(self, sock, data):
 		name, r, w, peer = self.bysock.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad name
 		if name is None:
-			logger.error('browser','trying to send data using an socket that does not exists %s %s %s' % (sock,type(data),data))
+			logger.error('client','trying to send data using an socket that does not exists %s %s %s' % (sock,type(data),data))
 			return None
 
 		res = w.send(data)
@@ -295,7 +295,7 @@ class Browsers(object):
 		return buf_len
 
 	def cleanup(self, sock, name=None):
-		logger.debug('browser','cleanup for socket %s' % sock)
+		logger.debug('client','cleanup for socket %s' % sock)
 		try:
 			sock.shutdown(socket.SHUT_RDWR)
 			sock.close()
