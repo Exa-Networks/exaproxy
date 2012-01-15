@@ -15,7 +15,7 @@ from .util.pid import PID
 from .util.daemon import Daemon
 
 from .classify.worker import WorkerManager
-from .content.download import DownloadManager
+from .content.manager import ContentManager
 from .network.server import Server
 from .browsers import Browsers
 
@@ -37,11 +37,11 @@ class Supervisor(object):
 
 		# XXX : Should manager and Download moved into server ?
 		self.manager = WorkerManager()
-		self.download = DownloadManager(configuration.HTML)
+		self.content = ContentManager(configuration.HTML)
 		self.browsers = Browsers()
 		self.server = Server()
 
-		self.reactor = Reactor(self.server, self.manager, self.download, self.browsers)
+		self.reactor = Reactor(self.server, self.manager, self.content, self.browsers)
 
 		self._shutdown = False
 		self._reload = False
@@ -123,7 +123,7 @@ class Supervisor(object):
 		logger.info('supervisor','Performing shutdown')
 		self.server.stop()   # accept no new connections
 		self.manager.stop()  # shut down redirector children
-		self.download.stop() # stop downloading data
+		self.content.stop() # stop downloading data
 		self.browsers.stop() # close client connections
 		self.pid.remove()
 
