@@ -16,7 +16,7 @@ from .util.daemon import Daemon
 
 from .classify.worker import WorkerManager
 from .content.download import DownloadManager
-from .server import Server
+from .network.server import Server
 from .browsers import Browsers
 
 from .reactor import Reactor
