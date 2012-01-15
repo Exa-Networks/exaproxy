@@ -9,6 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 from exaproxy.util.logger import logger
 from exaproxy.network.functions import connect
+from exaproxy.network.poller import errno_block
 from exaproxy.http.response import http
 
 import os
@@ -18,8 +19,6 @@ import errno
 # http://tools.ietf.org/html/rfc2616#section-8.2.3
 # Says we SHOULD keep track of the server version and deal with 100-continue
 # I say I am too lazy - and if you want the feature use this software as as rev-proxy :D
-
-BLOCKING_ERRORS = (errno.EAGAIN,errno.EINTR,errno.EWOULDBLOCK,errno.EINTR)
 
 DEFAULT_READ_BUFFER_SIZE = 4096
 
@@ -153,7 +152,7 @@ class Download(object):
 				break # exit the outer loop
 
 			except socket.error, e:
-				if e.errno in BLOCKING_ERRORS:
+				if e.errno in errno_block:
 					logger.error('download','write failed as it would have blocked. Why were we woken up?')
 					logger.error('download','Error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
 					yield ''
@@ -203,7 +202,7 @@ class Download(object):
 					# through normal execution
 
 			except socket.error, e:
-				if e.errno in BLOCKING_ERRORS:
+				if e.errno in errno_block:
 					logger.error('download', 'Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
 					data = yield (True if w_buffer else False), had_buffer
 				else:
