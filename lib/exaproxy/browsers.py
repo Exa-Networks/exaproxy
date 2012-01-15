@@ -39,9 +39,9 @@ class Browsers(object):
 		while True:
 			try:
 				while True: # multiple requests per connection?
-					print "READING FROM BROWSER: %s" % sock
+					logger.info('browser', 'reading socket %s' % str(sock))
 					buff = sock.recv(r_size or read_size) # XXX can raise socket.error
-					print "READ %s BYTES FROM BROWSER: %s" % (len(buff), sock)
+					logger.info('browser', 'reading socket %s done, have %d bytes' % (str(sock),len(buff)))
 
 					if not buff: # read failed - should abort
 						break
@@ -121,7 +121,7 @@ class Browsers(object):
 
 					if not had_buffer or data == '':
 						sent = sock.send(w_buffer)
-						print "SENT %s BYTES OF DATA TO BROWSER: %s" % (sent, sock)
+						logger.info('browser', 'wrote to socket %s sent %d bytes' % (str(sock),sent))
 						w_buffer = w_buffer[sent:]
 
 					data = yield (True if w_buffer else False), had_buffer
@@ -131,12 +131,13 @@ class Browsers(object):
 				break
 
 			except socket.error, e:
-				if e.errno in BLOCKING_ERRORS:
-					logger.error('browser', 'Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
-					print "DATA TO SEND WAS", len(data)
+				if e.errno in errno_block:
+					logger.error('browser','failed to sent %d bytes' % len(data))
+					logger.error('browser','it would have blocked, why were we woken up !?!')
+					logger.error('browser','error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
 					data = yield (True if w_buffer else False), had_buffer
 				else:
-					print "????? ARRGH ?????"
+					logger.critical('browser','????? ARRGH ?????')
 					yield None # stop the client connection
 					break # and don't come back
 
