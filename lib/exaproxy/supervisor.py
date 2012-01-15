@@ -14,7 +14,7 @@ from Queue import Queue
 from .util.pid import PID
 from .util.daemon import Daemon
 
-from .classify.worker import WorkerManager
+from .classify.manager import WorkerManager
 from .content.manager import ContentManager
 from .client.manager import ClientManager
 from .network.server import Server
@@ -36,7 +36,7 @@ class Supervisor(object):
 		self.daemon = Daemon(configuration.DAEMONIZE,configuration.USER)
 
 		# XXX : Should manager and Download moved into server ?
-		self.manager = WorkerManager()
+		self.manager = WorkerManager(configuration.PROGRAM)
 		self.content = ContentManager(configuration.HTML)
 		self.client = ClientManager()
 		self.server = Server()
@@ -89,7 +89,7 @@ class Supervisor(object):
 					self.increase_spawn_limit = False
 
 				# make sure we have enough workers
-				self.manager.provision(configuration.PROGRAM)
+				self.manager.provision()
 				# check for IO change with select
 				self.reactor.run(2)
 
@@ -113,7 +113,7 @@ class Supervisor(object):
 		self.daemon.daemonise()
 		self.pid.save()
 		# start our threads
-		self.manager.provision(configuration.PROGRAM)
+		self.manager.provision()
 
 		# only start listening once we know we were able to fork our worker processes
 		self.server.listen('0.0.0.0', 3128, 5, 200)

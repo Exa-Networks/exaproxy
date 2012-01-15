@@ -15,15 +15,15 @@ import os
 import time
 import socket
 
-from Queue import Queue, Empty
-import fcntl
+#import fcntl
 
 from exaproxy.http.header import Header
 
 from exaproxy.util.logger import logger
 from exaproxy.configuration import configuration
 
-
+# XXX: Break this class in two : the action part and the thread control part
+# XXX: ---------------------------------------------------------------------
 
 def resolve_host(host):
 	# Do the hostname resolution before the backend check
@@ -35,74 +35,6 @@ def resolve_host(host):
 		ip = None
 
 	return ip
-
-
-
-class WorkerManager(object):
-	min_worker_count = 4
-	max_worker_count = 10
-
-	def __init__(self, low=None, high=None):
-		self.workers = {}
-		self.queue = Queue()
-		self._nextid = 0
-
-		self.low = low or self.min_worker_count
-		self.high = max(high or self.max_worker_count, self.low)
-		self.running = True
-
-	@property
-	def nextid(self):
-		self._nextid += 1
-		return self._nextid
-
-	def provision(self, program, count=None):
-		if self.running is True:
-			required = count or max(self.low - len(self.workers), 0)
-		else:
-			required = 0
-
-		for _ in xrange(required):
-			worker = Worker(self.nextid, self.queue, program)
-			self.workers[worker.response_box_read] = worker
-			worker.start()
-
-		return self.running is True
-			
-	def putRequest(self, client_id, peer, request):
-		return self.queue.put((client_id, peer, request))
-
-	def getDecision(self, box):
-		response = box.readline().strip()
-
-		if response == 'shutdown':
-			worker = self.workers.get(box, None)
-			if worker is not None:
-				worker.shutdown()
-
-		try:
-			client_id, decision = response.split('\0', 1)
-		except (ValueError, TypeError), e:
-			client_id = None
-			decision = None
-
-		return client_id, decision
-
-	def stop(self):
-		# XXX: need to check that the workers do not get stuck
-		for worker in self.workers:
-			self.queue.put('shutdown')
-
-	#def reprovision(self, program, count=None):
-	#	queue = self.queue
-	#
-	#	# XXX: need to check that the workers do not get stuck
-	#
-	#	# any new requests will be directed away from the old workers
-	#	self.queue = Queue()
-	#
-	#	for worker in self.workers:
-	#		queue.put('shutdown')
 
 
 class Worker (Thread):
@@ -155,7 +87,9 @@ class Worker (Thread):
 		if self.process:
 			logger.info('worker %d' % self.wid, 'Shutting down but the child process is still running. Stopping it')
 			self._stop()
-			
+	
+	# XXX: AFAICR this should not be called from the worker itself but the main thread ...
+	# XXX: Having a process.wait() in itself make no sense
 	def _stop(self):
 		logger.info('worker %d' % self.wid,'terminating process')
 
@@ -211,10 +145,12 @@ class Worker (Thread):
 		self.respond('\0'.join((client_id, 'html', str(code))+data))
 
 	def respond_shutdown(self):
-		self.respond('shutdown')
+		self.respond('down')
 
+	def stop (self):
+		self.request_box.put('shutdown')
 
-	def run(self):
+	def run (self):
 		while self.running:
 			try:
 				logger.debug('worker %d' % self.wid,'waiting for some work')

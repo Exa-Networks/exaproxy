@@ -8,6 +8,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 import time
+from Queue import Queue, Empty
 
 from .worker import Worker
 
@@ -15,11 +16,10 @@ from exaproxy.util.logger import logger
 
 # Do we really need to call join() on the thread as we are stoppin on our own ? 
 
-
-class Manager (object):
+class WorkerManager (object):
 	def __init__ (self,program,low=4,high=40):
 		self.nextid = 1                   # incremental number to make the name of the next worker
-		self.request_box = queue.Queue()  # queue with HTTP headers to process
+		self.queue = Queue()              # queue with HTTP headers to process
 		self.program = program            # what program speaks the squid redirector API
 		self.low = low                    # minimum number of workers at all time
 		self.high = high                  # maximum numbe of workers at all time
@@ -30,7 +30,7 @@ class Manager (object):
 
 	def _spawn (self):
 		"""add one worker to the pool"""
-		worker = Worker(self.nextid,self.request_box,self.program)
+		worker = Worker(self.nextid,self.queue,self.program)
 		self.workers.add(worker.response_box_read)
 		self.worker[self.nextid] = worker
 		self.results[worker.response_box_read] = self.worker
@@ -93,7 +93,7 @@ class Manager (object):
 		if not self.running:
 			return
 		
-		size = self.request_box.qsize()
+		size = self.queue.qsize()
 		num_workers = len(self.worker)
 
 		# we are now overprovisioned
@@ -122,3 +122,22 @@ class Manager (object):
 			logger.warning('manager',"we are low on workers, adding a few (%d)" % nb_to_add)
 			self.spawn(nb_to_add)
 			
+	def putRequest(self, client_id, peer, request):
+		return self.queue.put((client_id, peer, request))
+
+	def getDecision(self, box):
+		response = box.readline().strip()
+
+		if response == 'down':
+			# XXX: AFAICS box will never have worker (and this is broken but harmless)
+			worker = self.workers.get(box, None)
+			if worker is not None:
+				worker.shutdown()
+
+		try:
+			client_id, decision = response.split('\0', 1)
+		except (ValueError, TypeError), e:
+			client_id = None
+			decision = None
+
+		return client_id, decision
