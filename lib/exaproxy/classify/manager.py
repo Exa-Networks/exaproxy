@@ -39,7 +39,20 @@ class WorkerManager (object):
 		self.worker[self.nextid].start()
 		self.nextid += 1
 
-	def _reap (self,wid):
+		def spawn (self,number=1):
+			"""create the set number of worker"""
+			logger.info('manager',"spawning %d more worker" % number)
+			for _ in range(number):
+				self._spawn()
+
+		def respawn (self):
+			"""make sure we reach the minimum number of workers"""
+			number = max(min(len(self.worker),self.high),self.low)
+			for wid in set(self.worker):
+				self.reap(wid)
+			self.spawn(number)
+
+	def reap (self,wid):
 		worker = self.worker[wid]
 		self.workers.remove(worker.response_box_read)
 		del self.results[worker.response_box_read]
@@ -47,19 +60,6 @@ class WorkerManager (object):
 		worker.stop()
 		logger.info('manager',"removed worker %d" % wid)
 		logger.debug('manager',"we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
-
-	def spawn (self,number):
-		"""create the set number of worker"""
-		logger.info('manager',"spawning %d more worker" % number)
-		for _ in range(number):
-			self._spawn()
-
-	def respawn (self):
-		"""make sure we reach the minimum number of workers"""
-		number = max(min(len(self.worker),self.high),self.low)
-		for wid in set(self.worker):
-			self._reap(wid)
-		self.spawn(number)
 
 	def start (self):
 		"""spawn our minimum number of workers"""
@@ -73,7 +73,7 @@ class WorkerManager (object):
 		if len(self.worker):
 			logger.info('manager',"stopping %d workers." % len(self.worker))
 			for wid in set(self.worker):
-				self._reap(wid)
+				self.reap(wid)
 			for thread in threads:
 				thread.join()
 
@@ -105,7 +105,7 @@ class WorkerManager (object):
 			# if we have to kill one, at least stop the one who had the most chance to memory leak :)
 			worker = self._oldest()
 			if worker:
-				self._reap(worker.wid)
+				self.reap(worker.wid)
 		# we need more workers
 		else:
 			# bad we are bleeding workers !
@@ -122,7 +122,7 @@ class WorkerManager (object):
 			logger.warning('manager',"we are low on workers, adding a few (%d)" % nb_to_add)
 			self.spawn(nb_to_add)
 			
-	def putRequest(self, client_id, peer, request):
+	def request(self, client_id, peer, request):
 		return self.queue.put((client_id, peer, request))
 
 	def getDecision(self, box):

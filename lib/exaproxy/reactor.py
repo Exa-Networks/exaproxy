@@ -61,7 +61,7 @@ class Reactor(object):
 				client_id, peer, request, data = self.client.readRequestBySocket(client)
 				if request:
 					# request classification
-					self.decider.putRequest(client_id, peer, request)
+					self.decider.request(client_id, peer, request)
 				elif request is None:
 					# the client closed the connection so we stop downloading for it
 					self.content.endClientDownload(client_id)
