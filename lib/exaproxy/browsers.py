@@ -157,14 +157,14 @@ class Browsers(object):
 		self.clients[sock] = name, r, w, peer
 		self.byname[name] = sock, r, w, peer
 
-		print "NEW BROWSER HAS ID %s: %s %s" % (name, sock, sock in self.clients)
+		logger.info('browser','new id %s (socket %s) in clients : %s' % (name, sock, sock in self.clients))
 		return peer
 
 	def readSocketRequest(self, sock, buffer_len=0):
 		name, r, w, peer = self.clients.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad socket
 
 		if name is None:
-			print "TRYING TO READ FROM A CLIENT THAT DOES NOT EXIST", sock
+			logger.error('browser','trying to read from a client that does not exists %s' % sock)
 			return None
 
 		res = r.send(buffer_len)
@@ -182,7 +182,7 @@ class Browsers(object):
 		sock, r, w, peer = self.byname.get(name, (None, None, None, None)) # raise KeyError if we gave a bad socket
 
 		if sock is None:
-			print "TRYING TO READ FROM A CLIENT THAT DOES NOT EXIST", name
+			logger.error('browser','trying to read request from a client that does not exists %s' % sock)
 			return None
 
 		res = r.send(buffer_len)
@@ -203,14 +203,13 @@ class Browsers(object):
 
 		w.next() # start the _write coroutine
 		if data is None:
-			print "TERMINATING CLIENT %s BEFORE IT COULD BEGIN: %s" % (name, sock)
+			logger.info('browser','terminating client %s before it could begin %s' % (name, sock))
 			return self.cleanup(sock, name)
 
 		try:
 			command, d = data
 		except (ValueError, TypeError):
 			logger.error('browser', 'invalid command sent to client %s' % name)
-			print "******* INVALID COMMAND SO CLEANING UP CLIENT"
 			return self.cleanup(sock, name)
 
 		if command == 'stream':
@@ -248,11 +247,10 @@ class Browsers(object):
 	def sendData(self, name, data):
 		sock, r, w, peer = self.byname.get(name, (None, None, None, None)) # raise KeyError if we gave a bad name
 		if sock is None:
-			print "TRYING TO SEND DATA USING AN ID THAT DOES NOT EXIST:", name
+			logger.error('browser','trying to send data using an id that does not exists %s' % name)
 			return None
 
-
-		print "SENDING %s BYTES OF DATA TO BROWSER %s: %s" % (len(data) if data is not None else None, name, sock)
+		logger.info('browser','sending %s bytes to browser %s: %s' % (len(data) if data is not None else None, name, sock))
 		res = w.send(data)
 
 		if res is None:
@@ -275,11 +273,11 @@ class Browsers(object):
 	def sendSocketData(self, sock, data):
 		name, r, w, peer = self.clients.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad name
 		if name is None:
-			print "TRYING TO SEND DATA TO A SOCKET THAT DOES NOT EXIST:", sock, type(data), data
+			logger.error('browser','trying to send data using an socket that does not exists %s %s %s' % (sock,type(data),data))
 			return None
 
 		res = w.send(data)
-		print "FLUSHING DATA TO %s: %s" % (name, sock)
+		logger.info('flushing data to %s: %s' % (name, sock))
 
 		if res is None:
 			if sock in self.buffered:
@@ -297,7 +295,7 @@ class Browsers(object):
 		return buf_len
 
 	def cleanup(self, sock, name=None):
-		print "CLEANUP " * 10
+		logger.debug('browser','cleanup for socket %s' % sock)
 		try:
 			sock.shutdown(socket.SHUT_RDWR)
 			sock.close()
@@ -329,7 +327,9 @@ class Browsers(object):
 	# XXX: do we really want this method?
 	def finish(self, name):
 		sock, r, w, peer = self.byname[name] # raise KeyError if we give a bad name
+		#XXX: Fixme
 		print "************* IMPLEMENT ME - FINISH"
+		pass
 
 	def stop (self):
 		#XXX: Fixme
