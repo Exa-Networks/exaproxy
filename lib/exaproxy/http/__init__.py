@@ -8,8 +8,6 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 from .header import *
-from .client import *
-from .connect import *
 from .response import *
 
 #	destination = re.compile("(GET|POST|PUT|HEAD|DELETE|OPTIONS|TRACE|CONNECT)\s+(http://[^/]*|)(/?[^ \r]*)\s+(HTTP/.*\r?\nHost\s*:\s*)([^\r]*)(|\r?\n)", re.IGNORECASE)
