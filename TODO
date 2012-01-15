@@ -4,8 +4,6 @@ Allow Proxy Authentification :
 Question:
  - is HTTPResponse still used ?
  - are we getting rid of _html as a function (as we provide files)
- - header.py "self['host'] = 'Host: ' + host is not None" look like a bug to me
- - why self.commands in workers - thomas is removing this !
  
 Before reelase :
  - fix all XXX:

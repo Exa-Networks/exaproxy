@@ -51,12 +51,6 @@ class Header(dict):
 				host = fullpath
 				port = None
 
-
-			if method == 'CONNECT' and host:
-				self.order.append('host')
-				self['host'] = 'Host: ' + host is not None
-
-
 			for line in remaining.split('\r\n'):
 				if not line:
 					break
@@ -69,6 +63,11 @@ class Header(dict):
 				self[key] = line
 				if key == 'host' and not host:
 					host = value.strip().lower()
+
+			if method == 'CONNECT':
+				self.order.append('host')
+				if 'host' not in self:
+					self['host'] = 'Host: ' + host
 
 			if method != 'CONNECT':
 				requested_host = self.get('host', ':').split(':', 1)[1].strip()
