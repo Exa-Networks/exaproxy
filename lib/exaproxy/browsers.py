@@ -14,8 +14,7 @@ import errno
 
 from .configuration import configuration
 from .util.logger import logger
-
-BLOCKING_ERRORS = (errno.EAGAIN,errno.EINTR,errno.EWOULDBLOCK,errno.EINTR)
+from .network.poller import errno_block
 
 class Browsers(object):
 	eor = '\r\n\r\n'
@@ -64,7 +63,7 @@ class Browsers(object):
 
 				break
 			except socket.error, e:
-				if e.errno in BLOCKING_ERRORS:
+				if e.errno in errno_block:
 					yield '', ''
 				else:
 					break

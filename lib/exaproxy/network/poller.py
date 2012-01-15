@@ -29,24 +29,24 @@ else:
 	raise ImportError, 'what kind of select module is this'
 
 
-#	_blocking_errs = set(
+#	errno_block = set(
 #		errno.EAGAIN, errno.EWOULDBLOCK, 
 #		errno.EINTR, errno.ETIMEDOUT,
 #	)
 
-_block_errors = set((
+errno_block = set((
 	errno.EAGAIN, errno.EWOULDBLOCK,
 	errno.EINTR,
 ))
 
-#	_fatal_errs = set(
+#	errno_fatal = set(
 #		errno.ECONNABORTED, errno.EPIPE,
 #		errno.ECONNREFUSED, errno.EBADF,
 #		errno.ESHUTDOWN, errno.ENOTCONN,
 #		errno.ECONNRESET, 
 #	)
 
-_fatal_errors = set((
+errno_fatal = set((
 	errno.EINVAL,
 	errno.EBADF,
 )) # (please do not change this list) # XXX: Thomas asks why : it is only used in this file .. and it seems the list is short
@@ -61,11 +61,11 @@ def select(read, write, timeout=None):
 		r, w, x = poll(read, write, read + write, timeout)
 
 	except socket.error, e:
-		if e.errno in _block_errors:
+		if e.errno in errno_block:
 			logger.error('select', 'select not ready, errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
 			return [], [], []
 
-		if e.errno in _fatal_errors:
+		if e.errno in errno_fatal:
 			logger.error('select', 'select problem, errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
 			logger.error('select', 'poller read  : %s' % str(read))
 			logger.error('select', 'poller write : %s' % str(write))
