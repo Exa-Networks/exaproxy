@@ -43,7 +43,7 @@ class DownloadManager(object):
 		else:
 			filename = name
 		if os.path.isfile(filename):
-			content = 'local', filename
+			content = 'file', filename
 		else: 
 			logger.debug('download', 'no file exists for %s: %s' % (str(name), str(filename)))
 			content = None

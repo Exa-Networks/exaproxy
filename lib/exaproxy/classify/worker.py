@@ -168,7 +168,7 @@ class Worker (Thread):
 			if e[0] != errno.ESRCH:
 				logger.error('worker %d' % self.wid,'PID %s died' % pid)
 
-	def getClassification(self, client_ip, method, url):
+	def _classify (self, client_ip, method, url):
 		squid = '%s %s - %s -' % (url, client_ip, method)
 		#logger.info('worker %d' % self.wid, 'sending to classifier: [%s]' % squid)
 		try:
@@ -176,19 +176,7 @@ class Worker (Thread):
 
 			response = self.process.stdout.readline().strip()
 			#logger.info('worker %d' % self.wid, 'received from classifier: [%s]' % response)
-
-			code, command = None, None
-			if response.startswith('http://'):
-				response = response[7:]
-			host, path = response.split('/', 1) if '/' in response else (None, None)
-			# XXX: Surfprotect hardcoded - need removing
-			if host == 'redirector.surfprotect.co.uk':
-				if path.startswith('banned'):
-					code = 400
-					command = 'banned'
-				elif path.startswith('pending'):
-					code = 400
-					command = 'pending'
+			return response
 		except IOError, e:
 			logger.error('worker %d' % self.wid, 'IO/Error when sending to process: %s' % str(e))
 			return 'file://internal_error.html'
@@ -259,29 +247,23 @@ class Worker (Thread):
 				continue
 
 			# classify and return the filtered page
-			if request.method in ('GET', 'PUT', 'POST') or request.method in ('HEAD', 'OPTIONS', 'DELETE'):
-				if request.method in ('GET', 'PUT', 'POST') or options.CLASSIFY_ALL:
-					code, command, host, path = self.getClassification(ipaddr, request.method, request.url)
+			if request.method in ('GET', 'PUT', 'POST'):
+				redirected = self._classify(ipaddr, request.method, request.url)
 
-					# check to see if surfprotect told us to handle the request locally
-					if command is not None:
-						self.respond_file(client_id, code, command)
-						continue
-
-					# check to see if the hostname was rewritten
-					if False and host and host != request.host:
-						# XXX: pop cookies and any other unwanted information here
-						request.redirect(host, path)
-
-					elif False and path and path != request.path:
-						request.redirect(host, path)
-
-				# we will proxy the content
-				self.respond_proxy(client_id, ipaddr, request.port, request)
-				continue
+				if redirected.startswith('file://'):
+					self.respond_html(client_id, '250', redirected)
+					continue
+				elif redirected.startswith('http://'):
+					request.redirect(host, path)
+					self.respond_proxy(client_id, ipaddr, request.port, request)
+					continue
+				else:
+					self.respond_proxy(client_id, ipaddr, request.port, request)
+					continue
 
 			# someone want to use us as https proxy
 			if request.method == 'CONNECT':
+				# we do allow connect
 				if configuration.CONNECT:
 					self.respond_connect(client_id, ipaddr, request.port, request)
 					continue
