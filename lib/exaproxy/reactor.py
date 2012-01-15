@@ -12,7 +12,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import time
 import errno
 
-from poller import poller_select
+from .network.poller import poller_select
 from .util.logger import logger
 
 

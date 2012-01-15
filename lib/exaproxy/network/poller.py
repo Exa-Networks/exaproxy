@@ -16,7 +16,7 @@ import socket
 import errno
 
 import select as select
-from .util.logger import logger
+from exaproxy.util.logger import logger
 
 
 #if hasattr(select, 'epoll'):
@@ -34,10 +34,10 @@ else:
 #		errno.EINTR, errno.ETIMEDOUT,
 #	)
 
-_block_errors = set(
+_block_errors = set((
 	errno.EAGAIN, errno.EWOULDBLOCK,
 	errno.EINTR,
-)
+))
 
 #	_fatal_errs = set(
 #		errno.ECONNABORTED, errno.EPIPE,
@@ -46,10 +46,10 @@ _block_errors = set(
 #		errno.ECONNRESET, 
 #	)
 
-_fatal_errors = (
+_fatal_errors = set((
 	errno.EINVAL,
 	errno.EBADF,
-) # (please do not change this list)
+)) # (please do not change this list)
 
 
 class SelectError (Exception):
