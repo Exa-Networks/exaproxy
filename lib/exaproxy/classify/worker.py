@@ -22,9 +22,6 @@ from exaproxy.http.header import Header
 from exaproxy.util.logger import logger
 from exaproxy.configuration import configuration
 
-# XXX: Break this class in two : the action part and the thread control part
-# XXX: ---------------------------------------------------------------------
-
 def resolve_host(host):
 	# Do the hostname resolution before the backend check
 	# We may block the page but filling the OS DNS cache can not harm :)
@@ -59,6 +56,7 @@ class Worker (Thread):
 		self.program = program                        # the squid redirector program to fork 
 		self.running = True                           # the thread is active
 
+		# Do not move, we need the forking AFTER the setup
 		self.process = self._createProcess()          # the forked program to handle classification
 		Thread.__init__(self)
 
@@ -77,21 +75,25 @@ class Worker (Thread):
 			process = None
 		return process
 
-	def shutdown (self):
-		# XXX: can raise
-		self.response_box_read.close()
-		self.response_box_write.close()
+	def destroyProcess (self):
+		logger.error('worker %d' % self.wid,'destroying process %s' % self.program)
 		if not self.process:
 			return
-		logger.info('worker %d' % self.wid,'terminating process')
 		try:
 			if self.process:
 				self.process.terminate()
 				self.process.wait()
+				logger.info('worker %d' % self.wid,'terminated process PID %s' % pid)
 		except OSError, e:
 			# No such processs
 			if e[0] != errno.ESRCH:
 				logger.error('worker %d' % self.wid,'PID %s died' % pid)
+
+	def shutdown (self):
+		logger.debug('worker %d' % self.wid,'shutdown')
+		self.running = False
+		# XXX: Queue can get stuck, make sure we send a message to unlock it
+		self.stop()
 
 	def _classify (self, client_ip, method, url):
 		squid = '%s %s - %s -' % (url, client_ip, method)
@@ -124,7 +126,7 @@ class Worker (Thread):
 		#request['via'] = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % ('test',os.getpid()), '1.1', request.host)
 		header = request.toString(linesep='\0')
 		self.respond('\0'.join((client_id, 'download', ip, str(port), header)))
-	
+
 	def respond_connect(self, client_id, ip, port, request):
 		header = request.toString(linesep='\0')
 		self.respond('\0'.join((client_id, 'connect', ip, str(port), header)))
@@ -134,9 +136,6 @@ class Worker (Thread):
 
 	def respond_html(self, client_id, code, *data):
 		self.respond('\0'.join((client_id, 'html', str(code))+data))
-
-	def respond_shutdown(self):
-		self.respond('down')
 
 	def stop (self):
 		self.request_box.put('shutdown')
@@ -205,13 +204,14 @@ class Worker (Thread):
 			self.respond_html(client_id, 405, 'METHOD NOT ALLOWED', 'Method Not Allowed')
 			continue
 
-		# tell the reactor that we've stopped
-		self.respond_shutdown()
+		# XXX: can raise ?
+		self.response_box_read.close()
+		self.response_box_write.close()
 
-			# prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
-			# XXX: We may have more than one Connection header : http://tools.ietf.org/html/rfc2616#section-14.10
-			# XXX: We may need to remove every step-by-step http://tools.ietf.org/html/rfc2616#section-13.5.1
-			# XXX: We NEED to respect Keep-Alive rules http://tools.ietf.org/html/rfc2068#section-19.7.1
-			# XXX: We may look at Max-Forwards
-			# XXX: We need to reply to "Proxy-Connection: keep-alive", with "Proxy-Connection: close"
-			# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
+# prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
+# XXX: We may have more than one Connection header : http://tools.ietf.org/html/rfc2616#section-14.10
+# XXX: We may need to remove every step-by-step http://tools.ietf.org/html/rfc2616#section-13.5.1
+# XXX: We NEED to respect Keep-Alive rules http://tools.ietf.org/html/rfc2068#section-19.7.1
+# XXX: We may look at Max-Forwards
+# XXX: We need to reply to "Proxy-Connection: keep-alive", with "Proxy-Connection: close"
+# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html

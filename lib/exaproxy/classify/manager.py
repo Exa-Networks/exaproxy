@@ -58,7 +58,6 @@ class WorkerManager (object):
 		del self.results[worker.response_box_read]
 		del self.worker[wid]
 		worker.shutdown()
-		logger.info('manager',"removed worker %d" % wid)
 		logger.debug('manager',"we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
 
 	def start (self):
@@ -101,7 +100,7 @@ class WorkerManager (object):
 			if size <= self.low:
 				logger.debug('manager',"no changes in the number of worker required")
 				return
-			logger.info('manager',"we have too many workers, killing one")
+			logger.debug('manager',"we have too many workers, killing one")
 			# if we have to kill one, at least stop the one who had the most chance to memory leak :)
 			worker = self._oldest()
 			if worker:
@@ -129,10 +128,9 @@ class WorkerManager (object):
 		response = box.readline().strip()
 
 		if response == 'down':
-			# XXX: AFAICS box will never have worker (and this is broken but harmless)
 			worker = self.workers.get(box, None)
 			if worker is not None:
-				worker.shutdown()
+				worker.destroyProcess()
 
 		try:
 			client_id, decision = response.split('\0', 1)
