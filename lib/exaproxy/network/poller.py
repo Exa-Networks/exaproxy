@@ -49,56 +49,48 @@ _block_errors = set((
 _fatal_errors = set((
 	errno.EINVAL,
 	errno.EBADF,
-)) # (please do not change this list)
+)) # (please do not change this list) # XXX: Thomas asks why : it is only used in this file .. and it seems the list is short
 
 
 class SelectError (Exception):
 	pass
 
 
-def poller_select(read, write, timeout=None):
+def select(read, write, timeout=None):
 	try:
 		r, w, x = poll(read, write, read + write, timeout)
 
 	except socket.error, e:
 		if e.errno in _block_errors:
-			logger.error('server', 'select not ready, errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
-			r, w, x = [], [], []
+			logger.error('select', 'select not ready, errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
+			return [], [], []
 
-		elif e.errno in _fatal_errors:
-			logger.error('server', 'select problem, errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
-			print "POLLING", read, write
-			print
-			print
-
-
-			for f in read:
-				try:
-					poll([f], [], [f], 0.1)
-				except socket.errno:
-					print "CANNOT POLL", f
-
-			for f in write:
-				try:
-					poll([], [f], [f], 0.1)
-				except socket.errno:
-					print "CANNOT POLL", f
-			
-			print
-			print "************"
-			print
-			print
-
-			raise SelectError, str(e)
-
+		if e.errno in _fatal_errors:
+			logger.error('select', 'select problem, errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
+			logger.error('select', 'poller read  : %s' % str(read))
+			logger.error('select', 'poller write : %s' % str(write))
+			logger.error('select', 'read : %s' % str(read))
 		else:
-			logger.error('server', 'select problem, debug it. errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
-			raise SelectError, str(e)
+			logger.error('select', 'select problem, debug it. errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
+
+		for f in read:
+			try:
+				poll([f], [], [f], 0.1)
+			except socket.errno:
+				logger.error('select', 'can not poll (read) : %s' % str(f))
+
+		for f in write:
+			try:
+				poll([], [f], [f], 0.1)
+			except socket.errno:
+				logger.error('select', 'can not poll (write) : %s' % str(f))
+
+		raise SelectError, str(e)
 	except (ValueError, AttributeError, TypeError), e:
-		logger.error('server',"fatal error encountered during select - %s %s" % (type(e),str(e)))
+		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
 		raise SelectError, str(e)
 	except Exception, e:
-		logger.error('server',"fatal error encountered during select - %s %s" % (type(e),str(e)))
+		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
 		raise SelectError, str(e)
 			
 	return r, w, x

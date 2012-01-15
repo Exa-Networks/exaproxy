@@ -12,7 +12,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import time
 import errno
 
-from .network.poller import poller_select
+from .network.poller import select as poller
 from .util.logger import logger
 
 
@@ -24,7 +24,7 @@ _close_errs = set([
 
 
 class Reactor(object):
-	select = staticmethod(poller_select)
+	poller = staticmethod(poller)
 
 	def __init__(self, server, decider, download, browsers):
 		self.server = server		# Manage listening sockets
@@ -59,7 +59,7 @@ class Reactor(object):
 			#print
 
 			# wait until we have something to do
-			read, write, x = self.select(read_socks + read_workers + read_browser + read_download, opening_download + write_download + write_browser, speed)
+			read, write, x = self.poller(read_socks + read_workers + read_browser + read_download, opening_download + write_download + write_browser, speed)
 
 			if x:
 				print "EXCEPTIONAL", x
