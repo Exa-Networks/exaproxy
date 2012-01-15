@@ -39,25 +39,25 @@ class WorkerManager (object):
 		self.worker[self.nextid].start()
 		self.nextid += 1
 
-		def spawn (self,number=1):
-			"""create the set number of worker"""
-			logger.info('manager',"spawning %d more worker" % number)
-			for _ in range(number):
-				self._spawn()
+	def spawn (self,number=1):
+		"""create the set number of worker"""
+		logger.info('manager',"spawning %d more worker" % number)
+		for _ in range(number):
+			self._spawn()
 
-		def respawn (self):
-			"""make sure we reach the minimum number of workers"""
-			number = max(min(len(self.worker),self.high),self.low)
-			for wid in set(self.worker):
-				self.reap(wid)
-			self.spawn(number)
+	def respawn (self):
+		"""make sure we reach the minimum number of workers"""
+		number = max(min(len(self.worker),self.high),self.low)
+		for wid in set(self.worker):
+			self.reap(wid)
+		self.spawn(number)
 
 	def reap (self,wid):
 		worker = self.worker[wid]
 		self.workers.remove(worker.response_box_read)
 		del self.results[worker.response_box_read]
 		del self.worker[wid]
-		worker.stop()
+		worker.shutdown()
 		logger.info('manager',"removed worker %d" % wid)
 		logger.debug('manager',"we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
 

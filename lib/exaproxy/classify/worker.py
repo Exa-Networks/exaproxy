@@ -36,7 +36,6 @@ def resolve_host(host):
 
 	return ip
 
-
 class Worker (Thread):
 	# TODO : if the program is a function, fork and run :)
 	
@@ -76,23 +75,15 @@ class Worker (Thread):
 		except (subprocess.CalledProcessError,OSError,ValueError):
 			logger.error('worker %d' % self.wid,'could not spawn process %s' % self.program)
 			process = None
-
 		return process
 
-	def _shutdown (self):
+	def shutdown (self):
 		# XXX: can raise
 		self.response_box_read.close()
 		self.response_box_write.close()
-
-		if self.process:
-			logger.info('worker %d' % self.wid, 'Shutting down but the child process is still running. Stopping it')
-			self._stop()
-	
-	# XXX: AFAICR this should not be called from the worker itself but the main thread ...
-	# XXX: Having a process.wait() in itself make no sense
-	def _stop(self):
+		if not self.process:
+			return
 		logger.info('worker %d' % self.wid,'terminating process')
-
 		try:
 			if self.process:
 				self.process.terminate()
@@ -213,9 +204,6 @@ class Worker (Thread):
 
 			self.respond_html(client_id, 405, 'METHOD NOT ALLOWED', 'Method Not Allowed')
 			continue
-
-		# stop the child process
-		self._stop()
 
 		# tell the reactor that we've stopped
 		self.respond_shutdown()
