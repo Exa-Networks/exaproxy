@@ -10,19 +10,6 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 # http://code.google.com/speed/articles/web-metrics.html
 # http://itamarst.org/writings/pycon05/fast.html
 
-#	_blocking_errs = set(
-#		errno.EAGAIN, errno.EWOULDBLOCK, 
-#		errno.EINTR, errno.ETIMEDOUT,
-#	)
-#	_soft_errs = set(
-#	)
-#	_fatal_errs = set(
-#		errno.ECONNABORTED, errno.EPIPE,
-#		errno.ECONNREFUSED, errno.EBADF,
-#		errno.ESHUTDOWN, errno.ENOTCONN,
-#		errno.ECONNRESET, 
-#	)
-
 from exaproxy.network.functions import listen
 from exaproxy.util.logger import logger
 

@@ -29,9 +29,27 @@ else:
 	raise ImportError, 'what kind of select module is this'
 
 
-_block_errors = (errno.EAGAIN, errno.EWOULDBLOCK, errno.EINTR,)
-_fatal_errors = (errno.EINVAL,errno.EBADF,) # (please do not change this list)
+#	_blocking_errs = set(
+#		errno.EAGAIN, errno.EWOULDBLOCK, 
+#		errno.EINTR, errno.ETIMEDOUT,
+#	)
 
+_block_errors = set(
+	errno.EAGAIN, errno.EWOULDBLOCK,
+	errno.EINTR,
+)
+
+#	_fatal_errs = set(
+#		errno.ECONNABORTED, errno.EPIPE,
+#		errno.ECONNREFUSED, errno.EBADF,
+#		errno.ESHUTDOWN, errno.ENOTCONN,
+#		errno.ECONNRESET, 
+#	)
+
+_fatal_errors = (
+	errno.EINVAL,
+	errno.EBADF,
+) # (please do not change this list)
 
 
 class SelectError (Exception):
