@@ -4,10 +4,6 @@ Know Broken Site:
 Allow Proxy Authentification :
  - http://tools.ietf.org/html/rfc2068#section-13.5.1
 
-Question:
- - is HTTPResponse still used ?
- - are we getting rid of _html as a function (as we provide files)
- 
 Before reelase :
  - fix all XXX:
  - fix all bug
@@ -25,10 +21,11 @@ still true ??
 
 
 questions:
- - is EBADF a blocking errno to ignore ?
+ - is EBADF a blocking errno to ignore ? In general review what could be raised by sockets.
 
 PYPY changing the FD of a socket to -1 !! Can we still work with pypy ?
 
 The connection class track open connections co-routing which is good but does not work well.
 In server we need to transition the download from having read to being just a buffer to send,
 Those states are uncessary and this is were the design hurts.
+
