@@ -24,7 +24,7 @@ try:
 	while True:
 		data = sys.stdin.readline()
 		url = data.split(' ')[0]
-		sys.stdout.write('%s\r\n' % deny)
+		sys.stdout.write('file://%s\r\n' % deny)
 		sys.stdout.flush()
 except KeyboardInterrupt, e:
 	sys.stderr.write('^C keyboard interrupt. exiting.\n')
