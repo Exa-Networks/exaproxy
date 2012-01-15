@@ -12,7 +12,7 @@ from exaproxy.configuration import configuration
 from exaproxy.util.version import version
 
 def http (code,message):
-        return """\
+	return """\
 HTTP/1.1 %s OK
 Date: Fri, 02 Dec 2011 09:29:44 GMT
 Server: exaproxy/%s (%s)

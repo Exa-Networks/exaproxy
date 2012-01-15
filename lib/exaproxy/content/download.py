@@ -106,10 +106,10 @@ class DownloadManager(object):
 	def retryDownload(self, client_id, decision):
 		return None
 
-        def readData(self, sock, bufsize=0):
+	def readData(self, sock, bufsize=0):
 		return self.download.readData(sock, bufsize)
 
-        def endClientDownload(self, client_id):
+	def endClientDownload(self, client_id):
 		return self.download.endClientDownload(client_id)
 
 	def sendClientData(self, client_id, data):
