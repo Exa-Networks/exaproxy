@@ -15,14 +15,6 @@ import errno
 from .network.poller import select as poller
 from .util.logger import logger
 
-
-_close_errs = set([
-	errno.EBADF, errno.ECONNRESET, errno.ESHUTDOWN,
-	errno.ECONNABORTED, errno.ECONNREFUSED,
-	errno.ENOTCONN, errno.EPIPE, errno.ECONNRESET,
-])
-
-
 class Reactor(object):
 	poller = staticmethod(poller)
 

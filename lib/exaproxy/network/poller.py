@@ -52,6 +52,15 @@ errno_fatal = set((
 )) # (please do not change this list) # XXX: Thomas asks why : it is only used in this file .. and it seems the list is short
 
 
+# copied from reactor - not sure we will ever use this lis
+errno_close = set([
+	errno.EBADF, errno.ECONNRESET, errno.ESHUTDOWN,
+	errno.ECONNABORTED, errno.ECONNREFUSED,
+	errno.ENOTCONN, errno.EPIPE, errno.ECONNRESET,
+])
+
+
+
 class SelectError (Exception):
 	pass
 
