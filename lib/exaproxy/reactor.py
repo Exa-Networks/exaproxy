@@ -66,7 +66,7 @@ class Reactor(object):
 			#      have the request, since we're not going to read it anyway
 			# incoming data from browsers
 			for browser in set(read_browser).intersection(read):
-				client_id, peer, request, data = self.browsers.readSocketRequest(browser)
+				client_id, peer, request, data = self.browsers.readRequestBySocket(browser)
 				if request:
 					# request classification
 					self.decider.putRequest(client_id, peer, request)
@@ -86,7 +86,7 @@ class Reactor(object):
 
 
 				# send received data to the client that requested it
-				sending = self.browsers.sendData(client_id, page_data)
+				sending = self.browsers.sendDataByName(client_id, page_data)
 
 				# check to see if the client went away
 				if sending is None and page_data is not None:
@@ -116,12 +116,12 @@ class Reactor(object):
 
 			# browsers we can write buffered data to
 			for browser in set(write_browser).intersection(write):
-				self.browsers.sendSocketData(browser, '')
+				self.browsers.sendDataBySocket(browser, '')
 
 			# remote servers we can write buffered data to
 			for download in set(write_download).intersection(write):
-				print "FLUSHING", download
-				self.download.sendSocketData(download, '')
+				logger.info('server','flushing')
+				self.download.sendDataBySocket(download, '')
 
 			# fully connected connections to remote web servers
 			for fetcher in set(opening_download).intersection(write):
@@ -131,13 +131,13 @@ class Reactor(object):
 				#      the browser until after we perform this read
 				# check that the client didn't get bored and go away
 				if client_id in self.browsers:
-					print "THIS READ SHOULD NOT BLOCK"
-					client_id, peer, request, data = self.browsers.readRequest(client_id)
+					logger.info('server','this read should not block')
+					client_id, peer, request, data = self.browsers.readRequestByName(client_id)
 					if data:
 						self.download.sendClientData(client_id, data)
 
 					if response:
-						self.browsers.sendData(client_id, response)
+						self.browsers.sendDataByName(client_id, response)
 
 			# retry connecting - opportunistic 
 			for client_id, decision in retry_download:

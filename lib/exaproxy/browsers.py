@@ -160,7 +160,7 @@ class Browsers(object):
 		logger.info('browser','new id %s (socket %s) in clients : %s' % (name, sock, sock in self.clients))
 		return peer
 
-	def readSocketRequest(self, sock, buffer_len=0):
+	def readRequestBySocket(self, sock, buffer_len=0):
 		name, r, w, peer = self.clients.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad socket
 
 		if name is None:
@@ -178,7 +178,7 @@ class Browsers(object):
 
 		return name, peer, request, extra
 
-	def readRequest(self, name, buffer_len=0):
+	def readRequestByName(self, name, buffer_len=0):
 		sock, r, w, peer = self.byname.get(name, (None, None, None, None)) # raise KeyError if we gave a bad socket
 
 		if sock is None:
@@ -244,7 +244,7 @@ class Browsers(object):
 
 
 
-	def sendData(self, name, data):
+	def sendDataByName(self, name, data):
 		sock, r, w, peer = self.byname.get(name, (None, None, None, None)) # raise KeyError if we gave a bad name
 		if sock is None:
 			logger.error('browser','trying to send data using an id that does not exists %s' % name)
@@ -270,7 +270,7 @@ class Browsers(object):
 
 		return buf_len
 
-	def sendSocketData(self, sock, data):
+	def sendDataBySocket(self, sock, data):
 		name, r, w, peer = self.clients.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad name
 		if name is None:
 			logger.error('browser','trying to send data using an socket that does not exists %s %s %s' % (sock,type(data),data))
