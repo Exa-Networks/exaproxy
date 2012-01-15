@@ -22,7 +22,7 @@ import errno
 
 DEFAULT_READ_BUFFER_SIZE = 4096
 
-class Download(object):
+class Downloader (object):
 	_connect = staticmethod(connect)
 
 	def __init__(self):

@@ -11,16 +11,16 @@ from exaproxy.util.logger import logger
 from exaproxy.network.functions import connect
 from exaproxy.network.poller import errno_block
 from exaproxy.http.response import http
-from exaproxy.content.download import Download
+from exaproxy.content.downloader import Downloader
 
 import os
 import socket
 import errno
 
-class ContentManager(object):
+class ContentManager (object):
 	def __init__(self, location):
 		self._html = {}
-		self.download = Download()
+		self.download = Downloader()
 		self.location = location
 		self.retry = []
 
