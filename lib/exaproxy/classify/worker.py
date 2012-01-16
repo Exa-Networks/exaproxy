@@ -39,8 +39,8 @@ class Worker (Thread):
 	def __init__ (self, name, request_box, program):
 		# XXX: all this could raise things
 		r, w = os.pipe()                              # pipe for communication with the main thread
-		self.response_box_write = os.fdopen(w,'w')    # results are written here
-		self.response_box_read = os.fdopen(r,'r')     # read from the main thread
+		self.response_box_write = os.fdopen(w,'w',0)    # results are written here
+		self.response_box_read = os.fdopen(r,'r',0)     # read from the main thread
 
 		# XXX: Not setting non blocking because it's incompatible with readline()
 		# XXX: If responses are not properly terminated then the main process can block
@@ -109,12 +109,11 @@ class Worker (Thread):
 			return 'file://internal_error.html'
 
 	def respond(self, response):
-		self.response_box_write.write(response + os.linesep)
+		self.response_box_write.write(str(len(response)) + ':' + response + ',')
 		self.response_box_write.flush()
 
 	def respond_proxy(self, client_id, ip, port, request):
-		if 'proxy-connection' in request:
-			request['proxy-connection'] = 'Connection: close'
+		request['proxy-connection'] = 'Connection: close'
 		# We NEED Connection: close
 		request['connection'] = 'Connection: close'
 		# We NEED to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45
@@ -124,11 +123,11 @@ class Worker (Thread):
 		else:
 			request['via'] = via
 		#request['via'] = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % ('test',os.getpid()), '1.1', request.host)
-		header = request.toString(linesep='\0')
+		header = request.toString()
 		self.respond('\0'.join((client_id, 'download', ip, str(port), header)))
 
 	def respond_connect(self, client_id, ip, port, request):
-		header = request.toString(linesep='\0')
+		header = request.toString()
 		self.respond('\0'.join((client_id, 'connect', ip, str(port), header)))
 
 	def respond_file(self, client_id, code, reason):
@@ -163,7 +162,7 @@ class Worker (Thread):
 
 			request = Header(header)
 			if not request.isValid():
-				self.respond_html(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)).replace(os.linesep, '\0'))
+				self.respond_html(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)))
 				continue
 
 			ipaddr = resolve_host(request.host)

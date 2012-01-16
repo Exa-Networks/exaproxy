@@ -125,20 +125,47 @@ class WorkerManager (object):
 		return self.queue.put((client_id, peer, request))
 
 	def getDecision(self, box):
+		# XXX: reads may block if we send badly formatted data
 		self.nbq -=1
 		try:
-			response = box.readline().strip()
+			r_buffer = box.read(3)
+			while r_buffer.isdigit():
+				r_buffer += box.read(1)
+
+			if ':' in r_buffer:
+				size, response = r_buffer.split(':', 1)
+				if size.isdigit():
+					size = int(size)
+				else:
+					size, response = None, None
+			else:   # not a netstring
+				size, response = None, None
+
+			if size is not None:
+				required = size + 1 - len(response)
+				response += box.read(required)
+
+			if response is not None:
+				if response.endswith(','):
+					response = response[:-1]
+				else:
+					response = None
+
 		except ValueError, e: # I/O operation on closed file
-			# forcing down
-			response = 'down'
-		
-		if response == 'down':
 			worker = self.workers.get(box, None)
 			if worker is not None:
 				worker.destroyProcess()
 
+			response = None
+		except TypeError, e:
+			response = None
+
 		try:
-			client_id, decision = response.split('\0', 1)
+			if response:
+				client_id, decision = response.split('\0', 1)
+			else:
+				client_id = None
+				decision = None
 		except (ValueError, TypeError), e:
 			client_id = None
 			decision = None
