@@ -34,9 +34,15 @@ class ClientManager (object):
 		# XXX: if the REQUEST is too big : http://tools.ietf.org/html/rfc2616#section-3.2.1
 		# XXX: retun 414 (Request-URI Too Long)
 
+		block_read = None
+
 		while True:
 			try:
 				while True: # multiple requests per connection?
+					if block_read is True:
+						logger.info('client', 'reading socket after it has already been written to %s' % str(sock))
+						break
+
 					logger.info('client', 'reading socket %s' % str(sock))
 					buff = sock.recv(r_size or read_size) # XXX can raise socket.error
 					logger.info('client', 'reading socket %s done, have %d bytes' % (str(sock),len(buff)))
@@ -47,18 +53,36 @@ class ClientManager (object):
 					# stream all data received after the request in case
 					# the client is using CONNECT
 					if request:
-						yield '', buff
+						r_size = yield '', buff
+						while isinstance(r_size, bool):
+							if block_read is None:
+								block_read = r_size
+							r_size = yield '', buff
 						continue
 
 					r_buffer += buff
 
 					if self.eor in r_buffer: # we have a full request
 						request, r_buffer = r_buffer.split(self.eor, 1)
-						yield request + self.eor, ''
-						yield '', r_buffer # client is using CONNECT if we are here
+						r_size = yield request + self.eor, ''
+						while isinstance(r_size, bool):
+							if block_read is None:
+								block_read = r_size
+							r_size = yield request + self.eor, ''
+
+						r_size = yield '', r_buffer # client is using CONNECT if we are here
+						while isinstance(r_size, bool):
+							if block_read is None:
+								block_read = r_size
+							r_size = yield '', r_buffer
+
 						r_buffer = ''
 					else:
 						r_size = yield '', '' # no request yet
+						while isinstance(r_size, bool):
+							if block_read is None:
+								block_read = r_size
+							r_size = yield '', ''
 
 				break
 			except socket.error, e:
@@ -243,7 +267,7 @@ class ClientManager (object):
 
 
 
-	def sendDataByName(self, name, data):
+	def sendDataByName(self, name, data, restrict=True):
 		sock, r, w, peer = self.byname.get(name, (None, None, None, None)) # raise KeyError if we gave a bad name
 		if sock is None:
 			logger.error('client','trying to send data using an id that does not exists %s' % name)
@@ -258,6 +282,8 @@ class ClientManager (object):
 			if sock not in self.buffered:
 				return self.cleanup(sock, name)
 			return None
+
+		r.send(restrict) # signal that no further reads will be accepted
 
 		buf_len, had_buffer = res
 
@@ -282,6 +308,8 @@ class ClientManager (object):
 			if sock in self.buffered:
 				self.buffered.remove(sock)
 			return self.cleanup(sock, name)
+
+		r.send(True) # signal that no further reads will be accepted
 
 		buf_len, had_buffer = res
 

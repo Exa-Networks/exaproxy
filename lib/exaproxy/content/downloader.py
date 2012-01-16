@@ -142,9 +142,11 @@ class Downloader (object):
 			
 			# XXX: We MUST send method to newConnection rather than checking for a null request
 			response='HTTP/1.1 200 Connection Established\r\n\r\n' if request is None else ''
-			result = client_id, response
+			restrict = False if request is None else True
+			result = client_id, response, restrict
 		else:
-			result = None, None
+			result = None, None, None
+			
 
 		return result
 

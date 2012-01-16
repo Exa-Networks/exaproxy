@@ -122,7 +122,7 @@ class Reactor(object):
 			# fully connected connections to remote web servers
 			for fetcher in set(opening_download).intersection(write):
 				logger.info('server','starting download')
-				client_id, response = self.content.startDownload(fetcher)
+				client_id, response, restrict = self.content.startDownload(fetcher)
 				# XXX: need to make sure we DO NOT read past the first request from
 				#      the client until after we perform this read
 				# check that the client didn't get bored and go away
@@ -133,7 +133,9 @@ class Reactor(object):
 						self.content.sendClientData(client_id, data)
 
 					if response:
-						self.client.sendDataByName(client_id, response)
+						# further reads on the client will result in the connection
+						# being closed if restrict is True
+						self.client.sendDataByName(client_id, response, restrict)
 
 			# retry connecting - opportunistic 
 			for client_id, decision in retry_download:
