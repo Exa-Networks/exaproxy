@@ -276,7 +276,7 @@ class ClientManager (object):
 			return None
 
 		res = w.send(data)
-		logger.info('flushing data to %s: %s' % (name, sock))
+		logger.info('client','flushing data to %s: %s' % (name, sock))
 
 		if res is None:
 			if sock in self.buffered:

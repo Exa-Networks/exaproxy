@@ -17,7 +17,8 @@ from exaproxy.util.logger import logger
 # Do we really need to call join() on the thread as we are stoppin on our own ? 
 
 class WorkerManager (object):
-	def __init__ (self,program,low=4,high=40):
+	def __init__ (self,program,low=1,high=40):
+		self.nbq = 0                      # number of request waiting to be filtered
 		self.nextid = 1                   # incremental number to make the name of the next worker
 		self.queue = Queue()              # queue with HTTP headers to process
 		self.program = program            # what program speaks the squid redirector API
@@ -53,12 +54,11 @@ class WorkerManager (object):
 		self.spawn(number)
 
 	def reap (self,wid):
+		logger.debug('manager','we are killing worker %d' % wid)
 		worker = self.worker[wid]
-		self.workers.remove(worker.response_box_read)
-		del self.results[worker.response_box_read]
-		del self.worker[wid]
+		self.results.pop(worker.response_box_read)
+		self.worker.pop(wid)
 		worker.shutdown()
-		logger.debug('manager',"we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
 
 	def start (self):
 		"""spawn our minimum number of workers"""
@@ -92,15 +92,14 @@ class WorkerManager (object):
 		if not self.running:
 			return
 		
-		size = self.queue.qsize()
+		size = self.nbq
 		num_workers = len(self.worker)
 
 		# we are now overprovisioned
 		if size < num_workers:
 			if size <= self.low:
-				logger.debug('manager',"no changes in the number of worker required")
 				return
-			logger.debug('manager',"we have too many workers, killing one")
+			logger.debug('manager',"we have too many workers, killing the oldest")
 			# if we have to kill one, at least stop the one who had the most chance to memory leak :)
 			worker = self._oldest()
 			if worker:
@@ -122,11 +121,17 @@ class WorkerManager (object):
 			self.spawn(nb_to_add)
 			
 	def request(self, client_id, peer, request):
+		self.nbq += 1
 		return self.queue.put((client_id, peer, request))
 
 	def getDecision(self, box):
-		response = box.readline().strip()
-
+		self.nbq -=1
+		try:
+			response = box.readline().strip()
+		except ValueError, e: # I/O operation on closed file
+			# forcing down
+			response = 'down'
+		
 		if response == 'down':
 			worker = self.workers.get(box, None)
 			if worker is not None:

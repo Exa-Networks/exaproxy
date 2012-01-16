@@ -15,7 +15,7 @@ import time
 import socket
 import errno
 
-import select as select
+import select
 from exaproxy.util.logger import logger
 
 
@@ -59,16 +59,9 @@ errno_close = set([
 	errno.ENOTCONN, errno.EPIPE, errno.ECONNRESET,
 ])
 
-
-
-class SelectError (Exception):
-	pass
-
-
-def select(read, write, timeout=None):
+def poll_select(read, write, timeout=None):
 	try:
 		r, w, x = poll(read, write, read + write, timeout)
-
 	except socket.error, e:
 		if e.errno in errno_block:
 			logger.error('select', 'select not ready, errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
@@ -94,12 +87,12 @@ def select(read, write, timeout=None):
 			except socket.errno:
 				logger.error('select', 'can not poll (write) : %s' % str(f))
 
-		raise SelectError, str(e)
+		return [], [], []
 	except (ValueError, AttributeError, TypeError), e:
 		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
-		raise SelectError, str(e)
+		return [], [], []
 	except Exception, e:
 		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
-		raise SelectError, str(e)
+		return [], [], []
 			
 	return r, w, x

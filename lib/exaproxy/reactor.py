@@ -12,7 +12,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import time
 import errno
 
-from .network.poller import select as poller
+from .network.poller import poll_select as poller
 from .util.logger import logger
 
 class Reactor(object):
@@ -23,17 +23,21 @@ class Reactor(object):
 		self.decider = decider		# Task manager for handling child decider processes
 		self.content = content	# the Content Download manager
 		self.client = client	# currently open client connections
+		self.running = True
+		self._loop = None
 
-	def run(self, speed):
-		running = True
+	def run (self):
+		if not self._loop:
+			self._loop = self._run()
+		self._loop.next()
 
-		while running:
+	def _run(self,speed=2):
+		while self.running:
 			read_socks = list(self.server.socks)		# listening sockets
 			read_workers = list(self.decider.workers)	# pipes carrying responses from the child processes
 
 			read_client = list(self.client.bysock)	# active clients
 			write_client = list(self.client.buffered)	# active clients that we already have buffered data to send to
-
 
 			read_download = list(self.content.established) # Currently established connections
 			write_download = list(self.content.buffered)   # established connections to servers for which we have data to send
@@ -136,4 +140,6 @@ class Reactor(object):
 				# if we have a temporary error, the others are likely to be too
 				if not self.content.retryDownload(client_id, decision):
 					break
+			
+			yield None
 

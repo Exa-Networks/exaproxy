@@ -89,9 +89,10 @@ class Supervisor(object):
 					self.increase_spawn_limit = False
 
 				# make sure we have enough workers
-				self.manager.provision()
+				## XXX: Bug when we delete workers (so disabled ATM) 
+				## self.manager.provision()
 				# check for IO change with select
-				self.reactor.run(2)
+				self.reactor.run()
 
 				# Quit on problems which can not be fixed (like running out of file descriptor)
 				self._shutdown = not self.reactor.running
@@ -99,8 +100,6 @@ class Supervisor(object):
 			except KeyboardInterrupt:
 				logger.info('supervisor','^C received')
 				self._shutdown = True
-
-			# XXX: need to handle errors from select()
 
 #			finally:
 #				from leak import objgraph
@@ -113,7 +112,7 @@ class Supervisor(object):
 		self.daemon.daemonise()
 		self.pid.save()
 		# start our threads
-		self.manager.provision()
+		self.manager.start()
 
 		# only start listening once we know we were able to fork our worker processes
 		self.server.listen('0.0.0.0', 3128, 5, 200)
