@@ -51,7 +51,7 @@ class ContentManager (object):
 			if command in ('download'):
 				host, port, request = args.split('\0', 2)
 
-				result = self.download.newConnection(client_id, host, int(port), request.replace('\0', '\r\n'))
+				result = self.download.newConnection(client_id, host, int(port), request)
 				content = ('stream', '') if result is True else None
 
 			elif command == 'connect':
@@ -81,7 +81,7 @@ class ContentManager (object):
 							except IOError:
 								html = 'could not open %s' % name
 				else:
-					html = data.replace('\0', os.linesep)
+					html = data
 				content = ('html', http(code,html))
 
 			elif command == 'file':
