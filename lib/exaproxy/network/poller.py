@@ -87,12 +87,12 @@ def poll_select(read, write, timeout=None):
 			except socket.errno:
 				logger.error('select', 'can not poll (write) : %s' % str(f))
 
-		return [], [], []
+		raise e
 	except (ValueError, AttributeError, TypeError), e:
 		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
-		return [], [], []
+		raise e
 	except Exception, e:
 		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
-		return [], [], []
+		raise e
 			
 	return r, w, x
