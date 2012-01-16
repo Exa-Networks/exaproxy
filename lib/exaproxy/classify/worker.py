@@ -113,7 +113,8 @@ class Worker (Thread):
 		self.response_box_write.flush()
 
 	def respond_proxy(self, client_id, ip, port, request):
-		request['proxy-connection'] = 'Connection: close'
+		if 'proxy-connection' in request:
+			request['proxy-connection'] = 'Proxy-Connection: close'
 		# We NEED Connection: close
 		request['connection'] = 'Connection: close'
 		# We NEED to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45
