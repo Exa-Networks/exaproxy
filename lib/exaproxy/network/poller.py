@@ -78,13 +78,15 @@ def poll_select(read, write, timeout=None):
 		for f in read:
 			try:
 				poll([f], [], [f], 0.1)
-			except socket.errno:
+			except socket.error:
+				print "CANNOT POLL (read): %s" % str(f)
 				logger.error('select', 'can not poll (read) : %s' % str(f))
 
 		for f in write:
 			try:
 				poll([], [f], [f], 0.1)
-			except socket.errno:
+			except socket.error:
+				print "CANNOT POLL (write): %s" % str(f)
 				logger.error('select', 'can not poll (write) : %s' % str(f))
 
 		raise e
