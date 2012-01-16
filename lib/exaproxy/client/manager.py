@@ -309,6 +309,9 @@ class ClientManager (object):
 		elif _name is not None:
 			self.byname.pop(_name, None)
 
+		if sock in self.buffered:
+			self.buffered.remove(sock)
+
 		return None
 
 	def shutdown(self):
