@@ -17,6 +17,7 @@ HTTP/1.1 %s OK
 Date: Fri, 02 Dec 2011 09:29:44 GMT
 Server: exaproxy/%s (%s)
 Content-Length: %d
+Proxy-Connection: close
 Connection: close
 Content-Type: text/html
 Cache-control: private

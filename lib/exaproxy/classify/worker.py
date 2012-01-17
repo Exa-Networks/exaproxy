@@ -113,10 +113,13 @@ class Worker (Thread):
 		self.response_box_write.flush()
 
 	def respond_proxy(self, client_id, ip, port, request):
-		if 'proxy-connection' in request:
-			request['proxy-connection'] = 'Proxy-Connection: close'
 		# We NEED Connection: close
 		request['connection'] = 'Connection: close'
+		# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
+		if 'proxy-connection' in request:
+			# XXX: If the value is keep-alive, we should parse the answer and add Proxy-Connection: close
+			request.order.remove('proxy-connection')
+			request.pop('proxy-connection')
 		# We NEED to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45
 		via = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % (configuration.VERSION,os.getpid()), '1.1', request.host)
 		if 'via' in request:
