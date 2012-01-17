@@ -17,18 +17,19 @@ import os
 import socket
 import errno
 
-class ContentManager (object):
+
+class ContentManager(object):
+	downloader_factory = Downloader
+
 	def __init__(self, location):
-		self._html = {}
-		self.download = Downloader()
-		self.location = location
+		self.opening = {}
+		self.established = {}
+		self.byclientid = {}
+		self.buffered = []
 		self.retry = []
 
-		# XXX: clean this up
-		self.established = self.download.connections
-		self.opening = self.download.connecting
-		self.byclientid = self.download.byclientid
-		self.buffered = self.download.buffered
+		self.location = location
+		self._html = {}
 
 	def getLocalContent(self, name):
 		if not name.startswith('/'):
@@ -43,22 +44,31 @@ class ContentManager (object):
 
 		return content
 
+	def newDownloader(self, client_id, host, port, command, request):
+		downloader = self.downloader_factory(client_id, host, port, command, request)
+		if downloader.sock is None:
+			downloader = None
+
+
+		return downloader
 
 	def getContent(self, client_id, decision):
 		try:
 			command, args = decision.split('\0', 1)
 
-			if command in ('download'):
+			if command == 'download':
 				host, port, request = args.split('\0', 2)
 
-				result = self.download.newConnection(client_id, host, int(port), request)
-				content = ('stream', '') if result is True else None
+				downloader = self.newDownloader(client_id, host, int(port), command, request)
+				content = ('stream', '') if downloader is not None else None
+				restricted = True
 
 			elif command == 'connect':
-				host, port, response = args.split('\0', 2)
+				host, port, request = args.split('\0', 2)
 
-				result = self.download.newConnection(client_id, host, int(port), None)
-				content = ('stream', '') if result is True else None
+				downloader = self.newDownloader(client_id, host, int(port), command, '')
+				content = ('stream', '') if downloader is not None else None
+				restricted = False
 
 			elif command == 'html':
 				code, data = args.split('\0', 1)
@@ -82,36 +92,147 @@ class ContentManager (object):
 								html = 'could not open %s' % name
 				else:
 					html = data
+
+				downloader = None
 				content = ('html', http(code,html))
+				restricted = True
 
 			elif command == 'file':
 				code, reason = args.split('\0', 1)
+				downloader = None
 				content = self.getLocalContent(reason)
+				restricted = True
+
+			else:
+				downloader = None
+				content = None
+				restricted = None
 
 		except (ValueError, TypeError), e:
-			logger.error('download', 'problem getting content %s %s' % type(e),str(e))
+			logger.error('download', 'problem getting content %s %s' % (type(e),str(e)))
+			downloader = None
 			content = None
+			restricted = None
 
-		return content
+		if downloader is not None:
+			self.opening[downloader.sock] = downloader
+			self.byclientid[downloader.client_id] = downloader
+
+		return content, restricted
+
 
 	def startDownload(self, sock):
-		return self.download.start(sock)
+		# shift the downloader to the other connected sockets
+		downloader = self.opening.pop(sock, None)
+		if downloader:
+			self.established[sock] = downloader
+			res = downloader.startConversation()
+		else:
+			res = None, None
+
+		return res
 
 	def retryDownload(self, client_id, decision):
 		return None
 
-	def readData(self, sock, bufsize=0):
-		return self.download.readData(sock, bufsize)
+	def readData(self, sock):
+		downloader = self.established.get(sock, None)
+		if downloader:
+			client_id = downloader.client_id
+			data = downloader.readData()
 
-	def endClientDownload(self, client_id):
-		return self.download.endClientDownload(client_id)
+			if data is None:
+				self._terminate(sock, client_id)
+		else:
+			client_id, data = None, None
+
+		return client_id, data
+
+	def sendSocketData(self, sock, data):
+		downloader = self.established.get(sock, None)
+		if downloader:
+			had_buffer = True if downloader.w_buffer else False
+			buffered = downloader.writeData(data)
+			
+			if buffered:
+				if sock not in self.buffered:
+					self.buffered.append(sock)
+			elif had_buffer and sock in self.buffered:
+				self.buffered.remove(sock)
+
+			res = True
+		else:
+			res = False
+
+                return res
 
 	def sendClientData(self, client_id, data):
-		return self.download.sendClientData(client_id, data)
+		downloader = self.byclientid.get(client_id, None)
+		if downloader:
+			if downloader.sock in self.established:
+				had_buffer = True if downloader.w_buffer else False
+				buffered = downloader.writeData(data)
+			
+				if buffered:
+					if sock not in self.buffered:
+						self.buffered.append(sock)
+				elif had_buffer and sock in self.buffered:
+					self.buffered.remove(sock)
 
-	def sendSocketData(self, socket, data):
-		return self.download.sendSocketData(socket, data)
+				res = True
 
+			elif downloader.sock in self.opening:
+				buffered = downloader.bufferData(data)
+				if downloader.sock not in self.buffered:
+					self.buffered.append(downloader.sock)
+	
+				res = True
+
+			else:  # what is going on if we reach this point
+				self._terminate(downloader.sock, client_id)
+				res = False
+		else:
+			res = False
+
+
+		return res
+
+
+	def endClientDownload(self, client_id):
+		downloader = self.byclientid.get(client_id, None)
+		if downloader:
+			res = self._terminate(downloader.sock, client_id)
+		else:
+			res = False
+
+		return res
+
+	def _terminate(self, sock, client_id):
+		downloader = self.established.get(sock, None)
+		if downloader is None:
+			downloader = self.opening.get(sock, None)
+
+		if downloader:
+			# XXX: what do we do if this happens?
+			if (downloader.sock, downloader.client_id) != (sock, client_id):
+				raise BadError
+
+			downloader.shutdown()
+
+			self.established.pop(sock, None)
+			self.opening.pop(sock, None)
+			self.byclientid.pop(client_id, None)
+
+			if sock in self.buffered:
+				self.buffered.remove(sock)
+
+			res = True
+		else:
+			res = False
+
+		return res
+
+		
 	def stop (self):
 		# XXX: Fixme
 		print "STOP exists to not cause close warning"

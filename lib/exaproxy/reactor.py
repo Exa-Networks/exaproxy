@@ -36,17 +36,18 @@ class Reactor(object):
 			read_socks = list(self.server.socks)		# listening sockets
 			read_workers = list(self.decider.workers)	# pipes carrying responses from the child processes
 
-			read_client = list(self.client.bysock)	# active clients
+			read_client = list(self.client.bysock)	        # active clients
 			write_client = list(self.client.buffered)	# active clients that we already have buffered data to send to
+			opening_client = list(self.client.norequest)    # clients we have not yet read a request from
 
-			read_download = list(self.content.established) # Currently established connections
-			write_download = list(self.content.buffered)   # established connections to servers for which we have data to send
+			read_download = list(self.content.established)  # Currently established connections
+			write_download = list(self.content.buffered)    # established connections to servers for which we have data to send
 			opening_download = list(self.content.opening)	# socket connected but not yet ready for write
 
 			retry_download = list(self.content.retry)	# rewritten destination info that we were unable to connect to
 
 			# wait until we have something to do
-			read, write, exceptional = self.poller(read_socks + read_workers + read_client + read_download, opening_download + write_download + write_client, speed)
+			read, write, exceptional = self.poller(read_socks + read_workers + read_client + read_download + opening_client, opening_download + write_download + write_client, speed)
 
 			if exceptional:
 				logger.error('server','select returns some exceptional sockets %s' % str(exceptional))
@@ -58,28 +59,41 @@ class Reactor(object):
 					logger.debug('server', 'new connection from %s' % str(peer))
 					self.client.newConnection(name, s, peer)
 
-			# XXX: Need to make sure we do not check the client for data after we
-			#      have the request, since we're not going to read it anyway
+			# incoming new requests from clients
+			for client in set(opening_client).intersection(read):
+				client_id, peer, request, data = self.client.readRequest(client)
+				if request:
+					# we have a new request - decide what to do with it
+					self.decider.request(client_id, peer, request)
+
+				elif data:
+					# we have data to send but very probably no server to send it to
+					logger.error('server', 'Read content data along with the initial request from peer %s. It will likely be lost.' % str(peer))
+
 			# incoming data from clients
 			for client in set(read_client).intersection(read):
-				client_id, peer, request, data = self.client.readRequestBySocket(client)
+				client_id, peer, request, data = self.client.readDataBySocket(client)
 				if request:
-					# request classification
-					self.decider.request(client_id, peer, request)
-				elif request is None:
-					# the client closed the connection so we stop downloading for it
-					self.content.endClientDownload(client_id)
+					# XXX: We would need to put the client back in the 'opening' state
+					#      here to ensure that no further data is read from the client
+					#      until we successfully connect to the required server
+					logger.error('server', 'Received multiple requests from peer %s. We do not handle this case yet. Closing the connection' % str(peer))
+					# XXX: should we allow cleanup to be called outside of the manager?
+					self.client.cleanup(client)
+
 				elif data:
+					# we read something from the client so pass it on to the remote server
 					self.content.sendClientData(client_id, data)
 
+				elif data is None:
+					self.content.endClientDownload(client_id)
+					
 			# incoming data - web pages
-
 			for fetcher in set(read_download).intersection(read):
 				client_id, page_data = self.content.readData(fetcher)
 
 				if page_data is None:
 					logger.debug('server', 'lost connection to server while downloading for client id %s' % client_id)
-
 
 				# send received data to the client that requested it
 				sending = self.client.sendDataByName(client_id, page_data)
@@ -97,15 +111,18 @@ class Reactor(object):
 				client_id, decision = self.decider.getDecision(worker)
 				# check that the client didn't get bored and go away
 				if client_id in self.client:
-					response = self.content.getContent(client_id, decision)
-					# signal to the client that we'll be streaming data to it or
-					# give it the location of the local content to return
-					sending = self.client.startData(client_id, response)
+					response, restricted = self.content.getContent(client_id, decision)
+					# Signal to the client that we'll be streaming data to it or
+					# give it the location of the local content to return.
+					data = self.client.startData(client_id, response)
 
-					# check to see if the client went away
-					if sending is None:
-						# XXX: should we just wait for the next loop when we'll be notified of the client disconnect?
-						# XXX: always results in a miss if there is no download process
+					# Check for any data beyond the initial headers that we may already
+					# have read and cached
+					if data:
+						self.content.sendClientData(client_id, data)
+
+					# XXX: client should prune itself
+					elif data is None:
 						self.content.endClientDownload(client_id)
 				else:
 					logger.debug('server', 'a decision was made for unknown client %s - perhaps it already disconnected?' % client_id)
@@ -117,25 +134,15 @@ class Reactor(object):
 			# remote servers we can write buffered data to
 			for download in set(write_download).intersection(write):
 				logger.info('server','flushing')
-				self.content.sendDataBySocket(download, '')
+				self.content.sendSocketData(download, '')
 
 			# fully connected connections to remote web servers
 			for fetcher in set(opening_download).intersection(write):
 				logger.info('server','starting download')
-				client_id, response, restrict = self.content.startDownload(fetcher)
-				# XXX: need to make sure we DO NOT read past the first request from
-				#      the client until after we perform this read
-				# check that the client didn't get bored and go away
+				client_id, response = self.content.startDownload(fetcher)
 				if client_id in self.client:
-					logger.info('server','this read should not block')
-					client_id, peer, request, data = self.client.readRequestByName(client_id)
-					if data:
-						self.content.sendClientData(client_id, data)
-
 					if response:
-						# further reads on the client will result in the connection
-						# being closed if restrict is True
-						self.client.sendDataByName(client_id, response, restrict)
+						self.client.sendDataByName(client_id, response)
 
 			# retry connecting - opportunistic 
 			for client_id, decision in retry_download:

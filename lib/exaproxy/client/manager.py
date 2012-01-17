@@ -9,16 +9,12 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # XXX: David, please add logging here ..
 
-import socket
-import errno
-
-from exaproxy.network.poller import errno_block
 from exaproxy.util.logger import logger
+from browser import Client
 
 class ClientManager (object):
-	eor = '\r\n\r\n'
-
 	def __init__(self):
+		self.norequest = {}
 		self.bysock = {}
 		self.byname = {}
 		self.buffered = []
@@ -26,332 +22,186 @@ class ClientManager (object):
 	def __contains__(self, item):
 		return item in self.byname
 
-	def _read(self, sock, read_size=16*1024):
-		request = ''
-		r_buffer = ''
-		r_size = yield ''
-
-		# XXX: if the REQUEST is too big : http://tools.ietf.org/html/rfc2616#section-3.2.1
-		# XXX: retun 414 (Request-URI Too Long)
-
-		block_read = None
-
-		while True:
-			try:
-				while True: # multiple requests per connection?
-					if block_read is True:
-						logger.info('client', 'reading socket after it has already been written to %s' % str(sock))
-						break
-
-					logger.info('client', 'reading socket %s' % str(sock))
-					buff = sock.recv(r_size or read_size) # XXX can raise socket.error
-					logger.info('client', 'reading socket %s done, have %d bytes' % (str(sock),len(buff)))
-
-					if not buff: # read failed - should abort
-						break
-
-					# stream all data received after the request in case
-					# the client is using CONNECT
-					if request:
-						r_size = yield '', buff
-						while isinstance(r_size, bool):
-							if block_read is None:
-								block_read = r_size
-							r_size = yield '', buff
-						continue
-
-					r_buffer += buff
-
-					if self.eor in r_buffer: # we have a full request
-						request, r_buffer = r_buffer.split(self.eor, 1)
-						r_size = yield request + self.eor, ''
-						while isinstance(r_size, bool):
-							if block_read is None:
-								block_read = r_size
-							r_size = yield request + self.eor, ''
-
-						r_size = yield '', r_buffer # client is using CONNECT if we are here
-						while isinstance(r_size, bool):
-							if block_read is None:
-								block_read = r_size
-							r_size = yield '', r_buffer
-
-						r_buffer = ''
-					else:
-						r_size = yield '', '' # no request yet
-						while isinstance(r_size, bool):
-							if block_read is None:
-								block_read = r_size
-							r_size = yield '', ''
-
-				break
-			except socket.error, e:
-				if e.errno in errno_block:
-					yield '', ''
-				else:
-					break
-
-		yield None
-
-	def _write(self, sock):
-		"""coroutine managing data sent back to the client"""
-
-		# XXX:
-		# TODO: use an open file for buffering data rather than storing
-		#       it in memory
-
-		w_buffer = ''
-		filename = yield None
-
-		# check to see if we are returing data directly from a local file
-		# XXX: this is cleaner than using a seperate coroutine for each case?
-		if filename is not None:
-			try:
-				# XXX: reading the file contents into memory while we have a
-				# are storing buffered data in ram rather than on the filesystem
-				with open(filename) as fd:
-					w_buffer = fd.read()
-
-				found = True, False
-			except IOError:
-				found = None
-		else:
-			found = None
-
-		data = yield found
-		finished = False
-
-		while True:
-			try:
-				while True:
-					had_buffer = True if w_buffer else False
-
-					if data is not None:
-						w_buffer = w_buffer + data
-					else:
-						# we've finished downloading, even if the client hasn't yet
-						finished = True
-
-
-					if finished:
-						if data:
-							logger.error('client', '*'*80 + 'Tried to send data to client after we told it to close. Dropping it.')
-							continue
-
-						if not w_buffer:
-							break    # stop the client connection
-
-					if not had_buffer or data == '':
-						sent = sock.send(w_buffer)
-						logger.info('client', 'wrote to socket %s sent %d bytes' % (str(sock),sent))
-						w_buffer = w_buffer[sent:]
-
-					data = yield (True if w_buffer else False), had_buffer
-
-				# break out of the outer loop as soon as we leave the inner loop
-				# through normal execution
-				break
-
-			except socket.error, e:
-				if e.errno in errno_block:
-					logger.error('client','failed to sent %d bytes' % len(data))
-					logger.error('client','it would have blocked, why were we woken up !?!')
-					logger.error('client','error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
-					data = yield (True if w_buffer else False), had_buffer
-				else:
-					logger.critical('client','????? ARRGH ?????')
-					yield None # stop the client connection
-					break # and don't come back
-
-		yield None
-
-
+	# XXX: should the client manager be responsible for
+	#      picking its own client ids?
 	def newConnection(self, name, sock, peer):
-		# XXX: simpler code if we merge _read() and _write()
-		#self.bysock[sock] = name, self._run(socket)
+		client = Client(name, sock, peer)
 
-		r = self._read(sock)
-		r.next()
-
-		w = self._write(sock)
-		# starting the coroutine in startData() - helps ensure that it's called before sendData
-		#w.next()
-
-		self.bysock[sock] = name, r, w, peer
-		self.byname[name] = sock, r, w, peer
+		self.norequest[sock] = client
+		self.byname[name] = client
 
 		logger.info('client','new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
 		return peer
 
-	def readRequestBySocket(self, sock, buffer_len=0):
-		name, r, w, peer = self.bysock.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad socket
+	def readRequest(self, sock):
+		"""Read only the initial HTTP headers sent by the client"""
 
-		if name is None:
-			logger.error('client','trying to read from a client that does not exists %s' % sock)
-			return None
+		client = self.norequest.get(sock, None)
+		if client:
+			name, peer, request, content = client.readData()
+			if request:
+				# headers can be read only once
+				self.norequest.pop(sock, None)
 
-		res = r.send(buffer_len)
-
-		if res is not None:
-			request, extra = res
+			elif request is None:
+				self.cleanup(sock, client.name)
 		else:
-			self.cleanup(sock, name)
-			request = None
-			extra = None
+			logger.error('client','trying to read headers from a client that does not exist %s' % sock)
+			name, peer, request, content = None, None, None, None
 
-		return name, peer, request, extra
+		return name, peer, request, content
 
-	def readRequestByName(self, name, buffer_len=0):
-		sock, r, w, peer = self.byname.get(name, (None, None, None, None)) # raise KeyError if we gave a bad socket
 
-		if sock is None:
-			logger.error('client','trying to read request from a client that does not exists %s' % sock)
-			return None
-
-		res = r.send(buffer_len)
-
-		if res is not None:
-			request, extra = res
+	def readDataBySocket(self, sock):
+		client = self.bysock.get(sock, None)
+		if client:
+			name, peer, request, content = client.readData()
+			if request is None:
+				self.cleanup(sock, client.name)
 		else:
-			self.cleanup(sock, name)
-			request = None
-			extra = None
-
-		return name, peer, request, extra
-
-	def startData(self, name, data):
-		sock, r, w, peer = self.byname.get(name, (None, None, None))
-		if sock is None:
-			return None
-
-		w.next() # start the _write coroutine
-		if data is None:
-			logger.info('client','terminating client %s before it could begin %s' % (name, sock))
-			return self.cleanup(sock, name)
-
-		try:
-			command, d = data
-		except (ValueError, TypeError):
-			logger.error('client', 'invalid command sent to client %s' % name)
-			return self.cleanup(sock, name)
-
-		if command == 'stream':
-			w.send(None) # no local file
-			res = w.send(d)
-
-		elif command == 'html':
-			w.send(None) # no local file
-			w.send(d)
-			res = w.send(None)
-
-		elif command == 'file':
-			res = w.send(d) # use local file
-			w.send(None)    # close the connection once our buffer is empty
-			self.buffered.append(sock) # buffer immediately populated with the full local content
-			return 
-
-		if res is None:
-			# XXX: this is messy
-			# do not clean up the socket if we know it is still referenced
-			if sock not in self.buffered:
-				return self.cleanup(sock, name)
-
-		buf_len, had_buffer = res
-
-		if buf_len:
-			self.buffered.append(sock)
-		elif had_buffer and sock in self.buffered:
-			self.buffered.remove(sock)
-
-		return True
+			logger.error('client','trying to read from a client that does not exist %s' % sock)
+			name, peer, request, content = None, None, None, None
 
 
+		return name, peer, request, content
 
-	def sendDataByName(self, name, data, restrict=True):
-		sock, r, w, peer = self.byname.get(name, (None, None, None, None)) # raise KeyError if we gave a bad name
-		if sock is None:
-			logger.error('client','trying to send data using an id that does not exists %s' % name)
-			return None
 
-		logger.info('client','sending %s bytes to client %s: %s' % (len(data) if data is not None else None, name, sock))
-		res = w.send(data)
+	def readDataByName(self, name):
+		client = self.byname.get(name, None)
+		if client:
+			name, peer, request, content = client.readData()
+			if request is None:
+				self.cleanup(sock, client.name)
+		else:
+			logger.error('client','trying to read from a client that does not exist %s' % name)
+			name, peer, request, content = None, None, None, None
 
-		if res is None:
-			# XXX: this is messy
-			# do not clean up the socket if we know it is still referenced
-			if sock not in self.buffered:
-				return self.cleanup(sock, name)
-			return None
 
-		r.send(restrict) # signal that no further reads will be accepted
-
-		buf_len, had_buffer = res
-
-		if buf_len:
-			if sock not in self.buffered:
-				self.buffered.append(sock)
-		elif had_buffer and sock in self.buffered:
-			self.buffered.remove(sock)
-
-		return buf_len
+		return name, peer, request, content
 
 	def sendDataBySocket(self, sock, data):
-		name, r, w, peer = self.bysock.get(sock, (None, None, None, None)) # raise KeyError if we gave a bad name
-		if name is None:
-			logger.error('client','trying to send data using an socket that does not exists %s %s %s' % (sock,type(data),data))
-			return None
+		client = self.bysock.get(sock, None)
+		if client:
+			res = client.writeData(data)
 
-		res = w.send(data)
-		logger.info('client','flushing data to %s: %s' % (name, sock))
+			if res is None:
+				# close the client connection
+				self.cleanup(sock, name)
 
-		if res is None:
-			if sock in self.buffered:
+				buffered, had_buffer = None, None
+				result = None
+			else:
+				buffered, had_buffer = res
+				result = buffered
+
+			if buffered:
+				if sock not in self.buffered:
+					self.buffered.append(sock)
+			elif had_buffer and sock in self.buffered:
 				self.buffered.remove(sock)
-			return self.cleanup(sock, name)
+		else:
+			result = None
 
-		r.send(True) # signal that no further reads will be accepted
+		return result
 
-		buf_len, had_buffer = res
+	def sendDataByName(self, name, data):
+		client = self.byname.get(name, None)
+		if client:
+			res = client.writeData(data)
 
-		if buf_len:
-			if sock not in self.buffered:
-				self.buffered.append(sock)
-		elif had_buffer and sock in self.buffered:
-			self.buffered.remove(sock)
+			if res is None:
+				# close the client connection only if sendDataBySocket is not due to be called
+				if client.sock not in self.buffered:
+					self.cleanup(client.sock, name)
 
-		return buf_len
+				buffered, had_buffer = None, None
+				result = None
+			else:
+				buffered, had_buffer = res
+				result = buffered
 
-	def cleanup(self, sock, name=None):
+			if buffered:
+				if client.sock not in self.buffered:
+					self.buffered.append(client.sock)
+			elif had_buffer and client.sock in self.buffered:
+				self.buffered.remove(client.sock)
+		else:
+			result = None
+
+		return result
+
+
+	def startData(self, name, data):
+		client = self.byname.get(name, None)
+		if client:
+			try:
+				command, d = data
+			except (ValueError, TypeError):
+				logger.error('client', 'invalid command sent to client %s' % name)
+				self.cleanup(client.sock, name)
+				res = None
+			else:
+				# Start checking for content sent by the client
+				# XXX: Doing this even if client.startData returns None just in case
+				#      we somehow have buffered output already
+				self.bysock[client.sock] = client
+
+				# make sure we don't somehow end up with this still here
+				self.norequest.pop(client.sock, None)
+
+				res = client.startData(command, d)
+
+			if res is not None:
+				buffered, had_buffer = res
+
+				# XXX: we need to check (somewhere) that we don't read a
+				#      new request here
+				# buffered data we read with the HTTP headers
+				name, peer, request, content = client.readData()
+
+			else:
+				# close the client connection only if sendDataBySocket is not due to be called
+				if client.sock not in self.buffered:
+					self.cleanup(client.sock, name)
+
+				buffered, had_buffer = None, None
+				content = None
+
+			if buffered:
+				if sock not in self.buffered:
+					self.buffered.append(sock)
+			elif had_buffer and sock in self.buffered:
+				self.buffered.remove(sock)
+		else:
+			content = None
+
+		return content
+
+
+
+	def cleanup(self, sock, name):
 		logger.debug('client','cleanup for socket %s' % sock)
-		try:
-			sock.shutdown(socket.SHUT_RDWR)
-			sock.close()
-		except socket.error:
-			pass
+		client = self.bysock.get(sock, None)
+		client = client or self.norequest.get(sock, None)
+		client = client or self.byname.get(name, None)
+		if client:
+			client.shutdown()
 
-		_name, _, __, ___ = self.bysock.pop(sock, (None, None, None))
+		self.bysock.pop(sock, None)
+		self.norequest.pop(sock, None)
 
-		if name is not None:
-			self.byname.pop(name, None)
-
-		elif _name is not None:
-			self.byname.pop(_name, None)
-
+		self.byname.pop(name, None)
 		if sock in self.buffered:
 			self.buffered.remove(sock)
 
-		return None
-
 	def shutdown(self):
-		for socket in self.bysock:
-			try:
-				sock.shutdown(socket.SHUT_RDWR)
-				sock.close()
-			except socket.error:
-				pass
+		for client in self.bysock.itervalues():
+			client.shutdown()
 
 		self.bysock = {}
 		self.byname = {}
+		self.buffered = []
+
 
 	# XXX: create to not change Server() too much in one go
 	# XXX: do we really want this method?
