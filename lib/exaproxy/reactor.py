@@ -114,7 +114,7 @@ class Reactor(object):
 					response, restricted = self.content.getContent(client_id, decision)
 					# Signal to the client that we'll be streaming data to it or
 					# give it the location of the local content to return.
-					data = self.client.startData(client_id, response)
+					data = self.client.startData(client_id, response, restricted)
 
 					# Check for any data beyond the initial headers that we may already
 					# have read and cached

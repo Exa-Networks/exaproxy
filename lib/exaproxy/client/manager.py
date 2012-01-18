@@ -131,7 +131,7 @@ class ClientManager (object):
 		return result
 
 
-	def startData(self, name, data):
+	def startData(self, name, data, blockupload):
 		client = self.byname.get(name, None)
 		if client:
 			try:
@@ -149,7 +149,7 @@ class ClientManager (object):
 				# make sure we don't somehow end up with this still here
 				self.norequest.pop(client.sock, None)
 
-				res = client.startData(command, d)
+				res = client.startData(command, d, blockupload)
 
 			if res is not None:
 				buffered, had_buffer = res

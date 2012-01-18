@@ -27,6 +27,8 @@ class Client(object):
 		self.reader = self._read(sock)
 		self.writer = self._write(sock)
 
+		self.blockupload = None
+
 		# start the _read coroutine
 		self.reader.next()
 
@@ -155,13 +157,20 @@ class Client(object):
 		yield None
 
 	def writeData(self, data):
+		if self.blockupload:
+			if self.reader:
+				self.reader.send(None)
+				self.reader = None
+
 		res = self.writer.send(data)
 		return res
 
 
-	def startData(self, command, data):
+	def startData(self, command, data, blockupload):
 		# start the _write coroutine
 		self.writer.next()
+
+		self.blockupload = blockupload
 
 		if command == 'stream':
 			self.writer.send(None)  # no local file
@@ -191,4 +200,5 @@ class Client(object):
 			pass
 
 		self.writer.close()
-		self.reader.close()
+		if self.reader:
+			self.reader.close()
