@@ -140,6 +140,9 @@ class Worker (Thread):
 	def respond_html(self, client_id, code, *data):
 		self.respond('\0'.join((client_id, 'html', str(code))+data))
 
+	def respond_redirect(self, client_id, url):
+		self.respond('\0'.join((client_id, 'redirect', url)))
+
 	def stop (self):
 		self.request_box.put('shutdown')
 

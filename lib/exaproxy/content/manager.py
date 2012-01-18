@@ -70,6 +70,14 @@ class ContentManager(object):
 				content = ('stream', '') if downloader is not None else None
 				restricted = False
 
+			elif command == 'redirect':
+				redirect_url = args
+				headers = 'HTTP/1.1 302 Surfprotected\r\nLocation: http://%s\r\n\r\n\r\n' % redirect_url
+
+				downloader = None
+				content = ('close', headers)
+				restricted = True
+
 			elif command == 'html':
 				code, data = args.split('\0', 1)
 				if data.startswith('file://'):
@@ -94,7 +102,7 @@ class ContentManager(object):
 					html = data
 
 				downloader = None
-				content = ('html', http(code,html))
+				content = ('close', http(code,html))
 				restricted = True
 
 			elif command == 'file':

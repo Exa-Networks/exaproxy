@@ -167,7 +167,7 @@ class Client(object):
 			self.writer.send(None)  # no local file
 			res = self.writer.send(data)
 
-		elif command == 'html':
+		elif command == 'close':
 			self.writer.send(None)  # no local file
 			self.writer.send(data)
 			res = self.writer.send(None)  # close the connection once the buffer is empty
