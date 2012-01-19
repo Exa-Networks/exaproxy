@@ -22,16 +22,7 @@ from exaproxy.http.header import Header
 from exaproxy.util.logger import logger
 from exaproxy.configuration import configuration
 
-def resolve_host(host):
-	# Do the hostname resolution before the backend check
-	# We may block the page but filling the OS DNS cache can not harm :)
-	# XXX: we really need an async dns .. sigh, another thread ?? 
-	try:
-		ip = socket.gethostbyname(host)
-	except socket.error, e:
-		ip = None
-
-	return ip
+from exaproxy.network.resolver import DNSResolver
 
 class Worker (Thread):
 	# TODO : if the program is a function, fork and run :)
@@ -41,6 +32,8 @@ class Worker (Thread):
 		r, w = os.pipe()                              # pipe for communication with the main thread
 		self.response_box_write = os.fdopen(w,'w',0)    # results are written here
 		self.response_box_read = os.fdopen(r,'r',0)     # read from the main thread
+
+		self.resolver = DNSResolver(configuration.RESOLV)
 
 		# XXX: Not setting non blocking because it's incompatible with readline()
 		# XXX: If responses are not properly terminated then the main process can block
@@ -172,7 +165,7 @@ class Worker (Thread):
 				self.respond_html(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)))
 				continue
 
-			ipaddr = resolve_host(request.host)
+			ipaddr = self.resolver.resolveHost(request.host)
 			if not ipaddr:
 				logger.warning('worker %d' % self.wid,'Could not resolve %s' % request.host)
 				self.respond_html(client_id, 503, 'file://dns.html')
