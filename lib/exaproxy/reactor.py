@@ -21,8 +21,8 @@ class Reactor(object):
 	def __init__(self, server, decider, content, client):
 		self.server = server		# Manage listening sockets
 		self.decider = decider		# Task manager for handling child decider processes
-		self.content = content	# the Content Download manager
-		self.client = client	# currently open client connections
+		self.content = content		# the Content Download manager
+		self.client = client		# currently open client connections
 		self.running = True
 		self._loop = None
 
@@ -33,18 +33,18 @@ class Reactor(object):
 
 	def _run(self,speed=2):
 		while self.running:
-			read_socks = list(self.server.socks)		# listening sockets
-			read_workers = list(self.decider.workers)	# pipes carrying responses from the child processes
+			read_socks = tuple(self.server.socks)		# listening sockets
+			read_workers = tuple(self.decider.workers)	# pipes carrying responses from the child processes
 
-			read_client = list(self.client.bysock)	        # active clients
-			write_client = list(self.client.buffered)	# active clients that we already have buffered data to send to
-			opening_client = list(self.client.norequest)    # clients we have not yet read a request from
+			read_client = tuple(self.client.bysock)	        # active clients
+			write_client = tuple(self.client.buffered)	# active clients that we already have buffered data to send to
+			opening_client = tuple(self.client.norequest)    # clients we have not yet read a request from
 
-			read_download = list(self.content.established)  # Currently established connections
-			write_download = list(self.content.buffered)    # established connections to servers for which we have data to send
-			opening_download = list(self.content.opening)	# socket connected but not yet ready for write
+			read_download = tuple(self.content.established)  # Currently established connections
+			write_download = tuple(self.content.buffered)    # established connections to servers for which we have data to send
+			opening_download = tuple(self.content.opening)	# socket connected but not yet ready for write
 
-			retry_download = list(self.content.retry)	# rewritten destination info that we were unable to connect to
+			retry_download = tuple(self.content.retry)	# rewritten destination info that we were unable to connect to
 
 			# wait until we have something to do
 			read, write, exceptional = self.poller(read_socks + read_workers + read_client + read_download + opening_client, opening_download + write_download + write_client, speed)
