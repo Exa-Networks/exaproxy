@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+allow.py
+
+Created by Thomas Mangin on 2011-11-29.
+Copyright (c) 2011 Exa Networks. All rights reserved.
+"""
+
+import sys
+
+try:
+	while True:
+		data = sys.stdin.readline().strip()
+
+		url, ip, _, method, __ = data.split()
+
+		if method == 'CONNECT':
+			if 'hsbc' not in url and 'twitter' not in url:
+				response = 'http://www.surfprotect.co.uk/'
+			else:
+				response = ''
+		else:
+			response = ''
+
+		sys.stdout.write(response + '\n')
+		sys.stdout.flush()
+except KeyboardInterrupt, e:
+	sys.stderr.write('^C keyboard interrupt. exiting.\n')
+	sys.stderr.flush()
+except Exception, e:
+	sys.stderr.write('CHILD FAILED %s\n' % str(e))
+	sys.stderr.flush()

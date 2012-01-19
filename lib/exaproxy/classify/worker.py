@@ -88,18 +88,36 @@ class Worker (Thread):
 		# XXX: Queue can get stuck, make sure we send a message to unlock it
 		self.stop()
 
+
 	def _classify (self, client_ip, method, url):
 		squid = '%s %s - %s -' % (url, client_ip, method)
 		#logger.info('worker %d' % self.wid, 'sending to classifier: [%s]' % squid)
 		try:
 			self.process.stdin.write(squid + os.linesep)
-
 			response = self.process.stdout.readline().strip()
-			#logger.info('worker %d' % self.wid, 'received from classifier: [%s]' % response)
-			return response
+
+			if not response:
+				classification, data = 'permit', None
+
+			elif response.startswith('http://'):
+				if response == url:
+					classification, data = 'permit', None
+				elif response.startswith(url.split('/', 1)[0]+'/'):
+					classification, data = 'rewrite', ('/'+url.split('/', 1)[1]) if '/' in url else ''
+				else:
+					classification, data = 'redirect', response
+
+			elif response.startswith('file://'):
+				classification, data = 'file', response
+
+			else:
+				classification, data = 'file', 'file://internal_error.html'
+
 		except IOError, e:
 			logger.error('worker %d' % self.wid, 'IO/Error when sending to process: %s' % str(e))
-			return 'file://internal_error.html'
+			classification, data = 'file', 'file://internal_error.html'
+
+		return classification, data
 
 	def respond(self, response):
 		self.response_box_write.write(str(len(response)) + ':' + response + ',')
@@ -173,15 +191,25 @@ class Worker (Thread):
 
 			# classify and return the filtered page
 			if request.method in ('GET', 'PUT', 'POST'):
-				redirected = self._classify(ipaddr, request.method, request.url)
+				classification, data = self._classify(ipaddr, request.method, request.url)
 
-				if redirected.startswith('file://'):
-					self.respond_html(client_id, '250', redirected)
-					continue
-				elif redirected.startswith('http://'):
-					request.redirect(host, path)
+				if classification == 'permit':
 					self.respond_proxy(client_id, ipaddr, request.port, request)
 					continue
+					
+				elif classification == 'rewrite':
+					request.redirect(None, data)
+					self.respond_proxy(client_id, ipaddr, request.port, request)
+					continue
+
+				elif classification == 'file':
+					self.respond_file(client_id, '250', data)
+					continue
+
+				elif classification == 'redirect':
+					self.respond_redirect(client_id, data)
+					continue
+
 				else:
 					self.respond_proxy(client_id, ipaddr, request.port, request)
 					continue
@@ -190,7 +218,12 @@ class Worker (Thread):
 			if request.method == 'CONNECT':
 				# we do allow connect
 				if configuration.CONNECT:
-					self.respond_connect(client_id, ipaddr, request.port, request)
+					classification, data = self._classify(ipaddr, request.method, request.url)
+					if classification == 'redirect':
+						self.respond_redirect(client_id, data)
+					else:
+						self.respond_connect(client_id, ipaddr, request.port, request)
+
 					continue
 				else:
 					self.respond_html(client_id, 501, 'CONNECT NOT ALLOWED', 'We are an HTTP only proxy')
