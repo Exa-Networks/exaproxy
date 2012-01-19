@@ -54,6 +54,11 @@ class Header(dict):
 			for line in remaining.split('\r\n'):
 				if not line:
 					break
+
+				if ':' not in line:
+					# XXX: handle this
+					continue
+
 				key,value = line.split(':',1)
 				key = key.strip().lower()
 				if not key:
@@ -76,7 +81,7 @@ class Header(dict):
 
 				host = requested_host
 
-			client = self.get('x-forwarded-for', ':0.0.0.0').split(':')[1].split(',')[-1].strip()
+			client = self.get('x-forwarded-for', ':0.0.0.0').split(':', 1)[1].split(',')[-1].strip()
 			url = host + ((':'+str(port)) if port is not None else '') + path
 			port = port if port is not None else 80
 		except KeyboardInterrupt:
