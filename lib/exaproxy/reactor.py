@@ -55,9 +55,9 @@ class Reactor(object):
 			# handle new connections before anything else
 			for sock in set(read_socks).intersection(read):
 				logger.info('server','new connection')
-				for name, s, peer in self.server.accept(sock):
+				for s, peer in self.server.accept(sock):
 					logger.debug('server', 'new connection from %s' % str(peer))
-					self.client.newConnection(name, s, peer)
+					self.client.newConnection(s, peer)
 
 			# incoming new requests from clients
 			for client in set(opening_client).intersection(read):

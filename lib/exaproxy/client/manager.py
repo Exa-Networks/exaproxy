@@ -18,13 +18,19 @@ class ClientManager (object):
 		self.bysock = {}
 		self.byname = {}
 		self.buffered = []
+		self._nextid = 0
 
 	def __contains__(self, item):
 		return item in self.byname
 
+	def getnextid(self):
+		self._nextid += 1
+		return str(self._nextid)
+
 	# XXX: should the client manager be responsible for
 	#      picking its own client ids?
-	def newConnection(self, name, sock, peer):
+	def newConnection(self, sock, peer):
+		name = self.getnextid()
 		client = Client(name, sock, peer)
 
 		self.norequest[sock] = client

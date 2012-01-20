@@ -19,13 +19,6 @@ class Server(object):
 
 	def __init__(self):
 		self.socks = {}
-		self.name_generator = self._name_generator()
-
-	def _name_generator(self):
-		name = 0
-		while True:
-			yield str(name)
-			name += 1
 
 	def listen(self, ip, port, timeout, backlog):
 		s = self._listen(ip, port,timeout,backlog)
@@ -39,7 +32,7 @@ class Server(object):
 			s, p = sock.accept()
 			s.setblocking(0)
 			# XXX: we really should try to handle the entire queue at once
-			yield self.name_generator.next(), s, p
+			yield s, p
 		except socket.error, e:
 			# It doesn't really matter if accept fails temporarily. We will
 			# try again next loop
