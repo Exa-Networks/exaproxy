@@ -27,8 +27,6 @@ class ClientManager (object):
 		self._nextid += 1
 		return str(self._nextid)
 
-	# XXX: should the client manager be responsible for
-	#      picking its own client ids?
 	def newConnection(self, sock, peer):
 		name = self.getnextid()
 		client = Client(name, sock, peer)
@@ -148,8 +146,6 @@ class ClientManager (object):
 				res = None
 			else:
 				# Start checking for content sent by the client
-				# XXX: Doing this even if client.startData returns None just in case
-				#      we somehow have buffered output already
 				self.bysock[client.sock] = client
 
 				# make sure we don't somehow end up with this still here
@@ -200,25 +196,14 @@ class ClientManager (object):
 		if sock in self.buffered:
 			self.buffered.remove(sock)
 
-	def shutdown(self):
+	def stop(self):
 		for client in self.bysock.itervalues():
 			client.shutdown()
 
+		for client in self.norequest.itervalues():
+			client.shutdown()
+
 		self.bysock = {}
+		self.norequest = {}
 		self.byname = {}
 		self.buffered = []
-
-
-	# XXX: create to not change Server() too much in one go
-	# XXX: do we really want this method?
-	def finish(self, name):
-		sock, r, w, peer = self.byname[name] # raise KeyError if we give a bad name
-		#XXX: Fixme
-		print "************* IMPLEMENT ME - FINISH"
-		pass
-
-	def stop (self):
-		#XXX: Fixme
-		print "JUST HERE TO NOT HAVE ERRORS"
-		pass
-		
