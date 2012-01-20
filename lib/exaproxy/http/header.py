@@ -106,6 +106,11 @@ class Header(dict):
 			self.order.append(key)
 		dict.__setitem__ (self,key,value)
 
+	def pop(self, key):
+		res = dict.pop(self, key)
+		self.order.remove(key)
+		return res
+
 	def redirect(self, host, path):
 		self.host = host if host is not None else self.host
 		self.path = path if path is not None else self.path
