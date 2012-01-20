@@ -221,10 +221,6 @@ class ContentManager(object):
 			downloader = self.opening.get(sock, None)
 
 		if downloader:
-			# XXX: what do we do if this happens?
-			if (downloader.sock, downloader.client_id) != (sock, client_id):
-				raise BadError
-
 			downloader.shutdown()
 
 			self.established.pop(sock, None)
@@ -242,6 +238,17 @@ class ContentManager(object):
 
 		
 	def stop (self):
-		# XXX: Fixme
-		print "STOP exists to not cause close warning"
-		pass
+		opening = self.opening.itervalues()
+		established = self.established.itervalues()
+		
+		for gen in (opening, established):
+			for downloader in gen:
+				downloader.shutdown()
+
+		self.established = {}
+		self.opening = {}
+		self.byclientid = {}
+		self.buffered = []
+
+		return True
+
