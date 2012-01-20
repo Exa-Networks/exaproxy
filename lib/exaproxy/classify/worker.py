@@ -29,17 +29,11 @@ class Worker (Thread):
 	
 	def __init__ (self, name, request_box, program):
 		# XXX: all this could raise things
-		r, w = os.pipe()                              # pipe for communication with the main thread
+		r, w = os.pipe()                                # pipe for communication with the main thread
 		self.response_box_write = os.fdopen(w,'w',0)    # results are written here
 		self.response_box_read = os.fdopen(r,'r',0)     # read from the main thread
 
 		self.resolver = DNSResolver(configuration.RESOLV)
-
-		# XXX: Not setting non blocking because it's incompatible with readline()
-		# XXX: If responses are not properly terminated then the main process can block
-		# XXX: http://bugs.python.org/issue1175#msg56041
-		#fl = fcntl.fcntl(self.response_box_read.fileno(), fcntl.F_GETFL)
-		#fcntl.fcntl(self.response_box_read.fileno(), fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
 		self.wid = name                               # a unique name
 		self.creation = time.time()                   # when the thread was created
@@ -129,7 +123,6 @@ class Worker (Thread):
 		# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
 		if 'proxy-connection' in request:
 			# XXX: If the value is keep-alive, we should parse the answer and add Proxy-Connection: close
-			request.order.remove('proxy-connection')
 			request.pop('proxy-connection')
 		# We NEED to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45
 		via = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % (configuration.VERSION,os.getpid()), '1.1', request.host)
@@ -236,9 +229,11 @@ class Worker (Thread):
 			self.respond_html(client_id, 405, 'METHOD NOT ALLOWED', 'Method Not Allowed')
 			continue
 
-		# XXX: can raise ?
-		self.response_box_read.close()
-		self.response_box_write.close()
+		try:
+			self.response_box_read.close()
+			self.response_box_write.close()
+		except (IOError, ValueError):
+			pass
 
 # prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
 # XXX: We may have more than one Connection header : http://tools.ietf.org/html/rfc2616#section-14.10
