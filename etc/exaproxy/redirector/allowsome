@@ -16,7 +16,7 @@ try:
 		url, ip, _, method, __ = data.split()
 
 		if method == 'CONNECT':
-			if 'hsbc' not in url and 'twitter' not in url:
+			if 'hsbc' not in url and 'twitter' not in url and 'twimg' not in url:
 				response = 'http://www.surfprotect.co.uk/'
 			else:
 				response = ''
