@@ -84,6 +84,8 @@ class Header(dict):
 			client = self.get('x-forwarded-for', ':0.0.0.0').split(':', 1)[1].split(',')[-1].strip()
 			url = host + ((':'+str(port)) if port is not None else '') + path
 			port = port if port is not None else 80
+
+			url_noport = host + path
 		except KeyboardInterrupt:
 			raise
 		except Exception, e:
@@ -99,6 +101,7 @@ class Header(dict):
 		self.host = host
 		self.port = port
 		self.url = url
+		self.url_noport = url_noport
 		self.client = client
 
 	def __setitem__ (self,key,value):
