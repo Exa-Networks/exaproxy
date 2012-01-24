@@ -8,8 +8,28 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 import sys
+import time
 from exaproxy.configuration import configuration
 from exaproxy.util.version import version
+
+
+def file_header(code, size, message):
+	date = time.strftime('%c %Z')
+
+	return """HTTP/1.1 %s OK
+Date: %s
+Server: exaproxy/%s (%s)
+Content-Length: %d
+Proxy-Connection: close
+Connection: close
+Content-Type: text/html
+Cache-control: private
+Pragma: no-cache
+
+""" % (str(code), date, str(version), str(sys.platform), size)
+
+
+
 
 def http (code,message):
 	return """\
