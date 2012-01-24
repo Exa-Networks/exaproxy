@@ -10,7 +10,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 from exaproxy.util.logger import logger
 from exaproxy.network.functions import connect
 from exaproxy.network.poller import errno_block
-from exaproxy.http.response import http
+from exaproxy.http.response import http, file_header
 from exaproxy.content.downloader import Downloader
 
 import os
@@ -29,20 +29,55 @@ class ContentManager(object):
 		self.retry = []
 
 		self.location = location
-		self._html = {}
+		self._header = {}
 
-	def getLocalContent(self, name):
-		if not name.startswith('/'):
-			filename = os.path.join(self.location, name)
-		else:
-			filename = name
+	def getLocalContent(self, code, name):
+		filename = os.path.normpath(os.path.join(self.location, name))
+		if not filename.startswith(self.location + os.path.sep):
+			filename = ''
+
 		if os.path.isfile(filename):
-			content = 'file', filename
+			try:
+				stat = os.stat(filename)
+			except IOError:
+				content = 'close', http(501, 'unable to stat file: %s' % str(filename))
+			else:
+				if filename in self._header :
+					cache_time, header = self._header[filename]
+				else:
+					cache_time, header = None, None
+
+				if cache_time is None or cache_time < stat.st_mtime:
+					header = file_header(code, stat.st_size, filename)
+					self._header[filename] = stat.st_size, header
+				
+				content = 'file', (header, filename)
 		else: 
 			logger.debug('download', 'no file exists for %s: %s' % (str(name), str(filename)))
-			content = None
+			content = 'close', http(501, 'no file exists for %s: %s' % (str(name), str(filename)))
 
 		return content
+
+	def readLocalContent(self, code, reason, data={}):
+		filename = os.path.normpath(os.path.join(self.location, reason))
+		if not filename.startswith(self.location + os.path.sep):
+			filename = ''
+
+		if os.path.isfile(filename):
+			try:
+				with open(filename) as fd:
+					body = fd.read() % data
+
+				content = 'close', http(code, body)
+			except IOError:
+				logger.debug('download', 'no file exists for %s: %s' % (str(reason), str(filename)))
+				content = 'close', http(501, 'no file exists for %s' % str(reason))
+		else:
+			logger.debug('download', 'no file exists for %s: %s' % (str(reason), str(filename)))
+			content = 'close', http(501, 'no file exists for %s' % str(reason))
+			
+		return content
+
 
 	def newDownloader(self, client_id, host, port, command, request):
 		downloader = self.downloader_factory(client_id, host, port, command, request)
@@ -80,35 +115,22 @@ class ContentManager(object):
 
 			elif command == 'html':
 				code, data = args.split('\0', 1)
-				if data.startswith('file://'):
-					name = data[7:]
-					if name in self._html:
-						html = self._html[name]
-					else:
-						if name.startswith('/'):
-							fname = name
-						else:
-							fname = os.path.normpath(os.path.join(self.location,name))
-						if not fname.startswith(self.location):
-							html = 'invalid file location for %s' % name
-						else:
-							try:
-								with open(fname,'r') as f:
-									html = f.read()
-								self._html[name] = html
-							except IOError:
-								html = 'could not open %s' % name
-				else:
-					html = data
 
 				downloader = None
-				content = ('close', http(code,html))
+				content = ('close', http(code, html))
 				restricted = True
 
 			elif command == 'file':
 				code, reason = args.split('\0', 1)
 				downloader = None
-				content = self.getLocalContent(reason)
+				content = self.getLocalContent(code, reason)
+				restricted = True
+
+			elif command == 'rewrite':
+				code, reason, url, host, client_ip = args.split('\0', 4)
+
+				downloader = None
+				content = self.readLocalContent(code, reason, {'url':url, 'host':host, 'client_ip':client_ip})
 				restricted = True
 
 			else:

@@ -96,7 +96,6 @@ class Client(object):
 		filename = yield None
 
 		# check to see if we are returning data directly from a local file
-		# XXX: this is cleaner than using a seperate coroutine for each case?
 		if filename is not None:
 			try:
 				# XXX: reading the file contents into memory while we have a
@@ -107,6 +106,9 @@ class Client(object):
 				found = True, False
 			except IOError:
 				found = None
+
+			data = yield found
+			w_buffer = data + w_buffer
 		else:
 			found = None
 
@@ -182,7 +184,10 @@ class Client(object):
 			res = self.writer.send(None)  # close the connection once the buffer is empty
 
 		elif command == 'file':
-			res = self.writer.send(data)  # use local file
+			header, filename = data
+			res = self.writer.send(filename)  # use local file
+			self.writer.send(header)      # write the response headers before the file
+			
 			self.writer.send(None)        # close the connection once the buffer is empty
 		else:
 			res = None

@@ -170,10 +170,10 @@ class ClientManager (object):
 				content = None
 
 			if buffered:
-				if sock not in self.buffered:
-					self.buffered.append(sock)
-			elif had_buffer and sock in self.buffered:
-				self.buffered.remove(sock)
+				if client.sock not in self.buffered:
+					self.buffered.append(client.sock)
+			elif had_buffer and client.sock in self.buffered:
+				self.buffered.remove(client.sock)
 		else:
 			content = None
 

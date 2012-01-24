@@ -94,22 +94,24 @@ class Worker (Thread):
 				classification, data = 'permit', None
 
 			elif response.startswith('http://'):
+				response = response[7:]
+
 				if response == url:
 					classification, data = 'permit', None
 				elif response.startswith(url.split('/', 1)[0]+'/'):
 					classification, data = 'rewrite', ('/'+url.split('/', 1)[1]) if '/' in url else ''
 				else:
-					classification, data = 'redirect', response
+					classification, data = 'redirect', 'http://' + response
 
 			elif response.startswith('file://'):
-				classification, data = 'file', response
+				classification, data = 'file', response[7:]
 
 			else:
-				classification, data = 'file', 'file://internal_error.html'
+				classification, data = 'file', 'internal_error.html'
 
 		except IOError, e:
 			logger.error('worker %d' % self.wid, 'IO/Error when sending to process: %s' % str(e))
-			classification, data = 'file', 'file://internal_error.html'
+			classification, data = 'file', 'internal_error.html'
 
 		return classification, data
 
@@ -140,6 +142,9 @@ class Worker (Thread):
 
 	def respond_file(self, client_id, code, reason):
 		self.respond('\0'.join((client_id, 'file', str(code), reason)))
+
+	def respond_rewrite(self, client_id, code, reason, url, host, client_ip):
+		self.respond('\0'.join((client_id, 'rewrite', str(code), reason, url, host, str(client_ip))))
 
 	def respond_html(self, client_id, code, *data):
 		self.respond('\0'.join((client_id, 'html', str(code))+data))
@@ -179,12 +184,16 @@ class Worker (Thread):
 			ipaddr = self.resolver.resolveHost(request.host)
 			if not ipaddr:
 				logger.warning('worker %d' % self.wid,'Could not resolve %s' % request.host)
-				self.respond_html(client_id, 503, 'file://dns.html')
-				continue
+
 
 			# classify and return the filtered page
 			if request.method in ('GET', 'PUT', 'POST'):
-				classification, data = self._classify(ipaddr, request.method, request.url)
+				if not ipaddr:
+					self.respond_rewrite(client_id, 503, 'dns.html', request.url, request.host, request.client)
+					#self.respond_file(client_id, 503, 'dns.html')
+					continue
+
+				classification, data = self._classify(request.client, request.method, request.url_noport)
 
 				if classification == 'permit':
 					self.respond_proxy(client_id, ipaddr, request.port, request)
@@ -196,7 +205,8 @@ class Worker (Thread):
 					continue
 
 				elif classification == 'file':
-					self.respond_file(client_id, '250', data)
+					#self.respond_file(client_id, '250', data)
+					self.respond_rewrite(client_id, 250, data, request.url, request.host, request.client)
 					continue
 
 				elif classification == 'redirect':
@@ -211,7 +221,12 @@ class Worker (Thread):
 			if request.method == 'CONNECT':
 				# we do allow connect
 				if configuration.CONNECT:
-					classification, data = self._classify(ipaddr, request.method, request.url)
+					if not ipaddr:
+						# XXX: the redirect url will have to be provided by the redirector
+						self.respond_redirect(client_id, 'http://www.exa-networks.co.uk/business/domain/dns/panel')
+						continue
+
+					classification, data = self._classify(request.client, request.method, request.url_noport)
 					if classification == 'redirect':
 						self.respond_redirect(client_id, data)
 					else:
