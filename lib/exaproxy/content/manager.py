@@ -117,7 +117,7 @@ class ContentManager(object):
 				code, data = args.split('\0', 1)
 
 				downloader = None
-				content = ('close', http(code, html))
+				content = ('close', http(code, data))
 				restricted = True
 
 			elif command == 'file':
