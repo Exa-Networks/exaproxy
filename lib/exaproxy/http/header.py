@@ -97,6 +97,7 @@ class Header(dict):
 			logger.error('header','could not parse header %s %s' % (type(e),str(e)))
 			method, path, version = None, None, None
 			protocol, host, port, url = None, None, None, None
+			url_noport = None
 			client, request = None, None
 
 		self.request = request
