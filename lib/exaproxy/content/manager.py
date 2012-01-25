@@ -127,10 +127,10 @@ class ContentManager(object):
 				restricted = True
 
 			elif command == 'rewrite':
-				code, reason, url, host, client_ip = args.split('\0', 4)
+				code, reason, protocol, url, host, client_ip = args.split('\0', 5)
 
 				downloader = None
-				content = self.readLocalContent(code, reason, {'url':url, 'host':host, 'client_ip':client_ip})
+				content = self.readLocalContent(code, reason, {'url':url, 'host':host, 'client_ip':client_ip, 'protocol':protocol})
 				restricted = True
 
 			else:

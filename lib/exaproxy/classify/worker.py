@@ -143,8 +143,8 @@ class Worker (Thread):
 	def respond_file(self, client_id, code, reason):
 		self.respond('\0'.join((client_id, 'file', str(code), reason)))
 
-	def respond_rewrite(self, client_id, code, reason, url, host, client_ip):
-		self.respond('\0'.join((client_id, 'rewrite', str(code), reason, url, host, str(client_ip))))
+	def respond_rewrite(self, client_id, code, reason, protocol, url, host, client_ip):
+		self.respond('\0'.join((client_id, 'rewrite', str(code), reason, protocol, url, host, str(client_ip))))
 
 	def respond_html(self, client_id, code, *data):
 		self.respond('\0'.join((client_id, 'html', str(code))+data))
@@ -186,10 +186,11 @@ class Worker (Thread):
 				logger.warning('worker %d' % self.wid,'Could not resolve %s' % request.host)
 
 
+
 			# classify and return the filtered page
 			if request.method in ('GET', 'PUT', 'POST'):
 				if not ipaddr:
-					self.respond_rewrite(client_id, 503, 'dns.html', request.url, request.host, request.client)
+					self.respond_rewrite(client_id, 503, 'dns.html', request.protocol, request.url, request.host, request.client)
 					#self.respond_file(client_id, 503, 'dns.html')
 					continue
 
@@ -206,7 +207,7 @@ class Worker (Thread):
 
 				elif classification == 'file':
 					#self.respond_file(client_id, '250', data)
-					self.respond_rewrite(client_id, 250, data, request.url, request.host, request.client)
+					self.respond_rewrite(client_id, 250, data, request.protocol, request.url, request.host, request.client)
 					continue
 
 				elif classification == 'redirect':

@@ -29,6 +29,11 @@ class Header(dict):
 				x, b = fullpath.split('://', 1)
 				if '/' not in x:
 					fullpath = b
+					protocol = x
+				else:
+					protocol = 'http'
+			else:
+				protocol = 'http'
 
 
 			if '/' in fullpath:
@@ -91,13 +96,14 @@ class Header(dict):
 		except Exception, e:
 			logger.error('header','could not parse header %s %s' % (type(e),str(e)))
 			method, path, version = None, None, None
-			host, port, url = None, None, None
+			protocol, host, port, url = None, None, None, None
 			client, request = None, None
 
 		self.request = request
 		self.method = method
 		self.path = path
 		self.version = version
+		self.protocol = protocol
 		self.host = host
 		self.port = port
 		self.url = url
