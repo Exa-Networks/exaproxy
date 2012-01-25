@@ -238,7 +238,7 @@ class Worker (Thread):
 					self.respond_html(client_id, 501, 'CONNECT NOT ALLOWED', 'We are an HTTP only proxy')
 					continue
 
-			if method in ('TRACE',):
+			if request.method in ('TRACE',):
 				self.respond_html(client_id, 501, 'TRACE NOT IMPLEMENTED', 'This is bad .. we are sorry.')
 				continue
 
