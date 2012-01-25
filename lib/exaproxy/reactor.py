@@ -59,6 +59,8 @@ class Reactor(object):
 					logger.debug('server', 'new connection from %s' % str(peer))
 					self.client.newConnection(s, peer)
 
+				# REGENERATE: read_socks=self.server.socks
+
 			# incoming new requests from clients
 			for client in set(opening_client).intersection(read):
 				client_id, peer, request, data = self.client.readRequest(client)
@@ -70,6 +72,9 @@ class Reactor(object):
 					# we have data to send but very probably no server to send it to
 					logger.error('server', 'Read content data along with the initial request from peer %s. It will likely be lost.' % str(peer))
 
+				# REGENERATE: opening_client iif request is None
+
+
 			# incoming data from clients
 			for client in set(read_client).intersection(read):
 				client_id, peer, request, data = self.client.readDataBySocket(client)
@@ -80,13 +85,22 @@ class Reactor(object):
 					logger.error('server', 'Received multiple requests from peer %s. We do not handle this case yet. Closing the connection' % str(peer))
 					# XXX: should we allow cleanup to be called outside of the manager?
 					self.client.cleanup(client)
+					# REGENERATE: read_client, write_client
+					# REGENERATE: opening_client since we're doing everything else anyway?
 
 				elif data:
 					# we read something from the client so pass it on to the remote server
 					self.content.sendClientData(client_id, data)
 
+					# XXX: sendClientData() should tell us whether or not the socket was
+					#      added to / removed from the buffer list
+					# REGENERATE: write_download
+
 				elif data is None:
 					self.content.endClientDownload(client_id)
+
+					# REGENERATE: read_client, write_client,    read_download, write_download, opening_download
+					# REGENERATE: opening_client since we're doing everything else anyway?
 					
 			# incoming data - web pages
 			for fetcher in set(read_download).intersection(read):
@@ -95,23 +109,32 @@ class Reactor(object):
 				if page_data is None:
 					logger.debug('server', 'lost connection to server while downloading for client id %s' % client_id)
 
+					# REGENERATE: read_download, write_download
+
 				# send received data to the client that requested it
 				sending = self.client.sendDataByName(client_id, page_data)
 
 				# check to see if the client went away
-				if sending is None and page_data is not None:
-					logger.debug('server', 'client %s went away but we kept on downloading data' % client_id)
-					# should we use the fetcher (socket) as an index here rather than the client id?
-					# should we just wait for the next loop when we'll be notified of the client disconnect?
-					self.content.endClientDownload(client_id)
+				if sending is None:
+					if page_data is not None:
+						logger.debug('server', 'client %s went away but we kept on downloading data' % client_id)
+						# should we use the fetcher (socket) as an index here rather than the client id?
+						# should we just wait for the next loop when we'll be notified of the client disconnect?
+						self.content.endClientDownload(client_id)
+
+					# REGENERATE: read_client, write_client
 
 			# decisions made by the child processes
 			for worker in set(read_workers).intersection(read):
 				logger.info('server','incoming decision')
 				client_id, decision = self.decider.getDecision(worker)
+
 				# check that the client didn't get bored and go away
 				if client_id in self.client:
 					response, restricted = self.content.getContent(client_id, decision)
+
+					# REGENERATE: opening_download iif command == 'stream'
+
 					# Signal to the client that we'll be streaming data to it or
 					# give it the location of the local content to return.
 					data = self.client.startData(client_id, response, restricted)
@@ -119,30 +142,45 @@ class Reactor(object):
 					# Check for any data beyond the initial headers that we may already
 					# have read and cached
 					if data:
+						# REGENERATE: write_client  -- startData should tell us whether or not we need to do this
+
 						self.content.sendClientData(client_id, data)
+
+						# REGENERATE: write_download -- sendClientData should tell us whether or not we need to do this
+						# REGENERATE: If there's an error sending to the server then we ignore it here and pick it up
+						#             on the next loop when trying to read from it. Double check that this is ok
 
 					# XXX: client should prune itself
 					elif data is None:
+						# REGENERATE: read_client, write_client
+
 						self.content.endClientDownload(client_id)
+
+						# REGENERATE: read_download, write_download, opening_download
 				else:
 					logger.debug('server', 'a decision was made for unknown client %s - perhaps it already disconnected?' % client_id)
 
 			# clients we can write buffered data to
 			for client in set(write_client).intersection(write):
 				self.client.sendDataBySocket(client, '')
+				# REGENERATE: write_client
 
 			# remote servers we can write buffered data to
 			for download in set(write_download).intersection(write):
 				logger.info('server','flushing')
 				self.content.sendSocketData(download, '')
+				# REGENERATE: write_download
 
 			# fully connected connections to remote web servers
 			for fetcher in set(opening_download).intersection(write):
 				logger.info('server','starting download')
 				client_id, response = self.content.startDownload(fetcher)
+				# REGENERATE: opening_download, write_download, read_download ???
 				if client_id in self.client:
 					if response:
 						self.client.sendDataByName(client_id, response)
+						# REGENERATE: write_client
+						# REGENERATE: handling errors in read on next loop?
 
 			# retry connecting - opportunistic 
 			for client_id, decision in retry_download:
