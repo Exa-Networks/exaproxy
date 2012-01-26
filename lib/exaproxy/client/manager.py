@@ -13,12 +13,13 @@ from exaproxy.util.logger import logger
 from browser import Client
 
 class ClientManager (object):
-	def __init__(self):
+	def __init__(self, poller):
 		self.norequest = {}
 		self.bysock = {}
 		self.byname = {}
 		self.buffered = []
 		self._nextid = 0
+		self.poller = poller
 
 	def __contains__(self, item):
 		return item in self.byname
@@ -34,6 +35,9 @@ class ClientManager (object):
 		self.norequest[sock] = client
 		self.byname[name] = client
 
+		# watch for request data becoming available to read
+		self.poller.addReadSocket('opening_client', client.sock)
+
 		logger.info('client','new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
 		return peer
 
@@ -46,6 +50,9 @@ class ClientManager (object):
 			if request:
 				# headers can be read only once
 				self.norequest.pop(sock, None)
+
+				# we don't care about new requests from the client
+				self.poller.removeReadSocket('opening_client', client.sock)
 
 			elif request is None:
 				self.cleanup(sock, client.name)
@@ -101,8 +108,15 @@ class ClientManager (object):
 			if buffered:
 				if sock not in self.buffered:
 					self.buffered.append(sock)
+
+					# watch for the socket's send buffer becoming less than full
+					self.poller.addWriteSocket('write_client', client.sock)
+
 			elif had_buffer and sock in self.buffered:
 				self.buffered.remove(sock)
+
+				# we no longer care about writing to the client
+				self.poller.removeWriteSocket('write_client', client.sock)
 		else:
 			result = None
 
@@ -127,8 +141,15 @@ class ClientManager (object):
 			if buffered:
 				if client.sock not in self.buffered:
 					self.buffered.append(client.sock)
+
+					# watch for the socket's send buffer becoming less than full
+					self.poller.addWriteSocket('write_client', client.sock)
+
 			elif had_buffer and client.sock in self.buffered:
 				self.buffered.remove(client.sock)
+
+				# we no longer care about writing to the client
+				self.poller.removeWriteSocket('write_client', client.sock)
 		else:
 			result = None
 
@@ -148,8 +169,14 @@ class ClientManager (object):
 				# Start checking for content sent by the client
 				self.bysock[client.sock] = client
 
+				# watch for the client sending new data
+				self.poller.addReadSocket('read_client', client.sock)
+
 				# make sure we don't somehow end up with this still here
 				self.norequest.pop(client.sock, None)
+
+				# XXX: always done already in readRequest?
+				self.poller.removeReadSocket('opening_client', client.sock)
 
 				res = client.startData(command, d, blockupload)
 
@@ -172,8 +199,15 @@ class ClientManager (object):
 			if buffered:
 				if client.sock not in self.buffered:
 					self.buffered.append(client.sock)
+
+					# watch for the socket's send buffer becoming less than full
+					self.poller.addWriteSocket('write_client', client.sock)
+
 			elif had_buffer and client.sock in self.buffered:
 				self.buffered.remove(client.sock)
+
+				# we no longer care about writing to the client
+				self.poller.removeWriteSocket('write_client', client.sock)
 		else:
 			content = None
 
@@ -186,11 +220,17 @@ class ClientManager (object):
 		client = self.bysock.get(sock, None)
 		client = client or self.norequest.get(sock, None)
 		client = client or self.byname.get(name, None)
-		if client:
-			client.shutdown()
 
 		self.bysock.pop(sock, None)
 		self.norequest.pop(sock, None)
+
+		if client:
+			client.shutdown()
+
+			self.poller.removeWriteSocket('write_client', client.sock)
+			self.poller.removeReadSocket('read_client', client.sock)
+			self.poller.removeReadSocket('opening_client', client.sock)
+	
 
 		self.byname.pop(name, None)
 		if sock in self.buffered:
@@ -202,6 +242,10 @@ class ClientManager (object):
 
 		for client in self.norequest.itervalues():
 			client.shutdown()
+
+		self.poller.clearRead('read_client')
+		self.poller.clearRead('opening_client')
+		self.poller.clearWrite('write_client')
 
 		self.bysock = {}
 		self.norequest = {}

@@ -21,12 +21,14 @@ import errno
 class ContentManager(object):
 	downloader_factory = Downloader
 
-	def __init__(self, location):
+	def __init__(self, poller, location):
 		self.opening = {}
 		self.established = {}
 		self.byclientid = {}
 		self.buffered = []
 		self.retry = []
+
+		self.poller = poller
 
 		self.location = location
 		self._header = {}
@@ -83,7 +85,6 @@ class ContentManager(object):
 		downloader = self.downloader_factory(client_id, host, port, command, request)
 		if downloader.sock is None:
 			downloader = None
-
 
 		return downloader
 
@@ -148,6 +149,9 @@ class ContentManager(object):
 			self.opening[downloader.sock] = downloader
 			self.byclientid[downloader.client_id] = downloader
 
+			# register interest in the socket becoming available
+			self.poller.addWriteSocket('opening_download', downloader.sock)
+
 		return content, restricted
 
 
@@ -157,6 +161,12 @@ class ContentManager(object):
 		if downloader:
 			self.established[sock] = downloader
 			res = downloader.startConversation()
+
+			# we're no longer interested in the socket connecting since it's connected
+			self.poller.removeWriteSocket('opening_download', downloader.sock)
+
+			# registed interest in data becoming available to read
+			self.poller.addReadSocket('read_download', downloader.sock)
 		else:
 			res = None, None
 
@@ -187,8 +197,15 @@ class ContentManager(object):
 			if buffered:
 				if sock not in self.buffered:
 					self.buffered.append(sock)
+	
+					# watch for the socket's send buffer becoming less than full
+					self.poller.addWriteSocket('write_download', sock)
+
 			elif had_buffer and sock in self.buffered:
 				self.buffered.remove(sock)
+
+				# we no longer care that we can write to the server
+				self.poller.removeWriteSocket('write_download', sock)
 
 			res = True
 		else:
@@ -206,8 +223,15 @@ class ContentManager(object):
 				if buffered:
 					if sock not in self.buffered:
 						self.buffered.append(sock)
+
+						# watch for the socket's send buffer becoming less than full
+						self.poller.addWriteSocket('write_download', sock)
+
 				elif had_buffer and sock in self.buffered:
 					self.buffered.remove(sock)
+
+					# we no longer care that we can write to the server
+					self.poller.removeWriteSocket('write_download', sock)
 
 				res = True
 
@@ -215,6 +239,9 @@ class ContentManager(object):
 				buffered = downloader.bufferData(data)
 				if downloader.sock not in self.buffered:
 					self.buffered.append(downloader.sock)
+
+					# watch for the socket's send buffer becoming less than full
+					self.poller.addWriteSocket('write_download', downloader.sock)
 	
 				res = True
 
@@ -242,6 +269,13 @@ class ContentManager(object):
 		if downloader is None:
 			downloader = self.opening.get(sock, None)
 
+			if downloader:
+				# we no longer care about the socket connecting
+				self.poller.removeWriteSocket('opening_download', downloader.sock)
+		else:
+			# we no longer care about the socket being readable
+			self.poller.removeReadSocket('read_download', downloader.sock)
+
 		if downloader:
 			downloader.shutdown()
 
@@ -251,6 +285,9 @@ class ContentManager(object):
 
 			if sock in self.buffered:
 				self.buffered.remove(sock)
+
+				# we no longer care about the socket's send buffer becoming less than full
+				self.poller.removeWriteSocket('write_download', downloader.sock)
 
 			res = True
 		else:
@@ -271,6 +308,10 @@ class ContentManager(object):
 		self.opening = {}
 		self.byclientid = {}
 		self.buffered = []
+
+		self.poller.clearRead('read_download')
+		self.poller.clearWrite('write_download')
+		self.poller.clearWrite('opening_download')
 
 		return True
 

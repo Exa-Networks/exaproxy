@@ -17,13 +17,18 @@ from exaproxy.util.logger import logger
 class Server(object):
 	_listen = staticmethod(listen)
 
-	def __init__(self):
+	def __init__(self, poller):
 		self.socks = {}
+		self.poller = poller
 
 	def listen(self, ip, port, timeout, backlog):
 		s = self._listen(ip, port,timeout,backlog)
 		# XXX: check s is not None
 		self.socks[s] = True
+
+		# register the socket with the poller
+		self.poller.addReadSocket('read_socks', s)
+
 		return s
 
 	def accept(self, sock):
@@ -46,3 +51,4 @@ class Server(object):
 				pass
 
 		self.socks = {}
+		self.poller.clearRead('read_socks')
