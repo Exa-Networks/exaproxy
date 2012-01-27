@@ -78,6 +78,19 @@ def connect (ip,port):
 			return None
 	except socket.error,e:
 		return None
+
+
+#	try:
+#		s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 64*1024)
+#	except socket.error, e:
+#		print "CANNOT SET RCVBUF"
+#		logger.debug('server','could not set sock rcvbuf size')
+#	except Exception,e:
+#		print "*"*10
+#		print type(e),str(e)
+#		raise
+
+
 	try:
 		s.setblocking(0)
 		s.connect((ip, port))

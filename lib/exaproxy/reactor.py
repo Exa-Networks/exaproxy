@@ -90,15 +90,23 @@ class Reactor(object):
 					logger.debug('server', 'lost connection to server while downloading for client id %s' % client_id)
 
 				# send received data to the client that requested it
-				sending = self.client.sendDataByName(client_id, page_data)
+				status, flipflop = self.client.sendDataByName(client_id, page_data)
 
 				# check to see if the client went away
-				if sending is None:
+				if status is None:
 					if page_data is not None:
 						logger.debug('server', 'client %s went away but we kept on downloading data' % client_id)
 						# should we use the fetcher (socket) as an index here rather than the client id?
 						# should we just wait for the next loop when we'll be notified of the client disconnect?
 						self.content.endClientDownload(client_id)
+
+				elif flipflop:
+					# status should be true here - we don't read from the server when buffering
+					if status:      # Buffering
+						self.content.corkClientDownload(client_id)
+
+					else:            # No buffer
+						self.content.uncorkClientDownload(client_id)
 
 			# decisions made by the child processes
 			for worker in poller.intersectingReadSockets('read_workers', read):
@@ -127,7 +135,15 @@ class Reactor(object):
 
 			# clients we can write buffered data to
 			for client in poller.intersectingWriteSockets('write_client', write):
-				self.client.sendDataBySocket(client, '')
+				status, flipflop, name = self.client.sendDataBySocket(client, '')
+
+				if flipflop:
+					# status should be False - we're here because we flushed buffered data
+					if not status:    # No buffer
+						self.content.uncorkClientDownload(name)
+
+					else:         # Buffering
+						self.content.corkClientDownload(name)
 
 			# remote servers we can write buffered data to
 			for download in poller.intersectingWriteSockets('write_download', write):
@@ -140,7 +156,14 @@ class Reactor(object):
 				client_id, response = self.content.startDownload(fetcher)
 				if client_id in self.client:
 					if response:
-						self.client.sendDataByName(client_id, response)
+						status, flipflop = self.client.sendDataByName(client_id, response)
+						if flipflop:
+							# status should be True if we're here
+							if status:
+								self.content.corkClientDownload(client_id)
+
+							else:
+								self.content.uncorkClientDownload(client_id)
 
 #			# retry connecting - opportunistic 
 #			for client_id, decision in retry_download:

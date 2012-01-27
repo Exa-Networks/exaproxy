@@ -20,7 +20,7 @@ import errno
 # Says we SHOULD keep track of the server version and deal with 100-continue
 # I say I am too lazy - and if you want the feature use this software as as rev-proxy :D
 
-DEFAULT_READ_BUFFER_SIZE = 4096
+DEFAULT_READ_BUFFER_SIZE = 64*1024
 
 
 class Downloader(object):

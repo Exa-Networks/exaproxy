@@ -264,6 +264,17 @@ class ContentManager(object):
 
 		return res
 
+	def corkClientDownload(self, client_id):
+		downloader = self.byclientid.get(client_id, None)
+		if downloader:
+			self.poller.removeReadSocket('read_download', downloader.sock)
+
+	def uncorkClientDownload(self, client_id):
+		downloader = self.byclientid.get(client_id, None)
+		if downloader:
+			if downloader.sock in self.established:
+				self.poller.addReadSocket('read_download', downloader.sock)
+
 	def _terminate(self, sock, client_id):
 		downloader = self.established.get(sock, None)
 		if downloader is None:

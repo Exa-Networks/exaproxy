@@ -93,6 +93,7 @@ class ClientManager (object):
 	def sendDataBySocket(self, sock, data):
 		client = self.bysock.get(sock, None)
 		if client:
+			name = client.name
 			res = client.writeData(data)
 
 			if res is None:
@@ -101,6 +102,7 @@ class ClientManager (object):
 
 				buffered, had_buffer = None, None
 				result = None
+				flipflop = None
 			else:
 				buffered, had_buffer = res
 				result = buffered
@@ -108,19 +110,28 @@ class ClientManager (object):
 			if buffered:
 				if sock not in self.buffered:
 					self.buffered.append(sock)
+					flipflop = True
 
 					# watch for the socket's send buffer becoming less than full
 					self.poller.addWriteSocket('write_client', client.sock)
+				else:
+					flipflop = False
 
 			elif had_buffer and sock in self.buffered:
 				self.buffered.remove(sock)
+				flipflop = True
 
 				# we no longer care about writing to the client
 				self.poller.removeWriteSocket('write_client', client.sock)
+
+			else:
+				flipflop = False
 		else:
 			result = None
+			flipflop = None
+			name = None
 
-		return result
+		return result, flipflop, name
 
 	def sendDataByName(self, name, data):
 		client = self.byname.get(name, None)
@@ -134,6 +145,7 @@ class ClientManager (object):
 
 				buffered, had_buffer = None, None
 				result = None
+				flipflop = None
 			else:
 				buffered, had_buffer = res
 				result = buffered
@@ -141,19 +153,27 @@ class ClientManager (object):
 			if buffered:
 				if client.sock not in self.buffered:
 					self.buffered.append(client.sock)
+					flipflop = True
 
 					# watch for the socket's send buffer becoming less than full
 					self.poller.addWriteSocket('write_client', client.sock)
+				else:
+					flipflop = False
 
 			elif had_buffer and client.sock in self.buffered:
 				self.buffered.remove(client.sock)
+				flipflop = True
 
 				# we no longer care about writing to the client
 				self.poller.removeWriteSocket('write_client', client.sock)
+
+			else:
+				flipflop = False
 		else:
 			result = None
+			flipflop = None
 
-		return result
+		return result, flipflop
 
 
 	def startData(self, name, data, blockupload):
