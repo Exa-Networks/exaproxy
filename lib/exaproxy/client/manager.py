@@ -234,6 +234,16 @@ class ClientManager (object):
 		return content
 
 
+	def corkUploadByName(self, name):
+		client = self.byname.get(name, None)
+		if client:
+			self.poller.removeReadSocket('read_client', client.sock)
+
+	def uncorkUploadByName(self, name):
+		client = self.byname.get(name, None)
+		if client:
+			if client.sock in self.bysock:
+				self.poller.addReadSocket('read_client', client.sock)
 
 	def cleanup(self, sock, name):
 		logger.debug('client','cleanup for socket %s' % sock)

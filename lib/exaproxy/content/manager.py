@@ -197,21 +197,27 @@ class ContentManager(object):
 			if buffered:
 				if sock not in self.buffered:
 					self.buffered.append(sock)
+					flipflop = True
 	
 					# watch for the socket's send buffer becoming less than full
 					self.poller.addWriteSocket('write_download', sock)
+				else:
+					flipflop = False
 
 			elif had_buffer and sock in self.buffered:
 				self.buffered.remove(sock)
+				flipflop = True
 
 				# we no longer care that we can write to the server
 				self.poller.removeWriteSocket('write_download', sock)
+			else:
+				flipflop = False
 
-			res = True
 		else:
-			res = False
+			buffered = None
+			flipflop = None
 
-                return res
+                return buffered, flipflop
 
 	def sendClientData(self, client_id, data):
 		downloader = self.byclientid.get(client_id, None)
@@ -223,36 +229,44 @@ class ContentManager(object):
 				if buffered:
 					if sock not in self.buffered:
 						self.buffered.append(sock)
+						flipflop = True
 
 						# watch for the socket's send buffer becoming less than full
 						self.poller.addWriteSocket('write_download', sock)
+					else:
+						flipflop = False
 
 				elif had_buffer and sock in self.buffered:
 					self.buffered.remove(sock)
+					flipflop = True
 
 					# we no longer care that we can write to the server
 					self.poller.removeWriteSocket('write_download', sock)
+				else:
+					flipflop = False
 
-				res = True
 
 			elif downloader.sock in self.opening:
 				buffered = downloader.bufferData(data)
 				if downloader.sock not in self.buffered:
 					self.buffered.append(downloader.sock)
+					flipflop = True
 
 					# watch for the socket's send buffer becoming less than full
 					self.poller.addWriteSocket('write_download', downloader.sock)
+				else:
+					flipflop = False
 	
-				res = True
 
 			else:  # what is going on if we reach this point
 				self._terminate(downloader.sock, client_id)
-				res = False
+				buffered = None
+				flipflop = None
 		else:
-			res = False
+			buffered = None
+			flipflop = None
 
-
-		return res
+		return buffered, flipflop
 
 
 	def endClientDownload(self, client_id):

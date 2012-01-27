@@ -73,7 +73,13 @@ class Reactor(object):
 
 				elif data:
 					# we read something from the client so pass it on to the remote server
-					self.content.sendClientData(client_id, data)
+					status, flipflop = self.content.sendClientData(client_id, data)
+
+					if flipflop:
+						if status:
+							self.client.corkUploadByName(client_id)
+						else:
+							self.client.uncorkUploadByName(client_id)
 
 					# XXX: sendClientData() should tell us whether or not the socket was
 					#      added to / removed from the buffer list
@@ -124,7 +130,13 @@ class Reactor(object):
 					# Check for any data beyond the initial headers that we may already
 					# have read and cached
 					if data:
-						self.content.sendClientData(client_id, data)
+						status, flipflop = self.content.sendClientData(client_id, data)
+
+						if flipflop:
+							if status:
+								self.client.corkUploadByName(client_id)
+							else:
+								self.client.uncorkUploadByName(client_id)
 
 					# XXX: client should prune itself
 					elif data is None:
@@ -148,7 +160,13 @@ class Reactor(object):
 			# remote servers we can write buffered data to
 			for download in poller.intersectingWriteSockets('write_download', write):
 				logger.info('server','flushing')
-				self.content.sendSocketData(download, '')
+				status, flipflop = self.content.sendSocketData(download, '')
+
+				if flipflop:
+					if status:
+						self.client.corkUploadByName(client_id)
+					else:
+						self.client.uncorkUploadByName(client_id)
 
 			# fully connected connections to remote web servers
 			for fetcher in poller.intersectingWriteSockets('opening_download', write):
