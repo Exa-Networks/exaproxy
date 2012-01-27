@@ -97,7 +97,7 @@ class ClientManager (object):
 
 			if res is None:
 				# close the client connection
-				self.cleanup(sock, name)
+				self.cleanup(sock, client.name)
 
 				buffered, had_buffer = None, None
 				result = None
