@@ -118,7 +118,7 @@ class Client(object):
 		while True:
 			try:
 				while True:
-					had_buffer = True if w_buffer else False
+					had_buffer = bool(w_buffer)
 
 					if data is not None:
 						w_buffer += data
@@ -137,7 +137,7 @@ class Client(object):
 						logger.info('client', 'wrote to socket %s sent %d bytes' % (str(sock),sent))
 						w_buffer = w_buffer[sent:]
 
-					buffered = True if w_buffer else False
+					buffered = bool(w_buffer) or finished
 					data = yield buffered, had_buffer
 
 
