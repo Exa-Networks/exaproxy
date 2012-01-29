@@ -29,35 +29,19 @@ else:
 	raise ImportError, 'what kind of select module is this'
 
 
-#	errno_block = set(
-#		errno.EAGAIN, errno.EWOULDBLOCK, 
-#		errno.EINTR, errno.ETIMEDOUT,
-#	)
-
 errno_block = set((
+	errno.EINPROGRESS, errno.EALREADY,
 	errno.EAGAIN, errno.EWOULDBLOCK,
-	errno.EINTR,
+	errno.EINTR, errno.EDEADLK,
 ))
 
-#	errno_fatal = set(
-#		errno.ECONNABORTED, errno.EPIPE,
-#		errno.ECONNREFUSED, errno.EBADF,
-#		errno.ESHUTDOWN, errno.ENOTCONN,
-#		errno.ECONNRESET, 
-#	)
-
 errno_fatal = set((
-	errno.EINVAL,
-	errno.EBADF,
-)) # (please do not change this list) # XXX: Thomas asks why : it is only used in this file .. and it seems the list is short
+	errno.ECONNABORTED, errno.EPIPE,
+	errno.ECONNREFUSED, errno.EBADF,
+	errno.ESHUTDOWN, errno.ENOTCONN,
+	errno.ECONNRESET, 
+))
 
-
-# copied from reactor - not sure we will ever use this lis
-errno_close = set([
-	errno.EBADF, errno.ECONNRESET, errno.ESHUTDOWN,
-	errno.ECONNABORTED, errno.ECONNREFUSED,
-	errno.ENOTCONN, errno.EPIPE, errno.ECONNRESET,
-])
 
 def poll_select(read, write, timeout=None):
 	try:
