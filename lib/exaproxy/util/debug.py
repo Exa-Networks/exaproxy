@@ -25,6 +25,11 @@ def bug_report (type, value, trace):
 	print >> sys.stderr, '-'*80
 	print >> sys.stderr, ''
 	print >> sys.stderr, ''
+	print >> sys.stderr, '-- Version'
+	print >> sys.stderr, ''
+	print >> sys.stderr, sys.version
+	print >> sys.stderr, ''
+	print >> sys.stderr, ''
 	print >> sys.stderr, '-- Logging History'
 	print >> sys.stderr, ''
 	print >> sys.stderr, ''

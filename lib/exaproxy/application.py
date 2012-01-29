@@ -75,6 +75,7 @@ def main ():
 
 if __name__ == '__main__':
 	logger.info('main','starting %s' % sys.argv[0])
+	logger.info('main',sys.version.replace(os.linesep,' '))
 	profiled = configuration.PROFILE
 	if profiled == '0':
 		main()
