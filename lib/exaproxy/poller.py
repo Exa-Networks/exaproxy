@@ -102,5 +102,32 @@ class SocketPoller:
 			self.write_all = sum(self.write_sockets.values(), [])
 			self.write_modified = {}
 
-		return self.poller(self.read_all, self.write_all, self.speed)
+		found = False
+
+		read_socks = {}
+		for name, socks in self.read_sockets.items():
+			socks, _, __ = self.poller(socks, [], 0)
+			read_socks[name] = socks
+			if socks:
+				found = True
+
+		write_socks = {}
+		for name, socks in self.write_sockets.items():
+			_, socks, __ = self.poller([], socks, 0)
+			write_socks[name] = socks
+			if socks:
+				found = True
+
+		if not found:
+			r, w, x  = self.poller(self.read_all, self.write_all, self.speed)
+
+			if r:
+				for name, socks in self.read_sockets.items():
+					read_socks[name], _, __ = self.poller(socks, [], 0)
+
+			if w:
+				for name, socks in self.write_sockets.items():
+					_, write_socks[name], __ = self.poller([], socks, 0)
+
+		return read_socks, write_socks, []
 
