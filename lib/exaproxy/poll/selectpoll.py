@@ -9,11 +9,11 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # http://code.google.com/speed/articles/web-metrics.html
 
-from .network.poller import poll_select
-from .util.logger import logger
+from exaproxy.network.poller import poll_select
+from exaproxy.util.logger import logger
 
 
-class SocketPoller:
+class SelectPoller:
 	poller = staticmethod(poll_select)
 
 	def __init__(self, speed):
@@ -21,9 +21,6 @@ class SocketPoller:
 
 		self.read_sockets = {}
 		self.write_sockets = {}
-
-		self.read_set = {}
-		self.write_set = {}
 
 		self.read_modified = {}
 		self.write_modified = {}
@@ -37,20 +34,17 @@ class SocketPoller:
 		sockets = self.read_sockets[name]
 		if socket not in sockets:
 			sockets.append(socket)
-			self.read_set[name].add(socket)
 			self.read_modified[name] = True
 
 	def removeReadSocket(self, name, socket):
 		sockets = self.read_sockets[name]
 		if socket in sockets:
 			sockets.remove(socket)
-			self.read_set[name].remove(socket)
 			self.read_modified[name] = True
 
 	def setupRead(self, name):
 		if name not in self.read_sockets:
 			self.read_sockets[name] = []
-			self.read_set[name] = set()
 
 	def clearRead(self, name):
 		had_sockets = bool(self.read_sockets[name])
@@ -65,20 +59,17 @@ class SocketPoller:
 		sockets = self.write_sockets[name]
 		if socket not in sockets:
 			sockets.append(socket)
-			self.write_set[name].add(socket)
 			self.write_modified[name] = True
 
 	def removeWriteSocket(self, name, socket):
 		sockets = self.write_sockets[name]
 		if socket in sockets:
 			sockets.remove(socket)
-			self.write_set[name].add(socket)
 			self.write_modified[name] = True
 
 	def setupWrite(self, name):
 		if name not in self.write_sockets:
 			self.write_sockets[name] = []
-			self.write_set[name] = set()
 
 	def clearWrite(self, name):
 		had_sockets = bool(self.write_sockets[name])
@@ -87,11 +78,11 @@ class SocketPoller:
 		if had_sockets:
 			self.write_modified[name] = True
 
-	def intersectingReadSockets(self, name, sockets):
-		return self.read_set[name].intersection(sockets)
+	corkReadSocket = removeReadSocket
+	uncorkReadSocket = addReadSocket
 
-	def intersectingWriteSockets(self, name, sockets):
-		return self.write_set[name].intersection(sockets)
+	corkWriteSocket = removeWriteSocket
+	uncorkWriteSocket = addWriteSocket
 
 	def poll(self):
 		if self.read_modified:
@@ -104,30 +95,28 @@ class SocketPoller:
 
 		found = False
 
-		read_socks = {}
+		all_socks = {}
+
 		for name, socks in self.read_sockets.items():
 			socks, _, __ = self.poller(socks, [], 0)
-			read_socks[name] = socks
+			all_socks[name] = socks
 			if socks:
 				found = True
 
-		write_socks = {}
 		for name, socks in self.write_sockets.items():
 			_, socks, __ = self.poller([], socks, 0)
-			write_socks[name] = socks
+			all_socks[name] = socks
 			if socks:
 				found = True
 
 		if not found:
 			r, w, x  = self.poller(self.read_all, self.write_all, self.speed)
 
-			if r:
-				for name, socks in self.read_sockets.items():
-					read_socks[name], _, __ = self.poller(socks, [], 0)
+			for name, socks in self.read_sockets.items():
+				all_socks[name], _, __ = self.poller(socks, [], 0)
 
-			if w:
-				for name, socks in self.write_sockets.items():
-					_, write_socks[name], __ = self.poller([], socks, 0)
+			for name, socks in self.write_sockets.items():
+				_, all_socks[name], __ = self.poller([], socks, 0)
 
-		return read_socks, write_socks, []
+		return all_socks
 
