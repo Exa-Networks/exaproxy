@@ -19,9 +19,8 @@ from .content.manager import ContentManager
 from .client.manager import ClientManager
 from .network.server import Server
 
-from .poller import SocketPoller
+from .poll.epoll import EPoller
 from .reactor import Reactor
-
 
 from .util.logger import logger
 
@@ -36,7 +35,7 @@ class Supervisor(object):
 		self.pid = PID(configuration.PID)
 		self.daemon = Daemon(configuration.DAEMONIZE,configuration.USER)
 
-		self.poller = SocketPoller(2)
+		self.poller = EPoller(2)
 
                 # XXX: We need to make sure that these keys exist before they
                 #      are used elsewhere or the poller will raise an error.
