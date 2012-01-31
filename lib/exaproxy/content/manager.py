@@ -159,6 +159,8 @@ class ContentManager(object):
 		# shift the downloader to the other connected sockets
 		downloader = self.opening.pop(sock, None)
 		if downloader:
+			self.poller.removeWriteSocket('write_download', downloader.sock)
+
 			self.established[sock] = downloader
 			res = downloader.startConversation()
 
