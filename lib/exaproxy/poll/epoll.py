@@ -87,8 +87,6 @@ class EPoller(IPoller):
 			poller.close()
 			self.setupRead(name)
 
-
-
 		
 	def addWriteSocket(self, name, socket):
 		# XXX: will raise if 'name' is not in self.sockets
