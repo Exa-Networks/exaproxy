@@ -37,20 +37,20 @@ class Supervisor(object):
 
 		self.poller = Poller(2)
 
-                # XXX: We need to make sure that these keys exist before they
-                #      are used elsewhere or the poller will raise an error.
-                #      Is this tradeoff for performance really a good idea?
+		# XXX: We need to make sure that these keys exist before they
+		#      are used elsewhere or the poller will raise an error.
+		#      Is this tradeoff for performance really a good idea?
 
-                self.poller.setupRead('read_socks')           # Listening sockets
-                self.poller.setupRead('read_workers')         # Pipes carrying responses from the child processes
+		self.poller.setupRead('read_socks')           # Listening sockets
+		self.poller.setupRead('read_workers')         # Pipes carrying responses from the child processes
 
-                self.poller.setupRead('read_client')          # Active clients
-                self.poller.setupRead('opening_client')       # Clients we have not yet read a request from
-                self.poller.setupWrite('write_client')        # Active clients with buffered data to send
+		self.poller.setupRead('read_client')          # Active clients
+		self.poller.setupRead('opening_client')       # Clients we have not yet read a request from
+		self.poller.setupWrite('write_client')        # Active clients with buffered data to send
 
-                self.poller.setupRead('read_download')        # Established connections
-                self.poller.setupWrite('write_download')      # Established connections we have buffered data to send to
-                self.poller.setupWrite('opening_download')    # Opening connections
+		self.poller.setupRead('read_download')        # Established connections
+		self.poller.setupWrite('write_download')      # Established connections we have buffered data to send to
+		self.poller.setupWrite('opening_download')    # Opening connections
 
 
 		# XXX : Should manager and Download moved into server ?
