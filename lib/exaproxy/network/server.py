@@ -12,6 +12,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 from exaproxy.network.functions import listen
 from exaproxy.util.logger import logger
+import socket
 
 
 class Server(object):
