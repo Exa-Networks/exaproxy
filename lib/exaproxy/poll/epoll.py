@@ -13,12 +13,14 @@ import socket
 import select
 import time
 
+from interface import IPoller
+
 from select import EPOLLIN, EPOLLOUT, EPOLLHUP
 from exaproxy.util.logger import logger
 
 
 
-class EPoller:
+class EPoller(IPoller):
 	epoll = staticmethod(select.epoll)
 
 	def __init__(self, speed):

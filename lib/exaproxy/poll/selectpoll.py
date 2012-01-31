@@ -9,11 +9,13 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # http://code.google.com/speed/articles/web-metrics.html
 
+from interface import IPoller
+
 from exaproxy.network.poller import poll_select
 from exaproxy.util.logger import logger
 
 
-class SelectPoller:
+class SelectPoller(IPoller):
 	poller = staticmethod(poll_select)
 
 	def __init__(self, speed):
