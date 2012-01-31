@@ -84,6 +84,7 @@ class Downloader(object):
 	def bufferData(self, data):
 		"""Buffer data to be sent later"""
 		self.w_buffer += data
+		return bool(self.w_buffer)
 
 	def shutdown(self):
 		try:
