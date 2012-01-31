@@ -281,13 +281,13 @@ class ContentManager(object):
 	def corkClientDownload(self, client_id):
 		downloader = self.byclientid.get(client_id, None)
 		if downloader:
-			self.poller.removeReadSocket('read_download', downloader.sock)
+			self.poller.corkReadSocket('read_download', downloader.sock)
 
 	def uncorkClientDownload(self, client_id):
 		downloader = self.byclientid.get(client_id, None)
 		if downloader:
 			if downloader.sock in self.established:
-				self.poller.addReadSocket('read_download', downloader.sock)
+				self.poller.uncorkReadSocket('read_download', downloader.sock)
 
 	def _terminate(self, sock, client_id):
 		downloader = self.established.get(sock, None)
@@ -302,8 +302,6 @@ class ContentManager(object):
 			self.poller.removeReadSocket('read_download', downloader.sock)
 
 		if downloader:
-			downloader.shutdown()
-
 			self.established.pop(sock, None)
 			self.opening.pop(sock, None)
 			self.byclientid.pop(client_id, None)
@@ -313,6 +311,8 @@ class ContentManager(object):
 
 				# we no longer care about the socket's send buffer becoming less than full
 				self.poller.removeWriteSocket('write_download', downloader.sock)
+
+			downloader.shutdown()
 
 			res = True
 		else:
