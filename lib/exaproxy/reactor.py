@@ -158,7 +158,10 @@ class Reactor(object):
 
 			# fully connected connections to remote web servers
 			for fetcher in events['opening_download']:
-				client_id, response = self.content.startDownload(fetcher)
+				client_id, response, flipflop = self.content.startDownload(fetcher)
+				if flipflop:
+					self.client.uncorkUploadByName(client_id)
+
 				if client_id in self.client:
 					if response:
 						status, flipflop = self.client.sendDataByName(client_id, response)

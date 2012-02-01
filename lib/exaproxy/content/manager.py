@@ -162,17 +162,20 @@ class ContentManager(object):
 			self.poller.removeWriteSocket('write_download', downloader.sock)
 
 			self.established[sock] = downloader
-			res = downloader.startConversation()
+			client_id, response = downloader.startConversation()
 
 			# we're no longer interested in the socket connecting since it's connected
 			self.poller.removeWriteSocket('opening_download', downloader.sock)
 
 			# registed interest in data becoming available to read
 			self.poller.addReadSocket('read_download', downloader.sock)
-		else:
-			res = None, None
 
-		return res
+			flipflop = downloader.sock in self.buffered
+
+		else:
+			client_id, response, flipflop = None, None, None
+
+		return client_id, response, flipflop
 
 	def retryDownload(self, client_id, decision):
 		return None
