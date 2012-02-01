@@ -54,7 +54,7 @@ class Supervisor(object):
 
 
 		# XXX : Should manager and Download moved into server ?
-		self.manager = WorkerManager(self.poller, configuration.PROGRAM)
+		self.manager = WorkerManager(self.poller, configuration.PROGRAM, low=25)
 		self.content = ContentManager(self.poller, configuration.HTML)
 		self.client = ClientManager(self.poller)
 		self.server = Server(self.poller)
