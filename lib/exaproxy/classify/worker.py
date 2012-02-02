@@ -246,6 +246,9 @@ class Worker (Thread):
 
 		try:
 			self.response_box_read.close()
+		except (IOError, ValueError):
+			pass
+		try:
 			self.response_box_write.close()
 		except (IOError, ValueError):
 			pass
