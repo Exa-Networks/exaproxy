@@ -99,7 +99,7 @@ class Worker (Thread):
 				if response == url:
 					classification, data = 'permit', None
 				elif response.startswith(url.split('/', 1)[0]+'/'):
-					classification, data = 'rewrite', ('/'+url.split('/', 1)[1]) if '/' in url else ''
+					classification, data = 'rewrite', ('/'+response.split('/', 1)[1]) if '/' in url else ''
 				else:
 					classification, data = 'redirect', 'http://' + response
 
@@ -184,7 +184,6 @@ class Worker (Thread):
 			ipaddr = self.resolver.resolveHost(request.host)
 			if not ipaddr:
 				logger.warning('worker %d' % self.wid,'Could not resolve %s' % request.host)
-
 
 
 			# classify and return the filtered page
