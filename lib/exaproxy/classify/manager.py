@@ -59,6 +59,7 @@ class WorkerManager (object):
 	def reap (self,wid):
 		logger.debug('manager','we are killing worker %d' % wid)
 		worker = self.worker[wid]
+		self.poller.removeReadSocket('read_workers', worker.response_box_read)
 		self.results.pop(worker.response_box_read)
 		self.worker.pop(wid)
 		worker.shutdown()
