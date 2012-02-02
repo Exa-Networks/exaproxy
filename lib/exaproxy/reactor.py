@@ -43,13 +43,13 @@ class Reactor(object):
 			events = poller.poll()
 
 			# handle new connections before anything else
-			for sock in events['read_socks']:
+			for sock in events.get('read_socks',[]):
 				for s, peer in self.server.accept(sock):
 					self.client.newConnection(s, peer)
 
 
 			# incoming new requests from clients
-			for client in events['opening_client']:
+			for client in events.get('opening_client',[]):
 				client_id, peer, request, data = self.client.readRequest(client)
 				if request:
 					# we have a new request - decide what to do with it
@@ -58,7 +58,7 @@ class Reactor(object):
 
 
 			# incoming data from clients
-			for client in events['read_client']:
+			for client in events.get('read_client',[]):
 				client_id, peer, request, data = self.client.readDataBySocket(client)
 				if request:
 					# XXX: We would need to put the client back in the 'opening' state
@@ -85,7 +85,7 @@ class Reactor(object):
 
 					
 			# incoming data - web pages
-			for fetcher in events['read_download']:
+			for fetcher in events.get('read_download',[]):
 				client_id, page_data = self.content.readData(fetcher)
 
 				# send received data to the client that requested it
@@ -107,7 +107,7 @@ class Reactor(object):
 						self.content.uncorkClientDownload(client_id)
 
 			# decisions made by the child processes
-			for worker in events['read_workers']:
+			for worker in events.get('read_workers',[]):
 				client_id, decision = self.decider.getDecision(worker)
 
 				# check that the client didn't get bored and go away
@@ -135,7 +135,7 @@ class Reactor(object):
 
 
 			# clients we can write buffered data to
-			for client in events['write_client']:
+			for client in events.get('write_client',[]):
 				status, flipflop, name = self.client.sendDataBySocket(client, '')
 
 				if flipflop:
@@ -147,7 +147,7 @@ class Reactor(object):
 						self.content.corkClientDownload(name)
 
 			# remote servers we can write buffered data to
-			for download in events['write_download']:
+			for download in events.get('write_download',[]):
 				status, flipflop = self.content.sendSocketData(download, '')
 
 				if flipflop:
@@ -157,7 +157,7 @@ class Reactor(object):
 						self.client.uncorkUploadByName(client_id)
 
 			# fully connected connections to remote web servers
-			for fetcher in events['opening_download']:
+			for fetcher in events.get('opening_download',[]):
 				client_id, response, flipflop = self.content.startDownload(fetcher)
 				if flipflop:
 					self.client.uncorkUploadByName(client_id)
