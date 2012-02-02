@@ -35,7 +35,6 @@ class WorkerManager (object):
 		worker = Worker(self.nextid,self.queue,self.program)
 		self.workers.add(worker.response_box_read)
 		self.poller.addReadSocket('read_workers', worker.response_box_read)
-
 		self.worker[self.nextid] = worker
 		self.results[worker.response_box_read] = self.worker
 		logger.debug('manager',"added a worker")
@@ -98,6 +97,18 @@ class WorkerManager (object):
 		
 		size = self.nbq
 		num_workers = len(self.worker)
+
+		# XXX: start test
+		if False:
+			if self.DEBUG % 2:
+				worker = self._oldest()
+				if worker and num_workers > 1:
+					self.reap(worker.wid)
+			else:
+				self.spawn(1)
+			
+			return
+		# XXX : end test
 
 		# we are now overprovisioned
 		if size < num_workers:
