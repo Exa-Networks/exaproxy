@@ -20,7 +20,7 @@ from exaproxy.util.logger import logger
 
 
 
-class EPoller(IPoller):
+class EPoller (IPoller):
 	epoll = staticmethod(select.epoll)
 
 	def __init__(self, speed):

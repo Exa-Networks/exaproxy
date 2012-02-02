@@ -15,7 +15,7 @@ from exaproxy.network.poller import poll_select
 from exaproxy.util.logger import logger
 
 
-class SelectPoller(IPoller):
+class SelectPoller (IPoller):
 	poller = staticmethod(poll_select)
 
 	def __init__(self, speed):
@@ -87,6 +87,21 @@ class SelectPoller(IPoller):
 	uncorkWriteSocket = addWriteSocket
 
 	def poll(self):
+		all_socks = {}
+
+		for name, socks in self.read_sockets.items():
+			socks, _, __ = self.poller(socks, [], 0)
+			if socks:
+				all_socks[name] = socks
+
+		for name, socks in self.write_sockets.items():
+			_, socks, __ = self.poller([], socks, 0)
+			if socks:
+				all_socks[name] = socks
+
+		if all_socks:
+			return all_socks
+
 		if self.read_modified:
 			self.read_all = sum(self.read_sockets.values(), [])
 			self.read_modified = {}
@@ -95,30 +110,13 @@ class SelectPoller(IPoller):
 			self.write_all = sum(self.write_sockets.values(), [])
 			self.write_modified = {}
 
-		found = False
-
-		all_socks = {}
+		r, w, x  = self.poller(self.read_all, self.write_all, self.speed)
 
 		for name, socks in self.read_sockets.items():
-			socks, _, __ = self.poller(socks, [], 0)
-			all_socks[name] = socks
-			if socks:
-				found = True
+			all_socks[name], _, __ = self.poller(socks, [], 0)
 
 		for name, socks in self.write_sockets.items():
-			_, socks, __ = self.poller([], socks, 0)
-			all_socks[name] = socks
-			if socks:
-				found = True
-
-		if not found:
-			r, w, x  = self.poller(self.read_all, self.write_all, self.speed)
-
-			for name, socks in self.read_sockets.items():
-				all_socks[name], _, __ = self.poller(socks, [], 0)
-
-			for name, socks in self.write_sockets.items():
-				_, all_socks[name], __ = self.poller([], socks, 0)
+			_, all_socks[name], __ = self.poller([], socks, 0)
 
 		return all_socks
 
