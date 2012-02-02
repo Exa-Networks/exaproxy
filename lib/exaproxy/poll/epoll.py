@@ -77,7 +77,7 @@ class EPoller(IPoller):
 			self.pollers[poller.fileno()] = name, poller, sockets, fdtosock
 
 			self.sockets[name] = sockets, poller, fdtosock, corked
-			self.master.register(poller)
+			self.master.register(poller, EPOLLIN)
 
 	def clearRead(self, name):
 		sockets, poller, fdtosock, corked = self.sockets.pop(name, ([], None, None, None))
@@ -129,7 +129,7 @@ class EPoller(IPoller):
 			self.pollers[poller.fileno()] = name, poller, sockets, fdtosock
 
 			self.sockets[name] = sockets, poller, fdtosock, corked
-			self.master.register(poller)
+			self.master.register(poller, EPOLLIN)
 
 	def clearWrite(self, name):
 		sockets, poller, fdtosock, corked = self.sockets.pop(name, ([], None, None, None))
