@@ -48,7 +48,7 @@ class _Configuration (object):
 	USER      = os.environ.get('USER','nobody')
 	DAEMONIZE = os.environ.get('DAEMONIZE','0') not in ['','1','yes','Yes','YES']
 	VERSION   = version
-	PROGRAM   = dict(zip(range(len(sys.argv)),sys.argv)).get(1,'') # I must like perl :)
+	PROGRAM   = (sys.argv + ['', ''])[1] # I don't like perl :)
 	SPEED     = 2 # 0.01
 	CONNECT   = os.environ.get('CONNECT','1').lower() in _enabled
 	PROFILE   = os.environ.get('PROFILE','0')
