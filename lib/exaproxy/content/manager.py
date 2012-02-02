@@ -232,8 +232,8 @@ class ContentManager(object):
 				buffered = downloader.writeData(data)
 			
 				if buffered:
-					if sock not in self.buffered:
-						self.buffered.append(sock)
+					if downloader.sock not in self.buffered:
+						self.buffered.append(downloader.sock)
 						flipflop = True
 
 						# watch for the socket's send buffer becoming less than full
