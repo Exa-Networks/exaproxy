@@ -108,7 +108,7 @@ class Supervisor(object):
 
 				# make sure we have enough workers
 				## XXX: Bug when we delete workers (so disabled ATM) 
-				## self.manager.provision()
+				self.manager.provision()
 				# check for IO change with select
 				self.reactor.run()
 
