@@ -54,38 +54,38 @@ class Worker (Thread):
 				stdout=subprocess.PIPE,
 				universal_newlines=True,
 			)
-			logger.debug('worker %d' % self.wid,'spawn process %s' % self.program)
+			logger.debug('worker %s' % self.wid,'spawn process %s' % self.program)
 		except KeyboardInterrupt:
 			process = None
 		except (subprocess.CalledProcessError,OSError,ValueError):
-			logger.error('worker %d' % self.wid,'could not spawn process %s' % self.program)
+			logger.error('worker %s' % self.wid,'could not spawn process %s' % self.program)
 			process = None
 		return process
 
 	def destroyProcess (self):
-		logger.error('worker %d' % self.wid,'destroying process %s' % self.program)
+		logger.error('worker %s' % self.wid,'destroying process %s' % self.program)
 		if not self.process:
 			return
 		try:
 			if self.process:
 				self.process.terminate()
 				self.process.wait()
-				logger.info('worker %d' % self.wid,'terminated process PID %s' % pid)
+				logger.info('worker %s' % self.wid,'terminated process PID %s' % pid)
 		except OSError, e:
 			# No such processs
 			if e[0] != errno.ESRCH:
-				logger.error('worker %d' % self.wid,'PID %s died' % pid)
+				logger.error('worker %s' % self.wid,'PID %s died' % pid)
 
-	def shutdown (self):
-		logger.debug('worker %d' % self.wid,'shutdown')
+	def stop (self):
+		logger.debug('worker %s' % self.wid,'shutdown')
+		# The worker thread may be blocked reading from the queue
+		# so the shutdown will not be immediate
 		self.running = False
-		# XXX: Queue can get stuck, make sure we send a message to unlock it
-		self.stop()
 
 
 	def _classify (self, client_ip, method, url):
 		squid = '%s %s - %s -' % (url, client_ip, method)
-		#logger.info('worker %d' % self.wid, 'sending to classifier: [%s]' % squid)
+		#logger.info('worker %s' % self.wid, 'sending to classifier: [%s]' % squid)
 		try:
 			self.process.stdin.write(squid + os.linesep)
 			response = self.process.stdout.readline().strip()
@@ -110,7 +110,7 @@ class Worker (Thread):
 				classification, data = 'file', 'internal_error.html'
 
 		except IOError, e:
-			logger.error('worker %d' % self.wid, 'IO/Error when sending to process: %s' % str(e))
+			logger.error('worker %s' % self.wid, 'IO/Error when sending to process: %s' % str(e))
 			classification, data = 'file', 'internal_error.html'
 
 		return classification, data
@@ -152,29 +152,24 @@ class Worker (Thread):
 	def respond_redirect(self, client_id, url):
 		self.respond('\0'.join((client_id, 'redirect', url)))
 
-	def stop (self):
-		self.request_box.put('shutdown')
+	def respond_hangup(self, wid):
+		self.respond('\0'.join((wid, 'hangup')))
 
 	def run (self):
 		while self.running:
 			try:
-				logger.debug('worker %d' % self.wid,'waiting for some work')
+				logger.debug('worker %s' % self.wid,'waiting for some work')
 				# XXX: pypy ignores the timeout
 				data = self.request_box.get(3)
-
-				# check if we were told to stop
-				if data == 'shutdown':
-					logger.debug('worker %d' % self.wid, 'Received command to stop')
-					break
 
 				client_id, peer, header = data
 			except Empty:
 				continue
 			except (ValueError, TypeError), e:
-				logger.debug('worker %d' % self.wid, 'Received invalid message: %s' % data)
+				logger.debug('worker %s' % self.wid, 'Received invalid message: %s' % data)
 
 			if not self.running:
-				logger.debug('worker %d' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')
+				logger.debug('worker %s' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')
 
 			request = Header(header)
 			if not request.isValid():
@@ -183,7 +178,7 @@ class Worker (Thread):
 
 			ipaddr = self.resolver.resolveHost(request.host)
 			if not ipaddr:
-				logger.warning('worker %d' % self.wid,'Could not resolve %s' % request.host)
+				logger.warning('worker %s' % self.wid,'Could not resolve %s' % request.host)
 
 
 			# classify and return the filtered page
@@ -244,6 +239,9 @@ class Worker (Thread):
 			self.respond_html(client_id, 405, 'METHOD NOT ALLOWED', 'Method Not Allowed')
 			continue
 
+		self.respond_hangup(self.wid)
+
+	def shutdown(self):
 		try:
 			self.response_box_read.close()
 		except (IOError, ValueError):

@@ -26,21 +26,23 @@ class WorkerManager (object):
 		self.low = low                    # minimum number of workers at all time
 		self.high = high                  # maximum numbe of workers at all time
 		self.worker = {}                  # our workers threads
-		self.results = {}                 # pipes connected to each worker
 		self.running = True               # we are running
-		self.workers = set()
+
+	def _getid(self):
+		id = str(self.nextid)
+		self.nextid +=1
+		return id
 
 	def _spawn (self):
 		"""add one worker to the pool"""
-		worker = Worker(self.nextid,self.queue,self.program)
-		self.workers.add(worker.response_box_read)
+		wid = self._getid()
+
+		worker = Worker(wid,self.queue,self.program)
 		self.poller.addReadSocket('read_workers', worker.response_box_read)
-		self.worker[self.nextid] = worker
-		self.results[worker.response_box_read] = self.worker
+		self.worker[wid] = worker
 		logger.debug('manager',"added a worker")
 		logger.debug('manager',"we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
-		self.worker[self.nextid].start()
-		self.nextid += 1
+		self.worker[wid].start()
 
 	def spawn (self,number=1):
 		"""create the set number of worker"""
@@ -56,12 +58,10 @@ class WorkerManager (object):
 		self.spawn(number)
 
 	def reap (self,wid):
-		logger.debug('manager','we are killing worker %d' % wid)
+		logger.debug('manager','we are killing worker %s' % wid)
 		worker = self.worker[wid]
-		self.poller.removeReadSocket('read_workers', worker.response_box_read)
-		self.results.pop(worker.response_box_read)
 		self.worker.pop(wid)
-		worker.shutdown()
+		worker.stop() # will cause the worker to stop when it can
 
 	def start (self):
 		"""spawn our minimum number of workers"""
@@ -99,10 +99,11 @@ class WorkerManager (object):
 		num_workers = len(self.worker)
 
 		# XXX: start test
-		if False:
-			if self.DEBUG % 2:
+		if True:
+			if len(self.worker) % 2:
 				worker = self._oldest()
 				if worker and num_workers > 1:
+					pass
 					self.reap(worker.wid)
 			else:
 				self.spawn(1)
@@ -167,7 +168,7 @@ class WorkerManager (object):
 					response = None
 
 		except ValueError, e: # I/O operation on closed file
-			worker = self.workers.get(box, None)
+			worker = self.worker.get(box, None)
 			if worker is not None:
 				worker.destroyProcess()
 
@@ -185,4 +186,18 @@ class WorkerManager (object):
 			client_id = None
 			decision = None
 
+		if decision == 'hangup':
+			# Stuffing wid into client_id like this reduces the work
+			# that we need to do each time we have a response but seems
+			# a bad idea. Should we check that decision.startswith('hangup\0')
+			# and then split?
+			wid = client_id
+			client_id = None
+			decision = None
+
+			worker = self.worker.get(wid)
+			if worker:
+				self.poller.removeReadSocket('read_workers', worker.response_box_read)
+				worker.shutdown()
+			
 		return client_id, decision
