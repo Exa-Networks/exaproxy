@@ -52,9 +52,7 @@ class Supervisor(object):
 		self.poller.setupWrite('write_download')      # Established connections we have buffered data to send to
 		self.poller.setupWrite('opening_download')    # Opening connections
 
-
-		# XXX : Should manager and Download moved into server ?
-		self.manager = WorkerManager(self.poller, configuration.PROGRAM, low=25)
+		self.manager = WorkerManager(self.poller, configuration.PROGRAM, low=configuration.MIN_WORK, high=configuration.MAX_WORK)
 		self.content = ContentManager(self.poller, configuration.HTML)
 		self.client = ClientManager(self.poller)
 		self.server = Server(self.poller)

@@ -52,7 +52,9 @@ class _Configuration (object):
 	SPEED     = 2 # 0.01
 	CONNECT   = os.environ.get('CONNECT','1').lower() in _enabled
 	PROFILE   = os.environ.get('PROFILE','0')
-	RESOLV	  = os.environ.get('RESOLV', '/etc/resolv.conf')
+	RESOLV    = os.environ.get('RESOLV', '/etc/resolv.conf')
+	MIN_WORK  = int(os.environ.get('MIN_WORKERS','1')) if os.environ.get('MIN_WORKERS','1').isdigit() else 5
+	MAX_WORK  = int(os.environ.get('MAX_WORKERS','1')) if os.environ.get('MAX_WORKERS','1').isdigit() else 25
 
 	_location = os.path.normpath(sys.argv[0]) if sys.argv[0].startswith('/') else os.path.normpath(os.path.join(cwd,sys.argv[0]))
 	_paths = (
