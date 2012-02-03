@@ -98,19 +98,6 @@ class WorkerManager (object):
 		size = self.nbq
 		num_workers = len(self.worker)
 
-		# XXX: start test
-		if True:
-			if len(self.worker) % 2:
-				worker = self._oldest()
-				if worker and num_workers > 1:
-					pass
-					self.reap(worker.wid)
-			else:
-				self.spawn(1)
-			
-			return
-		# XXX : end test
-
 		# we are now overprovisioned
 		if size < num_workers:
 			if size <= self.low:
