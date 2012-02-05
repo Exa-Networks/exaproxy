@@ -40,6 +40,7 @@ class Supervisor(object):
 		# XXX: We need to make sure that these keys exist before they
 		#      are used elsewhere or the poller will raise an error.
 		#      Is this tradeoff for performance really a good idea?
+		# Thomas' answer : perfectly acceptable IMHO
 
 		self.poller.setupRead('read_proxy')           # Listening proxy sockets
 		self.poller.setupRead('read_web')             # Listening webserver sockets
@@ -107,7 +108,6 @@ class Supervisor(object):
 					self.increase_spawn_limit = False
 
 				# make sure we have enough workers
-				## XXX: Bug when we delete workers (so disabled ATM) 
 				self.manager.provision()
 				# check for IO change with select
 				self.reactor.run()
