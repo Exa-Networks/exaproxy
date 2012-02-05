@@ -43,7 +43,9 @@ class log:
 
 class _Configuration (object):
 	_instance = None
-	
+
+	HOST      = os.environ.get('HOST','127.0.0.1')
+	PORT      = int(os.environ.get('PORT')) if os.environ.get('PORT','').isdigit() else 31280
 	PID       = os.environ.get('PID','')
 	USER      = os.environ.get('USER','nobody')
 	DAEMONIZE = os.environ.get('DAEMONIZE','0') not in ['','1','yes','Yes','YES']
