@@ -57,8 +57,8 @@ class Supervisor(object):
 		self.manager = WorkerManager(self.poller, configuration.PROGRAM, low=configuration.MIN_WORK, high=configuration.MAX_WORK)
 		self.content = ContentManager(self.poller, configuration.HTML)
 		self.client = ClientManager(self.poller)
-		self.proxy = Server(self.poller)
-		self.web = Server(self.poller)
+		self.proxy = Server(self.poller,'read_proxy')
+		self.web = Server(self.poller,'read_web')
 
 		self.reactor = Reactor(self.web, self.proxy, self.manager, self.content, self.client, self.poller)
 

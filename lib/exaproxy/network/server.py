@@ -18,9 +18,10 @@ import socket
 class Server(object):
 	_listen = staticmethod(listen)
 
-	def __init__(self, poller):
+	def __init__(self, poller, read_name):
 		self.socks = {}
 		self.poller = poller
+		self.read_name = read_name
 
 	def listen(self, ip, port, timeout, backlog):
 		s = self._listen(ip, port,timeout,backlog)
@@ -28,7 +29,7 @@ class Server(object):
 		self.socks[s] = True
 
 		# register the socket with the poller
-		self.poller.addReadSocket('read_proxy', s)
+		self.poller.addReadSocket(self.read_name, s)
 
 		return s
 
@@ -52,4 +53,4 @@ class Server(object):
 				pass
 
 		self.socks = {}
-		self.poller.clearRead('read_proxy')
+		self.poller.clearRead(self.read_name)
