@@ -46,7 +46,7 @@ class _Configuration (object):
 
 	HOST      = os.environ.get('HOST','127.0.0.1') # tcp host for proxy
 	PORT      = int(os.environ.get('PORT')) if os.environ.get('PORT','').isdigit() else 31280 # tcp port for proxy
-	TIMEOUT   = int(os.environ.get('TIMEOUT')) if os.environ.get('TIMEOUT','').isdigit() else 31280 # tcp connection timeout
+	TIMEOUT   = int(os.environ.get('TIMEOUT')) if os.environ.get('TIMEOUT','').isdigit() else 5 # tcp connection timeout
 	BACKLOG   = int(os.environ.get('BACKLOG')) if os.environ.get('BACKLOG','').isdigit() else 200 # tcp connection backlog
 	SPEED     = 2 # select waiting timeout
 
