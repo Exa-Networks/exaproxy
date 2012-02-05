@@ -165,7 +165,7 @@ class Worker (Thread):
 				# XXX: pypy ignores the timeout
 				data = self.request_box.get(3)
 
-				client_id, peer, header, source = data
+				client_id, peer, header, source, remote_ip = data
 			except Empty:
 				continue
 			except (ValueError, TypeError), e:
@@ -174,7 +174,7 @@ class Worker (Thread):
 			if not self.running:
 				logger.debug('worker %s' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')
 
-			request = Header(header)
+			request = Header(header,remote_ip)
 			if not request.isValid():
 				self.respond_html(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)))
 				continue

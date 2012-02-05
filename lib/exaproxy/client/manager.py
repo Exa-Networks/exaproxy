@@ -61,9 +61,9 @@ class ClientManager (object):
 				self.cleanup(sock, client.name)
 		else:
 			logger.error('client','trying to read headers from a client that does not exist %s' % sock)
-			name, peer, request, content = None, None, None, None
+			name, peer, request, content, source, remote_ip = None, None, None, None, None, None
 
-		return name, peer, request, content, source
+		return name, peer, request, content, source, sock.getpeername()[0]
 
 
 	def readDataBySocket(self, sock):

@@ -123,9 +123,9 @@ class WorkerManager (object):
 			logger.warning('manager',"we are low on workers, adding a few (%d)" % nb_to_add)
 			self.spawn(nb_to_add)
 			
-	def request(self, client_id, peer, request, source):
+	def request(self, client_id, peer, request, source, remote_ip):
 		self.nbq += 1
-		return self.queue.put((client_id, peer,request,source))
+		return self.queue.put((client_id,peer,request,source,remote_ip))
 
 	def getDecision(self, box):
 		# XXX: reads may block if we send badly formatted data

@@ -8,12 +8,13 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 from exaproxy.util.logger import logger
+from exaproxy.configuration import configuration
 
 class HostMismatch(Exception):
 	pass
 
 class Header(dict):
-	def __init__(self, header):	
+	def __init__(self, header,remote_ip):	
 		self.order = []
 
 		logger.info('header','parsing %s' % str(header))
@@ -86,7 +87,11 @@ class Header(dict):
 
 				host = requested_host
 
-			client = self.get('x-forwarded-for', ':0.0.0.0').split(':', 1)[1].split(',')[-1].strip()
+			if configuration.XFF:
+				client = self.get('x-forwarded-for', ':%s' % remote_ip).split(':', 1)[1].split(',')[-1].strip()
+			else:
+				client = remote_ip
+
 			url = host + ((':'+str(port)) if port is not None else '') + path
 			port = port if port is not None else 80
 
