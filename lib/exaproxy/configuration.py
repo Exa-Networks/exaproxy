@@ -48,7 +48,7 @@ class _Configuration (object):
 	PORT      = int(os.environ.get('PORT')) if os.environ.get('PORT','').isdigit() else 31280
 	PID       = os.environ.get('PID','')
 	USER      = os.environ.get('USER','nobody')
-	DAEMONIZE = os.environ.get('DAEMONIZE','0') not in ['','1','yes','Yes','YES']
+	DAEMONIZE = os.environ.get('DAEMONIZE','0').lower() in _enabled
 	VERSION   = version
 	PROGRAM   = (sys.argv + ['', ''])[1] # I don't like perl :)
 	SPEED     = 2 # 0.01
