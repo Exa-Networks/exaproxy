@@ -131,7 +131,7 @@ class Supervisor(object):
 		self.manager.start()
 
 		# only start listening once we know we were able to fork our worker processes
-		self.server.listen(configuration.HOST,configuration.PORT, 5, 200)
+		self.server.listen(configuration.HOST,configuration.PORT, configuration.TIMEOUT, configuration.BACKLOG)
 
 	def shutdown (self):
 		"""terminate all the current BGP connections"""

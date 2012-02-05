@@ -46,12 +46,17 @@ class _Configuration (object):
 
 	HOST      = os.environ.get('HOST','127.0.0.1')
 	PORT      = int(os.environ.get('PORT')) if os.environ.get('PORT','').isdigit() else 31280
+	TIMEOUT   = int(os.environ.get('TIMEOUT')) if os.environ.get('TIMEOUT','').isdigit() else 31280
+	BACKLOG   = int(os.environ.get('BACKLOG')) if os.environ.get('BACKLOG','').isdigit() else 200
+	SPEED     = 2 # 0.01
+
 	PID       = os.environ.get('PID','')
 	USER      = os.environ.get('USER','nobody')
 	DAEMONIZE = os.environ.get('DAEMONIZE','0').lower() in _enabled
+
 	VERSION   = version
 	PROGRAM   = (sys.argv + ['', ''])[1] # I don't like perl :)
-	SPEED     = 2 # 0.01
+
 	CONNECT   = os.environ.get('CONNECT','1').lower() in _enabled
 	PROFILE   = os.environ.get('PROFILE','0')
 	RESOLV    = os.environ.get('RESOLV', '/etc/resolv.conf')
