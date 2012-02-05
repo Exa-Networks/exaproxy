@@ -55,9 +55,9 @@ class Supervisor(object):
 		self.manager = WorkerManager(self.poller, configuration.PROGRAM, low=configuration.MIN_WORK, high=configuration.MAX_WORK)
 		self.content = ContentManager(self.poller, configuration.HTML)
 		self.client = ClientManager(self.poller)
-		self.server = Server(self.poller)
+		self.proxy = Server(self.poller)
 
-		self.reactor = Reactor(self.server, self.manager, self.content, self.client, self.poller)
+		self.reactor = Reactor(self.proxy, self.manager, self.content, self.client, self.poller)
 
 		self._shutdown = False
 		self._reload = False
@@ -131,12 +131,12 @@ class Supervisor(object):
 		self.manager.start()
 
 		# only start listening once we know we were able to fork our worker processes
-		self.server.listen(configuration.HOST,configuration.PORT, configuration.TIMEOUT, configuration.BACKLOG)
+		self.proxy.listen(configuration.HOST,configuration.PORT, configuration.TIMEOUT, configuration.BACKLOG)
 
 	def shutdown (self):
 		"""terminate all the current BGP connections"""
 		logger.info('supervisor','Performing shutdown')
-		self.server.stop()   # accept no new connections
+		self.proxy.stop()   # accept no new connections
 		self.manager.stop()  # shut down redirector children
 		self.content.stop() # stop downloading data
 		self.client.stop() # close client connections
