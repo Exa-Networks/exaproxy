@@ -162,11 +162,15 @@ class Worker (Thread):
 				# XXX: pypy ignores the timeout
 				data = self.request_box.get(3)
 
-				client_id, peer, header = data
+				client_id, peer, header, source = data
 			except Empty:
 				continue
 			except (ValueError, TypeError), e:
 				logger.debug('worker %s' % self.wid, 'Received invalid message: %s' % data)
+
+			if source == 'web':
+				self.respond_html(client_id, 250, 'MONITORING PAGE', 'we are busy making this feature happen')
+				continue
 
 			if not self.running:
 				logger.debug('worker %s' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')

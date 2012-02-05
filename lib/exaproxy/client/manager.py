@@ -15,6 +15,7 @@ from browser import Client
 class ClientManager (object):
 	def __init__(self, poller):
 		self.norequest = {}
+		self.source = {}
 		self.bysock = {}
 		self.byname = {}
 		self.buffered = []
@@ -28,10 +29,11 @@ class ClientManager (object):
 		self._nextid += 1
 		return str(self._nextid)
 
-	def newConnection(self, sock, peer):
+	def newConnection(self, sock, peer, source):
 		name = self.getnextid()
 		client = Client(name, sock, peer)
 
+		self.source[sock] = source
 		self.norequest[sock] = client
 		self.byname[name] = client
 
@@ -45,6 +47,7 @@ class ClientManager (object):
 		"""Read only the initial HTTP headers sent by the client"""
 
 		client = self.norequest.get(sock, None)
+		source = self.source.get(sock, None)
 		if client:
 			name, peer, request, content = client.readData()
 			if request:
@@ -60,7 +63,7 @@ class ClientManager (object):
 			logger.error('client','trying to read headers from a client that does not exist %s' % sock)
 			name, peer, request, content = None, None, None, None
 
-		return name, peer, request, content
+		return name, peer, request, content, source
 
 
 	def readDataBySocket(self, sock):
@@ -251,6 +254,7 @@ class ClientManager (object):
 		client = client or self.norequest.get(sock, None)
 		client = client or self.byname.get(name, None)
 
+		self.source.pop(sock, None)
 		self.bysock.pop(sock, None)
 		self.norequest.pop(sock, None)
 
@@ -278,6 +282,7 @@ class ClientManager (object):
 		self.poller.clearWrite('write_client')
 
 		self.bysock = {}
+		self.source = {}
 		self.norequest = {}
 		self.byname = {}
 		self.buffered = []

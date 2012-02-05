@@ -46,15 +46,21 @@ class Reactor(object):
 			# handle new connections before anything else
 			for sock in events.get('read_proxy',[]):
 				for s, peer in self.proxy.accept(sock):
-					self.client.newConnection(s, peer)
+					self.client.newConnection(s, peer, 'proxy')
+
+
+			# handle new connections before anything else
+			for sock in events.get('read_web',[]):
+				for s, peer in self.web.accept(sock):
+					self.client.newConnection(s, peer, 'web')
 
 
 			# incoming new requests from clients
 			for client in events.get('opening_client',[]):
-				client_id, peer, request, data = self.client.readRequest(client)
+				client_id, peer, request, data, source = self.client.readRequest(client)
 				if request:
 					# we have a new request - decide what to do with it
-					self.decider.request(client_id, peer, request)
+					self.decider.request(client_id, peer, request, source)
 
 
 
