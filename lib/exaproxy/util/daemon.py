@@ -65,7 +65,7 @@ class Daemon (object):
 		return True
 
 	def daemonise (self):
-		if self.daemonize:
+		if not self.daemonize:
 			return
 		
 		def fork_exit ():
