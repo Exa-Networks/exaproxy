@@ -50,6 +50,8 @@ class _Configuration (object):
 	BACKLOG   = int(os.environ.get('BACKLOG')) if os.environ.get('BACKLOG','').isdigit() else 200 # tcp connection backlog
 	SPEED     = 2 # select waiting timeout
 
+	WEB       = int(os.environ.get('WEB')) if os.environ.get('WEB','').isdigit() else 8080 # tcp port for the webserver
+
 	PID       = os.environ.get('PID','') # where to save the PID if we do
 	USER      = os.environ.get('USER','nobody') # whatuser right to use if we are root
 	DAEMONIZE = os.environ.get('DAEMONIZE','0').lower() in _enabled # should the program become a daemon

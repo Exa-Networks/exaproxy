@@ -28,7 +28,7 @@ class Server(object):
 		self.socks[s] = True
 
 		# register the socket with the poller
-		self.poller.addReadSocket('read_socks', s)
+		self.poller.addReadSocket('read_proxy', s)
 
 		return s
 
@@ -52,4 +52,4 @@ class Server(object):
 				pass
 
 		self.socks = {}
-		self.poller.clearRead('read_socks')
+		self.poller.clearRead('read_proxy')

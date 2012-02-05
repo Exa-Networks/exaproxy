@@ -41,7 +41,8 @@ class Supervisor(object):
 		#      are used elsewhere or the poller will raise an error.
 		#      Is this tradeoff for performance really a good idea?
 
-		self.poller.setupRead('read_socks')           # Listening sockets
+		self.poller.setupRead('read_proxy')           # Listening proxy sockets
+		self.poller.setupRead('read_web')             # Listening webserver sockets
 		self.poller.setupRead('read_workers')         # Pipes carrying responses from the child processes
 
 		self.poller.setupRead('read_client')          # Active clients
@@ -56,8 +57,9 @@ class Supervisor(object):
 		self.content = ContentManager(self.poller, configuration.HTML)
 		self.client = ClientManager(self.poller)
 		self.proxy = Server(self.poller)
+		self.web = Server(self.poller)
 
-		self.reactor = Reactor(self.proxy, self.manager, self.content, self.client, self.poller)
+		self.reactor = Reactor(self.web, self.proxy, self.manager, self.content, self.client, self.poller)
 
 		self._shutdown = False
 		self._reload = False
@@ -132,11 +134,14 @@ class Supervisor(object):
 
 		# only start listening once we know we were able to fork our worker processes
 		self.proxy.listen(configuration.HOST,configuration.PORT, configuration.TIMEOUT, configuration.BACKLOG)
+		if configuration.WEB:
+			self.web.listen('127.0.0.1',configuration.WEB, 10, 10)
 
 	def shutdown (self):
 		"""terminate all the current BGP connections"""
 		logger.info('supervisor','Performing shutdown')
-		self.proxy.stop()   # accept no new connections
+		self.web.stop()  # accept no new web connection
+		self.proxy.stop()  # accept no new proxy connections
 		self.manager.stop()  # shut down redirector children
 		self.content.stop() # stop downloading data
 		self.client.stop() # close client connections

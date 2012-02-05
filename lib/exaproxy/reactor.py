@@ -17,12 +17,13 @@ from .util.logger import logger
 
 
 class Reactor(object):
-	def __init__(self, server, decider, content, client, poller):
-		self.server = server		# Manage listening sockets
-		self.decider = decider		# Task manager for handling child decider processes
-		self.content = content		# the Content Download manager
-		self.client = client		# currently open client connections
-		self.poller = poller		# Interface to the poller
+	def __init__(self, web, proxy, decider, content, client, poller):
+		self.web = web            # Manage listening web sockets
+		self.proxy = proxy        # Manage listening proxy sockets
+		self.decider = decider    # Task manager for handling child decider processes
+		self.content = content    # the Content Download manager
+		self.client = client      # currently open client connections
+		self.poller = poller      # Interface to the poller
 		self.running = True
 		self._loop = None
 
@@ -43,8 +44,8 @@ class Reactor(object):
 			events = poller.poll()
 
 			# handle new connections before anything else
-			for sock in events.get('read_socks',[]):
-				for s, peer in self.server.accept(sock):
+			for sock in events.get('read_proxy',[]):
+				for s, peer in self.proxy.accept(sock):
 					self.client.newConnection(s, peer)
 
 
