@@ -149,6 +149,9 @@ class Worker (Thread):
 	def respond_html(self, client_id, code, *data):
 		self.respond('\0'.join((client_id, 'html', str(code))+data))
 
+	def respond_monitor(self, client_id, path):
+		self.respond('\0'.join((client_id, 'monitor', path)))
+
 	def respond_redirect(self, client_id, url):
 		self.respond('\0'.join((client_id, 'redirect', url)))
 
@@ -168,16 +171,16 @@ class Worker (Thread):
 			except (ValueError, TypeError), e:
 				logger.debug('worker %s' % self.wid, 'Received invalid message: %s' % data)
 
-			if source == 'web':
-				self.respond_html(client_id, 250, 'MONITORING PAGE', 'we are busy making this feature happen')
-				continue
-
 			if not self.running:
 				logger.debug('worker %s' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')
 
 			request = Header(header)
 			if not request.isValid():
 				self.respond_html(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)))
+				continue
+
+			if source == 'web':
+				self.respond_monitor(client_id, request.path)
 				continue
 
 			ipaddr = self.resolver.resolveHost(request.host)

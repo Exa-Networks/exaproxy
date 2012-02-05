@@ -21,7 +21,7 @@ import errno
 class ContentManager(object):
 	downloader_factory = Downloader
 
-	def __init__(self, poller, location):
+	def __init__(self, poller, location, monitor):
 		self.opening = {}
 		self.established = {}
 		self.byclientid = {}
@@ -31,6 +31,7 @@ class ContentManager(object):
 		self.poller = poller
 
 		self.location = location
+		self.monitor = monitor
 		self._header = {}
 
 	def getLocalContent(self, code, name):
@@ -132,6 +133,13 @@ class ContentManager(object):
 
 				downloader = None
 				content = self.readLocalContent(code, reason, {'url':url, 'host':host, 'client_ip':client_ip, 'protocol':protocol})
+				restricted = True
+
+			elif command == 'monitor':
+				path = args
+
+				downloader = None
+				content = ('close', http('200', self.monitor.html(path)))
 				restricted = True
 
 			else:
