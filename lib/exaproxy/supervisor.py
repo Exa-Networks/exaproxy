@@ -39,11 +39,6 @@ class Supervisor(object):
 
 		self.poller = Poller(2)
 
-		# XXX: We need to make sure that these keys exist before they
-		#      are used elsewhere or the poller will raise an error.
-		#      Is this tradeoff for performance really a good idea?
-		# Thomas' answer : perfectly acceptable IMHO
-
 		self.poller.setupRead('read_proxy')           # Listening proxy sockets
 		self.poller.setupRead('read_web')             # Listening webserver sockets
 		self.poller.setupRead('read_workers')         # Pipes carrying responses from the child processes
