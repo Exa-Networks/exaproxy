@@ -58,23 +58,39 @@ class Header(dict):
 				host = fullpath
 				port = None
 
+			key = None
+			data = None
+
 			for line in remaining.split('\r\n'):
 				if not line:
 					break
 
+				if line[0].isspace():
+					if key:
+						data += line.lstrip()
+						continue
+					else:
+						raise Exception, 'Whitespace before headers'
+
 				if ':' not in line:
-					# XXX: handle this
-					continue
+					raise Exception, 'Malformed headers'
+				
+				if key:
+					self.order.append(key)
+					self[key] = data
 
 				key,value = line.split(':',1)
 				key = key.strip().lower()
+				data = line
 				if not key:
-					continue
-				
-				self.order.append(key)
-				self[key] = line
+					raise Exception, 'Malformed headers'
+
 				if key == 'host' and not host:
 					host = value.strip().lower()
+
+			# buffered value holds the complete data for the current key
+			self.order.append(key)
+			self[key] = data
 
 			self['x-proxy-version'] = "X-Proxy-Version: %s version %s" % (configuration.NAME, configuration.VERSION)
 
