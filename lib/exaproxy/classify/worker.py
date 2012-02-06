@@ -163,7 +163,6 @@ class Worker (Thread):
 		while self.running:
 			try:
 				logger.debug('worker %s' % self.wid,'waiting for some work')
-				# XXX: pypy ignores the timeout
 				data = self.request_box.get(timeout=2)
 
 				client_id, peer, header, source, remote_ip = data
@@ -174,6 +173,9 @@ class Worker (Thread):
 
 			if not self.running:
 				logger.debug('worker %s' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')
+
+			if source == 'nop':
+				continue
 
 			request = Header(header,remote_ip)
 			if not request.isValid():

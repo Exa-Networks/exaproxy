@@ -77,6 +77,8 @@ class WorkerManager (object):
 			for wid in set(self.worker):
 				self.reap(wid)
 			for thread in threads:
+				self.request(None, None, None, 'nop', None)
+			for thread in threads:
 				thread.join()
 
 	def _oldest (self):
