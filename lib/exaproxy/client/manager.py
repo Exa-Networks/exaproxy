@@ -201,7 +201,7 @@ class ClientManager (object):
 				# make sure we don't somehow end up with this still here
 				self.norequest.pop(client.sock, (None,None))
 
-				# XXX: always done already in readRequest?
+				# NOTE: always done already in readRequest
 				self.poller.removeReadSocket('opening_client', client.sock)
 
 				res = client.startData(command, d, blockupload)
