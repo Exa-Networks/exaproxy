@@ -8,6 +8,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 import os
+import sys
 import signal
 from Queue import Queue
 
@@ -142,12 +143,16 @@ class Supervisor(object):
 	def shutdown (self):
 		"""terminate all the current BGP connections"""
 		logger.info('supervisor','Performing shutdown')
-		self.web.stop()  # accept no new web connection
-		self.proxy.stop()  # accept no new proxy connections
-		self.manager.stop()  # shut down redirector children
-		self.content.stop() # stop downloading data
-		self.client.stop() # close client connections
-		self.pid.remove()
+		try:
+			self.web.stop()  # accept no new web connection
+			self.proxy.stop()  # accept no new proxy connections
+			self.manager.stop()  # shut down redirector children
+			self.content.stop() # stop downloading data
+			self.client.stop() # close client connections
+			self.pid.remove()
+		except KeyboardInterrupt:
+			logger.info('supervisor','^C received while shutting down. Exiting immediately because you insisted.')
+			sys.exit()
 
 	def reload (self):
 		logger.info('supervisor','Performing reload of exaproxy %s' % configuration.VERSION ,'supervisor')

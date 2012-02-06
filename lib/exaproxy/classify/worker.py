@@ -8,6 +8,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 from threading import Thread
+from Queue import Empty
 import subprocess
 import errno
 
@@ -163,7 +164,7 @@ class Worker (Thread):
 			try:
 				logger.debug('worker %s' % self.wid,'waiting for some work')
 				# XXX: pypy ignores the timeout
-				data = self.request_box.get(3)
+				data = self.request_box.get(timeout=2)
 
 				client_id, peer, header, source, remote_ip = data
 			except Empty:
