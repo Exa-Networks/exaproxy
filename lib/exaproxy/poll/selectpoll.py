@@ -31,8 +31,6 @@ class SelectPoller (IPoller):
 		self.write_all = []
 
 	def addReadSocket(self, name, socket):
-		# XXX: will raise if 'name' is not in self.read_sockets
-		#      but this is much faster than checking it's there first
 		sockets = self.read_sockets[name]
 		if socket not in sockets:
 			sockets.append(socket)
@@ -56,8 +54,6 @@ class SelectPoller (IPoller):
 			self.read_modified[name] = True
 		
 	def addWriteSocket(self, name, socket):
-		# XXX: will raise if 'name' is not in self.write_sockets
-		#      but this is much faster than checking it's there first
 		sockets = self.write_sockets[name]
 		if socket not in sockets:
 			sockets.append(socket)

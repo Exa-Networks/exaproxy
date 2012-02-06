@@ -32,8 +32,6 @@ class EPoller (IPoller):
 
 
 	def addReadSocket(self, name, socket):
-		# XXX: will raise if 'name' is not in self.sockets
-		#      but this is much faster than checking it's there first
 		sockets, poller, fdtosock, corked = self.sockets[name]
 		if socket not in sockets:
 			fileno = socket.fileno()
@@ -89,8 +87,6 @@ class EPoller (IPoller):
 
 		
 	def addWriteSocket(self, name, socket):
-		# XXX: will raise if 'name' is not in self.sockets
-		#      but this is much faster than checking it's there first
 		sockets, poller, fdtosock, corked = self.sockets[name]
 		if socket not in sockets:
 			sockets.append(socket)
