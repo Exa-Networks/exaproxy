@@ -248,7 +248,7 @@ class ClientManager (object):
 	def cleanup(self, sock, name):
 		logger.debug('client','cleanup for socket %s' % sock)
 		client = self.bysock.get(sock, None)
-		client, source = client or self.norequest.get(sock, (None,None))
+		client, source = (client,None) or self.norequest.get(sock, (None,None))
 		client = client or self.byname.get(name, None)
 
 		self.bysock.pop(sock, None)
