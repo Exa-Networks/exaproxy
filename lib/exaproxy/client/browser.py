@@ -89,17 +89,13 @@ class Client(object):
 	def _write(self, sock):
 		"""Coroutine managing data sent to the client"""
 		
-		# TODO: use an open file for buffering data rather than storing
-		#       it in memory
-
 		w_buffer = ''
 		filename = yield None
 
 		# check to see if we are returning data directly from a local file
 		if filename is not None:
 			try:
-				# XXX: reading the file contents into memory while we have a
-				# are storing buffered data in ram rather than on the filesystem
+				# XXX: we must read from the file on demand rather than doing this
 				with open(filename) as fd:
 					w_buffer = fd.read()
 
