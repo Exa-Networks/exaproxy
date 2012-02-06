@@ -7,8 +7,6 @@ Created by David Farrar  on 2011-11-30.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-# XXX: David, please add logging here ..
-
 from exaproxy.util.logger import logger
 from browser import Client
 
@@ -67,7 +65,11 @@ class ClientManager (object):
 		client = self.bysock.get(sock, None)
 		if client:
 			name, peer, request, content = client.readData()
-			if request is None:
+			if request:
+				logger.error('client', 'reading multiple requests')
+				self.cleanup(sock, client.name)
+				
+			elif request is None:
 				self.cleanup(sock, client.name)
 		else:
 			logger.error('client','trying to read from a client that does not exist %s' % sock)
@@ -81,8 +83,12 @@ class ClientManager (object):
 		client = self.byname.get(name, None)
 		if client:
 			name, peer, request, content = client.readData()
+			if request:
+				logger.error('client', 'reading multiple requests')
+				self.cleanup(client.sock, name)
+
 			if request is None:
-				self.cleanup(sock, client.name)
+				self.cleanup(sock, name)
 		else:
 			logger.error('client','trying to read from a client that does not exist %s' % name)
 			name, peer, request, content = None, None, None, None
@@ -203,10 +209,13 @@ class ClientManager (object):
 			if res is not None:
 				buffered, had_buffer = res
 
-				# XXX: we need to check (somewhere) that we don't read a
-				#      new request here
 				# buffered data we read with the HTTP headers
 				name, peer, request, content = client.readData()
+				if request:
+					logger.error('client', 'reading multiple requests')
+					self.cleanup(client.sock, name)
+					buffered, had_buffer = None, None
+					content = None
 
 			else:
 				# close the client connection only if sendDataBySocket is not due to be called
