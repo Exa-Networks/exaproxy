@@ -133,7 +133,7 @@ class WorkerManager (object):
 		return self.queue.put((client_id,peer,request,source))
 
 	def getDecision(self, box):
-		# XXX: reads may block if we send badly formatted data
+		# NOTE: reads may block if we send badly formatted data
 		self.nbq -=1
 		try:
 			r_buffer = box.read(3)
