@@ -57,10 +57,10 @@ class Reactor(object):
 
 			# incoming new requests from clients
 			for client in events.get('opening_client',[]):
-				client_id, peer, request, data, source, remote_ip = self.client.readRequest(client)
+				client_id, peer, request, data, source = self.client.readRequest(client)
 				if request:
 					# we have a new request - decide what to do with it
-					self.decider.request(client_id, peer, request, source, remote_ip)
+					self.decider.request(client_id, peer, request, source)
 
 
 

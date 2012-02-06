@@ -77,7 +77,7 @@ class WorkerManager (object):
 			for wid in set(self.worker):
 				self.reap(wid)
 			for thread in threads:
-				self.request(None, None, None, 'nop', None)
+				self.request(None, None, None, 'nop')
 			for thread in threads:
 				thread.join()
 
@@ -125,9 +125,9 @@ class WorkerManager (object):
 			logger.warning('manager',"we are low on workers, adding a few (%d)" % nb_to_add)
 			self.spawn(nb_to_add)
 			
-	def request(self, client_id, peer, request, source, remote_ip):
+	def request(self, client_id, peer, request, source):
 		self.nbq += 1
-		return self.queue.put((client_id,peer,request,source,remote_ip))
+		return self.queue.put((client_id,peer,request,source))
 
 	def getDecision(self, box):
 		# XXX: reads may block if we send badly formatted data

@@ -165,7 +165,7 @@ class Worker (Thread):
 				logger.debug('worker %s' % self.wid,'waiting for some work')
 				data = self.request_box.get(timeout=configuration.WORKER_TIMEOUT)
 
-				client_id, peer, header, source, remote_ip = data
+				client_id, peer, header, source = data
 			except Empty:
 				continue
 			except (ValueError, TypeError), e:
@@ -177,7 +177,7 @@ class Worker (Thread):
 			if source == 'nop':
 				continue
 
-			request = Header(header,remote_ip)
+			request = Header(header,peer)
 			if not request.isValid():
 				self.respond_html(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)))
 				continue
