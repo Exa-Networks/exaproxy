@@ -130,7 +130,6 @@ class Reactor(object):
 							else:
 								self.client.uncorkUploadByName(client_id)
 
-					# XXX: client should prune itself
 					elif data is None:
 						self.content.endClientDownload(client_id)
 
