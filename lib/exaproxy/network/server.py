@@ -24,12 +24,12 @@ class Server(object):
 		self.read_name = read_name
 
 	def listen(self, ip, port, timeout, backlog):
-		s = self._listen(ip, port,timeout,backlog)
-		# XXX: check s is not None
-		self.socks[s] = True
+		if s:
+			s = self._listen(ip, port,timeout,backlog)
+			self.socks[s] = True
 
-		# register the socket with the poller
-		self.poller.addReadSocket(self.read_name, s)
+			# register the socket with the poller
+			self.poller.addReadSocket(self.read_name, s)
 
 		return s
 
