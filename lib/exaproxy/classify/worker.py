@@ -71,11 +71,11 @@ class Worker (Thread):
 			if self.process:
 				self.process.terminate()
 				self.process.wait()
-				logger.info('worker %s' % self.wid,'terminated process PID %s' % pid)
+				logger.info('worker %s' % self.wid,'terminated process PID %s' % self.process.pid)
 		except OSError, e:
 			# No such processs
 			if e[0] != errno.ESRCH:
-				logger.error('worker %s' % self.wid,'PID %s died' % pid)
+				logger.error('worker %s' % self.wid,'PID %s died' % self.process.pid)
 
 	def stop (self):
 		logger.debug('worker %s' % self.wid,'shutdown')
