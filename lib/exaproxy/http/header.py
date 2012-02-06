@@ -9,6 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 from exaproxy.util.logger import logger
 from exaproxy.configuration import configuration
+from exaproxy.network.functions import isip
 
 class HostMismatch(Exception):
 	pass
@@ -91,6 +92,9 @@ class Header(dict):
 
 			if configuration.XFF:
 				client = self.get('x-forwarded-for', ':%s' % remote_ip).split(':', 1)[1].split(',')[-1].strip()
+				if not isip(client):
+					logger.info('header', 'Invalid address in X-Forwarded-For: %s' % client)
+					client = remote_ip
 			else:
 				client = remote_ip
 

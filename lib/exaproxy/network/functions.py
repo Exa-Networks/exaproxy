@@ -28,6 +28,8 @@ def _ipv6(address):
 	except socket.error:
 		return False
 
+def isip(address):
+	return _ipv4(address) or _ipv6(address)
 
 def listen (ip,port,timeout=None,backlog=0):
 	try:
