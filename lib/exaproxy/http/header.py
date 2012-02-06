@@ -76,7 +76,7 @@ class Header(dict):
 				if key == 'host' and not host:
 					host = value.strip().lower()
 
-			self['proxy-version'] = "Proxy-Version: %s version %s" % (configuration.NAME, configuration.VERSION)
+			self['x-proxy-version'] = "X-Proxy-Version: %s version %s" % (configuration.NAME, configuration.VERSION)
 
 			if method == 'CONNECT':
 				self.order.append('host')
