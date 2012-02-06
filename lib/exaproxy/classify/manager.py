@@ -26,6 +26,7 @@ class WorkerManager (object):
 		self.low = low                    # minimum number of workers at all time
 		self.high = high                  # maximum numbe of workers at all time
 		self.worker = {}                  # our workers threads
+		self.closing = {}                 # workers that are currently closing and must be joined with when they are ready
 		self.running = True               # we are running
 
 	def _getid(self):
@@ -61,6 +62,7 @@ class WorkerManager (object):
 		logger.debug('manager','we are killing worker %s' % wid)
 		worker = self.worker[wid]
 		self.worker.pop(wid)
+		self.closing[wid] = worker
 		worker.stop() # will cause the worker to stop when it can
 
 	def start (self):
@@ -71,7 +73,7 @@ class WorkerManager (object):
 	def stop (self):
 		"""tell all our worker to stop reading the queue and stop"""
 		self.running = False
-		threads = [w for _,w in self.worker.iteritems()]
+		threads = self.worker.values() + self.closing.values()
 		if len(self.worker):
 			logger.info('manager',"stopping %d workers." % len(self.worker))
 			for wid in set(self.worker):
@@ -80,6 +82,7 @@ class WorkerManager (object):
 				self.request(None, None, None, 'nop')
 			for thread in threads:
 				thread.join()
+
 
 	def _oldest (self):
 		"""find the oldest worker"""
@@ -184,9 +187,14 @@ class WorkerManager (object):
 			client_id = None
 			decision = None
 
-			worker = self.worker.get(wid)
+			worker = self.worker.pop(wid, None)
+
+			if not worker:
+				worker = self.closing.pop(wid, None)
+
 			if worker:
 				self.poller.removeReadSocket('read_workers', worker.response_box_read)
 				worker.shutdown()
-			
+				worker.join()
+				
 		return client_id, decision
