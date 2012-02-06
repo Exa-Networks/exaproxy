@@ -24,8 +24,8 @@ class Server(object):
 		self.read_name = read_name
 
 	def listen(self, ip, port, timeout, backlog):
+		s = self._listen(ip, port,timeout,backlog)
 		if s:
-			s = self._listen(ip, port,timeout,backlog)
 			self.socks[s] = True
 
 			# register the socket with the poller
