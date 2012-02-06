@@ -58,6 +58,7 @@ class _Configuration (object):
 	USER      = os.environ.get('USER','nobody') # whatuser right to use if we are root
 	DAEMONIZE = os.environ.get('DAEMONIZE','0').lower() in _enabled # should the program become a daemon
 
+	NAME      = "ExaProxy" # a proxy by any other name would not be so obviously ours
 	VERSION   = version # version of the program
 	PROGRAM   = (sys.argv + ['', ''])[1] # program name used
 
