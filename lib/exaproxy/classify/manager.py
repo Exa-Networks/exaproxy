@@ -81,8 +81,11 @@ class WorkerManager (object):
 			for thread in threads:
 				self.request(None, None, None, 'nop')
 			for thread in threads:
+				thread.destroyProcess()
 				thread.join()
 
+		self.worker = {}
+		self.closing = {}
 
 	def _oldest (self):
 		"""find the oldest worker"""
