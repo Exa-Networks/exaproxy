@@ -88,7 +88,7 @@ class ClientManager (object):
 				self.cleanup(client.sock, name)
 
 			if request is None:
-				self.cleanup(sock, name)
+				self.cleanup(client.sock, name)
 		else:
 			logger.error('client','trying to read from a client that does not exist %s' % name)
 			name, peer, request, content = None, None, None, None
