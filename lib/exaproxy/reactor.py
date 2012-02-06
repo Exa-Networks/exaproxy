@@ -68,11 +68,8 @@ class Reactor(object):
 			for client in events.get('read_client',[]):
 				client_id, peer, request, data = self.client.readDataBySocket(client)
 				if request:
-					# XXX: We would need to put the client back in the 'opening' state
-					#      here to ensure that no further data is read from the client
-					#      until we successfully connect to the required server
-					# XXX: should we allow cleanup to be called outside of the manager?
-					self.client.cleanup(client)
+					# tell the client to hang up
+					self.client.sendDataByName(client_id, None)
 
 				elif data:
 					# we read something from the client so pass it on to the remote server
@@ -83,9 +80,6 @@ class Reactor(object):
 							self.client.corkUploadByName(client_id)
 						else:
 							self.client.uncorkUploadByName(client_id)
-
-					# XXX: sendClientData() should tell us whether or not the socket was
-					#      added to / removed from the buffer list
 
 				elif data is None:
 					self.content.endClientDownload(client_id)
