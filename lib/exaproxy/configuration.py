@@ -67,6 +67,7 @@ class _Configuration (object):
 	RESOLV    = os.environ.get('RESOLV', '/etc/resolv.conf') # The resolver file to use
 	MIN_WORK  = int(os.environ.get('MIN_WORKERS')) if os.environ.get('MIN_WORKERS','').isdigit() else 5 # how many worker thread will we always have
 	MAX_WORK  = int(os.environ.get('MAX_WORKERS')) if os.environ.get('MAX_WORKERS','').isdigit() else 25 # how many worker thread is our maximum
+	WORKER_TIMEOUT  = int(os.environ.get('WORKER_TIMEOUT')) if os.environ.get('WORKER_TIMEOUT','').isdigit() else 5 # Workers block up to WORKER_TIMEOUT seconds when reading the message queue
 
 	_location = os.path.normpath(sys.argv[0]) if sys.argv[0].startswith('/') else os.path.normpath(os.path.join(cwd,sys.argv[0]))
 	_paths = (

@@ -163,7 +163,7 @@ class Worker (Thread):
 		while self.running:
 			try:
 				logger.debug('worker %s' % self.wid,'waiting for some work')
-				data = self.request_box.get(timeout=2)
+				data = self.request_box.get(timeout=configuration.WORKER_TIMEOUT)
 
 				client_id, peer, header, source, remote_ip = data
 			except Empty:
