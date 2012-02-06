@@ -88,7 +88,9 @@ class Supervisor(object):
 			logger.warning('supervisor','Set the environmemnt value USER to change the unprivileged user')
 			return
 
-		self.initialise()
+		ok = self.initialise()
+		if not ok:
+			self._shutdown = True
 
 		while True:
 			try:
@@ -131,9 +133,18 @@ class Supervisor(object):
 		self.manager.start()
 
 		# only start listening once we know we were able to fork our worker processes
-		self.proxy.listen(configuration.HOST,configuration.PORT, configuration.TIMEOUT, configuration.BACKLOG)
+		s = self.proxy.listen(configuration.HOST,configuration.PORT, configuration.TIMEOUT, configuration.BACKLOG)
+		ok = bool(s)
+		if not s:
+			logger.error('supervisor', 'Unable to listen on %s:%s' % (configuration.HOST, configuration.PORT))
+
 		if configuration.WEB:
-			self.web.listen('127.0.0.1',configuration.WEB, 10, 10)
+			s = self.web.listen('127.0.0.1',configuration.WEB, 10, 10)
+			if not s:
+				logger.error('supervisor', 'Unable to listen on %s:%s' % ('127.0.0.1', configuration.WEB))
+				ok = False
+
+		return ok
 
 	def shutdown (self):
 		"""terminate all the current BGP connections"""
