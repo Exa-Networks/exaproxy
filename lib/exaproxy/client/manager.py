@@ -49,7 +49,7 @@ class ClientManager (object):
 			name, peer, request, content = client.readData()
 			if request:
 				# headers can be read only once
-				self.norequest.pop(sock, None)
+				self.norequest.pop(sock, (None, None))
 
 				# we don't care about new requests from the client
 				self.poller.removeReadSocket('opening_client', client.sock)
@@ -193,7 +193,7 @@ class ClientManager (object):
 				self.poller.addReadSocket('read_client', client.sock)
 
 				# make sure we don't somehow end up with this still here
-				self.norequest.pop(client.sock, None)
+				self.norequest.pop(client.sock, (None,None))
 
 				# XXX: always done already in readRequest?
 				self.poller.removeReadSocket('opening_client', client.sock)
@@ -248,11 +248,11 @@ class ClientManager (object):
 	def cleanup(self, sock, name):
 		logger.debug('client','cleanup for socket %s' % sock)
 		client = self.bysock.get(sock, None)
-		client = client or self.norequest.get(sock, None)
+		client, source = client or self.norequest.get(sock, (None,None))
 		client = client or self.byname.get(name, None)
 
 		self.bysock.pop(sock, None)
-		self.norequest.pop(sock, None)
+		self.norequest.pop(sock, (None,None))
 
 		if client:
 			self.poller.removeWriteSocket('write_client', client.sock)
@@ -270,7 +270,7 @@ class ClientManager (object):
 		for client in self.bysock.itervalues():
 			client.shutdown()
 
-		for client in self.norequest.itervalues():
+		for client, source in self.norequest.itervalues():
 			client.shutdown()
 
 		self.poller.clearRead('read_client')
