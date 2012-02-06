@@ -33,7 +33,7 @@ class Client(object):
 		self.reader.next()
 
 
-	def _read(self, sock, read_size=16*1024):
+	def _read(self, sock, read_size=64*1024):
 		"""Coroutine managing data read from the client"""
 		r_buffer = ''
 		request = ''
