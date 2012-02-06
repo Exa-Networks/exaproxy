@@ -273,6 +273,8 @@ class Worker (Thread):
 		except (IOError, ValueError):
 			pass
 
+		self.destroyProcess()
+
 # prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
 # XXX: We may have more than one Connection header : http://tools.ietf.org/html/rfc2616#section-14.10
 # XXX: We may need to remove every step-by-step http://tools.ietf.org/html/rfc2616#section-13.5.1
