@@ -15,7 +15,6 @@ from browser import Client
 class ClientManager (object):
 	def __init__(self, poller):
 		self.norequest = {}
-		self.source = {}
 		self.bysock = {}
 		self.byname = {}
 		self.buffered = []
@@ -33,8 +32,7 @@ class ClientManager (object):
 		name = self.getnextid()
 		client = Client(name, sock, peer)
 
-		self.source[sock] = source
-		self.norequest[sock] = client
+		self.norequest[sock] = client, source
 		self.byname[name] = client
 
 		# watch for request data becoming available to read
@@ -46,8 +44,7 @@ class ClientManager (object):
 	def readRequest(self, sock):
 		"""Read only the initial HTTP headers sent by the client"""
 
-		client = self.norequest.get(sock, None)
-		source = self.source.get(sock, None)
+		client, source = self.norequest.get(sock, (None, None))
 		if client:
 			name, peer, request, content = client.readData()
 			if request:
@@ -254,7 +251,6 @@ class ClientManager (object):
 		client = client or self.norequest.get(sock, None)
 		client = client or self.byname.get(name, None)
 
-		self.source.pop(sock, None)
 		self.bysock.pop(sock, None)
 		self.norequest.pop(sock, None)
 
@@ -282,7 +278,6 @@ class ClientManager (object):
 		self.poller.clearWrite('write_client')
 
 		self.bysock = {}
-		self.source = {}
 		self.norequest = {}
 		self.byname = {}
 		self.buffered = []
