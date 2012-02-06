@@ -63,8 +63,6 @@ class Downloader(object):
 	def writeData(self, data):
 		"""Write data to the remote server"""
 
-		# XXX: TODO: Use a file to buffer data rather than
-		#            storing it in memory
 		w_buffer = self.w_buffer + data
 
 		try:
