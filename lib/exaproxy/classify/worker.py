@@ -107,6 +107,9 @@ class Worker (Thread):
 			elif response.startswith('file://'):
 				classification, data = 'file', response[7:]
 
+			elif response.startswith('dns://'):
+				classification, data = 'dns', response[6:]
+
 			else:
 				classification, data = 'file', 'internal_error.html'
 
@@ -216,6 +219,15 @@ class Worker (Thread):
 
 				elif classification == 'redirect':
 					self.respond_redirect(client_id, data)
+					continue
+
+				elif classification == 'dns':
+					newip = self.resolver.resolveHost(data)
+					if newip:
+						self.respond_proxy(client_id, newip, request.port, request)
+					else:
+						logger.warning('worker %s' % self.wid,'Could not resolve redirected host %s' % data)
+						self.respond_rewrite(client_id, 503, 'dns.html', request.protocol, request.url, request.host, request.client)
 					continue
 
 				else:
