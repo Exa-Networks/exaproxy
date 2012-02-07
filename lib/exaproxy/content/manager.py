@@ -17,6 +17,8 @@ import os
 import socket
 import errno
 
+class ParsingError (Exception):
+	pass
 
 class ContentManager(object):
 	downloader_factory = Downloader
@@ -91,17 +93,26 @@ class ContentManager(object):
 
 	def getContent(self, client_id, decision):
 		try:
-			command, args = decision.split('\0', 1)
+			try:
+				command, args = decision.split('\0', 1)
+			except (ValueError, TypeError), e:
+				raise ParsingError()
 
 			if command == 'download':
-				host, port, request = args.split('\0', 2)
+				try:
+					host, port, request = args.split('\0', 2)
+				except (ValueError, TypeError), e:
+					raise ParsingError()
 
 				downloader = self.newDownloader(client_id, host, int(port), command, request)
 				content = ('stream', '') if downloader is not None else None
 				restricted = True
 
 			elif command == 'connect':
-				host, port, request = args.split('\0', 2)
+				try:
+					host, port, request = args.split('\0', 2)
+				except (ValueError, TypeError), e:
+					raise ParsingError()
 
 				downloader = self.newDownloader(client_id, host, int(port), command, '')
 				content = ('stream', '') if downloader is not None else None
@@ -116,20 +127,30 @@ class ContentManager(object):
 				restricted = True
 
 			elif command == 'html':
-				code, data = args.split('\0', 1)
+				try:
+					code, data = args.split('\0', 1)
+				except (ValueError, TypeError), e:
+					raise ParsingError()
 
 				downloader = None
 				content = ('close', http(code, data))
 				restricted = True
 
 			elif command == 'file':
-				code, reason = args.split('\0', 1)
+				try:
+					code, reason = args.split('\0', 1)
+				except (ValueError, TypeError), e:
+					raise ParsingError()
+
 				downloader = None
 				content = self.getLocalContent(code, reason)
 				restricted = True
 
 			elif command == 'rewrite':
-				code, reason, protocol, url, host, client_ip = args.split('\0', 5)
+				try:
+					code, reason, protocol, url, host, client_ip = args.split('\0', 5)
+				except (ValueError, TypeError), e:
+					raise ParsingError()
 
 				downloader = None
 				content = self.readLocalContent(code, reason, {'url':url, 'host':host, 'client_ip':client_ip, 'protocol':protocol})
@@ -147,7 +168,7 @@ class ContentManager(object):
 				content = None
 				restricted = None
 
-		except (ValueError, TypeError), e:
+		except ParsingError:
 			logger.error('download', 'problem getting content %s %s' % (type(e),str(e)))
 			downloader = None
 			content = None
