@@ -10,16 +10,29 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import sys
 
 from exaproxy.supervisor import Supervisor
-
 from exaproxy.util.logger import logger
 from exaproxy.configuration import configuration
 
 def version_warning ():
 	sys.stdout.write('\n')
 	sys.stdout.write('************ WARNING *** WARNING *** WARNING *** WARNING *********\n')
-	sys.stdout.write('* This program SHOULD work with your python version (2.4).       *\n')
-	sys.stdout.write('* No tests have been performed. Consider python 2.4 unsupported  *\n')
+	sys.stdout.write('*                                                                *\n')
+	sys.stdout.write('* This program is only supported on Python version 2.6 or 2.7.   *\n')
 	sys.stdout.write('* Please consider upgrading to the latest 2.x stable realease.   *\n')
+	sys.stdout.write('*                                                                *\n')
+	sys.stdout.write('************ WARNING *** WARNING *** WARNING *** WARNING *********\n')
+	sys.stdout.write('\n')
+
+def resolv_warning ():
+	sys.stdout.write('\n')
+	sys.stdout.write('************ WARNING *** WARNING *** WARNING *** WARNING *********\n')
+	sys.stdout.write('*                                                                *\n')
+	sys.stdout.write('* ExaProxy could not find a valid resolv.conf file               *\n')
+	sys.stdout.write('* Please tell us where you want us to look for your nameserver   *\n')
+	sys.stdout.write('* in %-59s *\n' % configuration.internal_resolv)
+	sys.stdout.write('* using the format :                                             *\n')
+	sys.stdout.write('* namserver <ip address>                                         *\n')
+	sys.stdout.write('*                                                                *\n')
 	sys.stdout.write('************ WARNING *** WARNING *** WARNING *** WARNING *********\n')
 	sys.stdout.write('\n')
 
@@ -89,6 +102,10 @@ def main ():
 	sys.exit(0)
 
 if __name__ == '__main__':
+	if not configuration.RESOLV:
+		resolv_warning()
+		sys.exit(1)
+
 	logger.info('main','starting %s' % sys.argv[0])
 	logger.info('main',sys.version.replace(os.linesep,' '))
 	profiled = configuration.PROFILE

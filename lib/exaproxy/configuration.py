@@ -62,9 +62,10 @@ class _Configuration (object):
 	VERSION   = version # version of the program
 	PROGRAM   = (sys.argv + ['', ''])[1] # program name used
 
+	RESOLV    = None # The resolver file to use
+
 	CONNECT   = os.environ.get('CONNECT','1').lower() in _enabled # do we allow the CONNECT method
 	PROFILE   = os.environ.get('PROFILE','0') # Turn on profiling and if a file (ie not 0/1) save the result there
-	RESOLV    = os.environ.get('RESOLV', '/etc/resolv.conf') # The resolver file to use
 	MIN_WORK  = int(os.environ.get('MIN_WORKERS')) if os.environ.get('MIN_WORKERS','').isdigit() else 5 # how many worker thread will we always have
 	MAX_WORK  = int(os.environ.get('MAX_WORKERS')) if os.environ.get('MAX_WORKERS','').isdigit() else 25 # how many worker thread is our maximum
 	WORKER_TIMEOUT  = int(os.environ.get('WORKER_TIMEOUT')) if os.environ.get('WORKER_TIMEOUT','').isdigit() else 5 # Workers block up to WORKER_TIMEOUT seconds when reading the message queue
@@ -77,7 +78,16 @@ class _Configuration (object):
 
 	HTML      = [path for path in _paths if os.path.exists(path)][0] # XXX: This will fail if we can not find a configuration location
 
+	internal_resolv = os.path.join(os.path.join(os.sep,*os.path.join(_location.split(os.sep)[:-3])),'etc','exaproxy','resolv.conf')
+
 	def __init__ (self):
+		for resolver in (os.environ.get('RESOLV',''),'/etc/resolv.conf',self.internal_resolv):
+			if os.path.exists(resolver):
+				with open(resolver) as r:
+					if 'nameserver' in [line.strip().split(None,1)[0].lower() for line in r.readlines()]:
+						self.RESOLV = resolver
+						break
+
 		if os.environ.get('SYSLOG',None):
 			logger.syslog()
 		logger.level = _priorities.get(os.environ.get('LOG',None),syslog.LOG_DEBUG if _all else syslog.LOG_ERR)
