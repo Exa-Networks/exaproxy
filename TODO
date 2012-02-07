@@ -1,31 +1,19 @@
 Know Broken Site:
  - http://www.eastcoast.co.uk/
 
-Allow Proxy Authentification :
- - http://tools.ietf.org/html/rfc2068#section-13.5.1
-
-Before reelase :
+Before realase :
  - fix all XXX:
- - fix all bug
-   * Bad regex to extract CONNECT DATA (no http://)
-   * We are sending twice connection:close, if there ?
+ - http://tools.ietf.org/html/rfc2068#section-13.5.1
+ - always remove Proxy-Connection, it is useless junk
  - check any possible socket issues, to make sure all exception were traped (all errno are covered)
- - some of the code should be moved down in lower class (multiple . deference)
  - have a 127.0.0.1:port webpage with status (like squid to know what is happening)
  - if a remote end does not respect connection-close, use time to kill it anyway
  - look at all the method in http://tools.ietf.org/html/rfc4918 and see what we can do with them
- - find out what to do in case of host mismatch
+ - make sure we notice when a worker exit
+ - incorporate DNS in main loop
 
-still true ??
- - sometimes it look like the workers do not get the work even if the logs says we are pushing it to them
-
-
-questions:
- - is EBADF a blocking errno to ignore ? In general review what could be raised by sockets.
-
-PYPY changing the FD of a socket to -1 !! Can we still work with pypy ?
-
-The connection class track open connections co-routing which is good but does not work well.
-In server we need to transition the download from having read to being just a buffer to send,
-Those states are uncessary and this is were the design hurts.
-
+After release:
+ - why pypy takes more CPU than cPython
+ - look at regex for header parsing performance
+ - improve perfs - always :D
+ - look at FTP .... grrrr ...
