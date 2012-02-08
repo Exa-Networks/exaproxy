@@ -36,6 +36,10 @@ def resolv_warning ():
 	sys.stdout.write('************ WARNING *** WARNING *** WARNING *** WARNING *********\n')
 	sys.stdout.write('\n')
 
+
+def program_warning ():
+	sys.stdout.write('The parameter passed is not a valid executable "%s" \n' % sys.argv[1])
+
 def help ():
 	sys.stdout.write('\n')
 	sys.stdout.write('*******************************************************************************\n')
@@ -104,6 +108,10 @@ def main ():
 if __name__ == '__main__':
 	if not configuration.RESOLV:
 		resolv_warning()
+		sys.exit(1)
+
+	if not configuration.PROGRAM:
+		program_warning()
 		sys.exit(1)
 
 	logger.info('main','starting %s' % sys.argv[0])

@@ -81,6 +81,16 @@ class _Configuration (object):
 	internal_resolv = os.path.join(os.path.join(os.sep,*os.path.join(_location.split(os.sep)[:-3])),'etc','exaproxy','resolv.conf')
 
 	def __init__ (self):
+		if os.environ.get('SYSLOG',None):
+			logger.syslog()
+		logger.level = _priorities.get(os.environ.get('LOG',None),syslog.LOG_DEBUG if _all else syslog.LOG_ERR)
+
+		logger.status['configuration'] = True
+		logger.status['signal'] = True
+		for section in ('main','supervisor','daemon','server','client','manager','worker','download','http','client'):
+			enabled = os.environ.get('DEBUG_%s' % section.upper(),'0').lower() in _enabled or _all
+			logger.status[section] = enabled
+
 		for resolver in (os.environ.get('RESOLV',''),'/etc/resolv.conf',self.internal_resolv):
 			if os.path.exists(resolver):
 				with open(resolver) as r:
@@ -88,14 +98,8 @@ class _Configuration (object):
 						self.RESOLV = resolver
 						break
 
-		if os.environ.get('SYSLOG',None):
-			logger.syslog()
-		logger.level = _priorities.get(os.environ.get('LOG',None),syslog.LOG_DEBUG if _all else syslog.LOG_ERR)
-
-		logger.status['signal'] = True
-		for section in ('main','supervisor','daemon','server','client','manager','worker','download','http','client'):
-			enabled = os.environ.get('DEBUG_%s' % section.upper(),'0').lower() in _enabled or _all
-			logger.status[section] = enabled
+		if not os.path.isfile(self.PROGRAM) or not os.access(self.PROGRAM, os.X_OK):
+			self.PROGRAM = ''
 
 def Configuration ():
 	if _Configuration._instance:

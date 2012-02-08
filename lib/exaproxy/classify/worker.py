@@ -87,6 +87,11 @@ class Worker (Thread):
 	def _classify (self, client_ip, method, url):
 		squid = '%s %s - %s -' % (url, client_ip, method)
 		#logger.info('worker %s' % self.wid, 'sending to classifier: [%s]' % squid)
+		if not self.process:
+			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(e))
+			classification, data = 'file', 'internal_error.html'
+			return
+
 		try:
 			self.process.stdin.write(squid + os.linesep)
 			response = self.process.stdout.readline().strip()
