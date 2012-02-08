@@ -76,7 +76,8 @@ def menu (menus):
 options = {
 	1 : ('/index.html' , 'Home'),
 	2 : ('/objects/supervisor.html' , 'Instrospection'),
-	3 : ('/stats/index.html' , 'Statistics'),
+	3 : ('/configuration/index.html' , 'Configuration'),
+	4 : ('/statistics/index.html' , 'Statistics'),
 }
 
 _title = 'ExaProxy Monitoring'
@@ -94,37 +95,82 @@ _index = """\
 """
 _listing = """\
 <style type="text/css">
-.object {
-width: 800px;
-margin-left: 20px;
-}
-.object a {
-display: inline-block;
-width: 150px;
-text-align: left;
-font: 10pt Arial;
-padding: 5px 5px 5px 10px;
-text-decoration: none;
-color: #444;
-background: #eee;
-border: 1px solid #e4e4e4;
-margin: 1px 15px 1px 1px;
-}
-.object a:hover {
-color: #222;
-background: #e5e5e5;
-border: 1px solid #ccc;
-}
-.object value {
-color: #111;
-background: #e5e5e5;
-border: 1px solid #ccc;
-}
+	.object {
+		width: 800px;
+		margin-left: 20px;
+	}
+	.object a {
+		display: inline-block;
+		width: 150px;
+		text-align: left;
+		font: 10pt Arial;
+		padding: 5px 5px 5px 10px;
+		text-decoration: none;
+		color: #444;
+		background: #eee;
+		border: 1px solid #e4e4e4;
+		margin: 1px 1px 1px 1px;
+	}
+	.object a:hover {
+		color: #222;
+		background: #e5e5e5;
+		border: 1px solid #ccc;
+	}
+	.object .value {
+		display: inline-block;
+		width: 600px;
+		text-align: left;
+		font: 10pt Arial;
+		padding: 5px 5px 5px 5px;
+		text-decoration: none;
+		color: #111;
+		background: #e5e5e5;
+		border: 1px solid #ccc;
+		margin: 1px 1px 1px 1px;
+	}
 </style>
 <div class="object">
 %s
 </div>
 """""
+
+_enum = """\
+<style type="text/css">
+	.enum {
+		width: 800px;
+		margin-left: 20px;
+	}
+	.enum .key {
+		display: inline-block;
+		width: 250px;
+		text-align: left;
+		font: 10pt Arial;
+		padding: 5px 5px 5px 10px;
+		text-decoration: none;
+		color: #444;
+		background: #eee;
+		border: 1px solid #e4e4e4;
+		margin: 1px 1px 1px 1px;
+	}
+	.enum .value {
+		display: inline-block;
+		width: 500px;
+		text-align: left;
+		font: 10pt Arial;
+		padding: 5px 5px 5px 0px;
+		text-decoration: none;
+		color: #111;
+		background: #e5e5e5;
+		border: 1px solid #ccc;
+		margin: 1px 1px 1px 1px;
+	}
+</style>
+<div class="enum">
+%s
+</div>
+"""""
+
+
 
 class Page (object):
 	
@@ -137,12 +183,25 @@ class Page (object):
 	def _introspection (self,objects):
 		introduction = "<div style='padding: 10px 10px 10px 10px; font-weight:bold;'>Looking at the internal of ExaProxy for %s </div><br/>\n" % cgi.escape('.'.join(objects))
 		link = cgi.escape('/'.join(objects[:-1])) if objects[:-1] else 'supervisor'
-		line = ['<a href="/objects/%s.html">Back to parent object</a><span class="value"></span><br/>' % link]
+		line = ['<a href="/objects/%s.html">Back to parent object</a><br/>' % link]
 		for k,content in self.monitor.introspection(objects):
 			link = '/objects/%s.html' % cgi.escape('%s/%s' % ('/'.join(objects),k))
 			line.append('<a href="%s">%s</a><span class="value">%s</span><br/>' % (link,k,cgi.escape(content)))
 		return introduction + _listing % ('\n'.join(line))
 
+	def _configuration (self):
+		introduction = "<div style='padding: 10px 10px 10px 10px; font-weight:bold;'>ExaProxy Configuration</div><br/>\n"
+		line = []
+		for k,v in sorted(self.monitor.configuration().items()):
+			line.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (k,cgi.escape(v)))
+		return introduction + _enum % ('\n'.join(line))
+
+	def _statistics (self):
+		introduction = "<div style='padding: 10px 10px 10px 10px; font-weight:bold;'>ExaProxy Statistics</div><br/>\n"
+		line = []
+		for k,v in sorted(self.monitor.statistics().items()):
+			line.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (k,cgi.escape(v)))
+		return introduction + _enum % ('\n'.join(line))
 
 	def html (self,path):
 		if len(path) > 200:
@@ -163,4 +222,8 @@ class Page (object):
 			return self._page(_index)
 		if command == 'objects':
 			return self._page(self._introspection(sections[1:]))
+		if command == 'configuration':
+			return self._page(self._configuration())
+		if command == 'statistics':
+			return self._page(self._statistics())
 		return self._page('<center><b>are you looking for an easter egg ?</b></center>')
