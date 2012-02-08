@@ -86,7 +86,7 @@ class _Logger (object):
 			self._toggle_status = {}
 		else:
 			self._toggle_level = self.level
-			self.level = syslog.LOG_ALERT
+			self.level = syslog.LOG_DEBUG
 			for k,v in self.status.items():
 				self._toggle_status[k] = v
 				self.status[k] = True
@@ -111,7 +111,7 @@ class _Logger (object):
 		return self._format(ts,level,source,message)
 
 	def __init__ (self):
-		self.level = syslog.LOG_DEBUG
+		self.level = syslog.LOG_WARNING
 		self.status = {}
 
 	def syslog (self):
@@ -151,7 +151,7 @@ class _Logger (object):
 		for line in message.split('\n'):
 			if self._syslog:
 				self._syslog.critical(self._prefixed(level,source,line))
-			elif self.level <= level:
+			elif level <= self.level:
 				print self._prefixed(level,source,line)
 				sys.stdout.flush()
 
