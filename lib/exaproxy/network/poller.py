@@ -47,17 +47,17 @@ def poll_select(read, write, timeout=None):
 	try:
 		r, w, x = poll(read, write, read + write, timeout)
 	except socket.error, e:
-		if e.errno in errno_block:
-			logger.error('select', 'select not ready, errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
+		if e.args[0] in errno_block:
+			logger.error('select', 'select not ready, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 			return [], [], []
 
-		if e.errno in errno_fatal:
-			logger.error('select', 'select problem, errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
+		if e.args[0] in errno_fatal:
+			logger.error('select', 'select problem, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 			logger.error('select', 'poller read  : %s' % str(read))
 			logger.error('select', 'poller write : %s' % str(write))
 			logger.error('select', 'read : %s' % str(read))
 		else:
-			logger.error('select', 'select problem, debug it. errno %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
+			logger.error('select', 'select problem, debug it. errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 
 		for f in read:
 			try:
@@ -75,6 +75,11 @@ def poll_select(read, write, timeout=None):
 
 		raise e
 	except (ValueError, AttributeError, TypeError), e:
+		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
+		raise e
+	except select.error, e:
+		if e.args[0] in errno_block:
+			return [], [], []
 		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
 		raise e
 	except Exception, e:

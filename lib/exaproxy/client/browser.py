@@ -66,7 +66,7 @@ class Client(object):
 				break
 
 			except socket.error, e:
-				if e.errno in errno_block:
+				if e.args[0] in errno_block:
 					yield '', ''
 				else:
 					break
@@ -142,10 +142,10 @@ class Client(object):
 				break
 
 			except socket.error, e:
-				if e.errno in errno_block:
+				if e.args[0] in errno_block:
 					logger.error('client','failed to sent %d bytes' % len(data))
 					logger.error('client','it would have blocked, why were we woken up !?!')
-					logger.error('client','error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
+					logger.error('client','error %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 					data = yield (True if w_buffer else False), had_buffer
 				else:
 					logger.critical('client','????? ARRGH ?????')

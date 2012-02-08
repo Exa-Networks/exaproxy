@@ -57,9 +57,9 @@ def listen (ip,port,timeout=None,backlog=0):
 		s.listen(backlog)
 		return s
 	except socket.error, e:
-		if e.errno == errno.EADDRINUSE:
+		if e.args[0] == errno.EADDRINUSE:
 			logger.debug('server','could not listen, port already in use %s:%d' % (ip,port))
-		elif e.errno == errno.EADDRNOTAVAIL:
+		elif e.args[0] == errno.EADDRNOTAVAIL:
 			logger.debug('server','could not listen, invalid address %s:%d' % (ip,port))
 		else:
 			logger.debug('server','could not listen on %s:%d - %s' % (ip,port,str(e)))
@@ -93,10 +93,10 @@ def connect (ip,port):
 		s.setblocking(0)
 		s.connect((ip, port))
 	except socket.error,e:
-		if e.errno == errno.EINPROGRESS:
+		if e.args[0] == errno.EINPROGRESS:
 			pass
 
-		elif e.errno in errno_block:
+		elif e.args[0] in errno_block:
 			pass
 
 		else:

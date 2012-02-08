@@ -51,9 +51,9 @@ class Downloader(object):
 			if not data:
 				data = None
 		except socket.error, e:
-			if e.errno in errno_block:
+			if e.args[0] in errno_block:
 				logger.error('download','write failed as it would have blocked. Why were we woken up?')
-				logger.error('download','Error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
+				logger.error('download','Error %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 				data = ''
 			else:
 				data = None
@@ -71,8 +71,8 @@ class Downloader(object):
 			self.w_buffer = w_buffer[sent:]
 			res = True if self.w_buffer else False
 		except socket.error, e:
-			if e.errno in errno_block:
-				logger.error('download', 'Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.errno, errno.errorcode.get(e.errno, '')))
+			if e.args[0] in errno_block:
+				logger.error('download', 'Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 				res = True if self.w_buffer else False
 			else:
 				res = None
