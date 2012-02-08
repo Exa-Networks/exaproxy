@@ -81,7 +81,7 @@ options = {
 
 _title = 'ExaProxy Monitoring'
 _menu = menu(options)
-_html = html(_title,_title,'#00BB55',_menu,'*string*').replace('%','%%').replace('*string*','%s')
+_html = html(_title,'','#00BB55',_menu,'*string*').replace('%','%%').replace('*string*','%s')
 
 _index = """\
 <center>
