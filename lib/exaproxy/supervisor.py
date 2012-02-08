@@ -19,7 +19,7 @@ from .classify.manager import WorkerManager
 from .content.manager import ContentManager
 from .client.manager import ClientManager
 from .network.server import Server
-from .http.monitor import Monitor
+from .http.page import Page
 
 from poll import Poller
 from .reactor import Reactor
@@ -51,9 +51,9 @@ class Supervisor(object):
 		self.poller.setupWrite('write_download')      # Established connections we have buffered data to send to
 		self.poller.setupWrite('opening_download')    # Opening connections
 
-		self.monitor = Monitor(self)
+		self.page = Page(self)
 		self.manager = WorkerManager(self.poller, configuration.PROGRAM, low=configuration.MIN_WORK, high=configuration.MAX_WORK)
-		self.content = ContentManager(self.poller, configuration.HTML, self.monitor)
+		self.content = ContentManager(self.poller, configuration.HTML, self.page)
 		self.client = ClientManager(self.poller)
 		self.proxy = Server(self.poller,'read_proxy')
 		self.web = Server(self.poller,'read_web')

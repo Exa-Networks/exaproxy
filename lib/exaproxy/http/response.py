@@ -67,71 +67,11 @@ def html (title,header,color='#FF0000',menu='',text='',):
 		<br/>
 		<br/>
 		%s
+		<br/>
+		<br/>
 	</body>
 </html>
 
 """ % (title,color,header,image,menu,text)
 
 
-def menu (menus):
-		return """\
-<style type="text/css">
-	.menu {
-		float:left;
-		width:100%%;
-		background:#fff;
-		border-bottom:4px solid #000;
-		overflow:hidden;
-		position:relative;
-	}
-
-	.menu ul {
-		clear:left;
-		float:left;
-		list-style:none;
-		margin:0;
-		padding:0;
-		position:relative;
-		left:50%%;
-		text-align:center;
-	}
-
-	.menu ul li {
-		font-family:Arial, Helvetica, sans-serif;
-		font-weight:normal;
-		display:block;
-		float:left;
-		list-style:none;
-		margin:0;
-		padding:0;
-		position:relative;
-		right:50%%;
-	}
-
-	.menu ul li a {
-		display:block;
-		margin:0 0 0 1px;
-		padding:3px 10px;
-		background:#aaa;
-		color: white;
-		text-decoration:none;
-		line-height:1.3em;
-	}
-
-	.menu ul li a:visited {
-	}
-
-	.menu ul li a:hover, .menu ul li .current {
-		color: #fff;
-		background-color:#0b75b2;
-	}
-</style>
-
-<div class="menu">
-	<ul>
-		%s
-	</ul>
-</div>
-	""" % '\n'.join(['<li/><a href="%s">%s</a>' % _ for _ in [menus[k] for k in sorted(menus.keys())]])
-	
-	

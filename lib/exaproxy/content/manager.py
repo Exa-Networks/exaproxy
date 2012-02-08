@@ -23,7 +23,7 @@ class ParsingError (Exception):
 class ContentManager(object):
 	downloader_factory = Downloader
 
-	def __init__(self, poller, location, monitor):
+	def __init__(self, poller, location, page):
 		self.opening = {}
 		self.established = {}
 		self.byclientid = {}
@@ -33,7 +33,7 @@ class ContentManager(object):
 		self.poller = poller
 
 		self.location = location
-		self.monitor = monitor
+		self.page = page
 		self._header = {}
 
 	def getLocalContent(self, code, name):
@@ -160,7 +160,7 @@ class ContentManager(object):
 				path = args
 
 				downloader = None
-				content = ('close', http('200', self.monitor.html(path)))
+				content = ('close', http('200', self.page.html(path)))
 				restricted = True
 
 			else:
