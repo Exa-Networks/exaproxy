@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+udp.py
+
+Created by David Farrar on 2012-02-08.
+Copyright (c) 2011 Exa Networks. All rights reserved.
+"""
+
 import socket
 from .ip import is_ipv4, is_ipv6
 

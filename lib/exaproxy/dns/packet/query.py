@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+query.py
+
+Created by David Farrar on 2012-02-08.
+Copyright (c) 2011 Exa Networks. All rights reserved.
+"""
+
 class DNSQueryType:
 	CLASS = 1   # Internet
 	NAME = None

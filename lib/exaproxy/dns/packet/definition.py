@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+definition.py
+
+Created by David Farrar on 2012-02-08.
+Copyright (c) 2011 Exa Networks. All rights reserved.
+"""
+
 import inspect
 import query
 import response

@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+resolver.py
+
+Created by David Farrar on 2012-02-08.
+Copyright (c) 2011 Exa Networks. All rights reserved.
+"""
+
 import random
 
 from .network.udp import UDPFactory
