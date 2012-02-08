@@ -69,9 +69,27 @@ class _Logger (object):
 	_config = ''
 	_pid = os.getpid()
 	
+	_toggle_level = None
+	_toggle_status = {}
+	
 	pdb = False
 	
 	# we use os.pid everytime as we may fork and the class is instance before it
+
+	def toggle (self):
+		if self._toggle_level:
+			self.level = self._toggle_level
+			self.status = {}
+			for k,v in self._toggle_status.items():
+				self.status[k] = v
+			self._toggle_level = None
+			self._toggle_status = {}
+		else:
+			self._toggle_level = self.level
+			self.level = syslog.LOG_ALERT
+			for k,v in self.status.items():
+				self._toggle_status[k] = v
+				self.status[k] = True
 
 	def history (self):
 		with self._lock:

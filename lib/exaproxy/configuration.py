@@ -91,7 +91,8 @@ class _Configuration (object):
 		if os.environ.get('SYSLOG',None):
 			logger.syslog()
 		logger.level = _priorities.get(os.environ.get('LOG',None),syslog.LOG_DEBUG if _all else syslog.LOG_ERR)
-		
+
+		logger.status['signal'] = True
 		for section in ('main','supervisor','daemon','server','client','manager','worker','download','http','client'):
 			enabled = os.environ.get('DEBUG_%s' % section.upper(),'0').lower() in _enabled or _all
 			logger.status[section] = enabled

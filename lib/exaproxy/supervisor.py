@@ -60,27 +60,49 @@ class Supervisor(object):
 
 		self.reactor = Reactor(self.web, self.proxy, self.manager, self.content, self.client, self.poller)
 
+		# Only here so the introspection code can find them
+		self.configuration = configuration
+		self.logger = logger
+
 		self._shutdown = False
 		self._reload = False
+		self._toggle_debug = False
+		self._decrease_spawn_limit = False
+		self._increase_spawn_limit = False
+		self._refork = True
 
 		signal.signal(signal.SIGTERM, self.sigterm)
 		signal.signal(signal.SIGHUP, self.sighup)
 		signal.signal(signal.SIGALRM, self.sigalrm)
+		signal.signal(signal.SIGUSR1, self.sigusr1)
+		signal.signal(signal.SIGUSR2, self.sigusr2)
+		signal.signal(signal.SIGTRAP, self.sigtrap)
 
-		self.increase_spawn_limit = False
 
-		
 	def sigterm (self,signum, frame):
-		logger.info('supervisor','SIG TERM received')
+		logger.info('signal','SIG TERM received, shutdown request')
 		self._shutdown = True
 
 	def sighup (self,signum, frame):
-		logger.info('supervisor','SIG HUP received')
+		logger.info('signal','SIG HUP received, reload request')
 		self._reload = True
 
+	def sigtrap (self,signum, frame):
+		logger.info('signal','SIG TRAP received, toggle logger')
+		self._toggle_debug = True
+
+	def sigusr1 (self,signum, frame):
+		logger.info('signal','SIG USR1 received, decrease worker number')
+		self._decrease_spawn_limit = True
+
+	def sigusr2 (self,signum, frame):
+		logger.info('signal','SIG USR2 received, increase worker number')
+		self._increase_spawn_limit = True
+
 	def sigalrm (self,signum, frame):
-		logger.info('supervisor','SIG ALRM received')
-		self.increase_spawn_limit = True
+		logger.info('signal','SIG ALRM received, refork request')
+		self._refork = True
+
 
 	def run (self):
 		if self.daemon.drop_privileges():
@@ -94,6 +116,10 @@ class Supervisor(object):
 
 		while True:
 			try:
+				if self._toggle_debug:
+					self._toggle_debug = False
+					logger.toggle()
+
 				if self._shutdown:
 					self._shutdown = False
 					self.shutdown()
@@ -101,11 +127,22 @@ class Supervisor(object):
 				elif self._reload and reload_completed:
 					self._reload = False
 					self.reload()
+				elif self._refork:
+					self._refork = False
+					logger.warning('signal','refork not implemented')
+					# stop listening to new connections
+					# refork the program (as we have been updated)
+					# just handle current open connection
 
-				if self.increase_spawn_limit:
+				if self._increase_spawn_limit:
+					self._increase_spawn_limit = False
 					if self.manager.low == self.manager.high: self.manager.high += 1
 					self.manager.low = min(self.manager.high,self.manager.low+1)
-					self.increase_spawn_limit = False
+
+				if self._decrease_spawn_limit:
+					self._decrease_spawn_limit = False
+					if self.manager.high >1: self.manager.high -= 1
+					self.manager.low = min(self.manager.high,self.manager.low)
 
 				# make sure we have enough workers
 				self.manager.provision()
