@@ -175,9 +175,17 @@ class Worker (Thread):
 
 				client_id, peer, header, source = data
 			except Empty:
+				if self.process.poll() is not None:
+					logger.error('worker %s' % self.wid, 'forked process died !')
+					self.running = False
 				continue
 			except (ValueError, TypeError), e:
 				logger.debug('worker %s' % self.wid, 'Received invalid message: %s' % data)
+
+			if self.process.poll() is not None:
+				logger.error('worker %s' % self.wid, 'forked process died !')
+				self.running = False
+				continue
 
 			if not self.running:
 				logger.debug('worker %s' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')

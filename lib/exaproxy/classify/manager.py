@@ -192,12 +192,11 @@ class WorkerManager (object):
 
 			worker = self.worker.pop(wid, None)
 
-			if not worker:
-				worker = self.closing.pop(wid, None)
-
 			if worker:
 				self.poller.removeReadSocket('read_workers', worker.response_box_read)
 				worker.shutdown()
 				worker.join()
-				
+			else:
+				worker = self.closing.pop(wid, None)
+
 		return client_id, decision
