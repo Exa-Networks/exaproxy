@@ -9,6 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import os
 import sys
+import time
 import signal
 from Queue import Queue
 
@@ -20,6 +21,8 @@ from .content.manager import ContentManager
 from .client.manager import ClientManager
 from .network.server import Server
 from .http.page import Page
+from .http.monitor import Monitor
+
 
 from poll import Poller
 from .reactor import Reactor
@@ -51,7 +54,8 @@ class Supervisor(object):
 		self.poller.setupWrite('write_download')      # Established connections we have buffered data to send to
 		self.poller.setupWrite('opening_download')    # Opening connections
 
-		self.page = Page(self)
+		self.monitor = Monitor(self)
+		self.page = Page(self.monitor)
 		self.manager = WorkerManager(self.poller, configuration.PROGRAM, low=configuration.MIN_WORK, high=configuration.MAX_WORK)
 		self.content = ContentManager(self.poller, configuration.HTML, self.page)
 		self.client = ClientManager(self.poller)
@@ -114,6 +118,8 @@ class Supervisor(object):
 		if not ok:
 			self._shutdown = True
 
+		next = time.time() + 1
+
 		while True:
 			try:
 				if self._toggle_debug:
@@ -151,6 +157,11 @@ class Supervisor(object):
 
 				# Quit on problems which can not be fixed (like running out of file descriptor)
 				self._shutdown = not self.reactor.running
+
+				now = time.time()
+				if now > next:
+					next = now
+					self.monitor.record()
 
 			except KeyboardInterrupt:
 				logger.info('supervisor','^C received')

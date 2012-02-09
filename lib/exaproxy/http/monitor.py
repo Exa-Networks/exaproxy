@@ -9,13 +9,14 @@ Copyright (c) 2012 Exa Networks. All rights reserved.
 
 class _Container (object):
 	def __init__ (self,supervisor):
-		self.supervisor = supervisor
+		self._supervisor = supervisor
 
 class Monitor (object):
 	
 	def __init__(self,supervisor):
-		self.supervisor = supervisor
+		self._supervisor = supervisor
 		self._container = _Container(supervisor)
+		self.history = []
 
 	def introspection (self,objects):
 		obj = self._container
@@ -36,12 +37,12 @@ class Monitor (object):
 			yield k, value
 
 	def configuration (self):
-		conf = self.supervisor.configuration
-		content = self.supervisor.content
-		client = self.supervisor.client
-		logger = self.supervisor.logger
-		manager = self.supervisor.manager
-		reactor = self.supervisor.reactor
+		conf = self._supervisor.configuration
+		content = self._supervisor.content
+		client = self._supervisor.client
+		logger = self._supervisor.logger
+		manager = self._supervisor.manager
+		reactor = self._supervisor.reactor
 
 		return {
 			'configuration.global.deamonize' : str(bool(conf.DAEMONIZE)),
@@ -78,15 +79,15 @@ class Monitor (object):
 		}
 
 	def statistics (self):
-		conf = self.supervisor.configuration
-		content = self.supervisor.content
-		client = self.supervisor.client
-		logger = self.supervisor.logger
-		manager = self.supervisor.manager
-		reactor = self.supervisor.reactor
+		conf = self._supervisor.configuration
+		content = self._supervisor.content
+		client = self._supervisor.client
+		logger = self._supervisor.logger
+		manager = self._supervisor.manager
+		reactor = self._supervisor.reactor
 
 		return {
-			'running.pid.saved' : str(self.supervisor.pid._saved_pid),
+			'running.pid.saved' : str(self._supervisor.pid._saved_pid),
 			'running.processes.forked' : str(len(manager.worker)),
 			'running.processes.min' : str(manager.low),
 			'running.processes.max' : str(manager.high),
@@ -94,5 +95,9 @@ class Monitor (object):
 			'running.proxy.download.opening': str(len(content.opening)),
 			'running.proxy.download.established': str(len(content.established)),
 			'running.proxy.download' : str(len(content.byclientid)),
-			'running.exiting' : str(bool(not reactor.running or self.supervisor._refork))
+			'running.exiting' : str(bool(not reactor.running or self._supervisor._refork))
 		}
+
+	def record (self):
+		self.history.append(self.statistics())
+		self.history = self.history[-60:]

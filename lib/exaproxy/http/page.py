@@ -10,7 +10,6 @@ Copyright (c) 2012 Exa Networks. All rights reserved.
 
 import cgi
 from .response import html
-from .monitor import Monitor
 
 def menu (menus):
 		return """\
@@ -74,10 +73,12 @@ def menu (menus):
 	""" % '\n'.join(['<li/><a href="%s">%s</a>' % _ for _ in [menus[k] for k in sorted(menus.keys())]])
 
 options = {
-	1 : ('/index.html' , 'Home'),
-	2 : ('/objects/supervisor.html' , 'Instrospection'),
-	3 : ('/configuration/index.html' , 'Configuration'),
-	4 : ('/statistics/index.html' , 'Statistics'),
+	1 : ('/index.html'                , 'Home'),
+	2 : ('/objects/supervisor.html'   , 'Instrospection'),
+	3 : ('/configuration/index.html'  , 'Configuration'),
+	4 : ('/statistics/index.html'     , 'Statistics'),
+	5 : ('/connections/index.html'    , 'Connections'),
+	6 : ('/processes/index.html'      , 'Processes'),
 }
 
 _title = 'ExaProxy Monitoring'
@@ -170,12 +171,40 @@ _enum = """\
 </div>
 """""
 
+_chart = """\
+<script language="javascript" type="text/javascript">setTimeout("location.reload();",%d);</script>
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script type="text/javascript">
+	google.load("visualization", "1", {packages:["corechart"]});
+	google.setOnLoadCallback(drawChart);
+	function drawChart() {
+		var data = new google.visualization.DataTable();
+%s
+		data.addRows([
+%s
+		]);
+
+		var options = {
+			width: 800, height: 600,
+			title: '%s',
+			legend : {
+				position: 'right',
+				textStyle: {color: 'black', fontSize: 10}
+			},
+		};
+
+		var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+		chart.draw(data, options);
+	}
+</script>
+<div id="chart_div"></div>
+"""
 
 
 class Page (object):
 	
-	def __init__(self,supervisor):
-		self.monitor = Monitor(supervisor)
+	def __init__(self,monitor):
+		self.monitor = monitor
 
 	def _page (self,message):
 		return _html % message
@@ -203,6 +232,43 @@ class Page (object):
 			line.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (k,cgi.escape(v)))
 		return introduction + _enum % ('\n'.join(line))
 
+
+	def _graph (self,_title,_reload,_keys):
+		legend = "data.addColumn('number', 'Seconds');" + '\n'.join(["data.addColumn('number', '%s');" % _ for _ in _keys])
+
+		chart = []
+		index = 0
+		for values in self.monitor.history:
+			chart.append("[ %d, %s]" % (index, ','.join([values[_] for _ in _keys])))
+			index += 1
+		values = ',\n'.join(chart)
+
+		return _chart % (_reload,legend,values,_title)
+
+	def _connections (self):
+		return self._graph(
+			'Proxy Connections',
+			30000,
+			[
+				'running.proxy.clients.number',
+				'running.proxy.download.opening',
+				'running.proxy.download.established',
+				'running.proxy.download',
+				]
+		)
+
+	def _processes (self):
+		return self._graph(
+			'Proxy Processes',
+			30000,
+			[
+				'running.processes.forked',
+				'running.processes.min',
+				'running.processes.max',
+			]
+		)
+
+
 	def html (self,path):
 		if len(path) > 200:
 			return self._page('<center><b>path is too long</b></center>')
@@ -226,4 +292,8 @@ class Page (object):
 			return self._page(self._configuration())
 		if command == 'statistics':
 			return self._page(self._statistics())
+		if command == 'connections':
+			return self._page(self._connections())
+		if command == 'processes':
+			return self._page(self._processes())
 		return self._page('<center><b>are you looking for an easter egg ?</b></center>')
