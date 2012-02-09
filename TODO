@@ -4,7 +4,6 @@ Know Broken Site:
 Before realase :
  - fix all XXX:
  - http://tools.ietf.org/html/rfc2068#section-13.5.1
- - always remove Proxy-Connection, it is useless junk
  - check any possible socket issues, to make sure all exception were traped (all errno are covered)
  - have a 127.0.0.1:port webpage with status (like squid to know what is happening)
  - if a remote end does not respect connection-close, use time to kill it anyway

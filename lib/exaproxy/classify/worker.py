@@ -132,9 +132,7 @@ class Worker (Thread):
 		# We NEED Connection: close
 		request['connection'] = 'Connection: close'
 		# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
-		if 'proxy-connection' in request:
-			# XXX: If the value is keep-alive, we should parse the answer and add Proxy-Connection: close
-			request.pop('proxy-connection')
+		request.pop('proxy-connection',None)
 		# We NEED to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45
 		via = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % (configuration.VERSION,os.getpid()), '1.1', request.host)
 		if 'via' in request:
@@ -293,5 +291,3 @@ class Worker (Thread):
 # XXX: We may need to remove every step-by-step http://tools.ietf.org/html/rfc2616#section-13.5.1
 # XXX: We NEED to respect Keep-Alive rules http://tools.ietf.org/html/rfc2068#section-19.7.1
 # XXX: We may look at Max-Forwards
-# XXX: We need to reply to "Proxy-Connection: keep-alive", with "Proxy-Connection: close"
-# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
