@@ -94,5 +94,5 @@ class Monitor (object):
 			'running.proxy.download.opening': str(len(content.opening)),
 			'running.proxy.download.established': str(len(content.established)),
 			'running.proxy.download' : str(len(content.byclientid)),
-			'running.exiting' : str(not bool(reactor.running and self.supervisor._refork))
+			'running.exiting' : str(bool(not reactor.running or self.supervisor._refork))
 		}
