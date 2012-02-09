@@ -9,7 +9,7 @@ Copyright (c) 2012 Exa Networks. All rights reserved.
 
 
 import cgi
-from .response import html
+from .response import html,image
 
 def menu (menus):
 		return """\
@@ -83,7 +83,8 @@ options = {
 
 _title = 'ExaProxy Monitoring'
 _menu = menu(options)
-_html = html(_title,'','#00BB55',_menu,'*string*').replace('%','%%').replace('*string*','%s')
+_image = '<a href="http://www.exa-networks.co.uk/" target="exa-networks">%s</a>' % image
+_html = html(_title,'','#00BB55',_image,_menu,'*string*').replace('%','%%').replace('*string*','%s')
 
 _index = """\
 <center>
