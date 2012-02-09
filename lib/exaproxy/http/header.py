@@ -143,8 +143,8 @@ class Header(dict):
 			self.order.append(key)
 		dict.__setitem__ (self,key,value)
 
-	def pop(self, key):
-		res = dict.pop(self, key)
+	def pop(self, key, default=None):
+		res = dict.pop(self, key, default)
 		self.order.remove(key)
 		return res
 
