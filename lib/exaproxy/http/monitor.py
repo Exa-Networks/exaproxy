@@ -9,7 +9,7 @@ Copyright (c) 2012 Exa Networks. All rights reserved.
 
 class _Container (object):
 	def __init__ (self,supervisor):
-		self._supervisor = supervisor
+		self.supervisor = supervisor
 
 class Monitor (object):
 	
