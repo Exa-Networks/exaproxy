@@ -1,15 +1,13 @@
-Know Broken Site:
- - http://www.eastcoast.co.uk/
-
 Before realase :
  - fix all XXX:
+ - handle ENOMEM in socket/epoll
  - http://tools.ietf.org/html/rfc2068#section-13.5.1
  - check any possible socket issues, to make sure all exception were traped (all errno are covered)
- - have a 127.0.0.1:port webpage with status (like squid to know what is happening)
- - if a remote end does not respect connection-close, use time to kill it anyway
+ - if a remote end / client does not respect connection-close, use time to kill it anyway
  - look at all the method in http://tools.ietf.org/html/rfc4918 and see what we can do with them
  - make sure we notice when a worker exit
  - incorporate DNS in main loop
+ - optionally add a Via header
 
 After release:
  - why pypy takes more CPU than cPython
