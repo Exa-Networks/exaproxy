@@ -17,7 +17,7 @@ class UDPFactory:
 		elif is_ipv6(dest_ip):
 			sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 
-		sock.bind((dest_ip, port))
+		sock.connect((dest_ip, port))
 		sock.settimeout(timeout)
 		return sock
 

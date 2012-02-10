@@ -33,7 +33,6 @@ class DNSBaseType:
 	def __init__(self, id):
 		self.id = id
 
-
 class DNSRequestType(DNSBaseType):
 	QR = 0     # Query
 	OPCODE = 0 # Query
@@ -70,11 +69,26 @@ class DNSResponseType(DNSBaseType):
 		self.authorities = authorities
 		self.additionals = additionals
 
+	def getResponse(self):
+		info = {}
+
+		for response in self.responses:
+			info.setdefault(response.name, {}).setdefault(response.NAME, []).append(response.value)
+
+		for response in self.authorities:
+			info.setdefault(response.name, {}).setdefault(response.NAME, []).append(response.value)
+
+		for response in self.additionals:
+			info.setdefault(response.name, {}).setdefault(response.NAME, []).append(response.value)
+
+		return info
+		
+
 	def __str__(self):
 		query_s = "\n".join('\t' + str(q) for q in self.queries)
-		response_s = "\n".join('\t' + str(r) for r in self.responses)
-		authority_s = ''
-		additional_s = ''
+		response_s = "\n\t".join('\t' + str(r) for r in self.responses)
+		authority_s = "\n\t".join('\t' + str(r) for r in self.authorities)
+		additional_s = "\n\t".join('\t' + str(r) for r in self.additionals)
 
 		return """DNS RESPONSE %(id)s
 QUERIES: %(queries)s
@@ -119,9 +133,10 @@ class DNSResponseTypes:
 		self.response_from_name = response_from_name
 		self.response_from_value = response_from_value
 
-	def decodeType(self, id, name, data):
-		
-		return self.response_from_value[id](name, data)
+	def decodeType(self, id, name, data, packet_s):
+		response_type = self.response_from_value[id]
+		res = response_type(name, data, response_type.decode_factory, packet_s)
+		return res
 
 	def getTypeFromName(self, name, querytype, data):
 		return self.response_from_name[name](queryname, data)

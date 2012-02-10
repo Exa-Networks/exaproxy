@@ -17,9 +17,9 @@ class DNSResponseType:
 	encode_factory = None
 	decode_factory = None
 
-	def __init__(self, name, value):
+	def __init__(self, name, value, factory, packet_s):
 		self.name = name
-		self.value = value
+		self.value = factory(value, packet_s) if factory else value
 
 	def __str__(self):
 		if self.NAME is not None:
@@ -32,12 +32,15 @@ class DNSAResponseType(DNSResponseType):
 	NAME = 'A'
 	VALUE = 1
 
-	encode_factory = staticmethod(convert.ipv4_aton)
-	decode_factory = staticmethod(convert.ipv4_ntoa)
+	encode_factory = staticmethod(convert.ipv4_to_dns)
+	decode_factory = staticmethod(convert.dns_to_ipv4)
 	
 class DNSNSResponseType(DNSResponseType):
 	NAME = 'NS'
 	VALUE = 2
+
+	encode_factory = staticmethod(convert.string_to_dns)
+	decode_factory = staticmethod(convert.dns_to_string)
 	
 class DNSMDResponseType(DNSResponseType):
 	NAME = 'MD'
@@ -51,9 +54,15 @@ class DNSCNAMEResponseType(DNSResponseType):
 	NAME = 'CNAME'
 	VALUE = 5
 
+	encode_factory = staticmethod(convert.string_to_dns)
+	decode_factory = staticmethod(convert.dns_to_string)
+
 class DNSSOAResponseType(DNSResponseType):
 	NAME = 'SOA'
 	VALUE = 6
+
+	encode_factory = staticmethod(convert.string_to_dns)
+	decode_factory = staticmethod(convert.dns_to_string)
 
 class DNSMBResponseType(DNSResponseType):
 	NAME = 'MB'
@@ -142,6 +151,9 @@ class DNSGPOSResponseType(DNSResponseType):
 class DNSAAAAResponseType(DNSResponseType):
 	NAME = 'AAAA'
 	VALUE = 28
+
+	encode_factory = staticmethod(convert.ipv6_to_dns)
+	decode_factory = staticmethod(convert.dns_to_ipv6)
 
 class DNSLOCResponseType(DNSResponseType):
 	NAME = 'LOC'

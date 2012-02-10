@@ -43,27 +43,17 @@ class DNSDecodedHeader:
 		self.additional_len = convert.u16(packet_s[10:12])
 
 class DNSDecodedQuery:
-	def __init__(self, packet_s):
-		data = packet_s
-		total_read = 0
-		parts = []
-		while True:
-			length = convert.u8(data[0])
-			if length == 0:
-				total_read += 1
-				data = data[1:]
-				break
-
-			if len(data) < length:
-				data = ''
-				break
-
-			total_read += length + 1
-			parts.append(data[1:length+1])
-			data = data[length+1:]
+	def __init__(self, data):
+		queryname, ptr = convert.dns_string(data)
+		if queryname:
+			total_read = len(queryname)+2
+			data = data[total_read:]
+		else:
+			total_read = None
+			data = ''
 
 		ok = len(data) >= 4
-		self.queryname = '.'.join(parts) if ok else None
+		self.queryname = queryname if ok else None
 		self.querytype = convert.u16(data[:2]) if ok else None
 		self.queryclass = convert.u16(data[2:4]) if ok else None
 		self._len = (total_read + 4) if ok else None
@@ -72,32 +62,34 @@ class DNSDecodedQuery:
 		return self._len
 
 class DNSDecodedResource :
-	def __init__(self, data, names):
-		total_read = 0
-		parts = []
+	def __init__(self, data, packet_s, names):
+		name, ptr = convert.dns_string(data)
+		total_read = len(name) + 2
 
-		offset = convert.u16(data[0:2])
-		print 'want offset', offset & 0x3fff
-		data = data[2:]
-		if (offset >> 14) == 3:
-			name = names.get(offset & 0x3fff)
-		else:
-			name = None
+		if ptr is not None:
+			parts = [name] if name else []
+			extra = convert.dns_to_string(packet_s[ptr:], packet_s)
+
+			if extra is not None:
+				parts += [extra] if extra else []
+				name = '.'.join(parts)
+			else:
+				name = None
 
 		if name:
+			data = data[total_read:]
 			rdata_len = convert.u16(data[8:10])
 			ok = len(data) >= 10 + rdata_len
 		else:
 			rdata_len = None
 			ok = False
 
-
 		self.queryname = name if ok else None
 		self.querytype = convert.u16(data[:2]) if ok else None
 		self.queryclass = convert.u16(data[2:4]) if ok else None
 		self.ttl = convert.u32(data[4:8]) if ok else None
 		self.rdata = data[10:10+rdata_len] if ok else None
-		self._len = (total_read + 12 + rdata_len) if ok else None
+		self._len = (total_read + 10 + rdata_len) if ok else None
 
 	def __len__(self):
 		return self._len
@@ -127,11 +119,11 @@ class DNSCodec:
 
 		return queries, data, names, offset
 
-	def _decodeResources(self, data, names, count, offset):
+	def _decodeResources(self, data, packet_s, names, count, offset):
 		resources = []
 
 		for _ in xrange(count):
-			resource = DNSDecodedResource(data, names)
+			resource = DNSDecodedResource(data, packet_s, names)
 			if resource.queryname is None:
 				return None, '', None, None
 
@@ -140,8 +132,6 @@ class DNSCodec:
 			data = data[bytes_read:]
 
 			names[offset] = resource.queryname
-			print 'adding', offset
-			print names
 			offset += bytes_read
 
 		return resources, data, names, offset
@@ -158,7 +148,6 @@ class DNSCodec:
 	def decodeRequest(self, request_s):
 		header, data = self._decodeHeader(request_s)
 		if header.qr != 0:  # request
-			print 1
 			return None
 
 		queries, data, names, offset = self._decodeQueries(data, header.query_len)
@@ -176,18 +165,17 @@ class DNSCodec:
 			return None
 
 		queries, data, names, offset = self._decodeQueries(data, header.query_len)
-		responses, data, names, offset = self._decodeResources(data, names, header.response_len, offset)
-		authorities, data, names, offset = self._decodeResources(data, names, header.authority_len, offset)
-		additionals, data, names, offset = self._decodeResources(data, names, header.additional_len, offset)
+		responses, data, names, offset = self._decodeResources(data, response_s, names, header.response_len, offset)
+		authorities, data, names, offset = self._decodeResources(data, response_s, names, header.authority_len, offset)
+		additionals, data, names, offset = self._decodeResources(data, response_s, names, header.additional_len, offset)
 
 		if None in (queries, responses, authorities, additionals):
-			print queries, responses, authorities, additionals
 			return None
 
 		queries = [self.query_factory(q.querytype, q.queryname) for q in queries]
-		responses = [self.resource_factory(r.querytype, r.queryname, r.rdata) for r in responses]
-		authorities = [self.resource_factory(r.querytype, r.queryname, r.rdata) for r in authorities]
-		additionals = [self.resource_factory(r.querytype, r.queryname, r.rdata) for r in additionals]
+		responses = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in responses]
+		authorities = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in authorities]
+		additionals = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in additionals]
 
 		response = self.response_factory(header.id, queries, responses, authorities, additionals)
 		return response
@@ -202,24 +190,3 @@ class DNSCodec:
 		return header_s
 
 
-
-if __name__ == '__main__':
-	request = """\x6c\x1e\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00\x03\x77\x77\x77\x0c\x65\x78\x61\x2d\x6e\x65\x74\x77\x6f\x72\x6b\x73\x02\x63\x6f\x02\x75\x6b\x00\x00\x01\x00\x01\xc0\x0c\x00\x01\x00\x01\x00\x00\x0d\xc2\x00\x04\x52\xdb\x03\x11"""
-
-	codec = DNSCodec()
-
-	request = DNSRequestType(1337)
-	request.addQuery('A', 'www.decafbad.co.uk')
-
-	request_s = codec.encodeRequest(request)
-	#print codec.decodeRequest(request_s)
-
-	import socket
-	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-	s.connect(('192.0.2.200', 53))
-	s.send(request_s)
-	response_s = s.recv(1024)
-
-	response = codec.decodeResponse(response_s)
-	print
-	print response
