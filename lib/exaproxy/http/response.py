@@ -9,8 +9,9 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import sys
 import time
-from exaproxy.configuration import configuration
-from exaproxy.util.version import version
+from exaproxy.configuration import load
+
+version = load().proxy.version
 
 
 def file_header(code, size, message):

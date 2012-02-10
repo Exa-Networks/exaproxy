@@ -8,14 +8,16 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 from exaproxy.util.logger import logger
-from exaproxy.configuration import configuration
+from exaproxy.configuration import load
 from exaproxy.network.functions import isip
 
 class HostMismatch(Exception):
 	pass
 
+configuration = load()
+
 class Header(dict):
-	def __init__(self, header,remote_ip):	
+	def __init__(self, header,remote_ip):
 		self.order = []
 
 		logger.info('header','parsing %s' % str(header))
@@ -92,7 +94,7 @@ class Header(dict):
 			self.order.append(key)
 			self[key] = data
 
-			self['x-proxy-version'] = "X-Proxy-Version: %s version %s" % (configuration.NAME, configuration.VERSION)
+			self['x-proxy-version'] = "X-Proxy-Version: %s version %s" % (configuration.proxy.name, configuration.proxy.version)
 
 			if method == 'CONNECT':
 				self.order.append('host')
@@ -106,7 +108,7 @@ class Header(dict):
 
 				host = requested_host
 
-			if configuration.XFF:
+			if configuration.http.x_forwarded_for:
 				client = self.get('x-forwarded-for', ':%s' % remote_ip).split(':', 1)[1].split(',')[-1].strip()
 				if not isip(client):
 					logger.info('header', 'Invalid address in X-Forwarded-For: %s' % client)

@@ -21,7 +21,7 @@ import socket
 from exaproxy.http.header import Header
 
 from exaproxy.util.logger import logger
-from exaproxy.configuration import configuration
+from exaproxy.configuration import load
 
 from exaproxy.network.resolver import DNSResolver
 
@@ -29,12 +29,14 @@ class Worker (Thread):
 	# TODO : if the program is a function, fork and run :)
 	
 	def __init__ (self, name, request_box, program):
+		self.configuration = load()
+
 		# XXX: all this could raise things
 		r, w = os.pipe()                                # pipe for communication with the main thread
 		self.response_box_write = os.fdopen(w,'w',0)    # results are written here
 		self.response_box_read = os.fdopen(r,'r',0)     # read from the main thread
 
-		self.resolver = DNSResolver(configuration.RESOLV)
+		self.resolver = DNSResolver(self.configuration.daemon.resolver)
 
 		self.wid = name                               # a unique name
 		self.creation = time.time()                   # when the thread was created
@@ -134,7 +136,7 @@ class Worker (Thread):
 		# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
 		request.pop('proxy-connection',None)
 		# We NEED to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45
-		via = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % (configuration.VERSION,os.getpid()), '1.1', request.host)
+		via = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % (self.configuration.proxy.version,os.getpid()), '1.1', request.host)
 		if 'via' in request:
 			request['via'] = '%s\0%s' % (request['via'],via)
 		else:
@@ -169,7 +171,7 @@ class Worker (Thread):
 		while self.running:
 			try:
 				logger.debug('worker %s' % self.wid,'waiting for some work')
-				data = self.request_box.get(timeout=configuration.WORKER_TIMEOUT)
+				data = self.request_box.get(timeout=self.configuration.redirector.timeout)
 
 				client_id, peer, header, source = data
 			except Empty:
@@ -248,7 +250,7 @@ class Worker (Thread):
 			# someone want to use us as https proxy
 			if request.method == 'CONNECT':
 				# we do allow connect
-				if configuration.CONNECT:
+				if self.configuration.http.allow_connect:
 					if not ipaddr:
 						# XXX: the redirect url will have to be provided by the redirector
 						self.respond_redirect(client_id, 'http://www.exa-networks.co.uk/business/domain/dns/panel')

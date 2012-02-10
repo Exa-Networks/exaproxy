@@ -29,7 +29,7 @@ from .reactor import Reactor
 
 from .util.logger import logger
 
-from .configuration import configuration
+from .configuration import load
 
 class Supervisor(object):
 	# import os
@@ -37,8 +37,10 @@ class Supervisor(object):
 	# clear = ''.join([chr(int(c,16)) for c in ['0x1b', '0x5b', '0x48', '0x1b', '0x5b', '0x32', '0x4a']])
 
 	def __init__ (self):
-		self.pid = PID(configuration.PID)
-		self.daemon = Daemon(configuration.DAEMONIZE,configuration.USER)
+		configuration = load()
+		
+		self.pid = PID(configuration.daemon.pidfile)
+		self.daemon = Daemon(configuration.daemon.daemonise,configuration.daemon.user)
 
 		self.poller = Poller(2)
 
@@ -56,8 +58,13 @@ class Supervisor(object):
 
 		self.monitor = Monitor(self)
 		self.page = Page(self.monitor)
-		self.manager = WorkerManager(self.poller, configuration.PROGRAM, low=configuration.MIN_WORK, high=configuration.MAX_WORK)
-		self.content = ContentManager(self.poller, configuration.HTML, self.page)
+		self.manager = WorkerManager(
+			self.poller,
+			configuration.redirector.program,
+			low=configuration.redirector.minimum,
+			high=configuration.redirector.maximum
+		)
+		self.content = ContentManager(self.poller, configuration.web.html, self.page)
 		self.client = ClientManager(self.poller)
 		self.proxy = Server(self.poller,'read_proxy')
 		self.web = Server(self.poller,'read_web')
@@ -181,15 +188,16 @@ class Supervisor(object):
 		self.manager.start()
 
 		# only start listening once we know we were able to fork our worker processes
-		s = self.proxy.listen(configuration.HOST,configuration.PORT, configuration.TIMEOUT, configuration.BACKLOG)
+		tcp = self.configuration.tcp
+		s = self.proxy.listen(tcp.host,tcp.port, tcp.timeout, tcp.backlog)
 		ok = bool(s)
 		if not s:
-			logger.error('supervisor', 'Unable to listen on %s:%s' % (configuration.HOST, configuration.PORT))
+			logger.error('supervisor', 'Unable to listen on %s:%s' % (tcp.host,tcp.port))
 
-		if configuration.WEB:
-			s = self.web.listen('127.0.0.1',configuration.WEB, 10, 10)
+		if self.configuration.web.enabled:
+			s = self.web.listen('127.0.0.1',self.configuration.web.port, 10, 10)
 			if not s:
-				logger.error('supervisor', 'Unable to listen on %s:%s' % ('127.0.0.1', configuration.WEB))
+				logger.error('supervisor', 'Unable to listen on %s:%s' % ('127.0.0.1', self.configuration.web.port))
 				ok = False
 
 		return ok
@@ -209,5 +217,5 @@ class Supervisor(object):
 			sys.exit()
 
 	def reload (self):
-		logger.info('supervisor','Performing reload of exaproxy %s' % configuration.VERSION ,'supervisor')
+		logger.info('supervisor','Performing reload of exaproxy %s' % self.configuration.proxy.version ,'supervisor')
 		self.manager.respawn()
