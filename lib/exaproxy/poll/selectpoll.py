@@ -109,10 +109,12 @@ class SelectPoller (IPoller):
 		r, w, x  = self.poller(self.read_all, self.write_all, self.speed)
 
 		for name, socks in self.read_sockets.items():
-			all_socks[name], _, __ = self.poller(socks, [], 0)
+			polled, _, __ = self.poller(socks, [], 0)
+			if polled: all_socks[name] = polled
 
 		for name, socks in self.write_sockets.items():
-			_, all_socks[name], __ = self.poller([], socks, 0)
+			polled, all_socks[name], __ = self.poller([], socks, 0)
+			if polled: all_socks[name] = polled
 
 		return all_socks
 

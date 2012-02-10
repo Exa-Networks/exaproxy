@@ -42,6 +42,7 @@ class Reactor(object):
 		while self.running:
 			# wait until we have something to do
 			events = poller.poll()
+			logger.debug('supervisor','events : ' + ', '.join(events.keys()))
 
 			# handle new connections before anything else
 			for sock in events.get('read_proxy',[]):
