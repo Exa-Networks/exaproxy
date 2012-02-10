@@ -12,6 +12,7 @@ class _Container (object):
 		self.supervisor = supervisor
 
 class Monitor (object):
+	nb_recorded = 60
 	
 	def __init__(self,supervisor):
 		self._supervisor = supervisor
@@ -103,4 +104,4 @@ class Monitor (object):
 
 	def record (self):
 		self.history.append(self.statistics())
-		self.history = self.history[-60:]
+		self.history = self.history[-self.nb_recorded:]

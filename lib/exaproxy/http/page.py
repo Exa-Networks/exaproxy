@@ -238,22 +238,28 @@ class Page (object):
 	def _graph (self,_title,_reload,_keys,cumulative=False):
 		legend = "data.addColumn('number', 'Seconds');" + '\n'.join(["data.addColumn('number', '%s');" % _ for _ in _keys])
 
-		chart = []
-		index = 0
+		nb_records = len(self.monitor.history)
 		last = ['0']*len(_keys)
+
+		chart = []
+		index = self.monitor.nb_recorded - nb_records
 		for values in self.monitor.history:
 			if cumulative:
 				print
-				print 'values',values
 				new = [values[_] for _ in _keys]
-				print "new", new
-				print "last",last
 				chart.append("[ %d, %s]" % (index, ','.join([str(max(0,long(n)-long(l))).rstrip('L') for (n,l) in zip(new,last)])))
 				last = new
 			else:
 				chart.append("[ %d, %s]" % (index, ','.join([values[_] for _ in _keys])))
 			index += 1
-		values = ',\n'.join(chart)
+
+		padding = []
+		index = 0
+		top = self.monitor.nb_recorded - nb_records
+		while index < top:
+			padding.append("[ %d, %s ]" % (index, ','.join(['0']*len(_keys))))
+			index += 1
+		values = ',\n'.join(padding + chart)
 
 		return _chart % (_reload,legend,values,_title)
 
@@ -282,7 +288,7 @@ class Page (object):
 
 	def _transfer (self):
 		return self._graph(
-			'Proxy Data Transfered',
+			'Proxy Bytes Transfered / seconds',
 			30000,
 			[
 				'running.transfer.request',
