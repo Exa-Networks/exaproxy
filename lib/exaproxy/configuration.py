@@ -217,7 +217,10 @@ def _configuration ():
 			try:
 				proxy_section = 'exaproxy.%s' % section
 				env_name = '%s.%s' % (proxy_section,option)
-				conf = value.unquote(os.environ.get(env_name,'')) or value.unquote(ini.get(proxy_section,option,nonedict)) or default[option][1]
+				conf = value.unquote(os.environ.get(env_name,'')) \
+				    or value.unquote(os.environ.get(env_name.replace('.','_'),'')) \
+				    or value.unquote(ini.get(proxy_section,option,nonedict)) \
+				    or default[option][1]
 			except (ConfigParser.NoSectionError,ConfigParser.NoOptionError),e:
 				conf = default[option][1]
 			try:
@@ -238,6 +241,8 @@ def load ():
 
 def default ():
 	for section,content in defaults.items():
+		if section == 'proxy':
+			continue
 		for option,value in content.items():
 			if option == 'proxy':
 				continue
@@ -245,6 +250,8 @@ def default ():
 
 def ini ():
 	for section,values in __configuration.items():
+		if section == 'proxy':
+			continue
 		print '[exaproxy.%s]' % section
 		for k,v in values.items():
 			print '%s = %s' % (k,v)
@@ -252,6 +259,8 @@ def ini ():
 		
 def env ():
 	for section,values in __configuration.items():
+		if section == 'proxy':
+			continue
 		for k,v in values.items():
 			print 'exaproxy.%s.%s="%s"' % (section,k,v)
 	print
