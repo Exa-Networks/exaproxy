@@ -19,6 +19,9 @@ import pwd
 from .util.logger import logger
 from .util.version import version
 
+class ConfigurationError (Exception):
+	pass
+
 _all = os.environ.get('DEBUG_ALL','0') != '0'
 
 _priorities = {
@@ -70,7 +73,12 @@ class value (object):
 	@staticmethod
 	def user (_):
 		# XXX: incomplete
-		return pwd.getpwnam(_)[2]
+		try:
+			answer = pwd.getpwnam(_)
+			# uid = answer[2]
+		except KeyError:
+			raise TypeError('user %s is not found on this system' % _)
+		return _
 
 	@staticmethod
 	def folder(path):
@@ -150,7 +158,7 @@ defaults = {
 		'resolver'    : (value.resolver,'/etc/resolv.conf'   , 'resolver file')
 	},
 	'logger' : {
-		'level'         : (value.syslog,'LOG_ERR'  , 'do not display message with a priority lower than '),
+		'level'         : (value.syslog,'LOG_ERR'  , 'log message with at least the priority SYSLOG.<level>'),
 		'signal'        : (value.boolean,'true'    , 'log message from the signal subsystem'),
 		'configuration' : (value.boolean,'true'    , 'log message from the configuration subsystem'),
 		'supervisor'    : (value.boolean,'true'    , 'log message from the supervisor subsystem'),
@@ -238,3 +246,23 @@ def load ():
 			logger.status[section] = value or _all
 
 	return __configuration
+
+def default ():
+	for section,content in defaults.items():
+		for option,value in content.items():
+			if option == 'proxy':
+				continue
+			yield 'exaproxy.%s.%s %s: %s. default (%s)' % (section,option,' '*(20-len(section)-len(option)),value[2],value[1])
+
+def ini ():
+	for section,values in __configuration.items():
+		print '[exaproxy.%s]' % section
+		for k,v in values.items():
+			print '%s = %s' % (k,v)
+		print
+		
+def env ():
+	for section,values in __configuration.items():
+		for k,v in values.items():
+			print 'exaproxy.%s.%s="%s"' % (section,k,v)
+	print

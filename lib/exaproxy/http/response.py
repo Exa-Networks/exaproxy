@@ -11,7 +11,7 @@ import sys
 import time
 
 from exaproxy.configuration import load
-version = load().proxy.version
+from exaproxy.util.version import version
 
 
 def file_header(code, size, message):

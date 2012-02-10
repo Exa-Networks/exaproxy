@@ -11,7 +11,7 @@ import sys
 
 from exaproxy.supervisor import Supervisor
 from exaproxy.util.logger import logger
-from exaproxy.configuration import load,defaults
+from exaproxy.configuration import ConfigurationError,load,ini,env
 
 def version_warning ():
 	sys.stdout.write('\n')
@@ -24,7 +24,11 @@ def version_warning ():
 	sys.stdout.write('\n')
 
 def help ():
-	sys.stdout.write('usage:\n exaproxy\n')
+	sys.stdout.write('usage:\n exaproxy [-h,--help] [-c,--conf]\n')
+	sys.stdout.write('\n')
+	sys.stdout.write(' -h, --help : print this configuration help\n')
+	sys.stdout.write(' -i, --ini  : print out the configuration on ini format\n')
+	sys.stdout.write(' -e, --env  : print out the configuration on env format\n')
 	sys.stdout.write('\n')
 	sys.stdout.write('exaproxy will automatically look for its configuration file\n')
 	sys.stdout.write(' - if the program was untar, within its etc/exaproxy folder\n')
@@ -44,11 +48,8 @@ def help ():
 	sys.stdout.write('\n')
 	sys.stdout.write('valid configuration options are :\n')
 	sys.stdout.write('\n')
-	for section,content in defaults.items():
-		for option,value in content.items():
-			if option == 'proxy':
-				continue
-			sys.stdout.write(' - exaproxy.%s.%s %s: %s default (%s)\n' % (section,option,' '*(20-len(section)-len(option)),value[2],value[1]))
+	for line in default():
+			sys.stdout.write(' - %s\n' % line)
 	sys.stdout.write('\n')
 
 def main ():
@@ -71,16 +72,23 @@ def main ():
 		if arg in ['-h','--help']:
 			help()
 			sys.exit(0)
+		if arg in ['-i','--ini']:
+			ini()
+			sys.exit(0)
+		if arg in ['-e','--env']:
+			env()
+			sys.exit(0)
 	
 	Supervisor().run()
 	sys.exit(0)
 
 if __name__ == '__main__':
-	configuration = load()
-
-	logger.info('supervisor','starting %s' % sys.argv[0])
-	logger.info('supervisor','python version %s' % sys.version.replace(os.linesep,' '))
-	
+	try:
+		configuration = load()
+	except ConfigurationError,e:
+		print >> sys.stderr, 'configuration issue,', str(e)
+		sys.exit(1)
+		
 	if not configuration.profile.enabled:
 		main()
 		sys.exit(0)

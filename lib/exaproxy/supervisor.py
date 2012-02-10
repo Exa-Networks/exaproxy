@@ -37,6 +37,9 @@ class Supervisor(object):
 	# clear = ''.join([chr(int(c,16)) for c in ['0x1b', '0x5b', '0x48', '0x1b', '0x5b', '0x32', '0x4a']])
 
 	def __init__ (self):
+		logger.info('supervisor','starting %s' % sys.argv[0])
+		logger.info('supervisor','python version %s' % sys.version.replace(os.linesep,' '))
+
 		self.configuration = load()
 		
 		self.pid = PID(self.configuration.daemon.pidfile)
