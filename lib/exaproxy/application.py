@@ -24,8 +24,23 @@ def version_warning ():
 	sys.stdout.write('\n')
 
 def help ():
-	# XXX: read and parse that file if given
-	sys.stdout.write('usage:\n exaproxy <configuration file>\n')
+	sys.stdout.write('usage:\n exaproxy\n')
+	sys.stdout.write('\n')
+	sys.stdout.write('exaproxy will automatically look for its configuration file\n')
+	sys.stdout.write(' - if the program was untar, within its etc/exaproxy folder\n')
+	sys.stdout.write(' - in /etc/exaproxy/exaproxy.conf\n')
+	sys.stdout.write('every configuration value has a built-in default\n')
+	sys.stdout.write('\n')
+	sys.stdout.write('individual configuration options can be set using environment variables, such as :\n')
+	sys.stdout.write('> env exaproxy.redirector.program=etc/exaproxy/redirector/deny ./sbin/exaproxy\n')
+	sys.stdout.write('or \n')
+	sys.stdout.write('> export exaproxy.redirector.program=etc/exaproxy/redirector/deny\n')
+	sys.stdout.write('> %s\n' % sys.argv[0])
+	sys.stdout.write('\n')
+	sys.stdout.write('multiple environment values can be set\n')
+	sys.stdout.write('\n')
+	sys.stdout.write('shortcut to turn all possible debugging on\n')
+	sys.stdout.write('env DEBUG_ALL=1 %s\n' % sys.argv[0])
 
 def main ():
 	main = int(sys.version[0])

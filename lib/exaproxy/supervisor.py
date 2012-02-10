@@ -37,10 +37,10 @@ class Supervisor(object):
 	# clear = ''.join([chr(int(c,16)) for c in ['0x1b', '0x5b', '0x48', '0x1b', '0x5b', '0x32', '0x4a']])
 
 	def __init__ (self):
-		configuration = load()
+		self.configuration = load()
 		
-		self.pid = PID(configuration.daemon.pidfile)
-		self.daemon = Daemon(configuration.daemon.daemonise,configuration.daemon.user)
+		self.pid = PID(self.configuration.daemon.pidfile)
+		self.daemon = Daemon(self.configuration.daemon.daemonise,self.configuration.daemon.user)
 
 		self.poller = Poller(2)
 
@@ -59,12 +59,10 @@ class Supervisor(object):
 		self.monitor = Monitor(self)
 		self.page = Page(self.monitor)
 		self.manager = WorkerManager(
+			self.configuration,
 			self.poller,
-			configuration.redirector.program,
-			low=configuration.redirector.minimum,
-			high=configuration.redirector.maximum
 		)
-		self.content = ContentManager(self.poller, configuration.web.html, self.page)
+		self.content = ContentManager(self.poller, self.configuration.web.html, self.page)
 		self.client = ClientManager(self.poller)
 		self.proxy = Server(self.poller,'read_proxy')
 		self.web = Server(self.poller,'read_web')
@@ -72,7 +70,6 @@ class Supervisor(object):
 		self.reactor = Reactor(self.web, self.proxy, self.manager, self.content, self.client, self.poller)
 
 		# Only here so the introspection code can find them
-		self.configuration = configuration
 		self.logger = logger
 
 		self._shutdown = False

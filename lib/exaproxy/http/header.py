@@ -8,16 +8,14 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 from exaproxy.util.logger import logger
-from exaproxy.configuration import load
 from exaproxy.network.functions import isip
 
 class HostMismatch(Exception):
 	pass
 
-configuration = load()
 
 class Header(dict):
-	def __init__(self, header,remote_ip):
+	def __init__(self,configuration,header,remote_ip):
 		self.order = []
 
 		logger.info('header','parsing %s' % str(header))

@@ -21,15 +21,14 @@ import socket
 from exaproxy.http.header import Header
 
 from exaproxy.util.logger import logger
-from exaproxy.configuration import load
 
 from exaproxy.network.resolver import DNSResolver
 
 class Worker (Thread):
 	# TODO : if the program is a function, fork and run :)
 	
-	def __init__ (self, name, request_box, program):
-		self.configuration = load()
+	def __init__ (self, configuration, name, request_box, program):
+		self.configuration = configuration
 
 		# XXX: all this could raise things
 		r, w = os.pipe()                                # pipe for communication with the main thread
@@ -193,7 +192,7 @@ class Worker (Thread):
 			if source == 'nop':
 				continue
 
-			request = Header(header,peer)
+			request = Header(self.configuration,header,peer)
 			if not request.isValid():
 				self.respond_html(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)))
 				continue

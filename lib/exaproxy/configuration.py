@@ -190,7 +190,7 @@ class Store (dict):
 def _configuration ():
 	_conf_paths = (
 		os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),'etc','exaproxy','exaproxy.conf')),
-		os.path.normpath(os.path.join('/','etc','exabgp','exabgp.conf')),
+		os.path.normpath(os.path.join('/','etc','exaproxy','exaproxy.conf')),
 	)
 
 	ini_file = [path for path in _conf_paths if os.path.exists(path)][0]
@@ -208,7 +208,9 @@ def _configuration ():
 		for option in default:
 			convert = default[option][0]
 			try:
-				conf = value.unquote(os.environ.get(section,'')) or value.unquote(ini.get('exaproxy.%s'%section,option,nonedict)) or default[option][1]
+				proxy_section = 'exaproxy.%s' % section
+				env_name = '%s.%s' % (proxy_section,option)
+				conf = value.unquote(os.environ.get(env_name,'')) or value.unquote(ini.get(proxy_section,option,nonedict)) or default[option][1]
 			except ConfigParser.NoSectionError:
 				conf = default[option][1]
 			try:
