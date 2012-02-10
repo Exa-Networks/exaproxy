@@ -8,6 +8,8 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 import sys
+# XXX: not good to have to import syslog here
+import syslog
 
 from exaproxy.supervisor import Supervisor
 from exaproxy.util.logger import logger
@@ -88,7 +90,19 @@ if __name__ == '__main__':
 	except ConfigurationError,e:
 		print >> sys.stderr, 'configuration issue,', str(e)
 		sys.exit(1)
-		
+
+	_all = os.environ.get('DEBUG_ALL','0') != '0'
+	for section,value in configuration.logger.items():
+		if section == 'level':
+			if _all:
+				logger.level = syslog.LOG_DEBUG
+			elif section != 'destination':
+				logger.level = value
+		else:
+			logger.status[section] = value or _all
+
+	logger.syslog(configuration.logger.destination)
+
 	if not configuration.profile.enabled:
 		main()
 		sys.exit(0)

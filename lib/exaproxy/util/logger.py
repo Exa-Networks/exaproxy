@@ -43,6 +43,14 @@ def single_line (value):
 	return '[%s]' % value.replace('\r\n','\\r\\n')
 
 
+class Printer (object):
+	def __getattr__ (self,value):
+		def _print (message):
+			#sys.stdout.write('%s %s\n' % (value.upper(),message))
+			sys.stdout.write('%s\n' % message)
+			sys.stdout.flush()
+		return _print
+
 class LazyFormat (object):
 	def __init__ (self,prefix,format,message):
 		self.prefix = prefix
@@ -73,7 +81,7 @@ class _Logger (object):
 	_toggle_status = {}
 	
 	pdb = False
-	
+
 	# we use os.pid everytime as we may fork and the class is instance before it
 
 	def toggle (self):
@@ -113,10 +121,16 @@ class _Logger (object):
 	def __init__ (self):
 		self.level = syslog.LOG_WARNING
 		self.status = {}
+		self._syslog = None
 
-	def syslog (self):
+	def syslog (self,destination):
 		try:
-			if destination == '':
+			if destination == 'print':
+				self._syslog = Printer()
+				return
+			if destination in ('stdout','stderr'):
+				handler = logging.StreamHandler()
+			elif destination == '':
 				if sys.platform == 'darwin':
 					address = '/var/run/syslog'
 				else:
@@ -135,8 +149,7 @@ class _Logger (object):
 			self._syslog.setLevel(logging.DEBUG)
 			self._syslog.addHandler(handler)
 		except IOError,e :
-			self.critical('Can not use SYSLOG, failing back to stdout')
-
+			self.error('logger','could not use SYSLOG %s' % str(e))
 
 	def log (self,source,message,level):
 		if level <= syslog.LOG_ERR and self.pdb:
@@ -149,35 +162,40 @@ class _Logger (object):
 			self._record(time.localtime(),level,source,message)
 
 		for line in message.split('\n'):
-			if self._syslog:
-				self._syslog.critical(self._prefixed(level,source,line))
-			elif level <= self.level:
-				print self._prefixed(level,source,line)
-				sys.stdout.flush()
+			if level <= self.level:
+					yield self._prefixed(level,source,line)
 
 	def debug (self,source,message):
-		self.log(source,message,syslog.LOG_DEBUG)
+		for log in self.log(source,message,syslog.LOG_DEBUG):
+			self._syslog.debug(log)
 
 	def info (self,source,message):
-		self.log(source,message,syslog.LOG_INFO)
+		for log in self.log(source,message,syslog.LOG_INFO):
+			self._syslog.info(log)
 
 	def notice (self,source,message):
-		self.log(source,message,syslog.LOG_NOTICE)
+		for log in self.log(source,message,syslog.LOG_NOTICE):
+			self._syslog.notice(log)
 
 	def warning (self,source,message):
-		self.log(source,message,syslog.LOG_WARNING)
+		for log in self.log(source,message,syslog.LOG_WARNING):
+			self._syslog.warning(log)
 
 	def error (self,source,message):
-		self.log(source,message,syslog.LOG_ERR)
+		for log in self.log(source,message,syslog.LOG_ERR):
+			self._syslog.error(log)
 
 	def critical (self,source,message):
-		self.log(source,message,syslog.LOG_CRIT)
+		for log in self.log(source,message,syslog.LOG_CRIT):
+			self._syslog.critical(log)
 
 	def alert (self,source,message):
-		self.log(source,message,syslog.LOG_ALERT)
+		for log in self.log(source,message,syslog.LOG_ALERT):
+			self._syslog.alert(log)
 
 	def emmergency (self,source,message):
-		self.log(source,message,syslog.LOG_EMERG)
+		for log in self.log(source,message,syslog.LOG_EMERG):
+			self._syslog.emmergency(log)
 
 def Logger ():
 	if _Logger._instance:

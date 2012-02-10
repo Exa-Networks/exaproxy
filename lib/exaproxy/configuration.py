@@ -22,8 +22,6 @@ from .util.version import version
 class ConfigurationError (Exception):
 	pass
 
-_all = os.environ.get('DEBUG_ALL','0') != '0'
-
 _priorities = {
 	'LOG_EMERG'    : syslog.LOG_EMERG,
 	'LOG_ALERT'    : syslog.LOG_ALERT,
@@ -159,6 +157,8 @@ defaults = {
 	},
 	'logger' : {
 		'level'         : (value.syslog,'LOG_ERR'  , 'log message with at least the priority SYSLOG.<level>'),
+		'destination'   : (value.unquote,'stdout'  , 'where syslog should log'),
+		'logger'        : (value.boolean,'true'    , 'log message from the logger subsystem'),
 		'signal'        : (value.boolean,'true'    , 'log message from the signal subsystem'),
 		'configuration' : (value.boolean,'true'    , 'log message from the configuration subsystem'),
 		'supervisor'    : (value.boolean,'true'    , 'log message from the supervisor subsystem'),
@@ -218,7 +218,7 @@ def _configuration ():
 				proxy_section = 'exaproxy.%s' % section
 				env_name = '%s.%s' % (proxy_section,option)
 				conf = value.unquote(os.environ.get(env_name,'')) or value.unquote(ini.get(proxy_section,option,nonedict)) or default[option][1]
-			except ConfigParser.NoSectionError:
+			except (ConfigParser.NoSectionError,ConfigParser.NoOptionError),e:
 				conf = default[option][1]
 			try:
 				configuration.setdefault(section,Store())[option] = convert(conf)
@@ -233,18 +233,7 @@ def load ():
 	global __configuration
 	if __configuration:
 		return __configuration
-		
 	__configuration = _configuration()
-
-	for section,value in __configuration['logger'].items():
-		if section == 'level':
-			if _all:
-				logger.level = syslog.LOG_DEBUG
-			else:
-				logger.level = value
-		else:
-			logger.status[section] = value or _all
-
 	return __configuration
 
 def default ():
