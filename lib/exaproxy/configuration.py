@@ -81,11 +81,11 @@ class value (object):
 	@staticmethod
 	def folder(path):
 		path = value.unquote(path)
-		paths = {
+		paths = [
 			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),path)),
 			os.path.normpath(os.path.join('/','etc','exabgp','exabgp.conf',path)),
 			os.path.normpath(path)
-		}
+		]
 		options = [path for path in paths if os.path.exists(path)]
 		if not options: raise TypeError('%s does not exists' % path)
 		first = options[0]
@@ -100,12 +100,12 @@ class value (object):
 
 	@staticmethod
 	def resolver(path):
-		paths = {
+		paths = [
 			os.path.normpath(path),
 			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),path)),
 			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),'etc','exabgp','resolv.conf')),
 			os.path.normpath(os.path.join('/','etc','exabgp','exabgp.conf',path)),
-		}
+		]
 		for resolver in paths:
 			if os.path.exists(resolver):
 				with open(resolver) as r:
