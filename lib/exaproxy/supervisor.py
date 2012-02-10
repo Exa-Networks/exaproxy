@@ -32,6 +32,7 @@ from .util.logger import logger
 from .configuration import load
 
 class Supervisor(object):
+	alarm_time = 1
 	# import os
 	# clear = [hex(ord(c)) for c in os.popen('clear').read()]
 	# clear = ''.join([chr(int(c,16)) for c in ['0x1b', '0x5b', '0x48', '0x1b', '0x5b', '0x32', '0x4a']])
@@ -119,7 +120,7 @@ class Supervisor(object):
 	def sigalrm (self,signum, frame):
 		logger.debug('signal','SIG ALRM received, timed actions')
 		self._timer = True
-		signal.alarm(1)
+		signal.alarm(self.alarm_time)
 
 	def run (self):
 		if self.daemon.drop_privileges():
@@ -131,7 +132,7 @@ class Supervisor(object):
 		if not ok:
 			self._shutdown = True
 
-		signal.alarm(1)
+		signal.alarm(self.alarm_time)
 
 		while True:
 			try:
