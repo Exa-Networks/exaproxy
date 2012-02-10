@@ -107,7 +107,7 @@ class ClientManager (object):
 				# close the client connection
 				self.cleanup(sock, client.name)
 
-				buffered, had_buffer = None, None
+				buffered, had_buffer,sent = None, None, 0
 				result = None
 				flipflop = None
 			else:
