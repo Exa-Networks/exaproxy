@@ -1,5 +1,6 @@
 Before realase :
  - fix all XXX:
+ - do not call time.time() on every iteration loop, use alarm ? which will stop blocking calls ?
  - http://tools.ietf.org/html/rfc2068#section-13.5.1
  - check any possible socket issues, to make sure all exception were traped (all errno are covered)
  - if a remote end / client does not respect connection-close, use time to kill it anyway

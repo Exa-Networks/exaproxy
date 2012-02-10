@@ -79,6 +79,7 @@ options = {
 	4 : ('/statistics/index.html'     , 'Statistics'),
 	5 : ('/connections/index.html'    , 'Connections'),
 	6 : ('/processes/index.html'      , 'Processes'),
+	7 : ('/transfer/index.html'       , 'Transfer'),
 }
 
 _title = 'ExaProxy Monitoring'
@@ -234,13 +235,23 @@ class Page (object):
 		return introduction + _enum % ('\n'.join(line))
 
 
-	def _graph (self,_title,_reload,_keys):
+	def _graph (self,_title,_reload,_keys,cumulative=False):
 		legend = "data.addColumn('number', 'Seconds');" + '\n'.join(["data.addColumn('number', '%s');" % _ for _ in _keys])
 
 		chart = []
 		index = 0
+		last = ['0']*len(_keys)
 		for values in self.monitor.history:
-			chart.append("[ %d, %s]" % (index, ','.join([values[_] for _ in _keys])))
+			if cumulative:
+				print
+				print 'values',values
+				new = [values[_] for _ in _keys]
+				print "new", new
+				print "last",last
+				chart.append("[ %d, %s]" % (index, ','.join([str(max(0,long(n)-long(l))).rstrip('L') for (n,l) in zip(new,last)])))
+				last = new
+			else:
+				chart.append("[ %d, %s]" % (index, ','.join([values[_] for _ in _keys])))
 			index += 1
 		values = ',\n'.join(chart)
 
@@ -267,6 +278,17 @@ class Page (object):
 				'running.processes.min',
 				'running.processes.max',
 			]
+		)
+
+	def _transfer (self):
+		return self._graph(
+			'Proxy Data Transfered',
+			30000,
+			[
+				'running.transfer.request',
+				'running.transfer.download',
+			],
+			True
 		)
 
 
@@ -297,4 +319,6 @@ class Page (object):
 			return self._page(self._connections())
 		if command == 'processes':
 			return self._page(self._processes())
+		if command == 'transfer':
+			return self._page(self._transfer())
 		return self._page('<center><b>are you looking for an easter egg ?</b></center>')

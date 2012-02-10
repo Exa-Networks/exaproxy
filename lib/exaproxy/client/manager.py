@@ -12,6 +12,7 @@ from browser import Client
 
 class ClientManager (object):
 	def __init__(self, poller):
+		self.total_sent = 0L
 		self.norequest = {}
 		self.bysock = {}
 		self.byname = {}
@@ -110,8 +111,10 @@ class ClientManager (object):
 				result = None
 				flipflop = None
 			else:
-				buffered, had_buffer = res
+				buffered, had_buffer, sent = res
+				self.total_sent += sent
 				result = buffered
+
 
 			if buffered:
 				if sock not in self.buffered:
@@ -149,11 +152,13 @@ class ClientManager (object):
 				if client.sock not in self.buffered:
 					self.cleanup(client.sock, name)
 
-				buffered, had_buffer = None, None
+				buffered, had_buffer, sent = None, None, 0
+				#self.total_sent += sent
 				result = None
 				flipflop = None
 			else:
-				buffered, had_buffer = res
+				buffered, had_buffer, sent = res
+				self.total_sent += sent
 				result = buffered
 
 			if buffered:
@@ -207,7 +212,7 @@ class ClientManager (object):
 				res = client.startData(command, d, blockupload)
 
 			if res is not None:
-				buffered, had_buffer = res
+				buffered, had_buffer, sent = res
 
 				# buffered data we read with the HTTP headers
 				name, peer, request, content = client.readData()

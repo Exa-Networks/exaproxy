@@ -71,13 +71,14 @@ class Downloader(object):
 			self.w_buffer = w_buffer[sent:]
 			res = True if self.w_buffer else False
 		except socket.error, e:
+			sent = 0
 			if e.args[0] in errno_block:
 				logger.error('download', 'Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 				res = True if self.w_buffer else False
 			else:
-				res = None
+				res = None,0
 
-		return res
+		return res,sent
 
 	def bufferData(self, data):
 		"""Buffer data to be sent later"""

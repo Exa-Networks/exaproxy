@@ -134,7 +134,7 @@ class Client(object):
 						w_buffer = w_buffer[sent:]
 
 					buffered = bool(w_buffer) or finished
-					data = yield buffered, had_buffer
+					data = yield buffered, had_buffer, sent
 
 
 				# break out of the outer loop as soon as we leave the inner loop

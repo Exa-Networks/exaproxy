@@ -96,7 +96,9 @@ class Monitor (object):
 			'running.proxy.download.opening': str(len(content.opening)),
 			'running.proxy.download.established': str(len(content.established)),
 			'running.proxy.download' : str(len(content.byclientid)),
-			'running.exiting' : str(bool(not reactor.running or self._supervisor._refork))
+			'running.exiting' : str(bool(not reactor.running or self._supervisor._refork)),
+			'running.transfer.request' : str(client.total_sent),
+			'running.transfer.download' : str(content.total_sent),
 		}
 
 	def record (self):

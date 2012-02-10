@@ -24,6 +24,7 @@ class ContentManager(object):
 	downloader_factory = Downloader
 
 	def __init__(self, poller, location, page):
+		self.total_sent = 0L
 		self.opening = {}
 		self.established = {}
 		self.byclientid = {}
@@ -226,8 +227,9 @@ class ContentManager(object):
 		downloader = self.established.get(sock, None)
 		if downloader:
 			had_buffer = True if downloader.w_buffer else False
-			buffered = downloader.writeData(data)
-			
+			buffered,sent = downloader.writeData(data)
+			self.total_sent += sent
+
 			if buffered:
 				if sock not in self.buffered:
 					self.buffered.append(sock)
@@ -258,7 +260,8 @@ class ContentManager(object):
 		if downloader:
 			if downloader.sock in self.established:
 				had_buffer = True if downloader.w_buffer else False
-				buffered = downloader.writeData(data)
+				buffered,sent = downloader.writeData(data)
+				self.total_sent += sent
 			
 				if buffered:
 					if downloader.sock not in self.buffered:
@@ -266,7 +269,7 @@ class ContentManager(object):
 						flipflop = True
 
 						# watch for the socket's send buffer becoming less than full
-						self.poller.addWriteSocket('write_download', sock)
+						self.poller.addWriteSocket('write_download', downloader.sock)
 					else:
 						flipflop = False
 
@@ -275,7 +278,7 @@ class ContentManager(object):
 					flipflop = True
 
 					# we no longer care that we can write to the server
-					self.poller.removeWriteSocket('write_download', sock)
+					self.poller.removeWriteSocket('write_download', downloader.sock)
 				else:
 					flipflop = False
 
