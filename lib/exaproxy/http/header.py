@@ -61,7 +61,8 @@ class Header(dict):
 			key = None
 			data = None
 
-			for line in remaining.split('\r\n'):
+			for line in remaining.split('\n'):
+				line = line.strip('\r')
 				if not line:
 					break
 
