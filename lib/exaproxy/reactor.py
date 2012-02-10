@@ -15,7 +15,6 @@ import math
 
 from .util.logger import logger
 
-
 class Reactor(object):
 	def __init__(self, web, proxy, decider, content, client, poller):
 		self.web = web            # Manage listening web sockets
