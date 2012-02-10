@@ -13,7 +13,7 @@ import syslog
 
 from exaproxy.supervisor import Supervisor
 from exaproxy.util.logger import logger
-from exaproxy.configuration import ConfigurationError,load,ini,env
+from exaproxy.configuration import ConfigurationError,load,ini,env,default
 
 def version_warning ():
 	sys.stdout.write('\n')
