@@ -170,7 +170,9 @@ class Worker (Thread):
 		while self.running:
 			try:
 				logger.debug('worker %s' % self.wid,'waiting for some work')
-				data = self.request_box.get(timeout=self.configuration.redirector.timeout)
+				# The timeout is really caused by the SIGALARM sent on the main thread every second 
+				# BUT ONLY IF the timeout is present in this call
+				data = self.request_box.get(2) 
 
 				client_id, peer, header, source = data
 			except Empty:

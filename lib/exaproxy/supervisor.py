@@ -81,6 +81,7 @@ class Supervisor(object):
 		self._decrease_spawn_limit = False
 		self._increase_spawn_limit = False
 		self._refork = True
+		self._timer = False
 
 		signal.signal(signal.SIGTERM, self.sigterm)
 		signal.signal(signal.SIGHUP, self.sighup)
@@ -88,6 +89,7 @@ class Supervisor(object):
 		signal.signal(signal.SIGUSR1, self.sigusr1)
 		signal.signal(signal.SIGUSR2, self.sigusr2)
 		signal.signal(signal.SIGTRAP, self.sigtrap)
+		signal.signal(signal.SIGINFO, self.siginfo)
 
 
 	def sigterm (self,signum, frame):
@@ -110,10 +112,14 @@ class Supervisor(object):
 		logger.info('signal','SIG USR2 received, increase worker number')
 		self._increase_spawn_limit = True
 
-	def sigalrm (self,signum, frame):
-		logger.info('signal','SIG ALRM received, refork request')
+	def siginfo (self,signum, frame):
+		logger.info('signal','SIG INFO received, refork request')
 		self._refork = True
 
+	def sigalrm (self,signum, frame):
+		logger.debug('signal','SIG ALRM received, timed actions')
+		self._timer = True
+		signal.alarm(1)
 
 	def run (self):
 		if self.daemon.drop_privileges():
@@ -125,7 +131,7 @@ class Supervisor(object):
 		if not ok:
 			self._shutdown = True
 
-		next = time.time() + 1
+		signal.alarm(1)
 
 		while True:
 			try:
@@ -165,9 +171,8 @@ class Supervisor(object):
 				# Quit on problems which can not be fixed (like running out of file descriptor)
 				self._shutdown = not self.reactor.running
 
-				now = time.time()
-				if now > next:
-					next = now
+				if self._timer:
+					self._timer = False
 					self.monitor.record()
 
 			except KeyboardInterrupt:
@@ -209,6 +214,7 @@ class Supervisor(object):
 			self.web.stop()  # accept no new web connection
 			self.proxy.stop()  # accept no new proxy connections
 			self.manager.stop()  # shut down redirector children
+			os.kill(os.getpid(),signal.SIGALRM)
 			self.content.stop() # stop downloading data
 			self.client.stop() # close client connections
 			self.pid.remove()

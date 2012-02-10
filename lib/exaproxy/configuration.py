@@ -137,7 +137,7 @@ defaults = {
 		'program' : (value.exe,'etc/exaproxy/redirector/allow'  , 'the program used to know where to send request'),
 		'minimum' : (value.integer,'5'                          , 'minimum number of worker threads (forked program)'),
 		'maximum' : (value.integer,'25'                         , 'maximum number of worker threads (forked program)'),
-		'timeout' : (value.integer,'1'                          , 'how long to wait for work before peforming background work'),
+#		'timeout' : (value.integer,'1'                          , 'how long to wait for work before peforming background work'),
 	},
 
 	'http' : {
