@@ -1,14 +1,17 @@
-#!/bin/bash
+#!/bin/sh
 
 dirname=`dirname $0`
 
-if [[ $dirname == /* ]]; then
+case $dirname in
+/*)
 	path=$dirname/..
-else
+	;;
+*)
 	cd `pwd`/$dirname/.. > /dev/null
 	path=`pwd`
 	cd - > /dev/null
-fi
+	;;
+esac
 
 export PYTHONPATH=$path/lib:/usr/share/exaproxy/lib/1.0.0
 export ETC=$path/etc/exaproxy
