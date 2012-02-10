@@ -11,7 +11,7 @@ import sys
 
 from exaproxy.supervisor import Supervisor
 from exaproxy.util.logger import logger
-from exaproxy.configuration import load
+from exaproxy.configuration import load,defaults
 
 def version_warning ():
 	sys.stdout.write('\n')
@@ -41,6 +41,15 @@ def help ():
 	sys.stdout.write('\n')
 	sys.stdout.write('shortcut to turn all possible debugging on\n')
 	sys.stdout.write('env DEBUG_ALL=1 %s\n' % sys.argv[0])
+	sys.stdout.write('\n')
+	sys.stdout.write('valid configuration options are :\n')
+	sys.stdout.write('\n')
+	for section,content in defaults.items():
+		for option,value in content.items():
+			if option == 'proxy':
+				continue
+			sys.stdout.write(' - exaproxy.%s.%s %s: %s default (%s)\n' % (section,option,' '*(20-len(section)-len(option)),value[2],value[1]))
+	sys.stdout.write('\n')
 
 def main ():
 	main = int(sys.version[0])
@@ -69,8 +78,8 @@ def main ():
 if __name__ == '__main__':
 	configuration = load()
 
-	logger.info('main','starting %s' % sys.argv[0])
-	logger.info('main',sys.version.replace(os.linesep,' '))
+	logger.info('supervisor','starting %s' % sys.argv[0])
+	logger.info('supervisor','python version %s' % sys.version.replace(os.linesep,' '))
 	
 	if not configuration.profile.enabled:
 		main()

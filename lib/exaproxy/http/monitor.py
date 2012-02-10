@@ -54,7 +54,6 @@ class Monitor (object):
 			'exaproxy.daemon.user' : str(conf.daemon.user),
 			'exaproxy.global.version' : '%s %s' % (conf.proxy.name,str(conf.proxy.version)),
 			'exaproxy.logger.level.daemon' : str(conf.logger.daemon),
-			'exaproxy.logger.level.main' : str(conf.logger.main),
 			'exaproxy.logger.level.supervisor' : str(conf.logger.supervisor),
 			'exaproxy.logger.level.signal' : str(conf.logger.signal),
 			'exaproxy.logger.level.worker' : str(conf.logger.worker),
