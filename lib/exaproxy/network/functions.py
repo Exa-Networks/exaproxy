@@ -66,7 +66,7 @@ def listen (ip,port,timeout=None,backlog=0):
 		return None
 
 
-def connect (ip,port):
+def connect (ip,port,immediate=True):
 	try:
 		if _ipv6(ip):
 			s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP)
@@ -88,6 +88,12 @@ def connect (ip,port):
 #		print type(e),str(e)
 #		raise
 
+	if immediate:
+		try:
+			# diable Nagle's algorithm (no grouping of packets)
+			s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+		except AttributeError:
+			pass
 
 	try:
 		s.setblocking(0)
