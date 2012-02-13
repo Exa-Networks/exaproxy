@@ -124,6 +124,7 @@ class Supervisor(object):
 	def sigalrm (self,signum, frame):
 		logger.debug('signal','SIG ALRM received, timed actions')
 		self._timer = True
+		self.reactor.running = False
 		signal.alarm(self.alarm_time)
 
 	def run (self):
@@ -169,10 +170,11 @@ class Supervisor(object):
 					self.manager.low = min(self.manager.high,self.manager.low)
 
 				# check for IO change with select
+				self.reactor.running = True
 				self.reactor.run()
 
 				# Quit on problems which can not be fixed (like running out of file descriptor)
-				self._shutdown = not self.reactor.running
+				#self._shutdown = not self.reactor.running
 
 				if self._timer:
 					self._timer = False

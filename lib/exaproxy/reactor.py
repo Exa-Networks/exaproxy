@@ -27,12 +27,7 @@ class Reactor(object):
 		self.running = True
 		self._loop = None
 
-	def run (self):
-		if not self._loop:
-			self._loop = self._run()
-		self._loop.next()
-
-	def _run(self):
+	def run(self):
 		poller = self.poller
 
 		count = 0
@@ -123,7 +118,6 @@ class Reactor(object):
 				# check that the client didn't get bored and go away
 				if client_id in self.client:
 					if self.resolver.resolves(command, decision):
-						print str(time.time()) + ' RESOLVING ' + decision.split('\0', 1)[0]
 						identifier = self.resolver.startResolving(client_id, command, decision)
 
 						# something went wrong
@@ -135,7 +129,6 @@ class Reactor(object):
 			# decisions with a resolved hostname
 			for resolver in events.get('read_resolver', []):
 				client_id, command, decision = self.resolver.getResponse(resolver)
-				print str(time.time()) + ' RESOLVED ' + decision.split('\0', 1)[0]
 				decisions.append((client_id, command, decision))
 
 			# all decisions we are currently able to process
@@ -212,5 +205,4 @@ class Reactor(object):
 
 			
 			decisions = []
-			yield None
 
