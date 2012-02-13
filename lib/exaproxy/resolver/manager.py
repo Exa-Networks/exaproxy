@@ -40,7 +40,8 @@ class ResolverManager(object):
 
 			count += 1
 			identifier = self.clients.get(client_id)
-			if identifier:
+
+			if identifier is not None:
 				data = self.resolving.pop(identifier, None)
 				if not data:
 					data = self.sending.pop(identifier, None)
@@ -198,7 +199,7 @@ class ResolverManager(object):
 
 			if res is False: # we've sent all we need to send
 				tmp = self.sending.pop(sock)
-				self.resolving[worker.socket] = tmp
+				self.resolving[identifier] = tmp
 
 				self.poller.removeWriteSocket('write_resolver', sock)
 				self.poller.addReadSocket('read_resolver', sock)
