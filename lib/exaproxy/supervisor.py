@@ -92,7 +92,7 @@ class Supervisor(object):
 		signal.signal(signal.SIGUSR1, self.sigusr1)
 		signal.signal(signal.SIGUSR2, self.sigusr2)
 		signal.signal(signal.SIGTRAP, self.sigtrap)
-		signal.signal(signal.SIGINFO, self.siginfo)
+		signal.signal(signal.SIGABRT, self.sigabrt)
 
 
 	def sigterm (self,signum, frame):
@@ -115,7 +115,7 @@ class Supervisor(object):
 		logger.info('signal','SIG USR2 received, increase worker number')
 		self._increase_spawn_limit = True
 
-	def siginfo (self,signum, frame):
+	def sigabrt (self,signum, frame):
 		logger.info('signal','SIG INFO received, refork request')
 		self._refork = True
 
