@@ -74,7 +74,7 @@ def menu (menus):
 
 options = {
 	1 : ('/index.html'                , 'Home'),
-	2 : ('/objects/supervisor.html'   , 'Instrospection'),
+	2 : ('/objects/supervisor.html'   , 'Introspection'),
 	3 : ('/configuration/index.html'  , 'Configuration'),
 	4 : ('/statistics/index.html'     , 'Statistics'),
 	5 : ('/connections/index.html'    , 'Connections'),
@@ -245,7 +245,6 @@ class Page (object):
 		index = self.monitor.nb_recorded - nb_records
 		for values in self.monitor.history:
 			if cumulative:
-				print
 				new = [values[_] for _ in _keys]
 				chart.append("[ %d, %s]" % (index, ','.join([str(max(0,long(n)-long(l))).rstrip('L') for (n,l) in zip(new,last)])))
 				last = new
