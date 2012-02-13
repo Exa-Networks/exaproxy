@@ -99,7 +99,7 @@ class Client(object):
 				with open(filename) as fd:
 					w_buffer = fd.read()
 
-				found = True, False
+				found = True, False, 0
 			except IOError:
 				found = None
 
@@ -132,6 +132,8 @@ class Client(object):
 						sent = sock.send(w_buffer)
 						logger.info('client', 'wrote to socket %s sent %d bytes' % (str(sock),sent))
 						w_buffer = w_buffer[sent:]
+					else:
+						sent = 0
 
 					buffered = bool(w_buffer) or finished
 					data = yield buffered, had_buffer, sent
