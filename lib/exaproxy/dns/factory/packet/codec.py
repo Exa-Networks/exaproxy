@@ -108,7 +108,7 @@ class DNSCodec:
 		for _ in xrange(count):
 			query = DNSDecodedQuery(data)
 			if query.queryname is None:
-				return None, '', None, None
+				return None, '', names, offset
 
 			queries.append(query)
 			bytes_read = len(query)
@@ -125,7 +125,7 @@ class DNSCodec:
 		for _ in xrange(count):
 			resource = DNSDecodedResource(data, packet_s, names)
 			if resource.queryname is None:
-				return None, '', None, None
+				return None, '', names, offset
 
 			resources.append(resource)
 			bytes_read = len(resource)
@@ -168,9 +168,6 @@ class DNSCodec:
 		responses, data, names, offset = self._decodeResources(data, response_s, names, header.response_len, offset)
 		authorities, data, names, offset = self._decodeResources(data, response_s, names, header.authority_len, offset)
 		additionals, data, names, offset = self._decodeResources(data, response_s, names, header.additional_len, offset)
-
-		if None in (queries, responses, authorities, additionals):
-			return None
 
 		queries = [self.query_factory(q.querytype, q.queryname) for q in queries]
 		responses = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in responses]

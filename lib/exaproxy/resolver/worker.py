@@ -93,7 +93,7 @@ class UDPClient(DNSClient):
 		newidentifier = None
 		if value is None:
 			if response.qtype == 'A':
-				newidentifier = self.resolveHost(hostname, qtype='AAAA')
+				newidentifier = self.resolveHost(response.qhost, qtype='AAAA')
 
 		return response.identifier, response.qhost, value, response.isComplete(), newidentifier
 

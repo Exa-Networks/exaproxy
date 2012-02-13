@@ -65,8 +65,8 @@ class DNSResponseType(DNSBaseType):
 
 	def __init__(self, identifier, queries=[], responses=[], authorities=[], additionals=[]):
 		self.identifier = identifier
-		self.qtype = queries[0].NAME
-		self.qhost = queries[0].name
+		self.qtype = queries[0].NAME if queries else None
+		self.qhost = queries[0].name if queries else None
 
 		self.queries = queries
 		self.responses = responses
@@ -76,6 +76,9 @@ class DNSResponseType(DNSBaseType):
 
 	def getResponse(self):
 		info = {}
+
+		if None in (self.responses, self.authorities, self.additionals):
+			return info
 
 		for response in self.responses:
 			info.setdefault(response.name, {}).setdefault(response.NAME, []).append(response.value)
@@ -119,9 +122,9 @@ class DNSResponseType(DNSBaseType):
 
 		return resolved
 
-	def getValue(self):
+	def getValue(self, qtype=None):
 		info = self.getResponse()
-		return self.extract(self.qhost, self.qtype, info)
+		return self.extract(self.qhost, qtype or self.qtype, info)
 
 	def isComplete(self):
 		# XXX: write this

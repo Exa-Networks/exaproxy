@@ -128,8 +128,10 @@ class Reactor(object):
 
 			# decisions with a resolved hostname
 			for resolver in events.get('read_resolver', []):
-				client_id, command, decision = self.resolver.getResponse(resolver)
-				decisions.append((client_id, command, decision))
+				response = self.resolver.getResponse(resolver)
+				if response:
+					client_id, command, decision = response
+					decisions.append((client_id, command, decision))
 
 			# all decisions we are currently able to process
 			for client_id, command, decision in decisions:
