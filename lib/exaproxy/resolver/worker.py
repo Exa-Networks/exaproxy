@@ -54,7 +54,7 @@ class DNSClient(object):
 
 
 class UDPClient(DNSClient):
-	def __init__(self, resolv=None, port=53):
+	def __init__(self, resolv, port):
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 		self.request_factory = self.RequestFactory()
 		self.response_factory = self.ResponseFactory()
@@ -102,7 +102,7 @@ class UDPClient(DNSClient):
 
 
 class TCPClient(DNSClient):
-	def __init__(self, resolv=None, port=53):
+	def __init__(self, resolv, port):
 		# read configuration
 		DNSClient.__init__(self, resolv, port)
 
@@ -167,8 +167,8 @@ class TCPClient(DNSClient):
 		return identifier if res else None
 
 class DNSResolver(object):
-	def createUDPClient(self):
-		return UDPClient()
+	def createUDPClient(self,resolv,port=53):
+		return UDPClient(resolv,port)
 
-	def createTCPClient(self):
-		return TCPClient()
+	def createTCPClient(self,resolv,port=53):
+		return TCPClient(resolv,port)

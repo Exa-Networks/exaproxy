@@ -35,7 +35,7 @@ class Worker (Thread):
 		self.response_box_write = os.fdopen(w,'w',0)    # results are written here
 		self.response_box_read = os.fdopen(r,'r',0)     # read from the main thread
 
-		self.resolver = DNSResolver(self.configuration.daemon.resolver)
+		self.resolver = DNSResolver(self.configuration.dns.resolver)
 
 		self.wid = name                               # a unique name
 		self.creation = time.time()                   # when the thread was created

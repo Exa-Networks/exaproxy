@@ -8,10 +8,11 @@ class ResolverManager(object):
 
 	def __init__(self, poller, configuration):
 		self.poller = poller
-		self.configuration = configuration
+		self.resolv = configuration.dns.resolver
+		self.timeout = configuration.dns.timeout
 
 		# The actual work is done in the worker
-		self.worker = self.resolver_factory.createUDPClient()
+		self.worker = self.resolver_factory.createUDPClient(self.resolv)
 
 		# All currently active clients (UDP and TCP)
 		self.workers = {}
@@ -31,7 +32,7 @@ class ResolverManager(object):
 		self.active = []
 
 	def cleanup(self):
-		cutoff = time.time() - 2
+		cutoff = time.time() - self.timeout
 		count = 0
 
 		for timestamp, client_id in self.active:
@@ -103,7 +104,7 @@ class ResolverManager(object):
 		hostname = self.extractHostname(command, decision)
 
 		if hostname:
-			worker = self.resolver_worker.createTCPClient()
+			worker = self.resolver_worker.createTCPClient(self.resolv)
 			self.workers[worker.socket] = worker
 
 			identifier, all_sent = self.worker.resolveHost(hostname)
@@ -135,7 +136,7 @@ class ResolverManager(object):
 
 				# check to see if we received an incomplete response
 				if not completed:
-					worker = self.worker = self.resolver_factory.createTCPClient()
+					worker = self.worker = self.resolver_factory.createTCPClient(self.resolv)
 					# XXX:	this will start with a request for an A record again even if
 					#	the UDP client choked only once it asked for the AAAA
 					newidentifier = worker.resolveHost(hostname)
