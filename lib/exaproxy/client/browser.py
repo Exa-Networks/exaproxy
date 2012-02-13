@@ -148,7 +148,7 @@ class Client(object):
 					logger.error('client','failed to sent %d bytes' % len(data))
 					logger.error('client','it would have blocked, why were we woken up !?!')
 					logger.error('client','error %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
-					data = yield (True if w_buffer else False), had_buffer
+					data = yield (True if w_buffer else False), had_buffer, 0
 				else:
 					logger.critical('client','????? ARRGH ?????')
 					yield None # stop the client connection
