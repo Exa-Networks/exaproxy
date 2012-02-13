@@ -23,19 +23,19 @@ from definition import dns_query_types, dns_response_types
 
 class DNSDecodedHeader:
 	def __init__(self, packet_s):
-		self.id = convert.u16(packet_s[0:2])          # 16 bits
+		self.identifier = convert.u16(packet_s[0:2])  # 16 bits
 
-		flags = convert.u16(packet_s[2:4])          # 16 bits
-		self.qr = flags >> 15                       # 10000000 00000000
-		self.opcode = (flags >> 11) & 15            # 01111000 00000000
-		self.aa = (flags >> 10) & 1                 # 00000100 00000000
-		self.tc = (flags >> 9) & 1                  # 00000010 00000000
-		self.rd = (flags >> 8) & 1                  # 00000001 00000000
-		self.ra = (flags >> 7) & 1                  # 00000000 10000000
-		self.z =  (flags >> 6) & 1                  # 00000000 01000000
-		self.ad = (flags >> 5) & 1                  # 00000000 00100000
-		self.cd = (flags >> 4) & 1                  # 00000000 00010000
-		self.rcode = flags & 1                      # 00000000 00001111
+		flags = convert.u16(packet_s[2:4])            # 16 bits
+		self.qr = flags >> 15                         # 10000000 00000000
+		self.opcode = (flags >> 11) & 15              # 01111000 00000000
+		self.aa = (flags >> 10) & 1                   # 00000100 00000000
+		self.tc = (flags >> 9) & 1                    # 00000010 00000000
+		self.rd = (flags >> 8) & 1                    # 00000001 00000000
+		self.ra = (flags >> 7) & 1                    # 00000000 10000000
+		self.z =  (flags >> 6) & 1                    # 00000000 01000000
+		self.ad = (flags >> 5) & 1                    # 00000000 00100000
+		self.cd = (flags >> 4) & 1                    # 00000000 00010000
+		self.rcode = flags & 1                        # 00000000 00001111
 
 		self.query_len = convert.u16(packet_s[4:6])
 		self.response_len = convert.u16(packet_s[6:8])
@@ -155,7 +155,7 @@ class DNSCodec:
 			return None
 
 		queries = [self.query_factory(q.querytype, q.queryname) for q in queries]
-		return self.request_factory(header.id, queries)
+		return self.request_factory(header.identifier, queries)
 
 
 
@@ -177,11 +177,11 @@ class DNSCodec:
 		authorities = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in authorities]
 		additionals = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in additionals]
 
-		response = self.response_factory(header.id, queries, responses, authorities, additionals)
+		response = self.response_factory(header.identifier, queries, responses, authorities, additionals)
 		return response
 
 	def encodeRequest(self, request):
-		header_s = struct.pack('>H2sH6s', request.id, '\1\0', len(request.queries), '\0\0\0\0\0\0')
+		header_s = struct.pack('>H2sH6s', request.identifier, '\1\0', len(request.queries), '\0\0\0\0\0\0')
 
 		for q in request.queries:
 			name = ''.join('%c%s' % (len(p), p) for p in q.name.split('.')) + '\0'

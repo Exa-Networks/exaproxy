@@ -204,3 +204,6 @@ class WorkerManager (object):
 				worker = self.closing.pop(wid, None)
 
 		return client_id, command, decision
+
+	def showInternalError(self):
+		return 'file', '\0'.join(('250', 'internal_error.html'))

@@ -16,12 +16,13 @@ import math
 from .util.logger import logger
 
 class Reactor(object):
-	def __init__(self, web, proxy, decider, content, client, poller):
+	def __init__(self, web, proxy, decider, content, client, resolver, poller):
 		self.web = web            # Manage listening web sockets
 		self.proxy = proxy        # Manage listening proxy sockets
 		self.decider = decider    # Task manager for handling child decider processes
-		self.content = content    # the Content Download manager
-		self.client = client      # currently open client connections
+		self.content = content    # The Content Download manager
+		self.client = client      # Currently open client connections
+		self.resolver = resolver  # The DNS query manager
 		self.poller = poller      # Interface to the poller
 		self.running = True
 		self._loop = None
@@ -38,9 +39,17 @@ class Reactor(object):
 		s_times = []
 		w_times = []
 
+		decisions = []
+
+		# Manually timeout queries
+		timedout = self.resolver.cleanup()
+		for client_id, command, decision in timedout:
+			decisions.append((client_id, command, decision))
+
 		while self.running:
 			# wait until we have something to do
 			events = poller.poll()
+
 			logger.debug('supervisor','events : ' + ', '.join(events.keys()))
 
 			# handle new connections before anything else
@@ -113,25 +122,43 @@ class Reactor(object):
 
 				# check that the client didn't get bored and go away
 				if client_id in self.client:
-					response, restricted = self.content.getContent(client_id, command, decision)
+					if self.resolver.resolves(command, decision):
+						print str(time.time()) + ' RESOLVING ' + decision.split('\0', 1)[0]
+						identifier = self.resolver.startResolving(client_id, command, decision)
 
-					# Signal to the client that we'll be streaming data to it or
-					# give it the location of the local content to return.
-					data = self.client.startData(client_id, response, restricted)
+						# something went wrong
+						if not identifier:
+							commmand, decision = self.decider.showInternalError()
+					else:
+						decisions.append((client_id, command, decision))
 
-					# Check for any data beyond the initial headers that we may already
-					# have read and cached
-					if data:
-						status, flipflop = self.content.sendClientData(client_id, data)
+			# decisions with a resolved hostname
+			for resolver in events.get('read_resolver', []):
+				client_id, command, decision = self.resolver.getResponse(resolver)
+				print str(time.time()) + ' RESOLVED ' + decision.split('\0', 1)[0]
+				decisions.append((client_id, command, decision))
 
-						if flipflop:
-							if status:
-								self.client.corkUploadByName(client_id)
-							else:
-								self.client.uncorkUploadByName(client_id)
+			# all decisions we are currently able to process
+			for client_id, command, decision in decisions:
+				response, restricted = self.content.getContent(client_id, command, decision)
 
-					elif data is None:
-						self.content.endClientDownload(client_id)
+				# Signal to the client that we'll be streaming data to it or
+				# give it the location of the local content to return.
+				data = self.client.startData(client_id, response, restricted)
+
+				# Check for any data beyond the initial headers that we may already
+				# have read and cached
+				if data:
+					status, flipflop = self.content.sendClientData(client_id, data)
+
+					if flipflop:
+						if status:
+							self.client.corkUploadByName(client_id)
+						else:
+							self.client.uncorkUploadByName(client_id)
+
+				elif data is None:
+					self.content.endClientDownload(client_id)
 
 
 			# clients we can write buffered data to
@@ -173,6 +200,10 @@ class Reactor(object):
 							else:
 								self.content.uncorkClientDownload(client_id)
 
+			# DNS servers we still have data to write to (should be TCP only)
+			for resolver in events.get('write_resolver', []):
+				self.resolver.continueSending(resolver)
+
 #			# retry connecting - opportunistic 
 #			for client_id, decision in retry_download:
 #				# if we have a temporary error, the others are likely to be too
@@ -180,5 +211,6 @@ class Reactor(object):
 #					break
 
 			
+			decisions = []
 			yield None
 

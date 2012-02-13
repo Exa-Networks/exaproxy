@@ -8,6 +8,8 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 import inspect
+import random
+
 import query
 import response
 
@@ -15,8 +17,8 @@ import response
 #	   0: QUERY,  Standary query		RFC 1035
 #	   1: IQUERY, Inverse query		RFC 1035, RFC 3425
 #	   2: STATUS, Server status request	RFC 1035
-#          3:
-#          4: Notify				RFC 1996
+#	  3:
+#	  4: Notify				RFC 1996
 #	   5: Update				RFC 2136
 #	   6: RESERVED
 #	  ... RESERVED
@@ -31,14 +33,14 @@ class DNSBaseType:
 	OPCODE = 0   # Operation type
 
 	def __init__(self, id):
-		self.id = id
+		self.identifier = identifier
 
 class DNSRequestType(DNSBaseType):
 	QR = 0     # Query
 	OPCODE = 0 # Query
 
-	def __init__(self, id, queries=[]):
-		self.id = id
+	def __init__(self, identifier, queries=[]):
+		self.identifier = identifier
 		self.queries = []
 
 		for q in queries:
@@ -55,19 +57,22 @@ class DNSRequestType(DNSBaseType):
 		query_s = "\n\t ".join(str(q) for q in self.queries)
 
 		return """DNS RESPONSE %(id)s
-QUERIES: %(queries)s""" % {'id':self.id, 'queries':query_s}
+QUERIES: %(queries)s""" % {'id':self.identifier, 'queries':query_s}
 
 class DNSResponseType(DNSBaseType):
 	QR = 1      # Response
 	OPCODE = 0
 
-	def __init__(self, id, queries=[], responses=[], authorities=[], additionals=[]):
-		self.id = id
+	def __init__(self, identifier, queries=[], responses=[], authorities=[], additionals=[]):
+		self.identifier = identifier
+		self.qtype = queries[0].NAME
+		self.qhost = queries[0].name
 
 		self.queries = queries
 		self.responses = responses
 		self.authorities = authorities
 		self.additionals = additionals
+
 
 	def getResponse(self):
 		info = {}
@@ -82,7 +87,45 @@ class DNSResponseType(DNSBaseType):
 			info.setdefault(response.name, {}).setdefault(response.NAME, []).append(response.value)
 
 		return info
-		
+
+	def extract(self, hostname, rdtype, info, seen=[]):
+		data = info.get(hostname)
+
+		# query again in case we should have this info
+		# is this needed?
+		if seen and not data:
+			info = self.lookup(hostname, rdtype)
+			data = info.get(hostname)
+
+		if data:
+			if rdtype in data:
+				resolved = random.choice(data[rdtype])
+
+			elif rdtype != 'CNAME':
+				cnames = [cname for cname in data.get('CNAME', []) if cname not in seen]
+				seen = seen + cnames # do not modify seen
+
+				for cname in cnames:
+					res = self.extract(cname, rdtype, info, seen)
+					if res:
+						resolved = res
+						break
+				else:
+					resolved = None
+			else:
+				resolved = None
+		else:
+			resolved = None
+
+		return resolved
+
+	def getValue(self):
+		info = self.getResponse()
+		return self.extract(self.qhost, self.qtype, info)
+
+	def isComplete(self):
+		# XXX: write this
+		return True
 
 	def __str__(self):
 		query_s = "\n".join('\t' + str(q) for q in self.queries)
@@ -94,7 +137,7 @@ class DNSResponseType(DNSBaseType):
 QUERIES: %(queries)s
 RESPONSES: %(response)s
 AUTHORITIES: %(authorities)s
-ADDITIONAL: %(additional)s""" % {'id':self.id, 'queries':query_s, 'authorities':authority_s, 'additional':additional_s, 'response':response_s}
+ADDITIONAL: %(additional)s""" % {'id':self.identifier, 'queries':query_s, 'authorities':authority_s, 'additional':additional_s, 'response':response_s}
 
 
 

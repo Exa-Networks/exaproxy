@@ -19,6 +19,7 @@ from .util.daemon import Daemon
 from .classify.manager import WorkerManager
 from .content.manager import ContentManager
 from .client.manager import ClientManager
+from .resolver.manager import ResolverManager
 from .network.server import Server
 from .http.page import Page
 from .http.monitor import Monitor
@@ -70,10 +71,11 @@ class Supervisor(object):
 		)
 		self.content = ContentManager(self.poller, self.configuration.web.html, self.page)
 		self.client = ClientManager(self.poller)
+		self.resolver = ResolverManager(self.poller, self.configuration)
 		self.proxy = Server(self.poller,'read_proxy')
 		self.web = Server(self.poller,'read_web')
 
-		self.reactor = Reactor(self.web, self.proxy, self.manager, self.content, self.client, self.poller)
+		self.reactor = Reactor(self.web, self.proxy, self.manager, self.content, self.client, self.resolver, self.poller)
 
 		# Only here so the introspection code can find them
 		self.logger = logger

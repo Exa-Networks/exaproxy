@@ -1,4 +1,5 @@
 import random
+import socket
 
 from exaproxy.dns.resolver import DNSRequestFactory
 from exaproxy.dns.resolver import DNSResponseFactory
@@ -76,10 +77,10 @@ class UDPClient(DNSClient):
 		"""Read a response from the wire and return the desired result if present"""
 
 		# Read the response from the wire
-		response_s = self.socket.recvmsg(65535)
+		response_s, peer = self.socket.recvfrom(65535)
 
 		# and convert it into something we can play with
-		response = self.response_factory.decodeResponse(response_s)
+		response = self.response_factory.normalizeResponse(response_s)
 
 		# Try to get the IP address we asked for
 		value = response.getValue()

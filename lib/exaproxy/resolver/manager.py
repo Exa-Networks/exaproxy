@@ -1,38 +1,124 @@
+import time
+
 from .worker import DNSResolver
+from exaproxy.network.functions import isip
 
 class ResolverManager(object):
-	request_factory = DNSResolver()
+	resolver_factory = DNSResolver()
 
-	def __init__(self, configuration, poller):
-		self.configuration = configuration
+	def __init__(self, poller, configuration):
 		self.poller = poller
+		self.configuration = configuration
 
 		# The actual work is done in the worker
-		self.worker = self.resolver_factory.createUDPWorker()
+		self.worker = self.resolver_factory.createUDPClient()
 
 		# All currently active clients (UDP and TCP)
 		self.workers = {}
 		self.workers[self.worker.socket] = self.worker
-                self.poller.addReadSocket('read_resolvers', self.worker.socket)
+                self.poller.addReadSocket('read_resolver', self.worker.socket)
+
+		# Track the clients currently expecting results
+		self.clients = {}
 
 		# Key should be the hostname rather than the request ID?
 		self.resolving = {}
 
-	def startResolving(self, client_id, hostname, decision):
-		identifier = self.worker.resolveHost(hostname)
-		self.resolving.setdefault(identifier, []).append(client_id, hostname, decision)
-		self.clients[client_id] = identifier
+		# TCP workers that have not yet sent a complete request
+		self.sending = {}
+
+		# track the current queries and when they were started
+		self.active = []
+
+	def cleanup(self):
+		cutoff = time.time() - 2
+		count = 0
+
+		print "CLEANUP"
+		for timestamp, client_id in self.active:
+			if timestamp > cutoff:
+				break
+
+			count += 1
+			identifier = self.clients.get(client_id)
+			if identifier:
+				data = self.resolving.pop(identifier, None)
+				if not data:
+					data = self.sending.pop(identifier, None)
+
+				if data:
+					client_id, hostname, command, decision = data
+					yield client_id, 'file', '\0'.join(('503', 'dns.html'))
+
+		if count:
+			self.active = self.active[count:]
+
+	def resolves(self, command, decision):
+		if command in ('download', 'connect'):
+			hostname = decision.split('\0')[0]
+			if isip(hostname):
+				res = False
+			else:
+				res = True
+		else:
+			res = False
+
+		return res
+
+	def extractHostname(self, command, decision):
+		if command == 'download':
+			hostname = decision.split('\0')[0]
+
+		elif command == 'connect':
+			hostname = decision.split('\0')[0]
+
+		else:
+			hostname = None
+
+		return hostname
+
+	def resolveDecision(self, command, decision, ip):
+		if command in ('download', 'connect'):
+			hostname, args = decision.split('\0', 1)
+			newdecision = '\0'.join((ip, args))
+		else:
+			newdecision = None
+
+		return newdecision
+
+	def startResolving(self, client_id, command, decision):
+		hostname = self.extractHostname(command, decision)
+
+		if hostname:
+			identifier = self.worker.resolveHost(hostname)
+			self.resolving[identifier] = client_id, hostname, command, decision
+			self.clients[client_id] = identifier
+			self.active.append((time.time(), client_id))
+		else:
+			identifier = None
 
 		return identifier
 
 	def startResolvingTCP(self, client_id, hostname, decision):
-		worker = self.resolver_worker.createTCPWorker()
-		self.workers[worker.socket] = worker
-		self.poller.addReadSocket('read_resolvers', worker.socket)
+		hostname = self.extractHostname(command, decision)
 
-		identifier = self.worker.resolveHost(hostname)
-		self.resolving[identifier] = client_id, hostname, decision
-		self.clients[client_id] = identifier
+		if hostname:
+			worker = self.resolver_worker.createTCPClient()
+			self.workers[worker.socket] = worker
+
+			identifier, all_sent = self.worker.resolveHost(hostname)
+			self.clients[client_id] = identifier
+			self.active.append((time.time(), client_id))
+
+			if all_sent:
+				self.poller.addReadSocket('read_resolver', worker.socket)
+				self.resolving[identifier] = client_id, hostname, command, decision
+			else:
+				self.poller.addWriteSocket('write_resolver', worker.socket)
+				self.sending[worker.socket] = client_id, hostname, command, decision
+
+		else:
+			identifier = None
 
 		return identifier
 
@@ -44,26 +130,26 @@ class ResolverManager(object):
 
 			data = self.resolving.pop(identifier, None)
 			if data:
-				client_id, hostname, decision = data
+				client_id, hostname, command, decision = data
 				self.clients.pop(client_id)
 
 				# check to see if we received an incomplete response
 				if not completed:
-					worker = self.worker = self.resolver_factory.createTCPWorker()
+					worker = self.worker = self.resolver_factory.createTCPClient()
 					# XXX:	this will start with a request for an A record again even if
 					#	the UDP client choked only once it asked for the AAAA
 					newidentifier = worker.resolveHost(hostname)
 					response = None
 
 					if newidentifier:
-						self.poller.addReadSocket('read_resolvers', worker.socket)
+						self.poller.addReadSocket('read_resolver', worker.socket)
 					else:
-						self.poller.addWriteSocket('write_resolvers', worker.socket)
-						self.sending[worker.socket] = worker
+						self.poller.addWriteSocket('write_resolver', worker.socket)
+						self.sending[worker.socket] = client_id, hostname, command, decision
 
 				# check to see if the worker started a new request
 				if newidentifier:
-					self.resolving[identifier] = client_id, hostname, decision
+					self.resolving[identifier] = client_id, hostname, command, decision
 					response = None
 
 				# we started a new (TCP) request and have not yet completely sent it
@@ -72,25 +158,27 @@ class ResolverManager(object):
 
 				# maybe we read the wrong response?
 				elif forhost != hostname:
-					self.resolving[identifier] = client_id, hostname, decision
+					self.resolving[identifier] = client_id, hostname, command, decision
 					self.clients[client_id] = identifier
+					self.active.append((time.time(), client_id))
 					response = None
 
 				# success
 				elif ip is not None:
-					response = client_id, hostname, decision, ip
+					resolved = self.resolveDecision(command, decision, ip)
+					response = client_id, command, resolved
 
 				# not found
 				else:
 					# XXX: 'peer' should be the peer ip
-					decision = '\0'.join('rewrite', '503', 'dns.html', 'http', '', hostname, '', 'peer')
-					response = client_id, hostname, decision, ip
+					newdecision = '\0'.join('503', 'dns.html', 'http', '', hostname, '', 'peer')
+					response = client_id, 'rewrite', newdecision
 
 			else:
 				response = None
 
 			if worker.isClosed():
-				self.poller.removeReadSocket('read_resolvers', sock)
+				self.poller.removeReadSocket('read_resolver', sock)
 				self.workers.pop(sock)
 
 		else:
@@ -101,13 +189,17 @@ class ResolverManager(object):
 
 	def continueSending(self, sock):
 		"""Continue sending data over the connected TCP socket"""
-		worker = self.sending.get(sock)
-		if worker:
+		data = self.sending.get(sock)
+		if data:
+			client_id, hostname, command, decision = data
+			worker = self.workers[sock]
+			identifier = self.clients[client_id]
+
 			res = worker.continueSending()
 
 			if res is False: # we've sent all we need to send
-				self.sending.pop(sock)
-				self.resolving[worker.socket] = socket
+				tmp = self.sending.pop(sock)
+				self.resolving[worker.socket] = tmp
 
-				self.poller.removeWriteSocket('write_resolvers', sock)
-				self.poller.addReadSocket('read_resolvers', sock)
+				self.poller.removeWriteSocket('write_resolver', sock)
+				self.poller.addReadSocket('read_resolver', sock)
