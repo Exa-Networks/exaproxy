@@ -51,11 +51,12 @@ class Supervisor(object):
 		self.poller.setupRead('read_proxy')           # Listening proxy sockets
 		self.poller.setupRead('read_web')             # Listening webserver sockets
 		self.poller.setupRead('read_workers')         # Pipes carrying responses from the child processes
-		self.poller.setupRead('read_resolvers')       # Sockets currently listening for DNS responses
+		self.poller.setupRead('read_resolver')       # Sockets currently listening for DNS responses
 
 		self.poller.setupRead('read_client')          # Active clients
 		self.poller.setupRead('opening_client')       # Clients we have not yet read a request from
 		self.poller.setupWrite('write_client')        # Active clients with buffered data to send
+		self.poller.setupWrite('write_resolver')      # Active DNS requests with buffered data to send
 
 		self.poller.setupRead('read_download')        # Established connections
 		self.poller.setupWrite('write_download')      # Established connections we have buffered data to send to
