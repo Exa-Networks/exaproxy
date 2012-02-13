@@ -34,7 +34,6 @@ class ResolverManager(object):
 		cutoff = time.time() - 2
 		count = 0
 
-		print "CLEANUP"
 		for timestamp, client_id in self.active:
 			if timestamp > cutoff:
 				break
