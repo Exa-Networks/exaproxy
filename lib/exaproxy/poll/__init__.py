@@ -1,6 +1,14 @@
 import select
 
-if hasattr(select, 'epoll'):
-	from epoll import EPoller as Poller
-else:
-	from selectpoll import SelectPoller as Poller
+from exaproxy.util.logger import logger
+
+
+def Poller (reactor,timeout):
+	if reactor not in ('epoll','select'):
+		logger.warning('supervisor','unknown reactor %s' % reactor)
+	if reactor == 'epoll' and hasattr(select, 'epoll'):
+		from epoll import EPoller as Poller
+		return Poller(timeout)
+	else:
+		from selectpoll import SelectPoller as Poller
+		return Poller(timeout)

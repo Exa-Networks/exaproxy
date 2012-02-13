@@ -153,7 +153,8 @@ defaults = {
 		'pidfile'     : (value.unquote,''                    , 'where to save the pid if we manage it'),
 		'user'        : (value.user,'nobody'                 , 'user to run as'),
 		'daemonise'   : (value.boolean,'false'               , 'should we run in the background'),
-		'resolver'    : (value.resolver,'/etc/resolv.conf'   , 'resolver file')
+		'resolver'    : (value.resolver,'/etc/resolv.conf'   , 'resolver file'),
+		'reactor'     : (value.unquote,'select'              , 'what event mechanism to use (select/epoll)'),
 	},
 	'logger' : {
 		'level'         : (value.syslog,'LOG_ERR'  , 'log message with at least the priority SYSLOG.<level>'),

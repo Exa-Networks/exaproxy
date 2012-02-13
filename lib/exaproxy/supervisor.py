@@ -24,7 +24,6 @@ from .network.server import Server
 from .http.page import Page
 from .http.monitor import Monitor
 
-
 from poll import Poller
 from .reactor import Reactor
 
@@ -47,7 +46,7 @@ class Supervisor(object):
 		self.pid = PID(self.configuration.daemon.pidfile)
 		self.daemon = Daemon(self.configuration.daemon.daemonise,self.configuration.daemon.user)
 
-		self.poller = Poller(2)
+		self.poller = Poller(self.configuration.daemon.reactor,2)
 
 		self.poller.setupRead('read_proxy')           # Listening proxy sockets
 		self.poller.setupRead('read_web')             # Listening webserver sockets

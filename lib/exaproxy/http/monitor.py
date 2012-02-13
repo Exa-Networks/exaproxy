@@ -53,6 +53,7 @@ class Monitor (object):
 			'exaproxy.profile.destination' : str(conf.profile.destination),
 			'exaproxy.daemon.resolver' : str(conf.daemon.resolver),
 			'exaproxy.daemon.user' : str(conf.daemon.user),
+			'exaproxy.daemon.reactor' : str(conf.daemon.reactor),
 			'exaproxy.global.version' : '%s %s' % (conf.proxy.name,str(conf.proxy.version)),
 			'exaproxy.logger.level.daemon' : str(conf.logger.daemon),
 			'exaproxy.logger.level.supervisor' : str(conf.logger.supervisor),
