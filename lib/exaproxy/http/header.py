@@ -145,8 +145,12 @@ class Header(dict):
 		dict.__setitem__ (self,key,value)
 
 	def pop(self, key, default=None):
-		res = dict.pop(self, key, default)
-		self.order.remove(key)
+		if key in self:
+			res = dict.pop(self, key)
+			self.order.remove(key)
+		else:
+			res = default
+
 		return res
 
 	def redirect(self, host, path):
