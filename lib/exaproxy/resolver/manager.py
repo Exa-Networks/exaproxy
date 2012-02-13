@@ -49,12 +49,25 @@ class ResolverManager(object):
 
 				# check to see if we received an incomplete response
 				if not completed:
-					newidentifier = self.startResolvingTCP(client_id, hostname, decision)
+					worker = self.worker = self.resolver_factory.createTCPWorker()
+					# XXX:	this will start with a request for an A record again even if
+					#	the UDP client choked only once it asked for the AAAA
+					newidentifier = worker.resolveHost(hostname)
 					response = None
 
+					if newidentifier:
+						self.poller.addReadSocket('read_resolvers', worker.socket)
+					else:
+						self.poller.addWriteSocket('write_resolvers', worker.socket)
+						self.sending[worker.socket] = worker
+
 				# check to see if the worker started a new request
-				elif newidentifier:
+				if newidentifier:
 					self.resolving[identifier] = client_id, hostname, decision
+					response = None
+
+				# we started a new (TCP) request and have not yet completely sent it
+				elif not completed:
 					response = None
 
 				# maybe we read the wrong response?
@@ -84,3 +97,17 @@ class ResolverManager(object):
 			response = None
 
 		return response
+
+
+	def continueSending(self, sock):
+		"""Continue sending data over the connected TCP socket"""
+		worker = self.sending.get(sock)
+		if worker:
+			res = worker.continueSending()
+
+			if res is False: # we've sent all we need to send
+				self.sending.pop(sock)
+				self.resolving[worker.socket] = socket
+
+				self.poller.removeWriteSocket('write_resolvers', sock)
+				self.poller.addReadSocket('read_resolvers', sock)
