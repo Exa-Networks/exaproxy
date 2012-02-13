@@ -176,21 +176,22 @@ class WorkerManager (object):
 
 		try:
 			if response:
-				client_id, decision = response.split('\0', 1)
+				client_id, command, decision = response.split('\0', 2)
 			else:
 				client_id = None
+				command = None
 				decision = None
+
 		except (ValueError, TypeError), e:
 			client_id = None
+			command = None
 			decision = None
 
-		if decision == 'hangup':
-			# Stuffing wid into client_id like this reduces the work
-			# that we need to do each time we have a response but seems
-			# a bad idea. Should we check that decision.startswith('hangup\0')
-			# and then split?
+		if command == 'hangup':
+			# XXX: wid must be taken from decision, not client_id
 			wid = client_id
 			client_id = None
+			command = None
 			decision = None
 
 			worker = self.worker.pop(wid, None)
@@ -202,4 +203,4 @@ class WorkerManager (object):
 			else:
 				worker = self.closing.pop(wid, None)
 
-		return client_id, decision
+		return client_id, command, decision

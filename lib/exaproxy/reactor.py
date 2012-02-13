@@ -109,11 +109,11 @@ class Reactor(object):
 
 			# decisions made by the child processes
 			for worker in events.get('read_workers',[]):
-				client_id, decision = self.decider.getDecision(worker)
+				client_id, command, decision = self.decider.getDecision(worker)
 
 				# check that the client didn't get bored and go away
 				if client_id in self.client:
-					response, restricted = self.content.getContent(client_id, decision)
+					response, restricted = self.content.getContent(client_id, command, decision)
 
 					# Signal to the client that we'll be streaming data to it or
 					# give it the location of the local content to return.

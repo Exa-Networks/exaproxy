@@ -92,13 +92,8 @@ class ContentManager(object):
 
 		return downloader
 
-	def getContent(self, client_id, decision):
+	def getContent(self, client_id, command, args):
 		try:
-			try:
-				command, args = decision.split('\0', 1)
-			except (ValueError, TypeError), e:
-				raise ParsingError()
-
 			if command == 'download':
 				try:
 					host, port, request = args.split('\0', 2)
@@ -207,7 +202,7 @@ class ContentManager(object):
 
 		return client_id, response, flipflop
 
-	def retryDownload(self, client_id, decision):
+	def retryDownload(self, client_id, command, args):
 		return None
 
 	def readData(self, sock):
