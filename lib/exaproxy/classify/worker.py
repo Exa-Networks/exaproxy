@@ -203,27 +203,17 @@ class Worker (Thread):
 				self.respond_monitor(client_id, request.path)
 				continue
 
-			ipaddr = self.resolver.resolveHost(request.host)
-			if not ipaddr:
-				logger.warning('worker %s' % self.wid,'Could not resolve %s' % request.host)
-
-
 			# classify and return the filtered page
 			if request.method in ('GET', 'PUT', 'POST'):
-				if not ipaddr:
-					self.respond_rewrite(client_id, 503, 'dns.html', request.protocol, request.url, request.host, request.client)
-					#self.respond_file(client_id, 503, 'dns.html')
-					continue
-
 				classification, data = self._classify(request.client, request.method, request.url_noport)
 
 				if classification == 'permit':
-					self.respond_proxy(client_id, ipaddr, request.port, request)
+					self.respond_proxy(client_id, request.host, request.port, request)
 					continue
 					
 				elif classification == 'rewrite':
 					request.redirect(None, data)
-					self.respond_proxy(client_id, ipaddr, request.port, request)
+					self.respond_proxy(client_id, request.host, request.port, request)
 					continue
 
 				elif classification == 'file':
@@ -236,32 +226,22 @@ class Worker (Thread):
 					continue
 
 				elif classification == 'dns':
-					newip = self.resolver.resolveHost(data)
-					if newip:
-						self.respond_proxy(client_id, newip, request.port, request)
-					else:
-						logger.warning('worker %s' % self.wid,'Could not resolve redirected host %s' % data)
-						self.respond_rewrite(client_id, 503, 'dns.html', request.protocol, request.url, request.host, request.client)
+					self.respond_proxy(client_id, data, request.port, request)
 					continue
 
 				else:
-					self.respond_proxy(client_id, ipaddr, request.port, request)
+					self.respond_proxy(client_id, request.host, request.port, request)
 					continue
 
 			# someone want to use us as https proxy
 			if request.method == 'CONNECT':
 				# we do allow connect
 				if self.configuration.http.allow_connect:
-					if not ipaddr:
-						# XXX: the redirect url will have to be provided by the redirector
-						self.respond_redirect(client_id, 'http://www.exa-networks.co.uk/business/domain/dns/panel')
-						continue
-
 					classification, data = self._classify(request.client, request.method, request.url_noport)
 					if classification == 'redirect':
 						self.respond_redirect(client_id, data)
 					else:
-						self.respond_connect(client_id, ipaddr, request.port, request)
+						self.respond_connect(client_id, request.host, request.port, request)
 
 					continue
 				else:
