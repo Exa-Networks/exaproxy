@@ -12,6 +12,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import socket
 import select
 import time
+import errno
 
 from interface import IPoller
 
@@ -137,8 +138,16 @@ class EPoller (IPoller):
 
 
 	def poll(self):
-		res = self.master.poll(self.speed)
-		response = dict((name, []) for (name, poller, sockets, fdtosock) in self.pollers.values())
+		try:
+			res = self.master.poll(self.speed)
+		except IOError, e:
+			if e.errno != errno.EINTR:
+				raise
+
+			res = []
+			response = {}
+		else:
+			response = dict((name, []) for (name, poller, sockets, fdtosock) in self.pollers.values())
 
 		for fd, events in res:
 			name, poller, sockets, fdtosock = self.pollers[fd]
