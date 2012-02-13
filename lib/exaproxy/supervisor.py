@@ -166,8 +166,6 @@ class Supervisor(object):
 					if self.manager.high >1: self.manager.high -= 1
 					self.manager.low = min(self.manager.high,self.manager.low)
 
-				# make sure we have enough workers
-				self.manager.provision()
 				# check for IO change with select
 				self.reactor.run()
 
@@ -176,7 +174,10 @@ class Supervisor(object):
 
 				if self._timer:
 					self._timer = False
+					# save our monitoring stats
 					self.monitor.record()
+					# make sure we have enough workers
+					self.manager.provision()
 
 			except KeyboardInterrupt:
 				logger.info('supervisor','^C received')

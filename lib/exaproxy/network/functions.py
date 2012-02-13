@@ -77,7 +77,6 @@ def connect (ip,port,immediate=True):
 	except socket.error,e:
 		return None
 
-
 #	try:
 #		s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 64*1024)
 #	except socket.error, e:
