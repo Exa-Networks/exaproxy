@@ -94,33 +94,15 @@ class DNSResponseType(DNSBaseType):
 	def extract(self, hostname, rdtype, info, seen=[]):
 		data = info.get(hostname)
 
-		# query again in case we should have this info
-		# is this needed?
-		if seen and not data:
-			info = self.lookup(hostname, rdtype)
-			data = info.get(hostname)
-
 		if data:
 			if rdtype in data:
-				resolved = random.choice(data[rdtype])
-
-			elif rdtype != 'CNAME':
-				cnames = [cname for cname in data.get('CNAME', []) if cname not in seen]
-				seen = seen + cnames # do not modify seen
-
-				for cname in cnames:
-					res = self.extract(cname, rdtype, info, seen)
-					if res:
-						resolved = res
-						break
-				else:
-					resolved = None
+				value = random.choice(data[rdtype])
 			else:
-				resolved = None
+				value = None
 		else:
-			resolved = None
+			value = None
 
-		return resolved
+		return value
 
 	def getValue(self, qtype=None):
 		info = self.getResponse()

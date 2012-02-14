@@ -76,6 +76,10 @@ class UDPClient(DNSClient):
 	def getResponse(self):
 		"""Read a response from the wire and return the desired result if present"""
 
+		# We may need to make another query
+		newidentifier = None
+		newhost = None
+
 		# Read the response from the wire
 		response_s, peer = self.socket.recvfrom(65535)
 
@@ -89,13 +93,27 @@ class UDPClient(DNSClient):
 		if value is None:
 			if response.qtype == 'A':
 				value = response.getValue('AAAA')
-			
-		newidentifier = None
-		if value is None:
-			if response.qtype == 'A':
-				newidentifier = self.resolveHost(response.qhost, qtype='AAAA')
 
-		return response.identifier, response.qhost, value, response.isComplete(), newidentifier
+				if value is None:
+					newidentifier = self.resolveHost(response.qhost, qtype='AAAA')
+					newhost = response.qhost
+
+			elif response.qtype == 'AAAA':
+				cname = response.getValue('CNAME')
+
+				if cname is not None:
+					newidentifier = self.resolveHost(cname, qtype='A')
+					newhost = cname
+				else:
+					newidentifier = self.resolveHost(response.qhost, qtype='CNAME')
+					newhost = response.qhost
+
+		elif response.qtype == 'CNAME':
+			newidentifier = self.resolveHost(value, qtype='A')
+			newhost = value
+			value = None
+
+		return response.identifier, response.qhost, value, response.isComplete(), newidentifier, newhost
 
 	def isClosed(self):
 		return False

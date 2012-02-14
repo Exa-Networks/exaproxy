@@ -127,7 +127,7 @@ class ResolverManager(object):
 		worker = self.workers.get(sock)
 
 		if worker:
-			identifier, forhost, ip, completed, newidentifier = worker.getResponse()
+			identifier, forhost, ip, completed, newidentifier, newhost = worker.getResponse()
 
 			data = self.resolving.pop(identifier, None)
 			if data:
@@ -140,6 +140,7 @@ class ResolverManager(object):
 					# XXX:	this will start with a request for an A record again even if
 					#	the UDP client choked only once it asked for the AAAA
 					newidentifier = worker.resolveHost(hostname)
+					newhost = hostname
 					response = None
 
 					if newidentifier:
@@ -150,7 +151,7 @@ class ResolverManager(object):
 
 				# check to see if the worker started a new request
 				if newidentifier:
-					self.resolving[newidentifier] = client_id, hostname, command, decision
+					self.resolving[newidentifier] = client_id, newhost, command, decision
 					self.clients[client_id] = newidentifier
 					response = None
 
