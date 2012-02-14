@@ -62,7 +62,7 @@ class UDPClient(DNSClient):
 		# read configuration
 		DNSClient.__init__(self, resolv, port)
 
-	def resolveHost(self, hostname, qtype='A'):
+	def resolveHost(self, hostname, qtype='AAAA'):
 		"""Retrieve an A or AAAA entry for the requested hostname"""
 
 		# create an A request ready to send on the wire
@@ -91,25 +91,25 @@ class UDPClient(DNSClient):
 
 		# Or the IPv6 address
 		if value is None:
-			if response.qtype == 'A':
-				value = response.getValue('AAAA')
+			if response.qtype == 'AAAA':
+				value = response.getValue('A')
 
 				if value is None:
-					newidentifier = self.resolveHost(response.qhost, qtype='AAAA')
+					newidentifier = self.resolveHost(response.qhost, qtype='A')
 					newhost = response.qhost
 
-			elif response.qtype == 'AAAA':
+			elif response.qtype == 'A':
 				cname = response.getValue('CNAME')
 
 				if cname is not None:
-					newidentifier = self.resolveHost(cname, qtype='A')
+					newidentifier = self.resolveHost(cname, qtype='AAAA')
 					newhost = cname
 				else:
 					newidentifier = self.resolveHost(response.qhost, qtype='CNAME')
 					newhost = response.qhost
 
 		elif response.qtype == 'CNAME':
-			newidentifier = self.resolveHost(value, qtype='A')
+			newidentifier = self.resolveHost(value, qtype='AAAA')
 			newhost = value
 			value = None
 
