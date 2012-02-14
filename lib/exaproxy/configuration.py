@@ -126,12 +126,21 @@ class value (object):
 		return _priorities[log]
 
 defaults = {
-	'tcp' : {
+	'tcp4' : {
 		'host'    : (value.unquote,'127.0.0.1'   , 'the host the proxy listen on'),
 		'port'    : (value.integer,'31280'       , 'the port the proxy listen on'),
 		'timeout' : (value.integer,'5'           , 'time before we ...'),
 		'backlog' : (value.integer,'200'         , 'when busy how many connection should the OS keep for us'),
-		'speed'   : (value.integer,'2'           , 'when waiting for connection how long are we sleeping for'),
+		'listen'  : (value.boolean,'true'        , 'should we listen for connections over IPv4'),
+		'out'     : (value.boolean,'true'        , 'allow connections to remote web servers over IPv4'),
+	},
+	'tcp6' : {
+		'host'    : (value.unquote,'::1'         , 'the host the proxy listen on'),
+		'port'    : (value.integer,'31280'       , 'the port the proxy listen on'),
+		'timeout' : (value.integer,'5'           , 'time before we ...'),
+		'backlog' : (value.integer,'200'         , 'when busy how many connection should the OS keep for us'),
+		'listen'  : (value.boolean,'false'       , 'should we listen for connections over IPv6'),
+		'out'     : (value.boolean,'true'        , 'allow connections to remote web servers over IPv6'),
 	},
 	'redirector' : {
 		'program' : (value.exe,'etc/exaproxy/redirector/allow'  , 'the program used to know where to send request'),
@@ -153,7 +162,8 @@ defaults = {
 		'pidfile'     : (value.unquote,''                    , 'where to save the pid if we manage it'),
 		'user'        : (value.user,'nobody'                 , 'user to run as'),
 		'daemonise'   : (value.boolean,'false'               , 'should we run in the background'),
-		'reactor'     : (value.unquote,'select'              , 'what event mechanism to use (select/epoll)'),
+		'reactor'     : (value.unquote,'epoll'               , 'what event mechanism to use (select/epoll)'),
+		'speed'       : (value.integer,'2'                   , 'when waiting for connection how long are we sleeping for'),
 	},
 	'dns' : {
 		'resolver' : (value.resolver,'/etc/resolv.conf'   , 'resolver file'),

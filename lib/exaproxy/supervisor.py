@@ -46,7 +46,7 @@ class Supervisor(object):
 		self.pid = PID(self.configuration.daemon.pidfile)
 		self.daemon = Daemon(self.configuration.daemon.daemonise,self.configuration.daemon.user)
 
-		self.poller = Poller(self.configuration.daemon.reactor,2)
+		self.poller = Poller(self.configuration.daemon.reactor, self.configuration.daemon.speed)
 
 		self.poller.setupRead('read_proxy')           # Listening proxy sockets
 		self.poller.setupRead('read_web')             # Listening webserver sockets
@@ -199,12 +199,27 @@ class Supervisor(object):
 		# start our threads
 		self.manager.start()
 
+
 		# only start listening once we know we were able to fork our worker processes
-		tcp = self.configuration.tcp
-		s = self.proxy.listen(tcp.host,tcp.port, tcp.timeout, tcp.backlog)
-		ok = bool(s)
-		if not s:
-			logger.error('supervisor', 'Unable to listen on %s:%s' % (tcp.host,tcp.port))
+		tcp4 = self.configuration.tcp4
+		tcp6 = self.configuration.tcp6
+
+		ok = bool(tcp4.listen or tcp6.listen)
+		if not ok:
+			logger.error('supervisor', 'Not listening on IPv4 or IPv6.')
+
+		if tcp4.listen:
+			s = self.proxy.listen(tcp4.host,tcp4.port, tcp4.timeout, tcp4.backlog)
+			ok = bool(s)
+			if not s:
+				logger.error('supervisor', 'Unable to listen on %s:%s' % (tcp4.host,tcp4.port))
+
+		if tcp6.listen:
+			s = self.proxy.listen(tcp6.host,tcp6.port, tcp6.timeout, tcp6.backlog)
+			ok = bool(s)
+			if not s:
+				logger.error('supervisor', 'Unable to listen on %s:%s' % (tcp6.host,tcp6.port))
+
 
 		if self.configuration.web.enabled:
 			s = self.web.listen('127.0.0.1',self.configuration.web.port, 10, 10)
