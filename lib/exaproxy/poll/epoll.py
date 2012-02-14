@@ -64,8 +64,6 @@ class EPoller (IPoller):
 		if socket in sockets:
 			if corked.pop(socket, None):
 				poller.register(socket, EPOLLIN | EPOLLHUP)
-			else:
-				print "TRIED TO POP UNCORKED SOCKET", name, socket
 
 	def setupRead(self, name):
 		if name not in self.sockets:
