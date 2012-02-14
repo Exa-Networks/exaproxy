@@ -173,7 +173,7 @@ class ResolverManager(object):
 				# not found
 				else:
 					# XXX: 'peer' should be the peer ip
-					newdecision = '\0'.join('503', 'dns.html', 'http', '', hostname, '', 'peer')
+					newdecision = '\0'.join(('503', 'dns.html', 'http', '', hostname, '', 'peer'))
 					response = client_id, 'rewrite', newdecision
 
 			else:
