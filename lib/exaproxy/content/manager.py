@@ -101,7 +101,11 @@ class ContentManager(object):
 					raise ParsingError()
 
 				downloader = self.newDownloader(client_id, host, int(port), command, request)
-				content = ('stream', '') if downloader is not None else None
+				if downloader is not None:
+					content = ('stream', '')
+				else:
+					content = self.getLocalContent('400', 'noconnect.html')
+
 				restricted = True
 
 			elif command == 'connect':
@@ -111,8 +115,12 @@ class ContentManager(object):
 					raise ParsingError()
 
 				downloader = self.newDownloader(client_id, host, int(port), command, '')
-				content = ('stream', '') if downloader is not None else None
-				restricted = False
+				if downloader is not None:
+					content = ('stream', '')
+					restricted = False
+				else:
+					content = self.getLocalContent('400', 'noconnect.html')
+					restricted = True
 
 			elif command == 'redirect':
 				redirect_url = args
