@@ -169,10 +169,10 @@ class DNSCodec:
 		authorities, data, names, offset = self._decodeResources(data, response_s, names, header.authority_len, offset)
 		additionals, data, names, offset = self._decodeResources(data, response_s, names, header.additional_len, offset)
 
-		queries = [self.query_factory(q.querytype, q.queryname) for q in queries]
-		responses = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in responses]
-		authorities = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in authorities]
-		additionals = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in additionals]
+		queries = [self.query_factory(q.querytype, q.queryname) for q in queries] if queries is not None else None
+		responses = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in responses] if responses is not None else None
+		authorities = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in authorities] if authorities is not None else None
+		additionals = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in additionals] if additionals is not None else None
 
 		response = self.response_factory(header.identifier, queries, responses, authorities, additionals)
 		return response
