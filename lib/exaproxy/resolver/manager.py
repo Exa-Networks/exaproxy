@@ -150,7 +150,8 @@ class ResolverManager(object):
 
 				# check to see if the worker started a new request
 				if newidentifier:
-					self.resolving[identifier] = client_id, hostname, command, decision
+					self.resolving[newidentifier] = client_id, hostname, command, decision
+					self.clients[client_id] = newidentifier
 					response = None
 
 				# we started a new (TCP) request and have not yet completely sent it
