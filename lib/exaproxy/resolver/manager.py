@@ -12,7 +12,7 @@ class ResolverManager(object):
 		self.timeout = configuration.dns.timeout
 
 		# The actual work is done in the worker
-		self.worker = self.resolver_factory.createUDPClient(self.resolv)
+		self.worker = self.resolver_factory.createUDPClient(configuration, self.resolv)
 
 		# All currently active clients (UDP and TCP)
 		self.workers = {}
@@ -104,7 +104,7 @@ class ResolverManager(object):
 		hostname = self.extractHostname(command, decision)
 
 		if hostname:
-			worker = self.resolver_worker.createTCPClient(self.resolv)
+			worker = self.resolver_worker.createTCPClient(self.configuration, self.resolv)
 			self.workers[worker.socket] = worker
 
 			identifier, all_sent = self.worker.resolveHost(hostname)
@@ -127,16 +127,22 @@ class ResolverManager(object):
 		worker = self.workers.get(sock)
 
 		if worker:
-			identifier, forhost, ip, completed, newidentifier, newhost = worker.getResponse()
+			result = worker.getResponse()
 
-			data = self.resolving.pop(identifier, None)
+			if result:
+				identifier, forhost, ip, completed, newidentifier, newhost = result
+				data = self.resolving.pop(identifier, None)
+			else:
+				# most likely we have not read a full request over TCP
+				data = None
+
 			if data:
 				client_id, hostname, command, decision = data
 				self.clients.pop(client_id)
 
 				# check to see if we received an incomplete response
 				if not completed:
-					worker = self.worker = self.resolver_factory.createTCPClient(self.resolv)
+					worker = self.worker = self.resolver_factory.createTCPClient(self.configuration, self.resolv)
 					# XXX:	this will start with a request for an A record again even if
 					#	the UDP client choked only once it asked for the AAAA
 					newidentifier = worker.resolveHost(hostname)
@@ -155,7 +161,7 @@ class ResolverManager(object):
 					self.clients[client_id] = newidentifier
 					response = None
 
-				# we started a new (TCP) request and have not yet completely sent it
+				# we just started a new (TCP) request and have not yet completely sent it
 				elif not completed:
 					response = None
 

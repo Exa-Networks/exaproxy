@@ -13,7 +13,8 @@ class DNSClient(object):
 	RequestFactory = DNSRequestFactory
 	ResponseFactory = DNSResponseFactory
 
-	def __init__(self, resolv=None, port=53):
+	def __init__(self, configuration, resolv=None, port=53):
+		self.configuration = configuration
 		config = self.parseConfig(resolv or DEFAULT_RESOLV)
 		self.servers = config['nameserver']
 		self.port = port
@@ -48,22 +49,14 @@ class DNSClient(object):
 
 		return result
 
-	def isClosed(self):
-		raise NotImplementedError
-
-
-
-class UDPClient(DNSClient):
-	def __init__(self, resolv, port):
-		self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-		self.request_factory = self.RequestFactory()
-		self.response_factory = self.ResponseFactory()
-
-		# read configuration
-		DNSClient.__init__(self, resolv, port)
-
-	def resolveHost(self, hostname, qtype='AAAA'):
+	def resolveHost(self, hostname, qtype=None):
 		"""Retrieve an A or AAAA entry for the requested hostname"""
+
+		if qtype is None:
+			if self.configuration.tcp6.out:
+				qtype = 'AAAA'
+			else:
+				qtype = 'A'
 
 		# create an A request ready to send on the wire
 		identifier = self.nextid
@@ -89,9 +82,9 @@ class UDPClient(DNSClient):
 		# Try to get the IP address we asked for
 		value = response.getValue()
 
-		# Or the IPv6 address
+		# Or the IPv4 address
 		if value is None:
-			if response.qtype == 'AAAA':
+			if response.qtype == 'AAAA' and self.configuration.tcp4.out:
 				value = response.getValue('A')
 
 				if value is None:
@@ -102,27 +95,42 @@ class UDPClient(DNSClient):
 				cname = response.getValue('CNAME')
 
 				if cname is not None:
-					newidentifier = self.resolveHost(cname, qtype='AAAA')
+					newidentifier = self.resolveHost(cname)
 					newhost = cname
 				else:
 					newidentifier = self.resolveHost(response.qhost, qtype='CNAME')
 					newhost = response.qhost
 
 		elif response.qtype == 'CNAME':
-			newidentifier = self.resolveHost(value, qtype='AAAA')
+			newidentifier = self.resolveHost(value)
 			newhost = value
 			value = None
 
 		return response.identifier, response.qhost, value, response.isComplete(), newidentifier, newhost
 
 	def isClosed(self):
+		raise NotImplementedError
+
+
+
+class UDPClient(DNSClient):
+	def __init__(self, configuration, resolv, port):
+		self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+		self.request_factory = self.RequestFactory()
+		self.response_factory = self.ResponseFactory()
+
+		# read configuration
+		DNSClient.__init__(self, configuration, resolv, port)
+
+
+	def isClosed(self):
 		return False
 
 
 class TCPClient(DNSClient):
-	def __init__(self, resolv, port):
+	def __init__(self, configuration, resolv, port):
 		# read configuration
-		DNSClient.__init__(self, resolv, port)
+		DNSClient.__init__(self, configuration, resolv, port)
 
 		self.socket = self.startConnecting()
 		self.request_factory = self.RequestFactory()
@@ -185,8 +193,8 @@ class TCPClient(DNSClient):
 		return identifier if res else None
 
 class DNSResolver(object):
-	def createUDPClient(self,resolv,port=53):
-		return UDPClient(resolv,port)
+	def createUDPClient(self,configuration,resolv,port=53):
+		return UDPClient(configuration,resolv,port)
 
-	def createTCPClient(self,resolv,port=53):
-		return TCPClient(resolv,port)
+	def createTCPClient(self,configuration,resolv,port=53):
+		return TCPClient(configuration,resolv,port)
