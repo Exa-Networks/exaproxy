@@ -109,7 +109,7 @@ class value (object):
 		for resolver in paths:
 			if os.path.exists(resolver):
 				with open(resolver) as r:
-					if 'nameserver' in [line.strip().split(None,1)[0].lower() for line in r.readlines()]:
+					if 'nameserver' in (line.strip().split(None,1)[0].lower() for line in r.readlines()):
 						return resolver
 		raise TypeError('resolv.conf can not be found')
 

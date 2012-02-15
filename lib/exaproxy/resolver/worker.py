@@ -7,8 +7,6 @@ from exaproxy.dns.resolver import DNSResponseFactory
 from exaproxy.network.functions import connect
 from exaproxy.network.functions import errno_block
 
-DEFAULT_RESOLV='/etc/resolv.conf'
-
 
 def cycle_identifiers():
 	while True:
@@ -26,7 +24,7 @@ class DNSClient(object):
 		self.configuration = configuration
 		self.request_factory = self.RequestFactory()
 		self.response_factory = self.ResponseFactory()
-		config = self.parseConfig(resolv or DEFAULT_RESOLV)
+		config = self.parseConfig(resolv)
 		self.servers = config['nameserver']
 		self.port = port
 		self.extended = False
