@@ -22,8 +22,6 @@ from exaproxy.http.header import Header
 
 from exaproxy.util.logger import logger
 
-from exaproxy.network.resolver import DNSResolver
-
 class Worker (Thread):
 	# TODO : if the program is a function, fork and run :)
 	
@@ -34,8 +32,6 @@ class Worker (Thread):
 		r, w = os.pipe()                                # pipe for communication with the main thread
 		self.response_box_write = os.fdopen(w,'w',0)    # results are written here
 		self.response_box_read = os.fdopen(r,'r',0)     # read from the main thread
-
-		self.resolver = DNSResolver(self.configuration.dns.resolver)
 
 		self.wid = name                               # a unique name
 		self.creation = time.time()                   # when the thread was created
