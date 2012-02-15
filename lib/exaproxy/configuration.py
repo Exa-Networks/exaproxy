@@ -168,6 +168,8 @@ defaults = {
 	'dns' : {
 		'resolver' : (value.resolver,'/etc/resolv.conf'   , 'resolver file'),
 		'timeout'  : (value.integer,'2'                   , 'how long to wait for DNS replies'),
+		'cache_expiry' : (value.integer,'120'             , 'amount of time we will cache dns results for'),
+		'expire_items' : (value.integer,'200'             , 'max number of cached items we will expire during cleanup'),
 	},
 	'logger' : {
 		'level'         : (value.syslog,'LOG_ERR'  , 'log message with at least the priority SYSLOG.<level>'),
