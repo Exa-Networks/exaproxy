@@ -83,7 +83,7 @@ class value (object):
 		path = value.unquote(path)
 		paths = [
 			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),path)),
-			os.path.normpath(os.path.join('/','etc','exabgp','exabgp.conf',path)),
+			os.path.normpath(os.path.join('/','etc','exaproxy','exaproxy.conf',path)),
 			os.path.normpath(path)
 		]
 		options = [path for path in paths if os.path.exists(path)]
@@ -103,8 +103,8 @@ class value (object):
 		paths = [
 			os.path.normpath(path),
 			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),path)),
-			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),'etc','exabgp','resolv.conf')),
-			os.path.normpath(os.path.join('/','etc','exabgp','exabgp.conf',path)),
+			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),'etc','exaproxy','resolv.conf')),
+			os.path.normpath(os.path.join('/','etc','exaproxy','resolv.conf',path)),
 		]
 		for resolver in paths:
 			if os.path.exists(resolver):
@@ -216,7 +216,7 @@ def _configuration ():
 
 	ini_file = [path for path in _conf_paths if os.path.exists(path)][0]
 	if not ini_file:
-		raise ConfigurationError('could not find exabgp.conf file')
+		raise ConfigurationError('could not find exaproxy.conf file')
 
 	ini = ConfigParser.ConfigParser()
 	ini.read(ini_file)
