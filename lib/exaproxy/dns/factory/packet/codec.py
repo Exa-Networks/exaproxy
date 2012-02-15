@@ -138,7 +138,7 @@ class DNSCodec:
 
 	def _decodeHeader(self, message_s):
 		if len(message_s) < 12:
-			return None
+			return None, ''
 
 		header = DNSDecodedHeader(message_s)
 		data = message_s[12:]
@@ -147,6 +147,9 @@ class DNSCodec:
 
 	def decodeRequest(self, request_s):
 		header, data = self._decodeHeader(request_s)
+		if header is None:
+			return None
+
 		if header.qr != 0:  # request
 			return None
 
@@ -157,33 +160,46 @@ class DNSCodec:
 		queries = [self.query_factory(q.querytype, q.queryname) for q in queries]
 		return self.request_factory(header.identifier, queries)
 
+	def decodeResponse(self, response_s, extended=False):
+		if extended:
+			length = len(response_s)
+			claimed = struct.unpack('>H', response_s[:2])[0] if length >= 2 else 0
+			if length == claimed + 2:
+				response_s = response_s[2:]
+			else:
+				response_s = ''
 
-
-	def decodeResponse(self, response_s):
 		header, data = self._decodeHeader(response_s)
-		if header.qr != 1:  # response
-			return None
 
-		queries, data, names, offset = self._decodeQueries(data, header.query_len)
-		responses, data, names, offset = self._decodeResources(data, response_s, names, header.response_len, offset)
-		authorities, data, names, offset = self._decodeResources(data, response_s, names, header.authority_len, offset)
-		additionals, data, names, offset = self._decodeResources(data, response_s, names, header.additional_len, offset)
+		if header is not None and header.qr == 1:  # response
+			identifier = header.identifier
+			queries, data, names, offset = self._decodeQueries(data, header.query_len)
+			responses, data, names, offset = self._decodeResources(data, response_s, names, header.response_len, offset)
+			authorities, data, names, offset = self._decodeResources(data, response_s, names, header.authority_len, offset)
+			additionals, data, names, offset = self._decodeResources(data, response_s, names, header.additional_len, offset)
+		else:
+			identifier = None
+			queries = None
+			responses = None
+			authorities = None
+			additionals = None
 
 		queries = [self.query_factory(q.querytype, q.queryname) for q in queries] if queries is not None else None
 		responses = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in responses] if responses is not None else None
 		authorities = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in authorities] if authorities is not None else None
 		additionals = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in additionals] if additionals is not None else None
 
-		response = self.response_factory(header.identifier, queries, responses, authorities, additionals)
+		response = self.response_factory(identifier, queries, responses, authorities, additionals)
 		return response
 
-	def encodeRequest(self, request):
+	def encodeRequest(self, request, extended=False):
 		header_s = struct.pack('>H2sH6s', request.identifier, '\1\0', len(request.queries), '\0\0\0\0\0\0')
 
 		for q in request.queries:
 			name = ''.join('%c%s' % (len(p), p) for p in q.name.split('.')) + '\0'
 			header_s += struct.pack('>%ssHH' % len(name), name, q.VALUE, q.CLASS)
 
+		if extended:
+			header_s = struct.pack('>H', len(header_s)) + header_s
+
 		return header_s
-
-

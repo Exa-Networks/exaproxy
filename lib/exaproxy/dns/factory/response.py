@@ -12,5 +12,5 @@ class DNSResponseFactory:
 	def serializeResponse(self, response):
 		return self.codec.encodeResponse(reponse)
 
-	def normalizeResponse(self, response_s):
-		return self.codec.decodeResponse(response_s)
+	def normalizeResponse(self, response, extended=False):
+		return self.codec.decodeResponse(response, extended)

@@ -5,30 +5,35 @@ from exaproxy.dns.resolver import DNSRequestFactory
 from exaproxy.dns.resolver import DNSResponseFactory
 
 from exaproxy.network.functions import connect
+from exaproxy.network.functions import errno_block
 
 DEFAULT_RESOLV='/etc/resolv.conf'
 
 
+def cycle_identifiers():
+	while True:
+		for identifier in xrange(0xffff):
+			yield identifier
+
+next_identifier = cycle_identifiers().next
+
 class DNSClient(object):
 	RequestFactory = DNSRequestFactory
 	ResponseFactory = DNSResponseFactory
+	tcp_factory = staticmethod(connect)
 
 	def __init__(self, configuration, resolv=None, port=53):
 		self.configuration = configuration
+		self.request_factory = self.RequestFactory()
+		self.response_factory = self.ResponseFactory()
 		config = self.parseConfig(resolv or DEFAULT_RESOLV)
 		self.servers = config['nameserver']
 		self.port = port
-		self._id = 0
+		self.extended = False
 
 	@property
 	def server(self):
 		return random.choice(self.servers)
-
-	@property
-	def nextid(self):
-		res = self._id
-		self._id += 1
-		return res
 
 	def parseConfig(self, filename):
 		"""Take our configuration from a resolv file"""
@@ -59,25 +64,26 @@ class DNSClient(object):
 				qtype = 'A'
 
 		# create an A request ready to send on the wire
-		identifier = self.nextid
+		identifier = next_identifier()
 		request_s = self.request_factory.createRequestString(identifier, qtype, hostname)
 
 		# and send it over the wire
 		self.socket.sendto(request_s, (self.server, self.port))
-		return identifier
+		return identifier, True
 
 	def getResponse(self):
 		"""Read a response from the wire and return the desired result if present"""
 
 		# We may need to make another query
 		newidentifier = None
+		newcomplete = True
 		newhost = None
 
 		# Read the response from the wire
 		response_s, peer = self.socket.recvfrom(65535)
 
 		# and convert it into something we can play with
-		response = self.response_factory.normalizeResponse(response_s)
+		response = self.response_factory.normalizeResponse(response_s, extended=self.extended)
 
 		# Try to get the IP address we asked for
 		value = response.getValue()
@@ -88,25 +94,25 @@ class DNSClient(object):
 				value = response.getValue('A')
 
 				if value is None:
-					newidentifier = self.resolveHost(response.qhost, qtype='A')
+					newidentifier, newcomplete = self.resolveHost(response.qhost, qtype='A')
 					newhost = response.qhost
 
 			elif response.qtype == 'A':
 				cname = response.getValue('CNAME')
 
 				if cname is not None:
-					newidentifier = self.resolveHost(cname)
+					newidentifier, newcomplete = self.resolveHost(cname)
 					newhost = cname
 				else:
-					newidentifier = self.resolveHost(response.qhost, qtype='CNAME')
+					newidentifier, newcomplete = self.resolveHost(response.qhost, qtype='CNAME')
 					newhost = response.qhost
 
 		elif response.qtype == 'CNAME':
-			newidentifier = self.resolveHost(value)
+			newidentifier, newcomplete = self.resolveHost(value)
 			newhost = value
 			value = None
 
-		return response.identifier, response.qhost, value, response.isComplete(), newidentifier, newhost
+		return response.identifier, response.qhost, value, response.isComplete(), newidentifier, newhost, newcomplete
 
 	def isClosed(self):
 		raise NotImplementedError
@@ -116,8 +122,6 @@ class DNSClient(object):
 class UDPClient(DNSClient):
 	def __init__(self, configuration, resolv, port):
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-		self.request_factory = self.RequestFactory()
-		self.response_factory = self.ResponseFactory()
 
 		# read configuration
 		DNSClient.__init__(self, configuration, resolv, port)
@@ -131,6 +135,7 @@ class TCPClient(DNSClient):
 	def __init__(self, configuration, resolv, port):
 		# read configuration
 		DNSClient.__init__(self, configuration, resolv, port)
+		self.extended = True
 
 		self.socket = self.startConnecting()
 		self.request_factory = self.RequestFactory()
@@ -171,18 +176,24 @@ class TCPClient(DNSClient):
 
 	def continueSending(self):
 		if self.writer:
-			res = self.writer.send()
+			res = self.writer.next()
 		else:
 			res = None
 
 		return res
 
-	def resolveHost(self, hostname, qtype='A'):
+	def resolveHost(self, hostname, qtype=None):
 		"""Retrieve an A or AAAA entry for the requested hostname"""
 
+		if qtype is None:
+			if self.configuration.tcp6.out:
+				qtype = 'AAAA'
+			else:
+				qtype = 'A'
+
 		# create an A request ready to send on the wire
-		identifier = self.nextid
-		request_s = self.request_factory.createRequestString(identifier, qtype, hostname)
+		identifier = next_identifier()
+		request_s = self.request_factory.createRequestString(identifier, qtype, hostname, extended=True)
 
 		self.writer = self._write(self.socket, request_s)
 
@@ -190,7 +201,11 @@ class TCPClient(DNSClient):
 		res = self.writer.next()
 
 		# let the manager know whether or not we have sent the entire query
-		return identifier if res else None
+		return identifier, res is False
+
+	def isClosed(self):
+		self.socket.close()
+		return True
 
 class DNSResolver(object):
 	def createUDPClient(self,configuration,resolv,port=53):

@@ -8,6 +8,7 @@ class ResolverManager(object):
 
 	def __init__(self, poller, configuration):
 		self.poller = poller
+		self.configuration = configuration # needed when creating new resolver instances
 		self.resolv = configuration.dns.resolver
 		self.timeout = configuration.dns.timeout
 
@@ -43,6 +44,7 @@ class ResolverManager(object):
 			identifier = self.clients.get(client_id)
 
 			if identifier is not None:
+				print 'discarding', identifier
 				data = self.resolving.pop(identifier, None)
 				if not data:
 					data = self.sending.pop(identifier, None)
@@ -91,7 +93,7 @@ class ResolverManager(object):
 		hostname = self.extractHostname(command, decision)
 
 		if hostname:
-			identifier = self.worker.resolveHost(hostname)
+			identifier, _ = self.worker.resolveHost(hostname)
 			self.resolving[identifier] = client_id, hostname, command, decision
 			self.clients[client_id] = identifier
 			self.active.append((time.time(), client_id))
@@ -100,21 +102,23 @@ class ResolverManager(object):
 
 		return identifier
 
-	def startResolvingTCP(self, client_id, hostname, decision):
+	def startResolvingTCP(self, client_id, command, decision):
 		hostname = self.extractHostname(command, decision)
 
 		if hostname:
-			worker = self.resolver_worker.createTCPClient(self.configuration, self.resolv)
+			worker = self.resolver_factory.createTCPClient(self.configuration, self.resolv)
 			self.workers[worker.socket] = worker
 
-			identifier, all_sent = self.worker.resolveHost(hostname)
+			identifier, all_sent = worker.resolveHost(hostname)
 			self.clients[client_id] = identifier
 			self.active.append((time.time(), client_id))
 
 			if all_sent:
+				print 'read_resolver', worker.socket
 				self.poller.addReadSocket('read_resolver', worker.socket)
 				self.resolving[identifier] = client_id, hostname, command, decision
 			else:
+				print 'write_resolver', worker.socket
 				self.poller.addWriteSocket('write_resolver', worker.socket)
 				self.sending[worker.socket] = client_id, hostname, command, decision
 
@@ -130,7 +134,8 @@ class ResolverManager(object):
 			result = worker.getResponse()
 
 			if result:
-				identifier, forhost, ip, completed, newidentifier, newhost = result
+				print result
+				identifier, forhost, ip, completed, newidentifier, newhost, newcomplete = result
 				data = self.resolving.pop(identifier, None)
 			else:
 				# most likely we have not read a full request over TCP
@@ -145,7 +150,7 @@ class ResolverManager(object):
 					worker = self.worker = self.resolver_factory.createTCPClient(self.configuration, self.resolv)
 					# XXX:	this will start with a request for an A record again even if
 					#	the UDP client choked only once it asked for the AAAA
-					newidentifier = worker.resolveHost(hostname)
+					newidentifier, all_sent = worker.resolveHost(hostname)
 					newhost = hostname
 					response = None
 
@@ -160,6 +165,14 @@ class ResolverManager(object):
 					self.resolving[newidentifier] = client_id, newhost, command, decision
 					self.clients[client_id] = newidentifier
 					response = None
+
+					if completed and newcomplete:
+						print 'READ RESOLVER'
+						self.poller.addReadSocket('read_resolver', worker.socket)
+					elif completed and not newcomplete:
+						print 'WRITE RESOLVER'
+						self.poller.addWriteSocket('write_resolver', worker.socket)
+						self.sending[worker.socket] = client_id, hostname, command, decision
 
 				# we just started a new (TCP) request and have not yet completely sent it
 				elif not completed:
@@ -186,9 +199,10 @@ class ResolverManager(object):
 			else:
 				response = None
 
-			if worker.isClosed():
-				self.poller.removeReadSocket('read_resolver', sock)
-				self.workers.pop(sock)
+			if response:
+				if worker.isClosed():
+					self.poller.removeReadSocket('read_resolver', sock)
+					self.workers.pop(sock)
 
 		else:
 			response = None

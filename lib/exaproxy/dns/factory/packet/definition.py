@@ -68,10 +68,12 @@ class DNSResponseType(DNSBaseType):
 		self.qtype = queries[0].NAME if queries else None
 		self.qhost = queries[0].name if queries else None
 
-		self.queries = queries
-		self.responses = responses
-		self.authorities = authorities
-		self.additionals = additionals
+		ok = None not in (identifier, queries, responses, authorities, additionals)
+
+		self.queries = queries if ok else []
+		self.responses = responses if ok else []
+		self.authorities = authorities if ok else []
+		self.additionals = additionals if ok else []
 
 
 	def getResponse(self):
