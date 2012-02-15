@@ -45,10 +45,10 @@ class ResolverManager(object):
 			return
 
 		count = len(self.cached)
-		stop = min(count, self.configuration.dns.expire_items)
+		stop = min(count, self.configuration.dns.expire)
 		position = stop-1
 
-		cutoff = time.time() - self.configuration.dns.cache_expiry
+		cutoff = time.time() - self.configuration.dns.cache
 
 		while position > 10:
 			timestamp, hostname = self.cached[position]

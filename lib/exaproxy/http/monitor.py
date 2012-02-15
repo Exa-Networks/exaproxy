@@ -54,6 +54,8 @@ class Monitor (object):
 			'exaproxy.profile.destination' : str(conf.profile.destination),
 			'exaproxy.dns.resolver' : str(conf.dns.resolver),
 			'exaproxy.dns.timeout' : str(conf.dns.timeout),
+			'exaproxy.dns.cache' : str(conf.dns.cache),
+			'exaproxy.dns.expire' : str(conf.dns.expire),
 			'exaproxy.daemon.user' : str(conf.daemon.user),
 			'exaproxy.daemon.reactor' : str(conf.daemon.reactor),
 			'exaproxy.global.version' : '%s %s' % (conf.proxy.name,str(conf.proxy.version)),

@@ -166,10 +166,10 @@ defaults = {
 		'speed'       : (value.integer,'2'                   , 'when waiting for connection how long are we sleeping for'),
 	},
 	'dns' : {
-		'resolver' : (value.resolver,'/etc/resolv.conf'   , 'resolver file'),
-		'timeout'  : (value.integer,'2'                   , 'how long to wait for DNS replies'),
-		'cache_expiry' : (value.integer,'120'             , 'amount of time we will cache dns results for'),
-		'expire_items' : (value.integer,'200'             , 'max number of cached items we will expire during cleanup'),
+		'resolver'     : (value.resolver,'/etc/resolv.conf'  , 'resolver file'),
+		'timeout'      : (value.integer,'2'                  , 'how long to wait for DNS replies'),
+		'cache'        : (value.integer,'120'                , 'amount of time (in seconds) we will cache dns results for'),
+		'expire'       : (value.integer,'200'                , 'maximum number of cached dns entries we will expire during each cleanup'),
 	},
 	'logger' : {
 		'level'         : (value.syslog,'LOG_ERR'  , 'log message with at least the priority SYSLOG.<level>'),
