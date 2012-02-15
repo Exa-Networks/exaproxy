@@ -56,10 +56,10 @@ class DNSClient(object):
 		"""Retrieve an A or AAAA entry for the requested hostname"""
 
 		if qtype is None:
-			if self.configuration.tcp6.out:
-				qtype = 'AAAA'
-			else:
+			if self.configuration.tcp4.out:
 				qtype = 'A'
+			else:
+				qtype = 'AAAA'
 
 		# create an A request ready to send on the wire
 		identifier = next_identifier()
@@ -88,14 +88,14 @@ class DNSClient(object):
 
 		# Or the IPv4 address
 		if value is None:
-			if response.qtype == 'AAAA' and self.configuration.tcp4.out:
-				value = response.getValue('A')
+			if response.qtype == 'A' and self.configuration.tcp4.out:
+				value = response.getValue('AAAA')
 
 				if value is None:
-					newidentifier, newcomplete = self.resolveHost(response.qhost, qtype='A')
+					newidentifier, newcomplete = self.resolveHost(response.qhost, qtype='AAAA')
 					newhost = response.qhost
 
-			elif response.qtype == 'A':
+			elif response.qtype == 'AAAA':
 				cname = response.getValue('CNAME')
 
 				if cname is not None:
@@ -184,10 +184,10 @@ class TCPClient(DNSClient):
 		"""Retrieve an A or AAAA entry for the requested hostname"""
 
 		if qtype is None:
-			if self.configuration.tcp6.out:
-				qtype = 'AAAA'
-			else:
+			if self.configuration.tcp4.out:
 				qtype = 'A'
+			else:
+				qtype = 'AAAA'
 
 		# create an A request ready to send on the wire
 		identifier = next_identifier()
