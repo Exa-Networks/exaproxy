@@ -168,7 +168,8 @@ defaults = {
 	'dns' : {
 		'resolver'     : (value.resolver,'/etc/resolv.conf'  , 'resolver file'),
 		'timeout'      : (value.integer,'2'                  , 'how long to wait for DNS replies'),
-		'cache'        : (value.integer,'120'                , 'amount of time (in seconds) we will cache dns results for'),
+		'force-ttl'    : (value.boolean,'true'               , 'do not use DNS ttl but the ttl value in this configuration'),
+		'ttl'          : (value.integer,'120'                , 'amount of time (in seconds) we will cache dns results for'),
 		'expire'       : (value.integer,'200'                , 'maximum number of cached dns entries we will expire during each cleanup'),
 	},
 	'logger' : {

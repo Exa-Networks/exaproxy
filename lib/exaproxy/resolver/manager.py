@@ -48,7 +48,7 @@ class ResolverManager(object):
 		stop = min(count, self.configuration.dns.expire)
 		position = stop-1
 
-		cutoff = time.time() - self.configuration.dns.cache
+		cutoff = time.time() - self.configuration.dns.ttl
 
 		while position > 10:
 			timestamp, hostname = self.cached[position]
@@ -136,13 +136,13 @@ class ResolverManager(object):
 				ip = self.cache[hostname]
 
 				if ip is not None:
-                                        resolved = self.resolveDecision(command, decision, ip)
-                                        response = client_id, command, resolved
+					resolved = self.resolveDecision(command, decision, ip)
+					response = client_id, command, resolved
 
-                                else:
-                                        # XXX: 'peer' should be the peer ip
-                                        newdecision = '\0'.join(('503', 'dns.html', 'http', '', hostname, '', 'peer'))
-                                        response = client_id, 'rewrite', newdecision
+				else:
+					# XXX: 'peer' should be the peer ip
+					newdecision = '\0'.join(('503', 'dns.html', 'http', '', hostname, '', 'peer'))
+					response = client_id, 'rewrite', newdecision
 
 			else:
 				identifier, _ = self.worker.resolveHost(hostname)
