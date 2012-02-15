@@ -1,8 +1,8 @@
 import random
 import socket
 
-from exaproxy.dns.resolver import DNSRequestFactory
-from exaproxy.dns.resolver import DNSResponseFactory
+from exaproxy.dns.factory.request import DNSRequestFactory
+from exaproxy.dns.factory.response import DNSResponseFactory
 
 from exaproxy.network.functions import connect
 from exaproxy.network.functions import errno_block
