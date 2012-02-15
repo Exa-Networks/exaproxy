@@ -32,6 +32,31 @@ class ResolverManager(object):
 		# track the current queries and when they were started
 		self.active = []
 
+		self.cache = {}
+		self.cached = []
+
+	def cacheDestination(self, hostname, ip):
+		self.cache[hostname] = ip
+		self.cached.append((time.time(), hostname))
+
+	def expireCache(self):
+		cutoff = time.time() - 3
+		pos = 0
+
+		for timestamp, hostname in self.cached:
+			if timestamp > cutoff:
+				break
+
+			pos += 1
+
+			if pos > 10:
+				break
+
+			self.cache.pop(hostname, None)
+
+		self.cached = self.cached[pos:]
+			
+
 	def cleanup(self):
 		cutoff = time.time() - self.timeout
 		count = 0
@@ -44,13 +69,12 @@ class ResolverManager(object):
 			identifier = self.clients.get(client_id)
 
 			if identifier is not None:
-				print 'discarding', identifier
 				data = self.resolving.pop(identifier, None)
 				if not data:
 					data = self.sending.pop(identifier, None)
 
 				if data:
-					client_id, hostname, command, decision = data
+					client_id, original, hostname, command, decision = data
 					yield client_id, 'rewrite', '\0'.join(('503', 'dns.html', '', '', hostname, ''))
 
 		if count:
@@ -93,14 +117,30 @@ class ResolverManager(object):
 		hostname = self.extractHostname(command, decision)
 
 		if hostname:
-			identifier, _ = self.worker.resolveHost(hostname)
-			self.resolving[identifier] = client_id, hostname, command, decision
-			self.clients[client_id] = identifier
-			self.active.append((time.time(), client_id))
+			if hostname in self.cache:
+				identifier = None
+				ip = self.cache[hostname]
+
+				if ip is not None:
+                                        resolved = self.resolveDecision(command, decision, ip)
+                                        response = client_id, command, resolved
+
+                                else:
+                                        # XXX: 'peer' should be the peer ip
+                                        newdecision = '\0'.join(('503', 'dns.html', 'http', '', hostname, '', 'peer'))
+                                        response = client_id, 'rewrite', newdecision
+
+			else:
+				identifier, _ = self.worker.resolveHost(hostname)
+				response = None
+				self.resolving[identifier] = client_id, hostname, hostname, command, decision
+				self.clients[client_id] = identifier
+				self.active.append((time.time(), client_id))
 		else:
 			identifier = None
+			response = None
 
-		return identifier
+		return identifier, response
 
 	def startResolvingTCP(self, client_id, command, decision):
 		hostname = self.extractHostname(command, decision)
@@ -114,13 +154,11 @@ class ResolverManager(object):
 			self.active.append((time.time(), client_id))
 
 			if all_sent:
-				print 'read_resolver', worker.socket
 				self.poller.addReadSocket('read_resolver', worker.socket)
-				self.resolving[identifier] = client_id, hostname, command, decision
+				self.resolving[identifier] = client_id, hostname, hostname, command, decision
 			else:
-				print 'write_resolver', worker.socket
 				self.poller.addWriteSocket('write_resolver', worker.socket)
-				self.sending[worker.socket] = client_id, hostname, command, decision
+				self.sending[worker.socket] = client_id, hostname, hostname, command, decision
 
 		else:
 			identifier = None
@@ -134,7 +172,6 @@ class ResolverManager(object):
 			result = worker.getResponse()
 
 			if result:
-				print result
 				identifier, forhost, ip, completed, newidentifier, newhost, newcomplete = result
 				data = self.resolving.pop(identifier, None)
 			else:
@@ -142,7 +179,7 @@ class ResolverManager(object):
 				data = None
 
 			if data:
-				client_id, hostname, command, decision = data
+				client_id, original, hostname, command, decision = data
 				self.clients.pop(client_id)
 
 				# check to see if we received an incomplete response
@@ -158,21 +195,19 @@ class ResolverManager(object):
 						self.poller.addReadSocket('read_resolver', worker.socket)
 					else:
 						self.poller.addWriteSocket('write_resolver', worker.socket)
-						self.sending[worker.socket] = client_id, hostname, command, decision
+						self.sending[worker.socket] = client_id, original, hostname, command, decision
 
 				# check to see if the worker started a new request
 				if newidentifier:
-					self.resolving[newidentifier] = client_id, newhost, command, decision
+					self.resolving[newidentifier] = client_id, original, newhost, command, decision
 					self.clients[client_id] = newidentifier
 					response = None
 
 					if completed and newcomplete:
-						print 'READ RESOLVER'
 						self.poller.addReadSocket('read_resolver', worker.socket)
 					elif completed and not newcomplete:
-						print 'WRITE RESOLVER'
 						self.poller.addWriteSocket('write_resolver', worker.socket)
-						self.sending[worker.socket] = client_id, hostname, command, decision
+						self.sending[worker.socket] = client_id, original, hostname, command, decision
 
 				# we just started a new (TCP) request and have not yet completely sent it
 				elif not completed:
@@ -180,7 +215,7 @@ class ResolverManager(object):
 
 				# maybe we read the wrong response?
 				elif forhost != hostname:
-					self.resolving[identifier] = client_id, hostname, command, decision
+					self.resolving[identifier] = client_id, original, hostname, command, decision
 					self.clients[client_id] = identifier
 					self.active.append((time.time(), client_id))
 					response = None
@@ -189,13 +224,14 @@ class ResolverManager(object):
 				elif ip is not None:
 					resolved = self.resolveDecision(command, decision, ip)
 					response = client_id, command, resolved
+					self.cacheDestination(original, ip)
 
 				# not found
 				else:
 					# XXX: 'peer' should be the peer ip
 					newdecision = '\0'.join(('503', 'dns.html', 'http', '', hostname, '', 'peer'))
 					response = client_id, 'rewrite', newdecision
-
+					self.cacheDestination(original, ip)
 			else:
 				response = None
 
@@ -214,7 +250,7 @@ class ResolverManager(object):
 		"""Continue sending data over the connected TCP socket"""
 		data = self.sending.get(sock)
 		if data:
-			client_id, hostname, command, decision = data
+			client_id, original, hostname, command, decision = data
 			worker = self.workers[sock]
 			identifier = self.clients[client_id]
 

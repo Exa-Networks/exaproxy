@@ -41,6 +41,8 @@ class Reactor(object):
 		for client_id, command, decision in timedout:
 			decisions.append((client_id, command, decision))
 
+		self.resolver.expireCache()
+
 		while self.running:
 			# wait until we have something to do
 			events = poller.poll()
@@ -118,10 +120,14 @@ class Reactor(object):
 				# check that the client didn't get bored and go away
 				if client_id in self.client:
 					if self.resolver.resolves(command, decision):
-						identifier = self.resolver.startResolving(client_id, command, decision)
+						identifier, response = self.resolver.startResolving(client_id, command, decision)
+
+						if response:
+							cid, command, decision = response
+							decisions.append((client_id, command, decision))
 
 						# something went wrong
-						if not identifier:
+						elif not identifier:
 							commmand, decision = self.decider.showInternalError()
 					else:
 						decisions.append((client_id, command, decision))
