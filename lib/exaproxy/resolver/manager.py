@@ -36,25 +36,39 @@ class ResolverManager(object):
 		self.cached = []
 
 	def cacheDestination(self, hostname, ip):
-		self.cache[hostname] = ip
-		self.cached.append((time.time(), hostname))
+		if hostname not in self.cache:
+			self.cache[hostname] = ip
+			self.cached.append((time.time(), hostname))
 
 	def expireCache(self):
-		cutoff = time.time() - 3
-		pos = 0
+		if not self.cached:
+			return
 
-		for timestamp, hostname in self.cached:
+		count = len(self.cached)
+		stop = min(count, self.configuration.dns.expire_items)
+		position = stop-1
+
+		cutoff = time.time() - self.configuration.dns.cache_expiry
+
+		while position > 10:
+			timestamp, hostname = self.cached[position]
 			if timestamp > cutoff:
 				break
 
-			pos += 1
+			position = int(position/1.3)
+		else:
+			position = 0
 
-			if pos > 10:
+		for timestamp, hostname in self.cached[position:stop]:
+			if timestamp > cutoff:
 				break
+
+			position += 1
 
 			self.cache.pop(hostname, None)
 
-		self.cached = self.cached[pos:]
+		if position:
+			self.cached = self.cached[position:]
 			
 
 	def cleanup(self):
