@@ -101,8 +101,8 @@ class Header(dict):
 					self['host'] = 'Host: ' + host
 
 			if method != 'CONNECT':
-				requested_host = self.get('host', ':').split(':', 1)[1].strip()
-				if host is not None and requested_host.lower() != host.lower():
+				requested_host = self.get('host', ':').split(':', 2)[1].strip()
+				if host is not None and requested_host.lower() != host.split(':', 1)[0].lower():
 					raise HostMismatch, 'make up your mind: %s - %s' % (requested_host, host)
 
 				host = requested_host
