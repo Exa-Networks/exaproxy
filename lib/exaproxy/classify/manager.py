@@ -188,8 +188,7 @@ class WorkerManager (object):
 			decision = None
 
 		if command == 'hangup':
-			# XXX: wid must be taken from decision, not client_id
-			wid = client_id
+			wid = decision
 			client_id = None
 			command = None
 			decision = None

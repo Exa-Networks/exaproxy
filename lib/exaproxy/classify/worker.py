@@ -160,7 +160,7 @@ class Worker (Thread):
 		self.respond('\0'.join((client_id, 'redirect', url)))
 
 	def respond_hangup(self, wid):
-		self.respond('\0'.join((wid, 'hangup')))
+		self.respond('\0'.join(('', 'hangup', wid)))
 
 	def run (self):
 		while self.running:
