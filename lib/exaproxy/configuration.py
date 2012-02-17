@@ -155,6 +155,7 @@ defaults = {
 	},
 	'web' : {
 		'enabled' : (value.boolean,'true'              , 'enable the built-in webserver'),
+		'host'    : (value.unquote,'127.0.0.1'         , 'the address on which we will listen'),
 		'port'    : (value.integer,'8080'              , 'port on which the web server listen'),
 		'html'    : (value.folder,'etc/exaproxy/html'  , 'where are the proxy served pages are taken from'),
 	},

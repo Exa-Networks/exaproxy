@@ -222,7 +222,7 @@ class Supervisor(object):
 
 
 		if self.configuration.web.enabled:
-			s = self.web.listen('127.0.0.1',self.configuration.web.port, 10, 10)
+			s = self.web.listen(self.configuration.web.host,self.configuration.web.port, 10, 10)
 			if not s:
 				logger.error('supervisor', 'Unable to listen on %s:%s' % ('127.0.0.1', self.configuration.web.port))
 				ok = False
