@@ -23,102 +23,36 @@ class Header(dict):
 		try:
 			request, remaining = header.split('\r\n',1)
 
-			method, fullpath, version = request.split()
+			method, pathstring, version = request.split()
 			method = method.upper()
 			version = version.split('/')[-1]
+			
+			protocol, pathstring = self.splitProtocol(pathstring)
+			host, pathstring = self.splitHost(pathstring)
+			port, path = self.splitPort(pathstring)
 
-			if '://' in fullpath:
-				x, b = fullpath.split('://', 1)
-				if '/' not in x:
-					fullpath = b
-					protocol = x
-				else:
-					protocol = 'http'
-			else:
-				protocol = 'http'
+			if port and not port.isdigit():
+				raise ValueError, 'Malformed headers'
 
+			headers = self.parseHeader(remaining)
+			self.update(headers)
 
-			if '/' in fullpath:
-				fullpath, path = fullpath.split('/', 1)
-				path = '/' + path
-			else:
-				path = '/'
+			headerhost, _ = self.splitHost(headers.get('host', '').split(':', 1)[1].strip())
 
-
-			if ':' in fullpath:
-				if fullpath.startswith('[') and ']' in fullpath:
-					host, morehost = (fullpath[1:].split(']', 1) + [None])[:2]
-					port = morehost.lstrip(':') if morehost else '80'
-				else:
-					host, port = fullpath.split(':', 1)
-
-				if not port.isdigit():
-					host = None
-					port = None
-					path = None
-				else:
-					port = int(port)
-			else:
-				# fullpath will be '' if GET / HTTP/1.x is used
-				host = fullpath
-				port = None
-
-			key = None
-			data = None
-
-			for line in remaining.split('\n'):
-				line = line.strip('\r')
-				if not line:
-					break
-
-				if line[0].isspace():
-					if key:
-						data += line.lstrip()
-						continue
-					else:
-						raise Exception, 'Whitespace before headers'
-
-				if ':' not in line:
-					raise Exception, 'Malformed headers'
-
-				
-				if key:
-					self.order.append(key)
-					self[key] = data
-
-				key,value = line.split(':',1)
-				key = key.strip().lower()
-				data = line
-				if not key:
-					raise Exception, 'Malformed headers'
-
-				if key == 'host' and not host:
-					host = value.strip().lower()
-
-
-			# buffered value holds the complete data for the current key
-			self.order.append(key)
-			self[key] = data
-
-			self['x-proxy-version'] = "X-Proxy-Version: %s version %s" % (configuration.proxy.name, configuration.proxy.version)
+			if not host:
+				host = headerhost
 
 			if method == 'CONNECT':
-				self.order.append('host')
 				if 'host' not in self:
 					self['host'] = 'Host: ' + host
 
-			if method != 'CONNECT':
-				requested_host = self.get('host', ':').split(':', 1)[1].strip()
-				
-				if requested_host.startswith('[') and ']' in requested_host:
-					requested_host = requested_host[1:].split(']')[0]
-				else:
-					requested_host = requested_host.split(':',1)[0]
+			else:
+				if host != headerhost:
+					raise HostMismatch, 'Make up your mind: %s - %s' % (host, headerhost)
 
-				if host is not None and requested_host.lower() != host.lower():
-					raise HostMismatch, 'make up your mind: %s - %s: %s %s' % (requested_host, host)
 
-				host = requested_host
+			# Is this the best place to add headers?
+			self['x-proxy-version'] = "X-Proxy-Version: %s version %s" % (configuration.proxy.name, configuration.proxy.version)
 
 			if configuration.http.x_forwarded_for:
 				client = self.get('x-forwarded-for', ':%s' % remote_ip).split(':', 1)[1].split(',')[-1].strip()
@@ -128,8 +62,8 @@ class Header(dict):
 			else:
 				client = remote_ip
 
-			url = host + ((':'+str(port)) if port is not None else '') + path
-			port = port if port is not None else 80
+			url = host + ((':'+port) if port is not None else '') + path
+			port = int(port) if port else 80
 
 			url_noport = host + path
 		except KeyboardInterrupt:
@@ -153,9 +87,16 @@ class Header(dict):
 		self.client = client
 
 	def __setitem__ (self,key,value):
-		if not key in self.order:
+		if key not in self.order:
 			self.order.append(key)
 		dict.__setitem__ (self,key,value)
+
+	def update(self, other):
+		for key, value in other.iteritems():
+			if key not in self.order:
+				self.order.append(key)
+
+		dict.update(self, other)
 
 	def pop(self, key, default=None):
 		if key in self:
@@ -183,3 +124,86 @@ class Header(dict):
 	def toString(self, linesep='\r\n'):
 		request = str(self.method) + ' ' + str(self.path) + ' HTTP/1.1'
 		return request + linesep + linesep.join(self[key] for key in self.order) + linesep + linesep
+
+
+	def parseHeader(self, headerstring):
+		headers = {}
+		key = None
+		data = ''
+
+		for line in headerstring.split('\n'):
+			line = line.strip('\r')
+			if not line:
+				break
+
+			if line[0].isspace():
+				if key:
+					data += line.lstrip()
+					continue
+				else:
+					raise ValueError, 'Whitespace before headers'
+
+			if ':' not in line:
+					raise ValueError, 'Malformed headers'
+
+			if key: headers[key] = data
+
+			key, value = line.split(':', 1)
+			key = key.strip().lower()
+			data = line
+			if not key:
+				raise ValueError, 'Malformed headers'
+
+		if key is not None:
+			headers[key] = data
+
+		return headers
+
+	def splitProtocol(self, pathstring):
+		if '://' in pathstring:
+			a, b = pathstring.split('://', 1)
+			if '/' not in a:
+				protocol = a
+				pathstring = b
+			else:
+				protocol = 'http'
+		else:
+			protocol = 'http'
+
+		return protocol, pathstring
+
+	def splitHost(self, pathstring):
+		if ':' in pathstring:
+			# check to see if we have an IPv6 address
+			if pathstring.startswith('[') and ']' in pathstring:
+				host, remaining = pathstring[1:].split(']', 1)
+			else:
+				host, remaining = pathstring.split(':', 1)
+				remaining = ':' + remaining
+
+				if '/' in host:
+					host, remaining = pathstring.split('/', 1)
+					remaining = '/' + remaining
+					
+		elif '/' in pathstring:
+			host, remaining = pathstring.split('/', 1)
+			remaining = '/' + remaining
+
+		else:
+			host = pathstring
+			remaining = '/'
+
+		return host, remaining
+
+	def splitPort(self, pathstring):
+		if pathstring.startswith(':'):
+			if '/' in pathstring:
+				port, pathstring = pathstring[1:].split('/', 1)
+				pathstring = '/' + pathstring
+			else:
+				port = None
+				pathstring = pathstring[1:]
+		else:
+			port = None
+
+		return port, pathstring
