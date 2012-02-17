@@ -201,8 +201,8 @@ class Header(dict):
 				port, pathstring = pathstring[1:].split('/', 1)
 				pathstring = '/' + pathstring
 			else:
-				port = None
-				pathstring = pathstring[1:]
+				port = pathstring[1:]
+				pathstring = '/'
 		else:
 			port = None
 
