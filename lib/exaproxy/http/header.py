@@ -46,7 +46,12 @@ class Header(dict):
 
 
 			if ':' in fullpath:
-				host, port = fullpath.split(':', 1)
+				if fullpath.startswith('[') and ']' in fullpath:
+					host, morehost = (fullpath[1:].split(']', 1) + [None])[:2]
+					port = morehost.lstrip(':') if morehost else '80'
+				else:
+					host, port = fullpath.split(':', 1)
+
 				if not port.isdigit():
 					host = None
 					port = None
@@ -75,6 +80,7 @@ class Header(dict):
 
 				if ':' not in line:
 					raise Exception, 'Malformed headers'
+
 				
 				if key:
 					self.order.append(key)
@@ -89,6 +95,7 @@ class Header(dict):
 				if key == 'host' and not host:
 					host = value.strip().lower()
 
+
 			# buffered value holds the complete data for the current key
 			self.order.append(key)
 			self[key] = data
@@ -101,9 +108,15 @@ class Header(dict):
 					self['host'] = 'Host: ' + host
 
 			if method != 'CONNECT':
-				requested_host = self.get('host', ':').split(':', 2)[1].strip()
-				if host is not None and requested_host.lower() != host.split(':', 1)[0].lower():
-					raise HostMismatch, 'make up your mind: %s - %s' % (requested_host, host)
+				requested_host = self.get('host', ':').split(':', 1)[1].strip()
+				
+				if requested_host.startswith('[') and ']' in requested_host:
+					requested_host = requested_host[1:].split(']')[0]
+				else:
+					requested_host = requested_host.split(':',1)[0]
+
+				if host is not None and requested_host.lower() != host.lower():
+					raise HostMismatch, 'make up your mind: %s - %s: %s %s' % (requested_host, host)
 
 				host = requested_host
 
