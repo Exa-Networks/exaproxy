@@ -7,8 +7,6 @@ Created by David Farrar  on 2011-11-30.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-# XXX: David, please add logging here ..
-
 import socket
 import errno
 
