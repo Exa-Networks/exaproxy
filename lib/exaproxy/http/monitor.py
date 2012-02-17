@@ -54,7 +54,7 @@ class Monitor (object):
 			'exaproxy.profile.destination' : str(conf.profile.destination),
 			'exaproxy.dns.resolver' : str(conf.dns.resolver),
 			'exaproxy.dns.timeout' : str(conf.dns.timeout),
-			'exaproxy.dns.force-ttl' : str(conf.dns.force_ttl),
+#			'exaproxy.dns.force-ttl' : str(conf.dns.force_ttl),
 			'exaproxy.dns.ttl' : str(conf.dns.ttl),
 			'exaproxy.dns.expire' : str(conf.dns.expire),
 			'exaproxy.daemon.user' : str(conf.daemon.user),
