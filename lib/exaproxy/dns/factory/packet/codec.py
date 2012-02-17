@@ -132,7 +132,8 @@ class DNSCodec:
 		return records, data, names, offset
 
 	def _decodeQueries(self, data, count, packet_s, names={}, offset=12):
-		return self._decodeRecords(data, count, self.query_decoder, packet_s, names, offset)
+		queries, data, names, offset = self._decodeRecords(data, count, self.query_decoder, packet_s, names, offset)
+		return [self.createQuery(q.querytype, q.queryname) for q in queries] if queries is not None else None, data, names, offset
 
 	def _encodeQueries(self, data, count, names={}, offset=12):
 		return self._encodeRecords(data, count, self.query_encoder, names, offset)
@@ -144,20 +145,21 @@ class DNSCodec:
 		return self._encodeRecords(data, count, self.response_encoder, names, offset)
 
 
-	def createRequest(self, header, queries=[]):
-		identifier = header.identifier
-		queries = [self.createQuery(q.querytype, q.queryname) for q in queries]
 
-		return self.request_factory(identifier, queries)
-		
 	def decodeRequest(self, request_s):
 		header, data = self._decodeHeader(request_s)
 
-		if header.qr == 0:  # request
+		if header is None:
+			request = None
+
+		elif header.qr == 0:  # request
 			queries, data, names, offset = self._decodeQueries(data, header.query_len, request_s)
-			request = self.request_factory(header, queries)
+			if queries:
+				request = self.request_factory(header.identifier, queries)
+			else:
+				request = None
 		else:
-			request = self.request_factory(header)
+			request = None
 
 		return request
 
@@ -173,6 +175,14 @@ class DNSCodec:
 
 
 	def createResponse(self, header, queries, responses, authorities, additionals):
+		identifier = header.identifier
+
+		queries = [self.createQuery(q.querytype, q.queryname) for q in queries]
+		responses = [self.createResource(r.querytype, r.queryname) for r in responses]
+		authorities = [self.createResource(r.querytype, r.queryname) for r in authorities]
+		additionals = [self.createResource(r.querytype, r.queryname) for r in additionals]
+
+		return self.request_factory(identifier, queries, responses, authorities, additionals)
 
 	def decodeResponse(self, response_s):
 		header, data = self._decodeHeader(response_s)
