@@ -17,9 +17,9 @@ class DNSResponseType:
 	encode_factory = None
 	decode_factory = None
 
-	def __init__(self, name, value, factory, packet_s):
+	def __init__(self, name, value):
 		self.name = name
-		self.value = factory(value, packet_s) if factory else value
+		self.value = value
 
 	def __str__(self):
 		if self.NAME is not None:

@@ -7,42 +7,34 @@ Created by David Farrar on 2012-02-08.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-# DNS Header
-
-#  Identification:   	Used to match reply packets to requests		16 bits
-#  QR:			Query / Response				 1 bit
-# XXX: complete
-
-
 import struct
 import convert
 
 from definition import DNSRequestType, DNSResponseType
-from definition import dns_query_types, dns_response_types
 
 
-class DNSDecodedHeader:
+class DNSHeaderDecoder:
 	def __init__(self, packet_s):
-		self.identifier = convert.u16(packet_s[0:2])  # 16 bits
+		self.identifier = convert.u16(packet_s[0:2])                           # 16 bits
 
-		flags = convert.u16(packet_s[2:4])            # 16 bits
-		self.qr = flags >> 15                         # 10000000 00000000
-		self.opcode = (flags >> 11) & 15              # 01111000 00000000
-		self.aa = (flags >> 10) & 1                   # 00000100 00000000
-		self.tc = (flags >> 9) & 1                    # 00000010 00000000
-		self.rd = (flags >> 8) & 1                    # 00000001 00000000
-		self.ra = (flags >> 7) & 1                    # 00000000 10000000
-		self.z =  (flags >> 6) & 1                    # 00000000 01000000
-		self.ad = (flags >> 5) & 1                    # 00000000 00100000
-		self.cd = (flags >> 4) & 1                    # 00000000 00010000
-		self.rcode = flags & 1                        # 00000000 00001111
+		flags = convert.u16(packet_s[2:4])                                     # 16 bits
+		self.qr = flags >> 15              # query/response        (enum)      # 10000000 00000000
+		self.opcode = (flags >> 11) & 15   # opcode                (enum)      # 01111000 00000000
+		self.aa = (flags >> 10) & 1        # authoritative         (bool)      # 00000100 00000000
+		self.tc = (flags >> 9) & 1         # truncated             (bool)      # 00000010 00000000
+		self.rd = (flags >> 8) & 1         # recursion desired     (bool)      # 00000001 00000000
+		self.ra = (flags >> 7) & 1         # recursion available   (bool)      # 00000000 10000000
+		self.z =  (flags >> 6) & 1         # no idea - rfc2929 2.1             # 00000000 01000000
+		self.ad = (flags >> 5) & 1         # authenticated         (bool)      # 00000000 00100000
+		self.cd = (flags >> 4) & 1         # checking disabled     (bool)      # 00000000 00010000
+		self.rcode = flags & 1             # return code                       # 00000000 00001111
 
-		self.query_len = convert.u16(packet_s[4:6])
-		self.response_len = convert.u16(packet_s[6:8])
-		self.authority_len = convert.u16(packet_s[8:10])
-		self.additional_len = convert.u16(packet_s[10:12])
+		self.query_len = convert.u16(packet_s[4:6])                # no. of queries   
+		self.response_len = convert.u16(packet_s[6:8])             # no. of answer RRs
+		self.authority_len = convert.u16(packet_s[8:10])           # no. of authority RRs
+		self.additional_len = convert.u16(packet_s[10:12])         # no. of additional RRs
 
-class DNSDecodedQuery:
+class DNSQueryDecoder:
 	def __init__(self, data):
 		queryname, ptr = convert.dns_string(data)
 		if queryname:
@@ -61,7 +53,7 @@ class DNSDecodedQuery:
 	def __len__(self):
 		return self._len
 
-class DNSDecodedResource :
+class DNSResourceDecoder :
 	def __init__(self, data, packet_s, names):
 		name, ptr = convert.dns_string(data)
 		total_read = len(name) + 2
@@ -94,112 +86,119 @@ class DNSDecodedResource :
 	def __len__(self):
 		return self._len
 
+
+
+
+
+
+
 class DNSCodec:
 	request_factory = DNSRequestType
 	response_factory = DNSResponseType
 
-	query_factory = dns_query_types.decodeType
-	resource_factory = dns_response_types.decodeType
+	header_decoder = DNSHeaderDecoder
+	query_decoder = DNSQueryDecoder
+	resource_decoder = DNSResourceDecoder
 
-	def _decodeQueries(self, data, count, offset=12):
-		queries = []
-		names = {}
-
-		for _ in xrange(count):
-			query = DNSDecodedQuery(data)
-			if query.queryname is None:
-				return None, '', names, offset
-
-			queries.append(query)
-			bytes_read = len(query)
-			data = data[bytes_read:]
-
-			names[offset] = query.queryname
-			offset += bytes_read
-
-		return queries, data, names, offset
-
-	def _decodeResources(self, data, packet_s, names, count, offset):
-		resources = []
-
-		for _ in xrange(count):
-			resource = DNSDecodedResource(data, packet_s, names)
-			if resource.queryname is None:
-				return None, '', names, offset
-
-			resources.append(resource)
-			bytes_read = len(resource)
-			data = data[bytes_read:]
-
-			names[offset] = resource.queryname
-			offset += bytes_read
-
-		return resources, data, names, offset
-
-	def _decodeHeader(self, message_s):
-		if len(message_s) < 12:
-			return None, ''
-
-		header = DNSDecodedHeader(message_s)
-		data = message_s[12:]
+	def _decodeHeader(self, data):
+		if len(data) >= 12:
+			header = self.header_decoder(data)
+			data = data[12:]
+		else:
+			header = None
+			data = ''
 
 		return header, data
 
+	def _decodeRecords(self, data, count, decoder, packet_s, names={}, offset=12):
+		records = []
+
+		for _ in xrange(count):
+			record = decoder(data, packet_s, names)
+
+			# check for an error parsing the data
+			if record.queryname is None:
+				records = None
+				data = ''
+				break
+
+			records.append(record)
+			bytes_read = len(record)
+			data = data[bytes_read:]
+
+			names[offset] = record.queryname
+			offset += bytes_read
+
+		return records, data, names, offset
+
+	def _decodeQueries(self, data, count, packet_s, names={}, offset=12):
+		return self._decodeRecords(data, count, self.query_decoder, packet_s, names, offset)
+
+	def _encodeQueries(self, data, count, names={}, offset=12):
+		return self._encodeRecords(data, count, self.query_encoder, names, offset)
+
+	def _decodeResources(self, data, count, packet_s, names={}, offset=12):
+		return self._decodeRecords(data, count, self.resource_decoder, packet_s, names, offset)
+
+	def _encodeResources(self, data, count, names={}, offset=12):
+		return self._encodeRecords(data, count, self.response_encoder, names, offset)
+
+
+	def createRequest(self, header, queries=[]):
+		identifier = header.identifier
+		queries = [self.createQuery(q.querytype, q.queryname) for q in queries]
+
+		return self.request_factory(identifier, queries)
+		
 	def decodeRequest(self, request_s):
 		header, data = self._decodeHeader(request_s)
-		if header is None:
-			return None
 
-		if header.qr != 0:  # request
-			return None
-
-		queries, data, names, offset = self._decodeQueries(data, header.query_len)
-		if queries is None:
-			return None
-
-		queries = [self.query_factory(q.querytype, q.queryname) for q in queries]
-		return self.request_factory(header.identifier, queries)
-
-	def decodeResponse(self, response_s, extended=False):
-		if extended:
-			length = len(response_s)
-			claimed = struct.unpack('>H', response_s[:2])[0] if length >= 2 else 0
-			if length == claimed + 2:
-				response_s = response_s[2:]
-			else:
-				response_s = ''
-
-		header, data = self._decodeHeader(response_s)
-
-		if header is not None and header.qr == 1:  # response
-			identifier = header.identifier
-			queries, data, names, offset = self._decodeQueries(data, header.query_len)
-			responses, data, names, offset = self._decodeResources(data, response_s, names, header.response_len, offset)
-			authorities, data, names, offset = self._decodeResources(data, response_s, names, header.authority_len, offset)
-			additionals, data, names, offset = self._decodeResources(data, response_s, names, header.additional_len, offset)
+		if header.qr == 0:  # request
+			queries, data, names, offset = self._decodeQueries(data, header.query_len, request_s)
+			request = self.request_factory(header, queries)
 		else:
-			identifier = None
-			queries = None
-			responses = None
-			authorities = None
-			additionals = None
+			request = self.request_factory(header)
 
-		queries = [self.query_factory(q.querytype, q.queryname) for q in queries] if queries is not None else None
-		responses = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in responses] if responses is not None else None
-		authorities = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in authorities] if authorities is not None else None
-		additionals = [self.resource_factory(r.querytype, r.queryname, r.rdata, response_s) for r in additionals] if additionals is not None else None
+		return request
 
-		response = self.response_factory(identifier, queries, responses, authorities, additionals)
-		return response
-
-	def encodeRequest(self, request, extended=False):
-		header_s = struct.pack('>H2sH6s', request.identifier, '\1\0', len(request.queries), '\0\0\0\0\0\0')
+	def encodeRequest(self, request):
+		header_s = struct.pack('>HHH6s', request.identifier, request.flags, request.query_len, '\0\0\0\0\0\0')
 
 		for q in request.queries:
-			name = ''.join('%c%s' % (len(p), p) for p in q.name.split('.')) + '\0'
-			header_s += struct.pack('>%ssHH' % len(name), name, q.VALUE, q.CLASS)
+			name = convert.string_to_dns(q.name)
+			header_s += struct.pack('>sHH', name, q.TYPE, q.CLASS)
 
-		if extended:
-			header_s = struct.pack('>H', len(header_s)) + header_s
+		return header_s
+
+
+
+	def createResponse(self, header, queries, responses, authorities, additionals):
+
+	def decodeResponse(self, response_s):
+		header, data = self._decodeHeader(response_s)
+
+		if header.qr == 1: # response
+			queries, data, names, offset = self._decodeQueries(data, header.query_len, response_s)
+			responses, data, names, offset = self._decodeResources(data, header.response_len, response_s, names, offset)
+			authorities, data, names, offset = self._decodeResources(data, header.authority_len, response_s, names, offset)
+			additionals, data, names, offset = self._decodeResources(data, header.additional_len, response_s, names, offset)
+
+			response = self.response_factory(header, queries, responses, authorities, additionals)
+		else:
+			response = self.response_factory(header)
+
+		return response
+
+	def encodeResponse(self, response):
+		header_s = struct.pack('>HHHHHH', response.identifier, response.flags, response.query_len, response.response_len, response.authority_len, response.additional_len)
+
+		for q in response.queries:
+			name = convert.string_to_dns(q.name)
+			header_s += struct.pack('>sHH', name, q.TYPE, q.CLASS)
+
+		for r in response.resources:
+			name = convert.string_to_dns(r.name)
+			value = r.dns_data
+			header_s += struct.pack('>sHHIHs', name, r.TYPE, r.CLASS, r.ttl, len(value), value)
 
 		return header_s
