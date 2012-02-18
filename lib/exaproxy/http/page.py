@@ -9,11 +9,13 @@ Copyright (c) 2012 Exa Networks. All rights reserved.
 
 
 import cgi
-from .response import html,image
+from .response import html,jpg,png
+from .images import logo,thomas,david
 
-_humans = """\
+_humans_txt = """\
 /* TEAM */
-  Grand Visionary: Thomas Mangin
+
+  Slave Driver / Grand Visionary: Thomas Mangin
   Google+: https://plus.google.com/104241996506596749840
 
   Engineer Extraordinaire: David Farrar
@@ -22,6 +24,31 @@ _humans = """\
 /* Other contributors */
 """
 
+_humans_html = """\
+<b style="padding: 20px 20px 20px 20px;">/* TEAM */</b>
+<br>
+<br style="clear:both;"/>
+<div style="float:left;margin-left:80px;margin-right:10px;">
+<img width="100px" src="data:image/png;base64,%s"/>
+</div>
+<br>
+Slave Driver / Grand Visionary
+<br>
+<a href="https://plus.google.com/104241996506596749840">Thomas Mangin</a>
+<br style="clear:both;"/>
+
+<div style="float:left;margin-left:80px;margin-right:10px;">
+<img width="100px" src="data:image/png;base64,%s"/>
+</div>
+<br>
+Engineer Extraordinaire
+<br>
+<a href="https://plus.google.com/108845019528954357090">David Farrar</a>
+<br style="clear:both;"/>
+<br>
+<b style="padding: 20px 20px 20px 20px;">/* Other contributors */</b>
+<br>
+""" % (thomas,david)
 
 def menu (menus):
 		return """\
@@ -85,29 +112,53 @@ def menu (menus):
 	""" % '\n'.join(['<li/><a href="%s">%s</a>' % _ for _ in [menus[k] for k in sorted(menus.keys())]])
 
 options = {
-	1 : ('/index.html'                , 'Home'),
-	2 : ('/objects/supervisor.html'   , 'Introspection'),
-	3 : ('/configuration/index.html'  , 'Configuration'),
-	4 : ('/statistics/index.html'     , 'Statistics'),
-	5 : ('/connections/index.html'    , 'Connections'),
-	6 : ('/processes/index.html'      , 'Processes'),
-	7 : ('/transfer/index.html'       , 'Transfer'),
+	1 : ('/index.html',                 'License'),
+	2 : ('/objects/supervisor.html',    'Introspection'),
+	3 : ('/configuration/index.html',   'Configuration'),
+	4 : ('/statistics/index.html',      'Statistics'),
+	5 : ('/connections/index.html',     'Connections'),
+	6 : ('/transfer/index.html',        'Transfer'),
+	7 : ('/processes/index.html',       'Processes'),
+	8 : ('/email/index.html',           'Email'),
 }
 
 _title = 'ExaProxy Monitoring'
 _menu = menu(options)
-_image = '<a href="http://www.exa-networks.co.uk/" target="exa-networks">%s</a>' % image
+_image = '<a href="http://www.exa-networks.co.uk/" target="exa-networks">%s</a>' % png(logo)
 _html = html(_title,'','#00BB55',_image,_menu,'*string*').replace('%','%%').replace('*string*','%s')
 
 _index = """\
-<center>
-	<b>Welcome to ExaProxy Management web server.</b>
-	<br/>
-	<br/>
-	Those pages are under development (this sentence brings me back to the 90's) :D.<br/>
-	We intend to add here real time information about the Proxy and other nice things.<br>
-</center>
+<pre style="margin-left:40px;">
+ExaProxy
+
+Copyright (c) 2011-2011, Exa Networks Limited
+Copyright (c) 2011-2011, Thomas Mangin
+Copyright (c) 2011-2011, David Farrar
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met: 
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer. 
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution. 
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+</pre>
 """
+
 _listing = """\
 <style type="text/css">
 	.object {
@@ -214,11 +265,107 @@ _chart = """\
 <div id="chart_div"></div>
 """
 
+_email = """\
+<style type="text/css">
+	.indented {
+		margin-left: 20px;
+	}
+	.contact {
+		background-color: #f3f3f3;
+		border: solid 1px #a1a1a1;
+		padding: 10px;
+		width: 600px;
+	}
+
+	.contact label {
+		display: block;
+		width: 100px;
+		float: left;
+		margin-bottom: 10px;
+	}
+
+	.contact input {
+		display: block;
+		width: 430px;
+		float: left;
+		margin-bottom: 10px;
+	}
+
+	.contact label {
+		text-align: right;
+		padding-right: 20px;
+	}
+
+	.contact #message {
+		display: block;
+		width: 550px;
+		height: 300px;
+		float: left;
+		margin-bottom: 10px;
+	}
+
+	.contact #submit {
+		display: block;
+		width: 50px;
+		margin-bottom: 10px;
+	}
+
+	br {
+		clear: left;
+	}
+</style>
+
+<form action="/email/index.html" method="get">
+	<div class="indented">
+		<div class="contact">
+			<label>Title</label>
+			<select name="title">
+				<option>Mr.</option>
+				<option>Dr.</option>
+				<option>Ms.</option>
+				<option>Mrs.</option>
+			</select><br>
+
+			<label>First Name</label>
+			<input id="firstname" name="firstname"><br>
+
+			<label>Last Name</label>
+			<input id="lastname" name="lastname"><br>
+
+			<label>Employer</label>
+			<input id="employer" name="employer"><br>
+
+			<label>Email</label>
+			<input id="email" name="email"><br>
+
+			<textarea id="message" name="message" onFocus="if (this.value == this.defaultValue) { this.value = ''; }">
+Hello,
+
+ExaProxy is provided under the very permissive BSD license, so it is near impossible for us to know who is using it. Therefore we would very much appreciate if you could let us know what you are using ExaProxy for.
+
+Please feel free to contact us if you have any questions, we are a very nice bunch (really :D), and will do our best to help you.
+
+Yours sincerely,
+
+The ExaProxy's Team.
+
+PS: ExaProxy will stop answering HTTP requests while it sends the email. Only one mail can be sent using this form per time ExaProxy is run. This limit is here to prevent spammers and/or webcrawlers from causing isues. We do not recommand leaving the web interface open to the world.
+
+
+			</textarea><br>
+			<br>
+			<input id="submit" type="submit" value="Submit" />
+			<br>
+		</div>
+	</div>
+</form>
+"""
 
 class Page (object):
 	
 	def __init__(self,monitor):
 		self.monitor = monitor
+		self.email_sent = False
 
 	def _page (self,message):
 		return _html % message
@@ -308,16 +455,67 @@ class Page (object):
 			True
 		)
 
+	def _email (self,args):
+		import cgi
+		import time
+		from email.mime.text import MIMEText
+		from email.Utils import formatdate
+		from smtplib import SMTP,SMTPException
+
+		if self.email_sent:
+			return self._page('<center><b>You can only send one email per time ExaProxy is started</b></center>')
+		answers = cgi.parse_qs(args)
+
+		_from = answers.get('email',[None,])[0]
+		_to = 'The ExaProxy Team <exaproxy@exa-networks.co.uk>'
+
+		if not _from:
+			return self._page('<center><b>A email address is required to make sure our mail server let this mail through<br/>(press back on your browser)</b></center>')
+		if '@' not in _from:
+			return self._page('<center><b>A valid email address is required to make sure our mail server let this mail through<br/>(press back on your browser)</b></center>')
+
+		formated = dict((k,"%s" % ','.join(v)) for (k,v) in answers.items())
+
+		employer = formated.pop('employer','')
+
+		message = ""
+		message += "%s %s %s" % (formated.pop('title',''), formated.pop('firstname','').capitalize(), formated.pop('lastname','-').upper())
+		message += " from %s" % employer if employer else ""
+		message += " said\n\n%s\n" % formated.pop('message','<unset>')
+
+		msg = MIMEText(message)
+		msg['Subject'] = 'ExaProxy Message'
+		msg['From'] = _from
+		msg['To'] = _to
+		msg['Message-ID'] = 'DO-NOT-HAVE-ONE-AND-SPAMASSASSIN-COMPLAINS-%s' % time.time()
+		msg['Date'] = formatdate(localtime=True)
+		msg.preamble = 'ExaProxy Message'
+
+		try:
+			s = SMTP('mx.exa-networks.co.uk')
+			s.sendmail(_from, [_to,], msg.as_string())
+			s.quit()
+			self.email_sent = True
+			return self._page('<center><b>Email sent, thank you</b></center>')
+		except Exception,e:
+			return self._page('<center><b>Could not send email</b></center><br>%s' % str(e))
 
 	def html (self,path):
-		if len(path) > 200:
+		if len(path) > 5000:
 			return self._page('<center><b>path is too long</b></center>')
+
 		if path == '/':
 			path = '/index.html'
+			args = ''
+		elif '?' in path:
+			path,args = path.split('?',1)
+		else:
+			args = ''
+
 		if not path.endswith('.html'):
 			if path != '/humans.txt':
 				return self._page('<center><b>invalid extension</b></center>')
-			return _humans
+			return _humans_txt
 		if not path.startswith('/'):
 			return self._page('<center><b>invalid url</b></center>')
 
@@ -340,4 +538,10 @@ class Page (object):
 			return self._page(self._processes())
 		if command == 'transfer':
 			return self._page(self._transfer())
-		return self._page('<center><b>are you looking for an easter egg ?</b></center>')
+		if command == 'email':
+			if args:
+				return self._email(args)
+			return self._page(_email)
+		if command == 'humans':
+			return self._page(_humans_html)
+		return self._page('')
