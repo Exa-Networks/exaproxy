@@ -27,6 +27,7 @@ class Worker (Thread):
 	
 	def __init__ (self, configuration, name, request_box, program):
 		self.configuration = configuration
+		self.enabled = configuration.redirector.enabled
 
 		# XXX: all this could raise things
 		r, w = os.pipe()                                # pipe for communication with the main thread
@@ -46,6 +47,8 @@ class Worker (Thread):
 		Thread.__init__(self)
 
 	def _createProcess (self):
+		if not self.enabled:
+			return
 		try:
 			process = subprocess.Popen([self.program,],
 				stdin=subprocess.PIPE,
@@ -61,6 +64,8 @@ class Worker (Thread):
 		return process
 
 	def destroyProcess (self):
+		if not self.enabled:
+			return
 		logger.debug('worker %s' % self.wid,'destroying process %s' % self.program)
 		if not self.process:
 			return
@@ -164,27 +169,31 @@ class Worker (Thread):
 
 	def run (self):
 		while self.running:
+			logger.debug('worker %s' % self.wid,'waiting for some work')
 			try:
-				logger.debug('worker %s' % self.wid,'waiting for some work')
 				# The timeout is really caused by the SIGALARM sent on the main thread every second 
 				# BUT ONLY IF the timeout is present in this call
 				data = self.request_box.get(2) 
-
-				client_id, peer, header, source = data
 			except Empty:
+				if self.enabled:
+					if not self.process or self.process.poll() is not None:
+						if self.running:
+							logger.error('worker %s' % self.wid, 'forked process died !')
+						self.running = False
+						continue
+
+			try:
+				client_id, peer, header, source = data
+			except (ValueError, TypeError), e:
+				logger.debug('worker %s' % self.wid, 'Received invalid message: %s' % data)
+				continue
+
+			if self.enabled:
 				if not self.process or self.process.poll() is not None:
 					if self.running:
 						logger.error('worker %s' % self.wid, 'forked process died !')
 					self.running = False
-				continue
-			except (ValueError, TypeError), e:
-				logger.debug('worker %s' % self.wid, 'Received invalid message: %s' % data)
-
-			if not self.process or self.process.poll() is not None:
-				if self.running:
-					logger.error('worker %s' % self.wid, 'forked process died !')
-				self.running = False
-				continue
+					continue
 
 			if not self.running:
 				logger.debug('worker %s' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')
@@ -199,6 +208,10 @@ class Worker (Thread):
 
 			if source == 'web':
 				self.respond_monitor(client_id, request.path)
+				continue
+
+			if not self.enabled:
+				self.respond_proxy(client_id, request.host, request.port, request)
 				continue
 
 			# classify and return the filtered page
