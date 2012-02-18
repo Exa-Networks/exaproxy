@@ -28,9 +28,12 @@ def version_warning ():
 def help ():
 	sys.stdout.write('usage:\n exaproxy [-h,--help] [-i,--ini] [-e,--env]\n')
 	sys.stdout.write('\n')
-	sys.stdout.write(' -h, --help : print this configuration help\n')
-	sys.stdout.write(' -i, --ini  : print out the configuration on ini format\n')
-	sys.stdout.write(' -e, --env  : print out the configuration on env format\n')
+	sys.stdout.write('  -h, --help      : this help\n')
+	sys.stdout.write('  -i, --ini       : display the configuration using the ini format\n')
+	sys.stdout.write('  -e, --env       : display the configuration using the env format\n')
+	sys.stdout.write(' -di, --diff-ini  : display non-default configurations values using the ini format\n')
+	sys.stdout.write(' -de, --diff-env  : display non-default configurations values using the env format\n')
+	
 	sys.stdout.write('\n')
 	sys.stdout.write('exaproxy will automatically look for its configuration file\n')
 	sys.stdout.write(' - if the program was untar, within its etc/exaproxy folder\n')
@@ -81,6 +84,12 @@ def main ():
 			sys.exit(0)
 		if arg in ['-e','--env']:
 			env()
+			sys.exit(0)
+		if arg in ['-di','--diff-ini']:
+			ini(True)
+			sys.exit(0)
+		if arg in ['-de','--diff-env']:
+			env(True)
 			sys.exit(0)
 	
 	Supervisor().run()

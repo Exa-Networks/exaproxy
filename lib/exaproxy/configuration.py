@@ -266,19 +266,25 @@ def default ():
 				continue
 			yield 'exaproxy.%s.%s %s: %s. default (%s)' % (section,option,' '*(20-len(section)-len(option)),value[2],value[1])
 
-def ini ():
+def ini (diff=False):
 	for section,values in __configuration.items():
 		if section == 'proxy':
 			continue
-		print '[exaproxy.%s]' % section
+		header = '\n[exaproxy.%s]' % section
 		for k,v in values.items():
+			if diff and defaults[section][k][0](defaults[section][k][1]) == v:
+				continue
+			if header:
+				print header
+				header = ''
 			print '%s = %s' % (k,v)
-		print
-		
-def env ():
+
+def env (diff=False):
+	print
 	for section,values in __configuration.items():
 		if section == 'proxy':
 			continue
 		for k,v in values.items():
+			if diff and defaults[section][k][0](defaults[section][k][1]) == v:
+				continue
 			print 'exaproxy.%s.%s="%s"' % (section,k,v)
-	print
