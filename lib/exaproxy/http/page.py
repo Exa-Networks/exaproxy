@@ -11,6 +11,18 @@ Copyright (c) 2012 Exa Networks. All rights reserved.
 import cgi
 from .response import html,image
 
+_humans = """\
+/* TEAM */
+  Grand Visionary: Thomas Mangin
+  Google+: https://plus.google.com/104241996506596749840
+
+  Engineer Extraordinaire: David Farrar
+  Google+: https://plus.google.com/108845019528954357090
+
+/* Other contributors */
+"""
+
+
 def menu (menus):
 		return """\
 <style type="text/css">
@@ -303,7 +315,9 @@ class Page (object):
 		if path == '/':
 			path = '/index.html'
 		if not path.endswith('.html'):
-			return self._page('<center><b>invalid extension</b></center>')
+			if path != '/humans.txt':
+				return self._page('<center><b>invalid extension</b></center>')
+			return _humans
 		if not path.startswith('/'):
 			return self._page('<center><b>invalid url</b></center>')
 
