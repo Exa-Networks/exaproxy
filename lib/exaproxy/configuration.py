@@ -258,12 +258,11 @@ def load ():
 	return __configuration
 
 def default ():
-	for section,content in defaults.items():
+	for section in sorted(defaults):
 		if section == 'proxy':
 			continue
-		for option,value in content.items():
-			if option == 'proxy':
-				continue
+		for option in sorted(defaults[section]):
+			value = defaults[section][option]
 			yield 'exaproxy.%s.%s %s: %s. default (%s)' % (section,option,' '*(20-len(section)-len(option)),value[2],value[1])
 
 def ini (diff=False):
