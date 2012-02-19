@@ -181,11 +181,14 @@ class Worker (Thread):
 							logger.error('worker %s' % self.wid, 'forked process died !')
 						self.running = False
 						continue
+			except ValueError, e:
+				logger.error('worker %s' % self.wid, 'Problem reading from request_box')
+				continue
 
 			try:
 				client_id, peer, header, source = data
-			except (ValueError, TypeError), e:
-				logger.debug('worker %s' % self.wid, 'Received invalid message: %s' % data)
+			except TypeError, e:
+				logger.alert('worker %s' % self.wid, 'Received invalid message: %s' % data)
 				continue
 
 			if self.enabled:
