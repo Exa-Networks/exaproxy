@@ -28,6 +28,7 @@ class Worker (Thread):
 	def __init__ (self, configuration, name, request_box, program):
 		self.configuration = configuration
 		self.enabled = configuration.redirector.enabled
+		self.transparent = configuration.http.transparent
 
 		# XXX: all this could raise things
 		r, w = os.pipe()                                # pipe for communication with the main thread
@@ -135,13 +136,15 @@ class Worker (Thread):
 		request['connection'] = 'Connection: close'
 		# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
 		request.pop('proxy-connection',None)
-		# We NEED to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45
-		via = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % (self.configuration.proxy.version,os.getpid()), '1.1', request.host)
-		if 'via' in request:
-			request['via'] = '%s\0%s' % (request['via'],via)
-		else:
-			request['via'] = via
-		#request['via'] = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % ('test',os.getpid()), '1.1', request.host)
+		# XXX: To be RFC compliant we need to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45 on the reply too
+		# XXX: At the moment we only add it from the client to the server (which is what really matters)
+		if not self.transparent:
+			via = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % (self.configuration.proxy.version,os.getpid()), '1.1', request.host)
+			if 'via' in request:
+				request['via'] = '%s\0%s' % (request['via'],via)
+			else:
+				request['via'] = via
+			#request['via'] = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % ('test',os.getpid()), '1.1', request.host)
 		header = request.toString()
 		self.respond('\0'.join((client_id, 'download', ip, str(port), header)))
 

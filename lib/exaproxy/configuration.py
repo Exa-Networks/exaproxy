@@ -151,6 +151,7 @@ defaults = {
 	},
 
 	'http' : {
+		'transparent'     : (value.boolean,'false'   , 'do not insert Via headers'),
 		'x-forwarded-for' : (value.boolean,'true'    , 'insert x-forarded-for headers to webservers'),
 		'allow-connect'   : (value.boolean,'true'    , 'allow client to use CONNECT and https connections'),
 	},
