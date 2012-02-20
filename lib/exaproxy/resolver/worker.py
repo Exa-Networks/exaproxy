@@ -1,9 +1,7 @@
 import random
 import socket
 
-from exaproxy.dns.factory.request import DNSRequestFactory
-from exaproxy.dns.factory.response import DNSResponseFactory
-
+from exaproxy.dns.factory import DNSPacketFactory
 from exaproxy.network.functions import connect
 from exaproxy.network.functions import errno_block
 
@@ -16,14 +14,12 @@ def cycle_identifiers():
 next_identifier = cycle_identifiers().next
 
 class DNSClient(object):
-	RequestFactory = DNSRequestFactory
-	ResponseFactory = DNSResponseFactory
+	DNSFactory = DNSPacketFactory
 	tcp_factory = staticmethod(connect)
 
 	def __init__(self, configuration, resolv=None, port=53):
 		self.configuration = configuration
-		self.request_factory = self.RequestFactory()
-		self.response_factory = self.ResponseFactory()
+		self.dns_factory = self.DNSFactory(configuration.dns.definitions)
 		config = self.parseConfig(resolv)
 		self.servers = config['nameserver']
 		self.port = port
@@ -63,7 +59,7 @@ class DNSClient(object):
 
 		# create an A request ready to send on the wire
 		identifier = next_identifier()
-		request_s = self.request_factory.createRequestString(identifier, qtype, hostname)
+		request_s = self.dns_factory.createRequestString(identifier, qtype, hostname)
 
 		# and send it over the wire
 		self.socket.sendto(request_s, (self.server, self.port))
@@ -81,14 +77,14 @@ class DNSClient(object):
 		response_s, peer = self.socket.recvfrom(65535)
 
 		# and convert it into something we can play with
-		response = self.response_factory.normalizeResponse(response_s, extended=self.extended)
+		response = self.dns_factory.normalizeResponse(response_s, extended=self.extended)
 
 		# Try to get the IP address we asked for
 		value = response.getValue()
 
 		# Or the IPv4 address
 		if value is None:
-			if response.qtype == 'A' and self.configuration.tcp4.out:
+			if response.qtype == 'A' and self.configuration.tcp6.out:
 				value = response.getValue('AAAA')
 
 				if value is None:
@@ -136,8 +132,7 @@ class TCPClient(DNSClient):
 		self.extended = True
 
 		self.socket = self.startConnecting()
-		self.request_factory = self.RequestFactory()
-		self.reponse_factory = self.ResponseFactory()
+		self.dns_factory = self.DNSFactory(configuration.dns.definitions)
 
 		self.reader = None
 		self.writer = None
@@ -191,7 +186,7 @@ class TCPClient(DNSClient):
 
 		# create an A request ready to send on the wire
 		identifier = next_identifier()
-		request_s = self.request_factory.createRequestString(identifier, qtype, hostname, extended=True)
+		request_s = self.dns_factory.createRequestString(identifier, qtype, hostname, extended=True)
 
 		self.writer = self._write(self.socket, request_s)
 

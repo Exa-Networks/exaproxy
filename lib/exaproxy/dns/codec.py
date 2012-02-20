@@ -181,8 +181,10 @@ class DNSCodec:
 		header_s = struct.pack('>HHH6s', request.identifier, request.flags, request.query_len, '\0\0\0\0\0\0')
 
 		for q in request.queries:
-			name = convert.string_to_dns(q.name)
-			header_s += struct.pack('>sHH', name, q.TYPE, q.CLASS)
+			dnstype, question = self.resource_factory.encodeQuery(q)
+			name = convert.string_to_dns(question)
+
+			header_s += name + struct.pack('>HH', dnstype, q.dnsclass)
 
 		return header_s
 
@@ -210,12 +212,15 @@ class DNSCodec:
 		header_s = struct.pack('>HHHHHH', response.identifier, response.flags, response.query_len, response.response_len, response.authority_len, response.additional_len)
 
 		for q in response.queries:
-			name = convert.string_to_dns(q.name)
-			header_s += struct.pack('>sHH', name, q.TYPE, q.CLASS)
+			dnstype, question = self.resource_factory.encodeQuery(q)
+			name = convert.string_to_dns(question)
+
+			header_s += name + struct.pack('>HH', dnstype, q.dnsclass)
 
 		for r in response.resources:
-			name = convert.string_to_dns(r.name)
-			value = r.dns_data
-			header_s += struct.pack('>sHHIHs', name, r.TYPE, r.CLASS, r.ttl, len(value), value)
+			dnstype, question, decoded, ttl = self.resource_factory.encodeResource(r)
+			name = convert.string_to_dns(question)
+
+			header_s += name + struct.pack('>HHIHs', dnstype, r.dnsclass, ttl, len(decoded), decoded)
 
 		return header_s

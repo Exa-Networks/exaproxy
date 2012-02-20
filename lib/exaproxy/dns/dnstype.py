@@ -15,8 +15,8 @@ class DNSType:
 		return str(self.question)
 
 class DNSQueryType(DNSType):
-	def __init__(self, querytype, question, queryclass=1):
-		self.queryclass = queryclass
+	def __init__(self, querytype, question, dnsclass=1):
+		self.dnsclass = dnsclass
 		self.querytype = querytype
 		self.question = question
 
@@ -24,8 +24,8 @@ class DNSQueryType(DNSType):
 		return "Query of type %s for %s" % (self.querytype, self.question)
 
 class DNSResourceType(DNSType):
-	def __init__(self, querytype, question, response, ttl, queryclass=1):
-		self.queryclass = queryclass
+	def __init__(self, querytype, question, response, ttl, dnsclass=1):
+		self.dnsclass = dnsclass
 		self.querytype = querytype
 		self.question = question
 		self.response = response
@@ -100,9 +100,9 @@ class DNSTypeCodec:
 		name, decoder = self.byvalue.get(value, (None, None))
 		return DNSQueryType(name, question)
 
-	def encodeQuery(self, question, data_s=''):
-		value, encoder = self.byname.get(question.querytype, (None, None))
-		return value, question if value is not None else None
+	def encodeQuery(self, query, data_s=''):
+		value, encoder = self.byname.get(query.querytype, (None, None))
+		return value, query.question if value is not None else None
 
 	def decodeResource(self, value, question, response, ttl, data_s=''):
 		name, decoder = self.byvalue.get(value, (None, None))

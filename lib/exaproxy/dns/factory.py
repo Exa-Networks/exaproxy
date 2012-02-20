@@ -22,13 +22,13 @@ class DNSPacketFactory:
 			if length != len(request_s):
 				request_s = ''
 
-		return self.codec.decodeRequest(request_s, extended)
+		return self.codec.decodeRequest(request_s)
 
 	def createRequestString(self, identifier, request_type, request_name, extended=False):
 		request = self.request_factory(identifier)
-		request.addQuery(request_type, request_name)
+		request.addQuestion(request_type, request_name)
 
-		encoded = self.codec.encodeRequest(request, extended)
+		encoded = self.codec.encodeRequest(request)
 		if extended:
 			encoded = struct.pack('>Hs', len(encoded), encoded)
 

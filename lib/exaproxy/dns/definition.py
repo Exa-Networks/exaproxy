@@ -37,14 +37,19 @@ class DNSRequestType(DNSBaseType):
 	QR = 0     # Query
 	OPCODE = 0 # Query
 
-	resource_factory = dnstype.DNSTypeFactory
+	resource_factory = dnstype.DNSTypeFactory()
+
+	@property
+	def query_len(self):
+		return len(self.queries)
 
 	def __init__(self, identifier, queries=[]):
 		self.identifier = identifier
-		self.queries = queries
+		self.queries = queries or []
+		self.flags = 256 # recursion desired
 
 	def addQuestion(self, querytype, question):
-		q = self.resource_factory.createQuestion(querytype, question)
+		q = self.resource_factory.createQuery(querytype, question)
 		self.queries.append(q)
 
 	def __str__(self):
@@ -64,11 +69,18 @@ class DNSResponseType(DNSBaseType):
 
 		self.identifier = identifier if ok else None
 		self.complete = bool(complete)
-		self.queries = queries if ok else []
-		self.responses = responses if ok else []
-		self.authorities = authorities if ok else []
-		self.additionals = additionals if ok else []
+		self.queries = (queries or []) if ok else []
+		self.responses = (responses or []) if ok else []
+		self.authorities = (authorities or []) if ok else []
+		self.additionals = (additionals or []) if ok else []
 
+		if self.queries:
+			query = self.queries[0]
+			self.qtype = query.querytype
+			self.qhost = query.question
+		else:
+			self.qtype = None
+			self.qhost = None
 
 	def getResponse(self):
 		info = {}
@@ -109,7 +121,7 @@ class DNSResponseType(DNSBaseType):
 					qtype = query.querytype
 
 		info = self.getResponse()
-		value =  self.extract(question, qtype, info)
+		return self.extract(question, qtype, info)
 
 	def isComplete(self):
 		return self.complete
