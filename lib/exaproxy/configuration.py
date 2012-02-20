@@ -174,6 +174,7 @@ defaults = {
 #		'force-ttl'    : (value.boolean,'true'               , 'do not use DNS ttl but the ttl value in this configuration'),
 		'ttl'          : (value.integer,'120'                , 'amount of time (in seconds) we will cache dns results for'),
 		'expire'       : (value.integer,'200'                , 'maximum number of cached dns entries we will expire during each cleanup'),
+		'definitions'  : (value.unquote,'etc/dns/types'      , 'location of file defining dns query types'),
 	},
 	'logger' : {
 		'level'         : (value.syslog,'LOG_ERR'  , 'log message with at least the priority SYSLOG.<level>'),

@@ -58,12 +58,11 @@ class DNSTypeFactory:
 class DNSTypeCodec:
 	CLASS = 1   # Internet
 
-	def __init__(self, base):
+	def __init__(self, definitions):
 		self.byname = {}
 		self.byvalue = {}
 
-		filename = os.path.join(base, 'dns', 'types')
-		self.parseConfiguration(filename)
+		self.parseConfiguration(definitions)
 
 	def parseConfiguration(self, filename):
 		try:

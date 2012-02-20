@@ -6,9 +6,8 @@ class DNSPacketFactory:
 	request_factory = DNSRequestType
 	response_factory = DNSResponseType
 
-	def __init__(self, configuration):
-		base = configuration.get('etc-dns')
-		self.codec = DNSCodec(base)
+	def __init__(self, definitions):
+		self.codec = DNSCodec(definitions)
 
 	def serializeRequest(self, request, extended=False):
 		encoded = self.codec.encodeRequest(request)
