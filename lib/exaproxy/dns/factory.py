@@ -1,5 +1,6 @@
-from packet.codec import DNSCodec
-from packet.codec import DNSRequestType
+from codec import DNSCodec
+from codec import DNSRequestType
+from codec import DNSResponseType
 
 class DNSPacketFactory:
 	request_factory = DNSRequestType
