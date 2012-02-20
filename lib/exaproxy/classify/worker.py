@@ -43,6 +43,8 @@ class Worker (Thread):
 		self.program = program                        # the squid redirector program to fork 
 		self.running = True                           # the thread is active
 
+		self.stats_timestamp = None			# time of the most recent outstanding request to generate stats
+
 		# Do not move, we need the forking AFTER the setup
 		self.process = self._createProcess()          # the forked program to handle classification
 		Thread.__init__(self)
@@ -167,6 +169,9 @@ class Worker (Thread):
 	def respond_redirect(self, client_id, url):
 		self.respond('\0'.join((client_id, 'redirect', url)))
 
+	def respond_stats(self, wid, timestamp, stats):
+		self.respond('\0'.join((wid, 'stats', timestamp, stats)))
+
 	def respond_hangup(self, wid):
 		self.respond('\0'.join(('', 'hangup', wid)))
 
@@ -200,6 +205,26 @@ class Worker (Thread):
 						logger.error('worker %s' % self.wid, 'forked process died !')
 					self.running = False
 					continue
+
+			except (ValueError, TypeError), e:
+				logger.debug('worker %s' % self.wid, 'Received invalid message: %s' % data)
+
+			stats_timestamp = self.stats_timestamp
+			if stats_timestamp:
+				# XXX: is this actually atomic as I am guessing?
+				# There's a race condition here if not. We're unlikely to hit it though, unless 
+				# the classifier can take a long time
+				self.stats_timestamp = None if stats_timestamp == stats_timestamp else self.stats_timestamp
+
+				# we still have work to do after this so don't continue
+				stats = self._stats()
+				self.respond_stats(self.wid, stats)
+
+			if not self.process or self.process.poll() is not None:
+				if self.running:
+					logger.error('worker %s' % self.wid, 'forked process died !')
+				self.running = False
+				continue
 
 			if not self.running:
 				logger.debug('worker %s' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')

@@ -7,11 +7,8 @@ Created by David Farrar on 2012-02-08.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-import inspect
 import random
-
-import query
-import response
+import dnstype
 
 # OPCODE:  Operation Type, 4 bits
 #	   0: QUERY,  Standary query		RFC 1035
@@ -32,25 +29,22 @@ class DNSBaseType:
 	QR = None
 	OPCODE = 0   # Operation type
 
-	def __init__(self, id):
+	def __init__(self, identifier):
 		self.identifier = identifier
+
 
 class DNSRequestType(DNSBaseType):
 	QR = 0     # Query
 	OPCODE = 0 # Query
 
+	resource_factory = dnstype.DNSTypeFactory
+
 	def __init__(self, identifier, queries=[]):
 		self.identifier = identifier
-		self.queries = []
+		self.queries = queries
 
-		for q in queries:
-			if not isinstance(q, query.DNSQueryType):
-				raise ValueError, 'Invalid DNS Request'
-
-			self.queries.append(q)
-
-	def addQuery(self, querytype, name):
-		q = dns_query_types.getTypeFromName(querytype, name)
+	def addQuestion(self, querytype, question):
+		q = self.resource_factory.createQuestion(querytype, question)
 		self.queries.append(q)
 
 	def __str__(self):
@@ -59,17 +53,17 @@ class DNSRequestType(DNSBaseType):
 		return """DNS RESPONSE %(id)s
 QUERIES: %(queries)s""" % {'id':self.identifier, 'queries':query_s}
 
+
+
 class DNSResponseType(DNSBaseType):
 	QR = 1      # Response
 	OPCODE = 0
 
-	def __init__(self, identifier, queries=[], responses=[], authorities=[], additionals=[]):
-		self.identifier = identifier
-		self.qtype = queries[0].NAME if queries else None
-		self.qhost = queries[0].name if queries else None
+	def __init__(self, identifier, complete, queries=[], responses=[], authorities=[], additionals=[]):
+		ok = complete is True and None not in (identifier, queries, responses, authorities, additionals)
 
-		ok = None not in (identifier, queries, responses, authorities, additionals)
-
+		self.identifier = identifier if ok else None
+		self.complete = bool(complete)
 		self.queries = queries if ok else []
 		self.responses = responses if ok else []
 		self.authorities = authorities if ok else []
@@ -79,17 +73,14 @@ class DNSResponseType(DNSBaseType):
 	def getResponse(self):
 		info = {}
 
-		if None in (self.responses, self.authorities, self.additionals):
-			return info
-
 		for response in self.responses:
-			info.setdefault(response.name, {}).setdefault(response.NAME, []).append(response.value)
+			info.setdefault(response.question, {}).setdefault(response.querytype, []).append(response.response)
 
 		for response in self.authorities:
-			info.setdefault(response.name, {}).setdefault(response.NAME, []).append(response.value)
+			info.setdefault(response.question, {}).setdefault(response.querytype, []).append(response.response)
 
 		for response in self.additionals:
-			info.setdefault(response.name, {}).setdefault(response.NAME, []).append(response.value)
+			info.setdefault(response.name, {}).setdefault(response.querytype, []).append(response.response)
 
 		return info
 
@@ -106,13 +97,22 @@ class DNSResponseType(DNSBaseType):
 
 		return value
 
-	def getValue(self, qtype=None):
+	def getValue(self, question=None, qtype=None):
+		if question is None or qtype is None:
+			if self.queries:
+				query = self.queries[0]
+
+				if question is None:
+					question = query.question
+
+				if qtype is None:
+					qtype = query.querytype
+
 		info = self.getResponse()
-		return self.extract(self.qhost, qtype or self.qtype, info)
+		value =  self.extract(question, qtype, info)
 
 	def isComplete(self):
-		# XXX: write this
-		return True
+		return self.complete
 
 	def __str__(self):
 		query_s = "\n".join('\t' + str(q) for q in self.queries)
@@ -125,53 +125,5 @@ QUERIES: %(queries)s
 RESPONSES: %(response)s
 AUTHORITIES: %(authorities)s
 ADDITIONAL: %(additional)s""" % {'id':self.identifier, 'queries':query_s, 'authorities':authority_s, 'additional':additional_s, 'response':response_s}
-
-
-
-class DNSQueryTypes:
-	# Easy access to Query classes
-
-	def __init__(self):
-		query_from_name = {}
-		query_from_value = {}
-		for name, item in inspect.getmembers(query):
-			if inspect.isclass(item):
-				if issubclass(item, query.DNSQueryType) and item is not query.DNSQueryType:
-					query_from_name[item.NAME] = item
-					query_from_value[item.VALUE] = item
-
-		self.query_from_name = query_from_name
-		self.query_from_value = query_from_value
-
-	def decodeType(self, id, queryname):
-		return self.query_from_value[id](queryname)
-
-	def getTypeFromName(self, name, queryname):
-		return self.query_from_name[name](queryname)
-
-
-class DNSResponseTypes:
-	def __init__(self):
-		response_from_name = {}
-		response_from_value = {}
-		for name, item in inspect.getmembers(response):
-			if inspect.isclass(item):
-				if issubclass(item, response.DNSResponseType) and item is not response.DNSResponseType:
-					response_from_name[item.NAME] = item
-					response_from_value[item.VALUE] = item
-
-		self.response_from_name = response_from_name
-		self.response_from_value = response_from_value
-
-	def decodeType(self, id, name, data, packet_s):
-		response_type = self.response_from_value[id]
-		res = response_type(name, data, response_type.decode_factory, packet_s)
-		return res
-
-	def getTypeFromName(self, name, querytype, data):
-		return self.response_from_name[name](queryname, data)
-
-dns_query_types = DNSQueryTypes()
-dns_response_types = DNSResponseTypes()
 
 

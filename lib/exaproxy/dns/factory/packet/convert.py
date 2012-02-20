@@ -46,22 +46,19 @@ def dns_string(s):
 
 	return '.'.join(parts) if parts is not None else None, ptr
 
-
-
-
-def dns_to_ipv4(ip, packet_s=''):
+def dns_to_ipv4(ip, packet_s):
 	return socket.inet_ntoa(ip)
 
-def ipv4_to_dns(s, packet_s=''):
+def ipv4_to_dns(s, packet_s):
 	return socket.inet_aton(ip)
 
-def dns_to_ipv6(ip, packet_s=''):
+def dns_to_ipv6(ip, packet_s):
 	return socket.inet_ntop(socket.AF_INET6, ip)
 
-def ipv6_to_dns(s, packet_s=''):
+def ipv6_to_dns(s, packet_s):
 	return socket.inet_pton(socket.AF_INET6, s)
 
-def dns_to_string(s, packet_s=''):
+def dns_to_string(s, packet_s):
 	value, ptr = dns_string(s)
 
 	parts = [value] if value else []

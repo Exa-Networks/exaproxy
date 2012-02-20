@@ -202,7 +202,26 @@ class WorkerManager (object):
 			else:
 				worker = self.closing.pop(wid, None)
 
+		elif command == 'stats':
+			wid, timestamp, stats = decision
+			self.storeStats(timestamp, wid, stats)
+
+			client_id = None
+			command = None
+			decision = None
+
 		return client_id, command, decision
 
 	def showInternalError(self):
 		return 'file', '\0'.join(('250', 'internal_error.html'))
+
+	def requestStats(self):
+		for wid, worker in self.worker.iteritems():
+			worker.requestStats()
+
+	def storeStats(self, timestamp, wid, stats):
+		pairs = (d.split('=',1) for d in stats.split('?', 1).split('&'))
+		d = self.cache.setdefault(timestamp, {})
+
+		for k, v in pairs:
+			d.setdefault(k, []).append(v)
