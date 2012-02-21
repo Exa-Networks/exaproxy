@@ -34,10 +34,8 @@ class Header(dict):
 			if port and not port.isdigit():
 				raise ValueError, 'Malformed headers'
 
-			headers = self.parseHeader(remaining)
-			self.update(headers)
-
-			headerhost, _ = self.splitHost(headers.get('host', '').split(':', 1)[1].strip())
+			self.parseHeader(remaining)
+			headerhost, _ = self.splitHost(self.get('host', '').split(':', 1)[1].strip())
 
 			if not host:
 				host = headerhost
@@ -91,13 +89,6 @@ class Header(dict):
 			self.order.append(key)
 		dict.__setitem__ (self,key,value)
 
-	def update(self, other):
-		for key, value in other.iteritems():
-			if key not in self.order:
-				self.order.append(key)
-
-		dict.update(self, other)
-
 	def pop(self, key, default=None):
 		if key in self:
 			res = dict.pop(self, key)
@@ -127,7 +118,6 @@ class Header(dict):
 
 
 	def parseHeader(self, headerstring):
-		headers = {}
 		key = None
 		data = ''
 
@@ -146,7 +136,7 @@ class Header(dict):
 			if ':' not in line:
 					raise ValueError, 'Malformed headers'
 
-			if key: headers[key] = data
+			if key: self[key] = data
 
 			key, value = line.split(':', 1)
 			key = key.strip().lower()
@@ -155,9 +145,8 @@ class Header(dict):
 				raise ValueError, 'Malformed headers'
 
 		if key is not None:
-			headers[key] = data
+			self[key] = data
 
-		return headers
 
 	def splitProtocol(self, pathstring):
 		if '://' in pathstring:
