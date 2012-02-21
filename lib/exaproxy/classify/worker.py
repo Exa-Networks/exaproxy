@@ -89,7 +89,7 @@ class Worker (Thread):
 		self.running = False
 
 
-	def _classify (self, client_ip, method, url):
+	def _classify (self, client_ip, method, url, tainted):
 		squid = '%s %s - %s -' % (url, client_ip, method)
 		#logger.info('worker %s' % self.wid, 'sending to classifier: [%s]' % squid)
 		if not self.process:
@@ -125,7 +125,10 @@ class Worker (Thread):
 
 		except IOError, e:
 			logger.error('worker %s' % self.wid, 'IO/Error when sending to process: %s' % str(e))
-			classification, data = 'file', 'internal_error.html'
+			if tainted is False:
+				classification, data = 'requeue', None
+			else:
+				classification, data = 'file', 'internal_error.html'
 
 		return classification, data
 
@@ -243,7 +246,7 @@ class Worker (Thread):
 
 			# classify and return the filtered page
 			if request.method in ('GET', 'PUT', 'POST'):
-				classification, data = self._classify(request.client, request.method, request.url_noport)
+				classification, data = self._classify(request.client, request.method, request.url_noport, tainted)
 
 				if classification == 'permit':
 					self.respond_proxy(client_id, request.host, request.port, request)
@@ -267,6 +270,9 @@ class Worker (Thread):
 					self.respond_proxy(client_id, data, request.port, request)
 					continue
 
+				elif classification == 'requeue':
+					self.respond_requeue(client_id, peer, header, source)
+
 				else:
 					self.respond_proxy(client_id, request.host, request.port, request)
 					continue
@@ -275,9 +281,13 @@ class Worker (Thread):
 			if request.method == 'CONNECT':
 				# we do allow connect
 				if self.configuration.http.allow_connect:
-					classification, data = self._classify(request.client, request.method, request.url_noport)
+					classification, data = self._classify(request.client, request.method, request.url_noport, tainted)
 					if classification == 'redirect':
 						self.respond_redirect(client_id, data)
+
+					elif classification == 'requeue':
+						self.respond_requeue(client_id, peer, header, source)
+
 					else:
 						self.respond_connect(client_id, request.host, request.port, request)
 
