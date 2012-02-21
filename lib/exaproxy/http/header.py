@@ -21,8 +21,13 @@ class Header(dict):
 		logger.info('header','parsing %s' % str(header))
 
 		try:
-			request, remaining = header.split('\r\n',1)
-
+			request, remaining = header.split('\n',1)
+			if '\r' in request:
+				request = request.rstrip('\r')
+				seperator = '\r\n'
+			else:
+				seperator = '\n'
+					
 			method, pathstring, version = request.split()
 			method = method.upper()
 			version = version.split('/')[-1]
@@ -72,6 +77,7 @@ class Header(dict):
 			protocol, host, port, url = None, None, None, None
 			url_noport = None
 			client, request = None, None
+			seperator = ''
 
 		self.request = request
 		self.method = method
@@ -83,6 +89,7 @@ class Header(dict):
 		self.url = url
 		self.url_noport = url_noport
 		self.client = client
+		self.seperator = seperator
 
 	def __setitem__ (self,key,value):
 		if key not in self.order:
@@ -104,7 +111,7 @@ class Header(dict):
 
 		# XXX: need to handle port switch
 		if path is not None:
-			self.request = self.method + ' ' + path + 'HTTP/1.1'
+			self.request = self.method + ' ' + path + self.version
 
 		if host is not None:
 			self['host'] = 'Host: ' + host
@@ -112,8 +119,9 @@ class Header(dict):
 	def isValid(self):
 		return self.method is not None and self.host is not None and self.path is not None
 
-	def toString(self, linesep='\r\n'):
-		request = str(self.method) + ' ' + str(self.path) + ' HTTP/1.1'
+	def toString(self, linesep=None):
+		linesep = linesep if linesep is not None else self.seperator
+		request = str(self.method) + ' ' + str(self.path) + ' ' + self.version
 		return request + linesep + linesep.join(self[key] for key in self.order) + linesep + linesep
 
 
