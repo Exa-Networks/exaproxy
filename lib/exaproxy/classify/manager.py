@@ -136,7 +136,7 @@ class WorkerManager (object):
 			
 	def request(self, client_id, peer, request, source):
 		self.nbq += 1
-		return self.queue.put((client_id,peer,request,source))
+		return self.queue.put((client_id,peer,request,source,False))
 
 	def getDecision(self, box):
 		# NOTE: reads may block if we send badly formatted data
@@ -189,7 +189,7 @@ class WorkerManager (object):
 
 		if command == 'requeue':
 			_client_id, _peer, _source, _header = response.split('\0', 3)
-			self.queue.put((_client_id,_peer,_header,_source))
+			self.queue.put((_client_id,_peer,_header,_source,True))
 
 			client_id = None
 			command = None

@@ -198,7 +198,7 @@ class Worker (Thread):
 				continue
 
 			try:
-				client_id, peer, header, source = data
+				client_id, peer, header, source, tainted = data
 			except TypeError, e:
 				logger.alert('worker %s' % self.wid, 'Received invalid message: %s' % data)
 				continue
@@ -208,7 +208,10 @@ class Worker (Thread):
 					if self.running:
 						logger.error('worker %s' % self.wid, 'forked process died !')
 					self.running = False
-					self.respond_requeue(client_id, peer, header, source)
+					if tainted is False:
+						self.respond_requeue(client_id, peer, header, source)
+					else:
+						self.respond_file(client_id, '250', 'internal_error.html')
 					break
 
 			stats_timestamp = self.stats_timestamp
