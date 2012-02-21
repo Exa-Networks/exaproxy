@@ -206,9 +206,6 @@ class Worker (Thread):
 					self.running = False
 					continue
 
-			except (ValueError, TypeError), e:
-				logger.debug('worker %s' % self.wid, 'Received invalid message: %s' % data)
-
 			stats_timestamp = self.stats_timestamp
 			if stats_timestamp:
 				# XXX: is this actually atomic as I am guessing?
@@ -219,12 +216,6 @@ class Worker (Thread):
 				# we still have work to do after this so don't continue
 				stats = self._stats()
 				self.respond_stats(self.wid, stats)
-
-			if not self.process or self.process.poll() is not None:
-				if self.running:
-					logger.error('worker %s' % self.wid, 'forked process died !')
-				self.running = False
-				continue
 
 			if not self.running:
 				logger.debug('worker %s' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')
