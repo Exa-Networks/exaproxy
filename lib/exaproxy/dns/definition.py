@@ -92,7 +92,7 @@ class DNSResponseType(DNSBaseType):
 			info.setdefault(response.question, {}).setdefault(response.querytype, []).append(response.response)
 
 		for response in self.additionals:
-			info.setdefault(response.name, {}).setdefault(response.querytype, []).append(response.response)
+			info.setdefault(response.question, {}).setdefault(response.querytype, []).append(response.response)
 
 		return info
 
