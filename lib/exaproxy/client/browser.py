@@ -17,6 +17,7 @@ from exaproxy.util.logger import logger
 
 class Client(object):
 	eor = '\r\n\r\n'
+	eorn = '\n\n'
 
 	def __init__(self, name, sock, peer):
 		self.name = name
@@ -50,12 +51,14 @@ class Client(object):
 
 					r_buffer += data
 
-					if self.eor in r_buffer:       # we have a complete request
-						request, r_buffer = r_buffer.split(self.eor, 1)
+					for eor in (self.eor, self.eorn):
+						if eor in r_buffer:       # we have a complete request
+							request, r_buffer = r_buffer.split(eor, 1)
 
-						r_size = yield request + self.eor, ''  # yield to manager.readRequest
-						r_size = yield '', r_buffer            # yield to manager.startData
-						r_buffer = ''
+							r_size = yield request + eor, ''  # yield to manager.readRequest
+							r_size = yield '', r_buffer        # yield to manager.startData
+							r_buffer = ''
+							break
 					else:
 						r_size = yield '', ''                  # nothing seen yet
 
