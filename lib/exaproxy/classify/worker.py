@@ -208,10 +208,7 @@ class Worker (Thread):
 					if self.running:
 						logger.error('worker %s' % self.wid, 'forked process died !')
 					self.running = False
-					if tainted is False:
-						self.respond_requeue(client_id, peer, header, source)
-					else:
-						self.respond_file(client_id, '250', 'internal_error.html')
+					self.respond_requeue(client_id, peer, header, source)
 					break
 
 			stats_timestamp = self.stats_timestamp
