@@ -187,7 +187,15 @@ class WorkerManager (object):
 			command = None
 			decision = None
 
-		if command == 'hangup':
+		if command == 'requeue':
+			_client_id, _peer, _source, _header = response.split('\0', 3)
+			self.queue.put((_client_id,_peer,_header,_source))
+
+			client_id = None
+			command = None
+			decision = None
+
+		elif command == 'hangup':
 			wid = decision
 			client_id = None
 			command = None

@@ -172,6 +172,10 @@ class Worker (Thread):
 	def respond_stats(self, wid, timestamp, stats):
 		self.respond('\0'.join((wid, 'stats', timestamp, stats)))
 
+	def respond_requeue(self, client_id, peer, header, source):
+		# header and source are flipped to make it easier to split the values
+		self.respond('\0'.join((client_id, peer, source, header)))
+
 	def respond_hangup(self, wid):
 		self.respond('\0'.join(('', 'hangup', wid)))
 
@@ -204,7 +208,8 @@ class Worker (Thread):
 					if self.running:
 						logger.error('worker %s' % self.wid, 'forked process died !')
 					self.running = False
-					continue
+					self.respond_requeue(client_id, peer, header, source)
+					break
 
 			stats_timestamp = self.stats_timestamp
 			if stats_timestamp:
