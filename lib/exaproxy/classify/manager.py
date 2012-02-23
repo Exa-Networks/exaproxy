@@ -8,13 +8,13 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 import time
-from Queue import Queue, Empty
+from Queue import Queue
 
 from .worker import Worker
 
 from exaproxy.util.logger import logger
 
-# Do we really need to call join() on the thread as we are stoppin on our own ? 
+# Do we really need to call join() on the thread as we are stoppin on our own ?
 
 class WorkerManager (object):
 	def __init__ (self,configuration,poller):
@@ -23,7 +23,7 @@ class WorkerManager (object):
 		self.low = configuration.redirector.minimum       # minimum number of workers at all time
 		self.high = configuration.redirector.maximum      # maximum numbe of workers at all time
 		self.program = configuration.redirector.program   # what program speaks the squid redirector API
-		
+
 		self.nbq = 0                      # number of request waiting to be filtered
 		self.nextid = 1                   # incremental number to make the name of the next worker
 		self.queue = Queue()              # queue with HTTP headers to process
@@ -105,7 +105,7 @@ class WorkerManager (object):
 		"""manage our workers to make sure we have enough to consume the queue"""
 		if not self.running:
 			return
-		
+
 		size = self.nbq
 		num_workers = len(self.worker)
 
@@ -128,12 +128,12 @@ class WorkerManager (object):
 			if num_workers >= self.high:
 				logger.warning('manager',"we need more workers by we reach our ceiling ! help !")
 				return
-			# try to figure a good number to add .. 
+			# try to figure a good number to add ..
 			# no less than one, no more than to reach self.high, lower between self.low and a quarter of the allowed growth
 			nb_to_add = int(min(max(1,min(self.low,(self.high-self.low)/4)),self.high-num_workers))
 			logger.warning('manager',"we are low on workers, adding a few (%d)" % nb_to_add)
 			self.spawn(nb_to_add)
-			
+
 	def request(self, client_id, peer, request, source):
 		self.nbq += 1
 		return self.queue.put((client_id,peer,request,source,False))
@@ -165,13 +165,13 @@ class WorkerManager (object):
 				else:
 					response = None
 
-		except ValueError, e: # I/O operation on closed file
+		except ValueError: # I/O operation on closed file
 			worker = self.worker.get(box, None)
 			if worker is not None:
 				worker.destroyProcess()
 
 			response = None
-		except TypeError, e:
+		except TypeError:
 			response = None
 
 		try:
@@ -182,7 +182,7 @@ class WorkerManager (object):
 				command = None
 				decision = None
 
-		except (ValueError, TypeError), e:
+		except (ValueError, TypeError):
 			client_id = None
 			command = None
 			decision = None

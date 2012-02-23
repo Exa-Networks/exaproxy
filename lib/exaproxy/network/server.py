@@ -49,7 +49,7 @@ class Server(object):
 		for sock in self.socks:
 			try:
 				sock.close()
-			except socket.error, e:
+			except socket.error:
 				pass
 
 		self.socks = {}

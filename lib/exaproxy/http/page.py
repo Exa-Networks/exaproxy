@@ -9,7 +9,7 @@ Copyright (c) 2012 Exa Networks. All rights reserved.
 
 
 import cgi
-from .response import html,jpg,png
+from .response import html,png
 from .images import logo,thomas,david
 
 _humans_txt = """\
@@ -138,13 +138,13 @@ Copyright (c) 2011-2011, David Farrar
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -362,7 +362,7 @@ PS: ExaProxy will stop answering HTTP requests while it sends the email. Only on
 """
 
 class Page (object):
-	
+
 	def __init__(self,monitor):
 		self.monitor = monitor
 		self.email_sent = False
@@ -497,7 +497,7 @@ class Page (object):
 			s.quit()
 			self.email_sent = True
 			return self._page('<center><b>Email sent, thank you</b></center>')
-		except Exception,e:
+		except (SMTPException,Exception),e:
 			return self._page('<center><b>Could not send email</b></center><br>%s' % str(e))
 
 	def html (self,path):
@@ -523,7 +523,7 @@ class Page (object):
 		if not sections[0]:
 			return self._page(_index)
 		command = sections[0]
-		
+
 		if command == 'index':
 			return self._page(_index)
 		if command == 'objects':

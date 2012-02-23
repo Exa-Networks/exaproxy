@@ -7,15 +7,11 @@ Created by Thomas Mangin on 2011-12-01.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
+import os
+
 from exaproxy.util.logger import logger
-from exaproxy.network.functions import connect
-from exaproxy.network.poller import errno_block
 from exaproxy.http.response import http, file_header
 from exaproxy.content.downloader import Downloader
-
-import os
-import socket
-import errno
 
 class ParsingError (Exception):
 	pass
@@ -56,9 +52,9 @@ class ContentManager(object):
 				if cache_time is None or cache_time < stat.st_mtime:
 					header = file_header(code, stat.st_size, filename)
 					self._header[filename] = stat.st_size, header
-				
+
 				content = 'file', (header, filename)
-		else: 
+		else:
 			logger.debug('download', 'no file exists for %s: %s' % (str(name), str(filename)))
 			content = 'close', http(501, 'no file exists for %s: %s' % (str(name), str(filename)))
 
@@ -81,7 +77,7 @@ class ContentManager(object):
 		else:
 			logger.debug('download', 'no file exists for %s: %s' % (str(reason), str(filename)))
 			content = 'close', http(501, 'no file exists for %s' % str(reason))
-			
+
 		return content
 
 
@@ -237,7 +233,7 @@ class ContentManager(object):
 				if sock not in self.buffered:
 					self.buffered.append(sock)
 					flipflop = True
-	
+
 					# watch for the socket's send buffer becoming less than full
 					self.poller.addWriteSocket('write_download', sock)
 				else:
@@ -265,7 +261,7 @@ class ContentManager(object):
 				had_buffer = True if downloader.w_buffer else False
 				buffered,sent = downloader.writeData(data)
 				self.total_sent += sent
-			
+
 				if buffered:
 					if downloader.sock not in self.buffered:
 						self.buffered.append(downloader.sock)
@@ -276,8 +272,8 @@ class ContentManager(object):
 					else:
 						flipflop = False
 
-				elif had_buffer and sock in self.buffered:
-					self.buffered.remove(sock)
+				elif had_buffer and downloader.sock in self.buffered:
+					self.buffered.remove(downloader.sock)
 					flipflop = True
 
 					# we no longer care that we can write to the server
@@ -296,7 +292,7 @@ class ContentManager(object):
 					self.poller.addWriteSocket('write_download', downloader.sock)
 				else:
 					flipflop = False
-	
+
 
 			else:  # what is going on if we reach this point
 				self._terminate(downloader.sock, client_id)
@@ -360,11 +356,11 @@ class ContentManager(object):
 
 		return res
 
-		
+
 	def stop (self):
 		opening = self.opening.itervalues()
 		established = self.established.itervalues()
-		
+
 		for gen in (opening, established):
 			for downloader in gen:
 				downloader.shutdown()

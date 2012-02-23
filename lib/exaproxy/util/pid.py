@@ -17,8 +17,6 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 import os
-import sys
-import pwd
 import errno
 
 from .logger import logger
@@ -26,8 +24,8 @@ from .logger import logger
 class PID (object):
 	def __init__ (self,pid_file):
 		self.pid_file = pid_file
-		mask = os.umask(0137)
 		self._saved_pid = False
+		#mask = os.umask(0137)
 
 	def save (self):
 		self._saved_pid = False

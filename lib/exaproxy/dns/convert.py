@@ -9,7 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 from struct import unpack
 import socket
-import array
+#import array
 
 def u8(s):
 	return ord(s)
@@ -21,7 +21,6 @@ def u32(s):
 	return unpack('>I', s)[0]
 
 def dns_string(s):
-	result = ''
 	parts = []
 	ptr = None
 	remaining = len(s)
@@ -49,7 +48,7 @@ def dns_string(s):
 def dns_to_ipv4(ip, packet_s):
 	return socket.inet_ntoa(ip)
 
-def ipv4_to_dns(s, packet_s):
+def ipv4_to_dns(ip, packet_s):
 	return socket.inet_aton(ip)
 
 def dns_to_ipv6(ip, packet_s):

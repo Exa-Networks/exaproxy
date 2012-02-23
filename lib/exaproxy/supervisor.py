@@ -9,9 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import os
 import sys
-import time
 import signal
-from Queue import Queue
 
 from .util.pid import PID
 from .util.daemon import Daemon
@@ -42,7 +40,7 @@ class Supervisor(object):
 		logger.info('supervisor','python version %s' % sys.version.replace(os.linesep,' '))
 
 		self.configuration = load()
-		
+
 		self.pid = PID(self.configuration.daemon.pidfile)
 		self.daemon = Daemon(self.configuration.daemon.daemonise,self.configuration.daemon.user)
 
@@ -148,7 +146,7 @@ class Supervisor(object):
 					self._shutdown = False
 					self.shutdown()
 					break
-				elif self._reload and reload_completed:
+				elif self._reload:
 					self._reload = False
 					self.reload()
 				elif self._refork:

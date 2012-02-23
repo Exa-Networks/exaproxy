@@ -7,7 +7,6 @@ Created by David Farrar on 2012-02-08.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-import os
 import convert
 
 class DNSType:
@@ -110,11 +109,11 @@ class DNSTypeCodec:
 			decoded = decoder(response, data_s)
 		else:
 			decoded = None
-			
+
 		return DNSResourceType(name, question, decoded, ttl)
 
 	def encodeResource(self, resource, data_s=''):
-		value, encoder = self.byvalue.get(name, (None, None))
+		value, encoder = self.byvalue.get(resource.querytype, (None, None))
 		if value is not None:
 			encoded = encoder(resource.response, data_s)
 		else:

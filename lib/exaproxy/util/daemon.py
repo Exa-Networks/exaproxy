@@ -19,14 +19,14 @@ class Daemon (object):
 	def __init__ (self,daemonize,user):
 		self.daemonize = daemonize
 		self.user = user
-		mask = os.umask(0137)
+		#mask = os.umask(0137)
 
 	def drop_privileges (self):
 		"""returns true if we are left with insecure privileges"""
 		# os.name can be ['posix', 'nt', 'os2', 'ce', 'java', 'riscos']
 		if os.name not in ['posix',]:
 			return False
-		
+
 		uid = os.getpid()
 		gid = os.getgid()
 
@@ -47,7 +47,7 @@ class Daemon (object):
 			if not gid:
 				os.setgid(ngid)
 			return False
-		except OSError,e:
+		except OSError:
 			return True
 
 	def _is_socket (self,fd):
@@ -57,7 +57,7 @@ class Daemon (object):
 			# The file descriptor is closed
 			return False
 		try:
-			what = s.getsockopt(socket.SOL_SOCKET, socket.SO_TYPE)
+			s.getsockopt(socket.SOL_SOCKET, socket.SO_TYPE)
 		except socket.error, e:
 			# It is look like one but it is not a socket ...
 			if e.args[0] == errno.ENOTSOCK:
@@ -67,7 +67,7 @@ class Daemon (object):
 	def daemonise (self):
 		if not self.daemonize:
 			return
-		
+
 		def fork_exit ():
 			try:
 				pid = os.fork()

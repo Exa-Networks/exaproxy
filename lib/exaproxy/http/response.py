@@ -10,7 +10,6 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import sys
 import time
 
-from exaproxy.configuration import load
 from exaproxy.util.version import version
 from .images import logo
 

@@ -10,9 +10,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 from exaproxy.util.logger import logger
 from exaproxy.network.functions import connect
 from exaproxy.network.poller import errno_block
-from exaproxy.http.response import http
 
-import os
 import socket
 import errno
 
@@ -42,7 +40,7 @@ class Downloader(object):
 		self.writeData('')
 		response='HTTP/1.1 200 Connection Established\r\n\r\n' if self.method == 'connect' else ''
 		return self.client_id, response
-		
+
 	def readData(self, buflen=DEFAULT_READ_BUFFER_SIZE):
 		"""Read data that we have already received from the remote server"""
 

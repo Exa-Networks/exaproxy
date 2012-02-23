@@ -9,16 +9,12 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # http://code.google.com/speed/articles/web-metrics.html
 
-import socket
 import select
-import time
 import errno
 
 from interface import IPoller
 
 from select import EPOLLIN, EPOLLOUT, EPOLLHUP
-from exaproxy.util.logger import logger
-
 
 
 class EPoller (IPoller):
@@ -84,7 +80,7 @@ class EPoller (IPoller):
 			poller.close()
 			self.setupRead(name)
 
-		
+
 	def addWriteSocket(self, name, socket):
 		sockets, poller, fdtosock, corked = self.sockets[name]
 		if socket not in sockets:

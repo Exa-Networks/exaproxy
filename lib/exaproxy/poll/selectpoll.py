@@ -12,7 +12,6 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 from interface import IPoller
 
 from exaproxy.network.poller import poll_select
-from exaproxy.util.logger import logger
 
 
 class SelectPoller (IPoller):
@@ -52,7 +51,7 @@ class SelectPoller (IPoller):
 
 		if had_sockets:
 			self.read_modified[name] = True
-		
+
 	def addWriteSocket(self, name, socket):
 		sockets = self.write_sockets[name]
 		if socket not in sockets:

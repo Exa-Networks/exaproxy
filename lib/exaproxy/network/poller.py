@@ -9,9 +9,6 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # http://code.google.com/speed/articles/web-metrics.html
 
-import os
-import struct
-import time
 import socket
 import errno
 
@@ -40,7 +37,7 @@ errno_fatal = set((
 	errno.ECONNABORTED, errno.EPIPE,
 	errno.ECONNREFUSED, errno.EBADF,
 	errno.ESHUTDOWN, errno.ENOTCONN,
-	errno.ECONNRESET, 
+	errno.ECONNRESET,
 ))
 
 
@@ -86,5 +83,5 @@ def poll_select(read, write, timeout=None):
 	except Exception, e:
 		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
 		raise e
-			
+
 	return r, w, x

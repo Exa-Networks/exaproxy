@@ -16,7 +16,6 @@ import sys
 import syslog
 import pwd
 
-from .util.logger import logger
 from .util.version import version
 
 class ConfigurationError (Exception):
@@ -42,7 +41,7 @@ _priorities = {
 #	LOG_CRIT     = syslog.LOG_CRIT
 #	LOG_ALERT    = syslog.LOG_ALERT
 #	LOG_EMERG    = syslog.LOG_EMERG
-	
+
 
 class NoneDict (dict):
 	def __getitem__ (self,name):
@@ -50,8 +49,8 @@ class NoneDict (dict):
 nonedict = NoneDict()
 
 class value (object):
-	location = os.path.normpath(sys.argv[0]) if sys.argv[0].startswith('/') else os.path.normpath(os.path.join(cwd,sys.argv[0]))
-	
+	location = os.path.normpath(sys.argv[0]) if sys.argv[0].startswith('/') else os.path.normpath(os.path.join(os.getcwd(),sys.argv[0]))
+
 	@staticmethod
 	def integer (_):
 		return int(_)
@@ -72,7 +71,7 @@ class value (object):
 	def user (_):
 		# XXX: incomplete
 		try:
-			answer = pwd.getpwnam(_)
+			pwd.getpwnam(_)
 			# uid = answer[2]
 		except KeyError:
 			raise TypeError('user %s is not found on this system' % _)
@@ -242,11 +241,11 @@ def _configuration ():
 				    or value.unquote(os.environ.get(env_name.replace('.','_'),'')) \
 				    or value.unquote(ini.get(proxy_section,option,nonedict)) \
 				    or default[option][1]
-			except (ConfigParser.NoSectionError,ConfigParser.NoOptionError),e:
+			except (ConfigParser.NoSectionError,ConfigParser.NoOptionError):
 				conf = default[option][1]
 			try:
 				configuration.setdefault(section,Store())[option] = convert(conf)
-			except TypeError,e:
+			except TypeError:
 				raise ConfigurationError('invalid value for %s.%s : %s' % (section,option,conf))
 
 	return configuration

@@ -9,10 +9,6 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # http://code.google.com/speed/articles/web-metrics.html
 
-import time
-import errno
-import math
-
 from .util.logger import logger
 
 class Reactor(object):
@@ -30,9 +26,9 @@ class Reactor(object):
 	def run(self):
 		poller = self.poller
 
-		count = 0
-		s_times = []
-		w_times = []
+#		count = 0
+#		s_times = []
+#		w_times = []
 
 		decisions = []
 
@@ -90,7 +86,7 @@ class Reactor(object):
 				elif data is None:
 					self.content.endClientDownload(client_id)
 
-					
+
 			# incoming data - web pages
 			for fetcher in events.get('read_download',[]):
 				client_id, page_data = self.content.readData(fetcher)
@@ -205,12 +201,12 @@ class Reactor(object):
 			for resolver in events.get('write_resolver', []):
 				self.resolver.continueSending(resolver)
 
-#			# retry connecting - opportunistic 
+#			# retry connecting - opportunistic
 #			for client_id, decision in retry_download:
 #				# if we have a temporary error, the others are likely to be too
 #				if not self.content.retryDownload(client_id, decision):
 #					break
 
-			
+
 			decisions = []
 

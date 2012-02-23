@@ -14,7 +14,6 @@ import errno
 
 import os
 import time
-import socket
 
 #import fcntl
 
@@ -24,7 +23,7 @@ from exaproxy.util.logger import logger
 
 class Worker (Thread):
 	# TODO : if the program is a function, fork and run :)
-	
+
 	def __init__ (self, configuration, name, request_box, program):
 		self.configuration = configuration
 		self.enabled = configuration.redirector.enabled
@@ -40,7 +39,7 @@ class Worker (Thread):
 	#	self.last_worked = self.creation              # when the thread last picked a task
 		self.request_box = request_box                # queue with HTTP headers to process
 
-		self.program = program                        # the squid redirector program to fork 
+		self.program = program                        # the squid redirector program to fork
 		self.running = True                           # the thread is active
 
 		self.stats_timestamp = None			# time of the most recent outstanding request to generate stats
@@ -93,7 +92,7 @@ class Worker (Thread):
 		squid = '%s %s - %s -' % (url, client_ip, method)
 		#logger.info('worker %s' % self.wid, 'sending to classifier: [%s]' % squid)
 		if not self.process:
-			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(e))
+			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
 			classification, data = 'file', 'internal_error.html'
 			return
 
@@ -186,9 +185,9 @@ class Worker (Thread):
 		while self.running:
 			logger.debug('worker %s' % self.wid,'waiting for some work')
 			try:
-				# The timeout is really caused by the SIGALARM sent on the main thread every second 
+				# The timeout is really caused by the SIGALARM sent on the main thread every second
 				# BUT ONLY IF the timeout is present in this call
-				data = self.request_box.get(2) 
+				data = self.request_box.get(2)
 			except Empty:
 				if self.enabled:
 					if not self.process or self.process.poll() is not None:
@@ -196,13 +195,13 @@ class Worker (Thread):
 							logger.error('worker %s' % self.wid, 'forked process died !')
 						self.running = False
 						continue
-			except ValueError, e:
+			except ValueError:
 				logger.error('worker %s' % self.wid, 'Problem reading from request_box')
 				continue
 
 			try:
 				client_id, peer, header, source, tainted = data
-			except TypeError, e:
+			except TypeError:
 				logger.alert('worker %s' % self.wid, 'Received invalid message: %s' % data)
 				continue
 
@@ -218,7 +217,7 @@ class Worker (Thread):
 			stats_timestamp = self.stats_timestamp
 			if stats_timestamp:
 				# XXX: is this actually atomic as I am guessing?
-				# There's a race condition here if not. We're unlikely to hit it though, unless 
+				# There's a race condition here if not. We're unlikely to hit it though, unless
 				# the classifier can take a long time
 				self.stats_timestamp = None if stats_timestamp == stats_timestamp else self.stats_timestamp
 
@@ -252,7 +251,7 @@ class Worker (Thread):
 				if classification == 'permit':
 					self.respond_proxy(client_id, request.host, request.port, request)
 					continue
-					
+
 				elif classification == 'rewrite':
 					request.redirect(None, data)
 					self.respond_proxy(client_id, request.host, request.port, request)
