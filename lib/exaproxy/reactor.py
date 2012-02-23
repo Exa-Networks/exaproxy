@@ -123,7 +123,7 @@ class Reactor(object):
 							decisions.append((client_id, command, decision))
 
 						# something went wrong
-						elif not identifier:
+						elif identifier is None:
 							commmand, decision = self.decider.showInternalError()
 					else:
 						decisions.append((client_id, command, decision))
