@@ -240,48 +240,49 @@ class Worker (Thread):
 				self.respond_monitor(client_id, request.path)
 				continue
 
-			if not self.enabled:
-				if request.method == 'CONNECT':
-					self.respond_connect(client_id, request.host, request.port, request)
-				else:
-					self.respond_proxy(client_id, request.host, request.port, request)
-				continue
-
 			# classify and return the filtered page
-			if request.method in ('GET', 'PUT', 'POST'):
+			if request.method in ('GET', 'PUT', 'POST','HEAD'):
+				if not self.enabled:
+					self.respond_proxy(client_id, request.host, request.port, request)
+					continue
+
 				classification, data = self._classify(request.client, request.method, request.url_noport, tainted)
 
 				if classification == 'permit':
 					self.respond_proxy(client_id, request.host, request.port, request)
 					continue
 
-				elif classification == 'rewrite':
+				if classification == 'rewrite':
 					request.redirect(None, data)
 					self.respond_proxy(client_id, request.host, request.port, request)
 					continue
 
-				elif classification == 'file':
+				if classification == 'file':
 					#self.respond_file(client_id, '250', data)
 					self.respond_rewrite(client_id, 250, data, request.protocol, request.url, request.host, request.client)
 					continue
 
-				elif classification == 'redirect':
+				if classification == 'redirect':
 					self.respond_redirect(client_id, data)
 					continue
 
-				elif classification == 'dns':
+				if classification == 'dns':
 					self.respond_proxy(client_id, data, request.port, request)
 					continue
 
-				elif classification == 'requeue':
+				if classification == 'requeue':
 					self.respond_requeue(client_id, peer, header, source)
-
-				else:
-					self.respond_proxy(client_id, request.host, request.port, request)
 					continue
+
+				self.respond_proxy(client_id, request.host, request.port, request)
+				continue
 
 			# someone want to use us as https proxy
 			if request.method == 'CONNECT':
+				if not self.enabled:
+					self.respond_connect(client_id, request.host, request.port, request)
+					continue
+
 				# we do allow connect
 				if self.configuration.http.allow_connect:
 					classification, data = self._classify(request.client, request.method, request.url_noport, tainted)
