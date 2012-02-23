@@ -119,6 +119,12 @@ class value (object):
 		return first
 
 	@staticmethod
+	def redirector (name):
+		if name in ('url,header'):
+			return name
+		raise TypeError('invalid redirector protocol %s, options are url or header' % name)
+
+	@staticmethod
 	def syslog (log):
 		if log not in _priorities:
 			raise TypeError('invalid log level %s' % log)
@@ -147,6 +153,7 @@ defaults = {
 		'minimum' : (value.integer,'5'                          , 'minimum number of worker threads (forked program)'),
 		'maximum' : (value.integer,'25'                         , 'maximum number of worker threads (forked program)'),
 #		'timeout' : (value.integer,'1'                          , 'how long to wait for work before peforming background work'),
+		'protocol': (value.redirector,'url'                     , 'what protocol to use (url: squid like / header: icap like)')
 	},
 
 	'http' : {

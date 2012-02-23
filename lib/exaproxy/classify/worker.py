@@ -27,6 +27,7 @@ class Worker (Thread):
 	def __init__ (self, configuration, name, request_box, program):
 		self.configuration = configuration
 		self.enabled = configuration.redirector.enabled
+		self.protocol = configuration.redirector.protocol
 		self.transparent = configuration.http.transparent
 
 		# XXX: all this could raise things
@@ -87,49 +88,46 @@ class Worker (Thread):
 		# so the shutdown will not be immediate
 		self.running = False
 
-
 	def _classify (self, client_ip, method, url, tainted):
-		squid = '%s %s - %s -' % (url, client_ip, method)
-		#logger.info('worker %s' % self.wid, 'sending to classifier: [%s]' % squid)
 		if not self.process:
 			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
 			classification, data = 'file', 'internal_error.html'
 			return
+		
+		if self.protocol == 'url':	
+			return _classify_url (self, client_ip, method, url, tainted)
+		return 'file', 'internal_error.html'
 
+	def _classify_url (self, client_ip, method, url, tainted):
 		try:
+			squid = '%s %s - %s -' % (url, client_ip, method)
 			self.process.stdin.write(squid + os.linesep)
 			response = self.process.stdout.readline().strip()
-
-			if not response:
-				classification, data = 'permit', None
-
-			elif response.startswith('http://'):
-				response = response[7:]
-
-				if response == url:
-					classification, data = 'permit', None
-				elif response.startswith(url.split('/', 1)[0]+'/'):
-					classification, data = 'rewrite', ('/'+response.split('/', 1)[1]) if '/' in url else ''
-				else:
-					classification, data = 'redirect', 'http://' + response
-
-			elif response.startswith('file://'):
-				classification, data = 'file', response[7:]
-
-			elif response.startswith('dns://'):
-				classification, data = 'dns', response[6:]
-
-			else:
-				classification, data = 'file', 'internal_error.html'
-
 		except IOError, e:
 			logger.error('worker %s' % self.wid, 'IO/Error when sending to process: %s' % str(e))
 			if tainted is False:
-				classification, data = 'requeue', None
-			else:
-				classification, data = 'file', 'internal_error.html'
+				return 'requeue', None
+			return 'file', 'internal_error.html'
 
-		return classification, data
+		if not response:
+			return 'permit', None
+
+		if response.startswith('http://'):
+			response = response[7:]
+
+			if response == url:
+				return 'permit', None
+			if response.startswith(url.split('/', 1)[0]+'/'):
+				return 'rewrite', ('/'+response.split('/', 1)[1]) if '/' in url else ''
+			return 'redirect', 'http://' + response
+
+		if response.startswith('file://'):
+			return 'file', response[7:]
+
+		if response.startswith('dns://'):
+			return 'dns', response[6:]
+
+		return 'file', 'internal_error.html'
 
 	def respond(self, response):
 		self.response_box_write.write(str(len(response)) + ':' + response + ',')
