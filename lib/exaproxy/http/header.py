@@ -111,7 +111,7 @@ class Header(dict):
 
 		# XXX: need to handle port switch
 		if path is not None:
-			self.request = self.method + ' ' + path + self.version
+			self.request = self.method + ' ' + path + ' HTTP/' + self.version
 
 		if host is not None:
 			self['host'] = 'Host: ' + host
@@ -121,7 +121,7 @@ class Header(dict):
 
 	def toString(self, linesep=None):
 		linesep = linesep if linesep is not None else self.seperator
-		request = str(self.method) + ' ' + str(self.path) + ' ' + self.version
+		request = str(self.method) + ' ' + str(self.path) + ' HTTP/' + self.version
 		return request + linesep + linesep.join(self[key] for key in self.order) + linesep + linesep
 
 
