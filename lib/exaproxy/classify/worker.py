@@ -241,7 +241,10 @@ class Worker (Thread):
 				continue
 
 			if not self.enabled:
-				self.respond_proxy(client_id, request.host, request.port, request)
+				if request.method == 'CONNECT':
+					self.respond_connect(client_id, request.host, request.port, request)
+				else:
+					self.respond_proxy(client_id, request.host, request.port, request)
 				continue
 
 			# classify and return the filtered page
