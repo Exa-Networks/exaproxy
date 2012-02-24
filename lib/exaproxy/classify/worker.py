@@ -237,7 +237,7 @@ class Worker (Thread):
 
 			request = Header(self.configuration,header,peer)
 			if not request.isValid():
-				self.respond_http(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)))
+				self.respond_http(client_id, 400, 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % str(header))
 				continue
 
 			if source == 'web':
@@ -301,14 +301,14 @@ class Worker (Thread):
 
 					continue
 				else:
-					self.respond_http(client_id, 501, 'CONNECT NOT ALLOWED', 'We are an HTTP only proxy')
+					self.respond_http(client_id, 501, 'CONNECT NOT ALLOWED\n')
 					continue
 
 			if request.method in ('TRACE',):
-				self.respond_http(client_id, 501, 'TRACE NOT IMPLEMENTED', 'This is bad .. we are sorry.')
+				self.respond_http(client_id, 501, 'TRACE NOT IMPLEMENTED\n')
 				continue
 
-			self.respond_http(client_id, 405, 'METHOD NOT ALLOWED', 'Method Not Allowed')
+			self.respond_http(client_id, 405, 'METHOD NOT ALLOWED\n')
 			continue
 
 		self.respond_hangup(self.wid)
