@@ -50,7 +50,7 @@ class Header(dict):
 					self['host'] = 'Host: ' + host
 
 			else:
-				if host != headerhost:
+				if host != headerhost and method != 'OPTIONS' and host != '*':
 					raise HostMismatch, 'Make up your mind: %s - %s' % (host, headerhost)
 
 
