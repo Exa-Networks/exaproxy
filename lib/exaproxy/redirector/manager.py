@@ -16,7 +16,7 @@ from exaproxy.util.logger import logger
 
 # Do we really need to call join() on the thread as we are stoppin on our own ?
 
-class WorkerManager (object):
+class RedirectorManager (object):
 	def __init__ (self,configuration,poller):
 		self.configuration = configuration
 

@@ -14,7 +14,7 @@ import signal
 from .util.pid import PID
 from .util.daemon import Daemon
 
-from .classify.manager import WorkerManager
+from .redirector.manager import RedirectorManager
 from .content.manager import ContentManager
 from .client.manager import ClientManager
 from .resolver.manager import ResolverManager
@@ -62,7 +62,7 @@ class Supervisor(object):
 
 		self.monitor = Monitor(self)
 		self.page = Page(self.monitor)
-		self.manager = WorkerManager(
+		self.manager = RedirectorManager(
 			self.configuration,
 			self.poller,
 		)
