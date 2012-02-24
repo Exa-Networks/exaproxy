@@ -199,7 +199,7 @@ defaults = {
 	},
 	'dns' : {
 		'resolver'     : (value.resolver,value.quote,'/etc/resolv.conf',      'resolver file'),
-		'timeout'      : (value.integer,value.nop,'2',                        'how long to wait for DNS replies'),
+		'timeout'      : (value.integer,value.nop,'5',                        'how long to wait for DNS replies'),
 #		'force-ttl'    : (value.boolean,value.lower,'true',                   'do not use DNS ttl but the ttl value in this configuration'),
 		'ttl'          : (value.integer,value.nop,'120',                      'amount of time (in seconds) we will cache dns results for'),
 		'expire'       : (value.integer,value.nop,'200',                      'maximum number of cached dns entries we will expire during each cleanup'),
