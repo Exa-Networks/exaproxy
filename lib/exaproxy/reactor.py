@@ -172,7 +172,7 @@ class Reactor(object):
 
 			# remote servers we can write buffered data to
 			for download in events.get('write_download',[]):
-				status, flipflop = self.content.sendSocketData(download, '')
+				status, flipflop, client_id = self.content.sendSocketData(download, '')
 
 				if flipflop:
 					if status:

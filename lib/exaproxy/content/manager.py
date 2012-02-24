@@ -228,6 +228,7 @@ class ContentManager(object):
 			had_buffer = True if downloader.w_buffer else False
 			buffered,sent = downloader.writeData(data)
 			self.total_sent += sent
+			client_id = downloader.client_id
 
 			if buffered:
 				if sock not in self.buffered:
@@ -251,8 +252,9 @@ class ContentManager(object):
 		else:
 			buffered = None
 			flipflop = None
+			client_id = downloader.client_id
 
-                return buffered, flipflop
+                return buffered, flipflop, client_id
 
 	def sendClientData(self, client_id, data):
 		downloader = self.byclientid.get(client_id, None)
