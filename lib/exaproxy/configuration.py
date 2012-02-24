@@ -112,7 +112,7 @@ class value (object):
 		paths = [
 			os.path.normpath(path),
 			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),path)),
-			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),'etc','exaproxy','resolv.conf')),
+			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),'etc','exaproxy','dns','resolv.conf')),
 			os.path.normpath(os.path.join('/','etc','exaproxy','resolv.conf',path)),
 		]
 		for resolver in paths:
