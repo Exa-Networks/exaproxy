@@ -160,14 +160,8 @@ class Header(dict):
 		if '://' in pathstring:
 			a, b = pathstring.split('://', 1)
 			if '/' not in a:
-				protocol = a
-				pathstring = b
-			else:
-				protocol = 'http'
-		else:
-			protocol = 'http'
-
-		return protocol, pathstring
+				return a,b 
+		return 'http',pathstring
 
 	def splitHost(self, pathstring):
 		if ':' in pathstring:
