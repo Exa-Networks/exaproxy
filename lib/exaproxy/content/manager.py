@@ -126,7 +126,7 @@ class ContentManager(object):
 				content = ('close', headers)
 				restricted = True
 
-			elif command == 'html':
+			elif command == 'http':
 				try:
 					code, data = args.split('\0', 1)
 				except (ValueError, TypeError), e:

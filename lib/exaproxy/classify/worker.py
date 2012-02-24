@@ -160,8 +160,8 @@ class Worker (Thread):
 	def respond_rewrite(self, client_id, code, reason, protocol, url, host, client_ip):
 		self.respond('\0'.join((client_id, 'rewrite', str(code), reason, protocol, url, host, str(client_ip))))
 
-	def respond_html(self, client_id, code, *data):
-		self.respond('\0'.join((client_id, 'html', str(code))+data))
+	def respond_http(self, client_id, code, *data):
+		self.respond('\0'.join((client_id, 'http', str(code))+data))
 
 	def respond_monitor(self, client_id, path):
 		self.respond('\0'.join((client_id, 'monitor', path)))
@@ -231,7 +231,7 @@ class Worker (Thread):
 
 			request = Header(self.configuration,header,peer)
 			if not request.isValid():
-				self.respond_html(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)))
+				self.respond_http(client_id, 400, ('This request does not conform to HTTP/1.1 specifications <!--\n<![CDATA[%s]]>\n-->\n' % str(header)))
 				continue
 
 			if source == 'web':
@@ -295,14 +295,14 @@ class Worker (Thread):
 
 					continue
 				else:
-					self.respond_html(client_id, 501, 'CONNECT NOT ALLOWED', 'We are an HTTP only proxy')
+					self.respond_http(client_id, 501, 'CONNECT NOT ALLOWED', 'We are an HTTP only proxy')
 					continue
 
 			if request.method in ('TRACE',):
-				self.respond_html(client_id, 501, 'TRACE NOT IMPLEMENTED', 'This is bad .. we are sorry.')
+				self.respond_http(client_id, 501, 'TRACE NOT IMPLEMENTED', 'This is bad .. we are sorry.')
 				continue
 
-			self.respond_html(client_id, 405, 'METHOD NOT ALLOWED', 'Method Not Allowed')
+			self.respond_http(client_id, 405, 'METHOD NOT ALLOWED', 'Method Not Allowed')
 			continue
 
 		self.respond_hangup(self.wid)
