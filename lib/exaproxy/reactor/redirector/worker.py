@@ -7,13 +7,6 @@ Created by Thomas Mangin on 2011-11-29.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-#XXX: RFC VILOATION
-# Need to reply 417 when 100-continue is used (Section 8.2.3)
-# Do not forward 100 response due to Expect:100 if client is HTTP/1.0 (Section 8.2.3)
-# Need to remove connection: header if HTTP is 1/0
-# Not caching so no version update required for us (Section 3.1)
-# The Expect mechanism is hop-by-hop: that is, an HTTP/1.1 proxy MUST return a 417 (Expectation Failed) status if it receives a request with an expectation that it cannot meet. However, the Expect request-header itself is end-to-end; it MUST be forwarded if the request is forwarded.
-
 from threading import Thread
 from Queue import Empty
 import subprocess

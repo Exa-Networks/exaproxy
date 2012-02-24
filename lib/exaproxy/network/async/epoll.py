@@ -7,7 +7,7 @@ Created by Thomas Mangin on 2011-11-30.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-# http://code.google.com/speed/articles/web-metrics.html
+# http://scotdoyle.com/python-epoll-howto.html
 
 import select
 import errno
