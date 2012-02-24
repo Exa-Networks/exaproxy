@@ -20,7 +20,7 @@ from .client.manager import ClientManager
 from .resolver.manager import ResolverManager
 from .network.server import Server
 from .http.page import Page
-from .http.monitor import Monitor
+from .monitor import Monitor
 
 from poll import Poller
 from .reactor import Reactor
