@@ -329,6 +329,17 @@ class Redirector (Thread):
 				self.respond_proxy(client_id, request.headerhost, request.port, request)
 				continue
 
+			# WEBDAV
+			if request.method in (
+			  'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE', 
+			  'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
+				self.respond_proxy(client_id, request.headerhost, request.port, request)
+				continue
+
+			if request in self.configuration.http.extensions:
+				self.respond_proxy(client_id, request.headerhost, request.port, request)
+				continue
+
 			self.respond_http(client_id, 405, '') # METHOD NOT ALLOWED
 			continue
 

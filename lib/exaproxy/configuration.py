@@ -74,6 +74,14 @@ class value (object):
 		return _.lower() in ('1','yes','on','enable','true')
 
 	@staticmethod
+	def methods (_):
+		return _.upper().split()
+
+	@staticmethod
+	def list (_):
+		return ' '.join(_)
+
+	@staticmethod
 	def lower (_):
 		return str(_).lower()
 
@@ -183,6 +191,7 @@ defaults = {
 		'transparent'     : (value.boolean,value.lower,'false', 'do not insert Via headers'),
 		'x-forwarded-for' : (value.boolean,value.lower,'true',  'insert x-forarded-for headers to webservers'),
 		'allow-connect'   : (value.boolean,value.lower,'true',  'allow client to use CONNECT and https connections'),
+		'extensions'      : (value.methods,value.list,'',       'allow new HTTP method (space separated)')
 	},
 	'web' : {
 		'enabled' : (value.boolean,value.lower,'true',             'enable the built-in webserver'),

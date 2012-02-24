@@ -76,6 +76,8 @@ class Monitor (object):
 			'exaproxy.tcp4.timeout' : str(conf.tcp4.timeout),
 			'exaproxy.http.connect' : str(conf.http.allow_connect),
 			'exaproxy.http.x-forwarded-for' : str(conf.http.x_forwarded_for),
+			'exaproxy.http.transparent' : str(conf.http.transparent),
+			'exaproxy.http.extensions' : ' '.join(conf.http.extensions),
 			'exaproxy.redirector.enabled' : str(conf.redirector.enabled),
 			'exaproxy.redirector.protocol' : str(conf.redirector.protocol),
 			'exaproxy.redirector.program' : str(conf.redirector.program),
