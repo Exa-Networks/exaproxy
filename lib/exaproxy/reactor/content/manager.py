@@ -111,6 +111,7 @@ class ContentManager(object):
 					raise ParsingError()
 
 				downloader, newdownloader = self.getDownloader(client_id, host, int(port), command, request)
+
 				if downloader is not None:
 					content = ('stream', '')
 					length = int(length)
@@ -216,8 +217,6 @@ class ContentManager(object):
 		elif client_id in self.byclientid:
 			# we have replaced the downloader with local content
 			self.endClientDownload(client_id)
-
-		
 
 		return content, length
 
@@ -328,8 +327,6 @@ class ContentManager(object):
 					self.buffered.append(downloader.sock)
 					flipflop = True
 
-					# watch for the socket's send buffer becoming less than full
-					self.poller.addWriteSocket('write_download', downloader.sock)
 				else:
 					flipflop = False
 
