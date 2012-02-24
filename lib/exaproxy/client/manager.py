@@ -72,7 +72,6 @@ class ClientManager (object):
 				# to the remote webserver. 
 				# Since we just read a request, we know that the cork is not currently
 				# set and so there's no risk of it being erroneously removed.
-				print "CORKING CLIENT UPLOAD BECAUSE WE RECEIVED A NEW REQUEST"
 				self.poller.corkReadSocket('read_client', sock)
 				
 			elif request is None:
@@ -207,7 +206,6 @@ class ClientManager (object):
 				res = None
 			else:
 				if client.sock not in self.bysock:
-					print 'FIRST REQUEST'
 					# Start checking for content sent by the client
 					self.bysock[client.sock] = client
 
@@ -222,12 +220,10 @@ class ClientManager (object):
 					res = client.startData(command, d)
 
 				else:
-					print 'EXTRA REQUEST'
 					res = client.restartData(command, d)
 
 					# If we are here then we must have prohibited reading from the client
 					# and it must otherwise have been in a readable state
-					print 'UNCORKING CLIENT UPLOAD BECAUSE WE DECIDED WHAT TO DO WITH THE REQUEST'
 					self.poller.uncorkReadSocket('read_client', client.sock)
 
 
@@ -242,6 +238,9 @@ class ClientManager (object):
 					self.cleanup(client.sock, name)
 					buffered, had_buffer = None, None
 					content = None
+
+				elif request is None:
+					self.cleanup(client.sock, name)
 
 			else:
 				# close the client connection only if sendDataBySocket is not due to be called

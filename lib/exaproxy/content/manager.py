@@ -217,6 +217,8 @@ class ContentManager(object):
 			# we have replaced the downloader with local content
 			self.endClientDownload(client_id)
 
+		
+
 		return content, length
 
 
@@ -288,7 +290,7 @@ class ContentManager(object):
 		else:
 			buffered = None
 			flipflop = None
-			client_id = downloader.client_id
+			client_id = None
 
                 return buffered, flipflop, client_id
 

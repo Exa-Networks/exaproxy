@@ -83,6 +83,7 @@ class Client(object):
 							break
 					else:
 						r_size = yield '', ''                  # nothing seen yet
+						continue
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
@@ -95,6 +96,7 @@ class Client(object):
 					break
 
 		yield None
+		
 
 	def readData(self):
 		name, peer = self.name, self.peer
