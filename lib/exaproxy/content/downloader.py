@@ -27,6 +27,8 @@ class Downloader(object):
 	def __init__(self, client_id, host, port, method, request):
 		self.client_id = client_id
 		self.sock = self._connect(host, port)
+		self.host = host
+		self.port = port
 		self.method = method
 		self.w_buffer = request
 

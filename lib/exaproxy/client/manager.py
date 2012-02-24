@@ -67,8 +67,13 @@ class ClientManager (object):
 		if client:
 			name, peer, request, content = client.readData()
 			if request:
-				logger.error('client', 'reading multiple requests')
-				self.cleanup(sock, client.name)
+				# Parsing of the new request will be handled asynchronously. Ensure that
+				# we do not read anything from the client until a request has been sent
+				# to the remote webserver. 
+				# Since we just read a request, we know that the cork is not currently
+				# set and so there's no risk of it being erroneously removed.
+				print "CORKING CLIENT UPLOAD BECAUSE WE RECEIVED A NEW REQUEST"
+				self.poller.corkReadSocket('read_client', sock)
 				
 			elif request is None:
 				self.cleanup(sock, client.name)
@@ -85,10 +90,14 @@ class ClientManager (object):
 		if client:
 			name, peer, request, content = client.readData()
 			if request:
-				logger.error('client', 'reading multiple requests')
-				self.cleanup(client.sock, name)
+				# Parsing of the new request will be handled asynchronously. Ensure that
+				# we do not read anything from the client until a request has been sent
+				# to the remote webserver. 
+				# Since we just read a request, we know that the cork is not currently
+				# set and so there's no risk of it being erroneously removed.
+				self.poller.corkReadSocket('read_client', client.sock)
 
-			if request is None:
+			elif request is None:
 				self.cleanup(client.sock, name)
 		else:
 			logger.error('client','trying to read from a client that does not exist %s' % name)
@@ -187,7 +196,7 @@ class ClientManager (object):
 		return result, flipflop
 
 
-	def startData(self, name, data, blockupload):
+	def startData(self, name, data, remaining):
 		client = self.byname.get(name, None)
 		if client:
 			try:
@@ -197,25 +206,37 @@ class ClientManager (object):
 				self.cleanup(client.sock, name)
 				res = None
 			else:
-				# Start checking for content sent by the client
-				self.bysock[client.sock] = client
+				if client.sock not in self.bysock:
+					print 'FIRST REQUEST'
+					# Start checking for content sent by the client
+					self.bysock[client.sock] = client
 
-				# watch for the client sending new data
-				self.poller.addReadSocket('read_client', client.sock)
+					# watch for the client sending new data
+					self.poller.addReadSocket('read_client', client.sock)
 
-				# make sure we don't somehow end up with this still here
-				self.norequest.pop(client.sock, (None,None))
+					# make sure we don't somehow end up with this still here
+					self.norequest.pop(client.sock, (None,None))
 
-				# NOTE: always done already in readRequest
-				self.poller.removeReadSocket('opening_client', client.sock)
+					# NOTE: always done already in readRequest
+					self.poller.removeReadSocket('opening_client', client.sock)
+					res = client.startData(command, d)
 
-				res = client.startData(command, d, blockupload)
+				else:
+					print 'EXTRA REQUEST'
+					res = client.restartData(command, d)
+
+					# If we are here then we must have prohibited reading from the client
+					# and it must otherwise have been in a readable state
+					print 'UNCORKING CLIENT UPLOAD BECAUSE WE DECIDED WHAT TO DO WITH THE REQUEST'
+					self.poller.uncorkReadSocket('read_client', client.sock)
+
+
 
 			if res is not None:
 				buffered, had_buffer, sent = res
 
 				# buffered data we read with the HTTP headers
-				name, peer, request, content = client.readData()
+				name, peer, request, content = client.readRelated(remaining)
 				if request:
 					logger.error('client', 'reading multiple requests')
 					self.cleanup(client.sock, name)

@@ -33,6 +33,9 @@ class ContentManager(object):
 		self.page = page
 		self._header = {}
 
+	def hasClient(self, client_id):
+		return client_id in self.byclientid
+
 	def getLocalContent(self, code, name):
 		filename = os.path.normpath(os.path.join(self.location, name))
 		if not filename.startswith(self.location + os.path.sep):
@@ -81,28 +84,39 @@ class ContentManager(object):
 		return content
 
 
-	def newDownloader(self, client_id, host, port, command, request):
-		downloader = self.downloader_factory(client_id, host, port, command, request)
+	def getDownloader(self, client_id, host, port, command, request):
+		downloader = self.byclientid.get(client_id, None)
+		if downloader:
+			if host != downloader.host or port != downloader.port:
+				self.endClientDownload(client_id)
+				downloader = None
+			else:
+				newdownloader = False
+
+		if downloader is None:
+			downloader = self.downloader_factory(client_id, host, port, command, request)
+			newdownloader = True
+
 		if downloader.sock is None:
 			downloader = None
 
-		return downloader
+		return downloader, newdownloader
 
 	def getContent(self, client_id, command, args):
 		try:
 			if command == 'download':
 				try:
-					host, port, request = args.split('\0', 2)
+					host, port, length, request = args.split('\0', 3)
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 
-				downloader = self.newDownloader(client_id, host, int(port), command, request)
+				downloader, newdownloader = self.getDownloader(client_id, host, int(port), command, request)
 				if downloader is not None:
 					content = ('stream', '')
+					length = int(length)
 				else:
 					content = self.getLocalContent('400', 'noconnect.html')
-
-				restricted = True
+					length = 0
 
 			elif command == 'connect':
 				try:
@@ -110,21 +124,24 @@ class ContentManager(object):
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 
-				downloader = self.newDownloader(client_id, host, int(port), command, '')
+				downloader, newdownloader = self.getDownloader(client_id, host, int(port), command, '')
+
 				if downloader is not None:
 					content = ('stream', '')
-					restricted = False
+					length = -1 # the client can send as much data as it wants
 				else:
 					content = self.getLocalContent('400', 'noconnect.html')
-					restricted = True
+					length = 0
 
 			elif command == 'redirect':
 				redirect_url = args
 				headers = 'HTTP/1.1 302 Surfprotected\r\nLocation: %s\r\n\r\n\r\n' % redirect_url
 
 				downloader = None
+				newdownloader = False
+				request = ''
 				content = ('close', headers)
-				restricted = True
+				length = 0
 
 			elif command == 'http':
 				try:
@@ -133,8 +150,10 @@ class ContentManager(object):
 					raise ParsingError()
 
 				downloader = None
+				newdownloader = False
+				request = ''
 				content = ('close', http(code, data))
-				restricted = True
+				length = 0
 
 			elif command == 'file':
 				try:
@@ -143,8 +162,10 @@ class ContentManager(object):
 					raise ParsingError()
 
 				downloader = None
+				request = ''
+				newdownloader = False
 				content = self.getLocalContent(code, reason)
-				restricted = True
+				length = 0
 
 			elif command == 'rewrite':
 				try:
@@ -153,35 +174,50 @@ class ContentManager(object):
 					raise ParsingError()
 
 				downloader = None
+				newdownloader = False
+				request = ''
 				content = self.readLocalContent(code, reason, {'url':url, 'host':host, 'client_ip':client_ip, 'protocol':protocol})
-				restricted = True
+				length = 0
 
 			elif command == 'monitor':
 				path = args
 
 				downloader = None
+				newdownloader = False
+				request = ''
 				content = ('close', http('200', self.page.html(path)))
-				restricted = True
+				length = 0
 
 			else:
 				downloader = None
+				newdownloader = False
+				request = ''
 				content = None
-				restricted = None
+				length = 0
 
 		except ParsingError:
 			logger.error('download', 'problem getting content %s %s' % (type(e),str(e)))
 			downloader = None
+			newdownloader = False
+			request = ''
 			content = None
-			restricted = None
+			length = 0
 
-		if downloader is not None:
+		if newdownloader is True:
 			self.opening[downloader.sock] = downloader
 			self.byclientid[downloader.client_id] = downloader
 
 			# register interest in the socket becoming available
 			self.poller.addWriteSocket('opening_download', downloader.sock)
 
-		return content, restricted
+		elif downloader is not None:
+			downloader.writeData(request)
+
+		elif client_id in self.byclientid:
+			# we have replaced the downloader with local content
+			self.endClientDownload(client_id)
+
+		return content, length
 
 
 	def startDownload(self, sock):

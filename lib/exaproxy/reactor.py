@@ -70,10 +70,10 @@ class Reactor(object):
 			for client in events.get('read_client',[]):
 				client_id, peer, request, data = self.client.readDataBySocket(client)
 				if request:
-					# tell the client to hang up
-					self.client.sendDataByName(client_id, None)
+					# we have a new request - decide what to do with it
+					self.decider.request(client_id, peer, request, 'proxy')
 
-				elif data:
+				if data:
 					# we read something from the client so pass it on to the remote server
 					status, flipflop = self.content.sendClientData(client_id, data)
 
@@ -137,11 +137,12 @@ class Reactor(object):
 
 			# all decisions we are currently able to process
 			for client_id, command, decision in decisions:
-				response, restricted = self.content.getContent(client_id, command, decision)
+				# send the possibibly rewritten request to the server
+				response, length = self.content.getContent(client_id, command, decision)
 
 				# Signal to the client that we'll be streaming data to it or
 				# give it the location of the local content to return.
-				data = self.client.startData(client_id, response, restricted)
+				data = self.client.startData(client_id, response, length)
 
 				# Check for any data beyond the initial headers that we may already
 				# have read and cached

@@ -150,9 +150,7 @@ class Worker (Thread):
 		self.response_box_write.write(str(len(response)) + ':' + response + ',')
 		self.response_box_write.flush()
 
-	def respond_proxy(self, client_id, ip, port, request):
-		# We NEED Connection: close
-		request['connection'] = 'Connection: close'
+	def respond_proxy(self, client_id, ip, port, length, request):
 		# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
 		request.pop('proxy-connection',None)
 		# XXX: To be RFC compliant we need to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45 on the reply too
@@ -165,7 +163,7 @@ class Worker (Thread):
 				request['via'] = via
 			#request['via'] = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % ('test',os.getpid()), '1.1', request.host)
 		header = request.toString()
-		self.respond('\0'.join((client_id, 'download', ip, str(port), header)))
+		self.respond('\0'.join((client_id, 'download', ip, str(port), str(length), header)))
 
 	def respond_connect(self, client_id, ip, port, request):
 		header = request.toString()
@@ -258,18 +256,18 @@ class Worker (Thread):
 			# classify and return the filtered page
 			if request.method in ('GET', 'PUT', 'POST','HEAD','DELETE'):
 				if not self.enabled:
-					self.respond_proxy(client_id, request.host, request.port, request)
+					self.respond_proxy(client_id, request.host, request.port, request.content_length, request)
 					continue
 
 				classification, data = self._classify (request,header,tainted)
 
 				if classification == 'permit':
-					self.respond_proxy(client_id, request.host, request.port, request)
+					self.respond_proxy(client_id, request.host, request.port, request.content_length, request)
 					continue
 
 				if classification == 'rewrite':
 					request.redirect(None, data)
-					self.respond_proxy(client_id, request.host, request.port, request)
+					self.respond_proxy(client_id, request.host, request.port, request.content_length, request)
 					continue
 
 				if classification == 'file':
@@ -282,14 +280,14 @@ class Worker (Thread):
 					continue
 
 				if classification == 'dns':
-					self.respond_proxy(client_id, data, request.port, request)
+					self.respond_proxy(client_id, data, request.port, request.content_length, request)
 					continue
 
 				if classification == 'requeue':
 					self.respond_requeue(client_id, peer, header, source)
 					continue
 
-				self.respond_proxy(client_id, request.host, request.port, request)
+				self.respond_proxy(client_id, request.host, request.port, request.content_length, request)
 				continue
 
 			# someone want to use us as https proxy

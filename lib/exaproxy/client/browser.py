@@ -37,6 +37,7 @@ class Client(object):
 		r_buffer = ''
 		request = ''
 		r_size = yield ''
+		remaining = 0
 
 		while True:
 			try:
@@ -45,8 +46,18 @@ class Client(object):
 					if not data:   # read failed - abort
 						break
 
-					if request:
-						r_size = yield '', data                
+					if remaining > 0:
+						length = min(len(data), remaining)
+						r_size = yield '', data[:length]
+						
+						remaining = remaining - length
+						if remaining:
+							continue
+						else:
+							data = data[length:]
+
+					elif remaining == -1:
+						r_size = yield '', data
 						continue
 
 					r_buffer += data
@@ -54,10 +65,21 @@ class Client(object):
 					for eor in (self.eor, self.eorn):
 						if eor in r_buffer:       # we have a complete request
 							request, r_buffer = r_buffer.split(eor, 1)
+							remaining = yield request + eor, ''  # yield to manager.readRequest
+							length = min(len(r_buffer), remaining)
 
-							r_size = yield request + eor, ''  # yield to manager.readRequest
-							r_size = yield '', r_buffer        # yield to manager.startData
-							r_buffer = ''
+							if remaining > 0:
+								r_size = yield '', r_buffer[:length]  # yield to manager.startData
+								r_buffer = r_buffer[length:]
+
+								remaining = remaining - length
+								if not remaining:    # further data is part of a new request
+									request = ''
+
+							elif remaining == -1:
+								r_size = yield '', r_buffer
+								r_buffer = ''
+							
 							break
 					else:
 						r_size = yield '', ''                  # nothing seen yet
@@ -76,7 +98,7 @@ class Client(object):
 
 	def readData(self):
 		name, peer = self.name, self.peer
-		res = self.reader.send(0) if self.reader else None
+		res = self.reader.send(0)
 
 		if res is not None:
 			request, content = res
@@ -85,7 +107,16 @@ class Client(object):
 
 		return name, peer, request, content
 
+	def readRelated(self, remaining):
+		name, peer = self.name, self.peer
+		res = self.reader.send(remaining)
 
+		if res is not None:
+			request, content = res
+		else:
+			request, content = None, None
+
+		return name, peer, request, content
 
 	def _write(self, sock):
 		"""Coroutine managing data sent to the client"""
@@ -158,20 +189,13 @@ class Client(object):
 		yield None
 
 	def writeData(self, data):
-		if self.blockupload:
-			if self.reader:
-				self.reader.send(None)
-				self.reader = None
-
 		res = self.writer.send(data)
 		return res
 
 
-	def startData(self, command, data, blockupload):
+	def startData(self, command, data):
 		# start the _write coroutine
 		self.writer.next()
-
-		self.blockupload = blockupload
 
 		if command == 'stream':
 			self.writer.send(None)  # no local file
@@ -194,7 +218,9 @@ class Client(object):
 		# buffered, had_buffer
 		return res
 
-
+	def restartData(self, command, data):
+		self.writer = self._write(self.sock)
+		return self.startData(command, data)
 
 	def shutdown(self):
 		try:

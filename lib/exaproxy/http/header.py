@@ -69,6 +69,7 @@ class Header(dict):
 			port = int(port) if port else 80
 
 			url_noport = host + path
+			content_length = int(self.get('content-length', ':0').split(':',1)[1].strip())
 		except KeyboardInterrupt:
 			raise
 		except Exception, e:
@@ -76,6 +77,7 @@ class Header(dict):
 			method, path, version = None, None, None
 			protocol, host, headerhost, port, url = None, None, None, None, None
 			url_noport = None
+			content_length = 0
 			client, request = None, None
 			seperator = ''
 
@@ -91,6 +93,7 @@ class Header(dict):
 		self.url_noport = url_noport
 		self.client = client
 		self.seperator = seperator
+		self.content_length = content_length
 
 	def __setitem__ (self,key,value):
 		if key not in self.order:
