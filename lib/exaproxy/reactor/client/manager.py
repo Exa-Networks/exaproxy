@@ -8,7 +8,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 from exaproxy.util.logger import logger
-from browser import Client
+from .worker import Client
 
 class ClientManager (object):
 	def __init__(self, poller):

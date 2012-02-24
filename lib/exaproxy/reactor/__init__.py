@@ -9,7 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # http://code.google.com/speed/articles/web-metrics.html
 
-from .util.logger import logger
+from exaproxy.util.logger import logger
 
 class Reactor(object):
 	def __init__(self, web, proxy, decider, content, client, resolver, poller):

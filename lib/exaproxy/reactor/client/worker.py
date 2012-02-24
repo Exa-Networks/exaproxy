@@ -15,7 +15,7 @@ from exaproxy.util.logger import logger
 
 
 
-class Client(object):
+class Client (object):
 	eor = '\r\n\r\n'
 	eorn = '\n\n'
 

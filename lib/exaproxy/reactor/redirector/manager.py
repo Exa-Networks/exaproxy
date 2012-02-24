@@ -10,7 +10,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import time
 from Queue import Queue
 
-from .worker import Worker
+from .worker import Redirector
 
 from exaproxy.util.logger import logger
 
@@ -41,7 +41,7 @@ class RedirectorManager (object):
 		"""add one worker to the pool"""
 		wid = self._getid()
 
-		worker = Worker(self.configuration,wid,self.queue,self.program)
+		worker = Redirector(self.configuration,wid,self.queue,self.program)
 		self.poller.addReadSocket('read_workers', worker.response_box_read)
 		self.worker[wid] = worker
 		logger.debug('manager',"added a worker")

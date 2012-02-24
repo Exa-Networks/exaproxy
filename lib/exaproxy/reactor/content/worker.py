@@ -21,7 +21,7 @@ import errno
 DEFAULT_READ_BUFFER_SIZE = 64*1024
 
 
-class Downloader(object):
+class Content (object):
 	_connect = staticmethod(connect)
 
 	def __init__(self, client_id, host, port, method, request):

@@ -14,10 +14,10 @@ import signal
 from .util.pid import PID
 from .util.daemon import Daemon
 
-from .redirector.manager import RedirectorManager
-from .content.manager import ContentManager
-from .client.manager import ClientManager
-from .resolver.manager import ResolverManager
+from .reactor.redirector.manager import RedirectorManager
+from .reactor.content.manager import ContentManager
+from .reactor.client.manager import ClientManager
+from .reactor.resolver.manager import ResolverManager
 from .network.server import Server
 from .http.page import Page
 from .monitor import Monitor

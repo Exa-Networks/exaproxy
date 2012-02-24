@@ -11,13 +11,13 @@ import os
 
 from exaproxy.util.logger import logger
 from exaproxy.http.response import http, file_header
-from exaproxy.content.downloader import Downloader
+from .worker import Content
 
 class ParsingError (Exception):
 	pass
 
 class ContentManager(object):
-	downloader_factory = Downloader
+	downloader_factory = Content
 
 	def __init__(self, poller, location, page):
 		self.total_sent = 0L

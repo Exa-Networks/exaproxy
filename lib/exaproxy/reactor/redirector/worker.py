@@ -28,7 +28,7 @@ from exaproxy.http.header import Header
 
 from exaproxy.util.logger import logger
 
-class Worker (Thread):
+class Redirector (Thread):
 	# TODO : if the program is a function, fork and run :)
 
 	def __init__ (self, configuration, name, request_box, program):
