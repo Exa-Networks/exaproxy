@@ -130,7 +130,7 @@ class value (object):
 
 	@staticmethod
 	def redirector (name):
-		if name in ('url,header'):
+		if name in ('url','headers'):
 			return name
 		raise TypeError('invalid redirector protocol %s, options are url or header' % name)
 
@@ -176,7 +176,7 @@ defaults = {
 		'minimum' : (value.integer,value.nop,'5',                               'minimum number of worker threads (forked program)'),
 		'maximum' : (value.integer,value.nop,'25',                              'maximum number of worker threads (forked program)'),
 #		'timeout' : (value.integer,value.nop,'1',                               'how long to wait for work before peforming background work'),
-		'protocol': (value.redirector,value.quote,'url',                        'what protocol to use (url: squid like / header: icap like)')
+		'protocol': (value.redirector,value.quote,'url',                        'what protocol to use (url: squid like / headers: icap like)')
 	},
 
 	'http' : {
@@ -318,4 +318,7 @@ def env (diff=False):
 		for k,v in values.items():
 			if diff and defaults[section][k][0](defaults[section][k][2]) == v:
 				continue
-			print 'exaproxy.%s.%s="%s"' % (section,k,defaults[section][k][1](v))
+			if defaults[section][k][1] == value.quote:
+				print "exaproxy.%s.%s='%s'" % (section,k,v)
+				continue
+			print "exaproxy.%s.%s='%s'" % (section,k,defaults[section][k][1](v))
