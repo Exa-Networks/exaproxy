@@ -12,6 +12,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 # Do not forward 100 response due to Expect:100 if client is HTTP/1.0 (Section 8.2.3)
 # Need to remove connection: header if HTTP is 1/0
 # Not caching so no version update required for us (Section 3.1)
+# The Expect mechanism is hop-by-hop: that is, an HTTP/1.1 proxy MUST return a 417 (Expectation Failed) status if it receives a request with an expectation that it cannot meet. However, the Expect request-header itself is end-to-end; it MUST be forwarded if the request is forwarded.
 
 from threading import Thread
 from Queue import Empty
@@ -327,7 +328,7 @@ class Worker (Thread):
 				self.respond_proxy(client_id, request.headerhost, request.port, request)
 				continue
 
-			self.respond_http(client_id, 405, 'METHOD NOT ALLOWED\n')
+			self.respond_http(client_id, 405, '') # METHOD NOT ALLOWED
 			continue
 
 		self.respond_hangup(self.wid)
