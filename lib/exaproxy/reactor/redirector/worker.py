@@ -134,8 +134,8 @@ class Redirector (Thread):
 
 			if response == request.url_noport:
 				return 'permit', None
-			if response.startswith(url.split('/', 1)[0]+'/'):
-				return 'rewrite', ('/'+response.split('/', 1)[1]) if '/' in url else ''
+			if response.startswith(request.url.split('/', 1)[0]+'/'):
+				return 'rewrite', ('/'+response.split('/', 1)[1]) if '/' in request.url else ''
 			return 'redirect', 'http://' + response
 
 		if response.startswith('file://'):
