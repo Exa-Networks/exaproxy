@@ -27,11 +27,11 @@ class Header(dict):
 				seperator = '\r\n'
 			else:
 				seperator = '\n'
-					
+
 			method, pathstring, version = request.split()
 			method = method.upper()
 			version = version.split('/')[-1]
-			
+
 			protocol, pathstring = self.splitProtocol(pathstring)
 			host, pathstring = self.splitHost(pathstring)
 			port, path = self.splitPort(pathstring)
@@ -74,7 +74,7 @@ class Header(dict):
 		except Exception, e:
 			logger.error('header','could not parse header %s %s' % (type(e),str(e)))
 			method, path, version = None, None, None
-			protocol, host, port, url = None, None, None, None
+			protocol, host, headerhost, port, url = None, None, None, None, None
 			url_noport = None
 			client, request = None, None
 			seperator = ''
@@ -85,6 +85,7 @@ class Header(dict):
 		self.version = version
 		self.protocol = protocol
 		self.host = host
+		self.headerhost = headerhost
 		self.port = port
 		self.url = url
 		self.url_noport = url_noport
@@ -179,6 +180,10 @@ class Header(dict):
 		elif '/' in pathstring:
 			host, remaining = pathstring.split('/', 1)
 			remaining = '/' + remaining
+
+		elif pathstring == '*':
+			host = '*'
+			remaining = '*'
 
 		else:
 			host = pathstring

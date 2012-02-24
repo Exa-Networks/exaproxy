@@ -244,24 +244,8 @@ class Worker (Thread):
 				self.respond_monitor(client_id, request.path)
 				continue
 
-			if request.method in ('OPTIONS',):
-				if 'max-forwards' in request:
-					max_forwards = request.get('max-forwards').split(':')[-1].strip()
-					if not max_forwards.isdigit():
-						self.respond_http(client_id, 400, 'INVALID MAX-FORWARDS\n')
-						continue
-					max_forward = int(max_forwards)
-					if max_forward < 0 :
-						self.respond_http(client_id, 400, 'INVALID MAX-FORWARDS\n')
-						continue
-					if max_forward == 0:
-						self.respond_http(client_id, 200, '')
-						continue
-					request['max-forwards'] = 'Max-Forwards: %d' % (max_forward-1)
-					# no continue, we want to route this one
-
 			# classify and return the filtered page
-			if request.method in ('GET', 'PUT', 'POST','HEAD','OPTIONS'):
+			if request.method in ('GET', 'PUT', 'POST','HEAD','DELETE'):
 				if not self.enabled:
 					self.respond_proxy(client_id, request.host, request.port, request)
 					continue
@@ -320,8 +304,27 @@ class Worker (Thread):
 					self.respond_http(client_id, 501, 'CONNECT NOT ALLOWED\n')
 					continue
 
-			if request.method in ('TRACE',):
-				self.respond_http(client_id, 501, 'TRACE NOT IMPLEMENTED\n')
+			if request.method in ('OPTIONS','TRACE'):
+				if 'max-forwards' in request:
+					max_forwards = request.get('max-forwards').split(':')[-1].strip()
+					if not max_forwards.isdigit():
+						self.respond_http(client_id, 400, 'INVALID MAX-FORWARDS\n')
+						continue
+					max_forward = int(max_forwards)
+					if max_forward < 0 :
+						self.respond_http(client_id, 400, 'INVALID MAX-FORWARDS\n')
+						continue
+					if max_forward == 0:
+						if request.method == 'OPTIONS':
+							self.respond_http(client_id, 200, '')
+							continue
+						if request.method == 'TRACE':
+							self.respond_http(client_id, 200, header)
+							continue
+						raise RuntimeError('should never reach here')
+					request['max-forwards'] = 'Max-Forwards: %d' % (max_forward-1)
+				# Carefull, in the case of OPTIONS request.host is NOT request.headerhost
+				self.respond_proxy(client_id, request.headerhost, request.port, request)
 				continue
 
 			self.respond_http(client_id, 405, 'METHOD NOT ALLOWED\n')
