@@ -10,8 +10,8 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 # http://code.google.com/speed/articles/web-metrics.html
 # http://itamarst.org/writings/pycon05/fast.html
 
-from exaproxy.network.functions import listen
 from exaproxy.util.logger import logger
+from .functions import listen
 import socket
 
 class Server(object):
