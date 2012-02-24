@@ -11,7 +11,7 @@ import socket
 import errno
 
 from exaproxy.util.logger import logger
-from exaproxy.network.poller import errno_block
+from exaproxy.network.errno_list import errno_block
 
 
 def _ipv4(address):

@@ -10,7 +10,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import socket
 import errno
 
-from exaproxy.network.poller import errno_block
+from exaproxy.network.errno_list import errno_block
 from exaproxy.util.logger import logger
 
 
