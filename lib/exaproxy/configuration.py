@@ -21,7 +21,7 @@ from .util.version import version
 class ConfigurationError (Exception):
 	pass
 
-_priorities = {
+_syslog_name_value = {
 	'LOG_EMERG'    : syslog.LOG_EMERG,
 	'LOG_ALERT'    : syslog.LOG_ALERT,
 	'LOG_CRIT'     : syslog.LOG_CRIT,
@@ -32,15 +32,17 @@ _priorities = {
 	'LOG_DEBUG'    : syslog.LOG_DEBUG,
 }
 
-#class log:
-#	LOG_DEBUG    = syslog.LOG_DEBUG
-#	LOG_INFO     = syslog.LOG_INFO
-#	LOG_NOTICE   = syslog.LOG_NOTICE
-#	LOG_WARNING  = syslog.LOG_WARNING
-#	LOG_ERR      = syslog.LOG_ERR
-#	LOG_CRIT     = syslog.LOG_CRIT
-#	LOG_ALERT    = syslog.LOG_ALERT
-#	LOG_EMERG    = syslog.LOG_EMERG
+_syslog_value_name = {
+	syslog.LOG_EMERG    : 'LOG_EMERG',
+	syslog.LOG_ALERT    : 'LOG_ALERT',
+	syslog.LOG_CRIT     : 'LOG_CRIT',
+	syslog.LOG_ERR      : 'LOG_ERR',
+	syslog.LOG_WARNING  : 'LOG_WARNING',
+	syslog.LOG_NOTICE   : 'LOG_NOTICE',
+	syslog.LOG_INFO     : 'LOG_INFO',
+	syslog.LOG_DEBUG    : 'LOG_DEBUG',
+}
+
 
 
 class NoneDict (dict):
@@ -60,12 +62,20 @@ class value (object):
 		 return _.strip().strip('\'"')
 
 	@staticmethod
+	def quote (_):
+		 return "'%s'" % str(_)
+
+	@staticmethod
 	def nop (_):
 		return _
 
 	@staticmethod
 	def boolean (_):
 		return _.lower() in ('1','yes','on','enable','true')
+
+	@staticmethod
+	def lower (_):
+		return str(_).lower()
 
 	@staticmethod
 	def user (_):
@@ -125,86 +135,99 @@ class value (object):
 		raise TypeError('invalid redirector protocol %s, options are url or header' % name)
 
 	@staticmethod
-	def syslog (log):
-		if log not in _priorities:
+	def syslog_int (log):
+		if log not in _syslog_name_value:
 			raise TypeError('invalid log level %s' % log)
-		return _priorities[log]
+		return _syslog_name_value[log]
+
+	@staticmethod
+	def syslog_value (log):
+		if log not in _syslog_name_value:
+			raise TypeError('invalid log level %s' % log)
+		return _syslog_name_value[log]
+
+	@staticmethod
+	def syslog_name (log):
+		if log not in _syslog_value_name:
+			raise TypeError('invalid log level %s' % log)
+		return _syslog_value_name[log]
+
 
 defaults = {
 	'tcp4' : {
-		'host'    : (value.unquote,'127.0.0.1'   , 'the host the proxy listen on'),
-		'port'    : (value.integer,'31280'       , 'the port the proxy listen on'),
-		'timeout' : (value.integer,'5'           , 'time before we ...'),
-		'backlog' : (value.integer,'200'         , 'when busy how many connection should the OS keep for us'),
-		'listen'  : (value.boolean,'true'        , 'should we listen for connections over IPv4'),
-		'out'     : (value.boolean,'true'        , 'allow connections to remote web servers over IPv4'),
+		'host'    : (value.unquote,value.quote,'127.0.0.1', 'the host the proxy listen on'),
+		'port'    : (value.integer,value.nop,'31280',       'the port the proxy listen on'),
+		'timeout' : (value.integer,value.nop,'5',           'time before we ...'),
+		'backlog' : (value.integer,value.nop,'200',         'when busy how many connection should the OS keep for us'),
+		'listen'  : (value.boolean,value.lower,'true',      'should we listen for connections over IPv4'),
+		'out'     : (value.boolean,value.lower,'true',      'allow connections to remote web servers over IPv4'),
 	},
 	'tcp6' : {
-		'host'    : (value.unquote,'::1'         , 'the host the proxy listen on'),
-		'port'    : (value.integer,'31280'       , 'the port the proxy listen on'),
-		'timeout' : (value.integer,'5'           , 'time before we ...'),
-		'backlog' : (value.integer,'200'         , 'when busy how many connection should the OS keep for us'),
-		'listen'  : (value.boolean,'false'       , 'should we listen for connections over IPv6'),
-		'out'     : (value.boolean,'true'        , 'allow connections to remote web servers over IPv6'),
+		'host'    : (value.unquote,value.quote,'::1',     'the host the proxy listen on'),
+		'port'    : (value.integer,value.nop,'31280',   'the port the proxy listen on'),
+		'timeout' : (value.integer,value.nop,'5',       'time before we ...'),
+		'backlog' : (value.integer,value.nop,'200',     'when busy how many connection should the OS keep for us'),
+		'listen'  : (value.boolean,value.lower,'false', 'should we listen for connections over IPv6'),
+		'out'     : (value.boolean,value.lower,'true',  'allow connections to remote web servers over IPv6'),
 	},
 	'redirector' : {
-		'enabled' : (value.boolean,'false'                      , 'use redirector programs to filter http request'),
-		'program' : (value.exe,'etc/exaproxy/redirector/allow'  , 'the program used to know where to send request'),
-		'minimum' : (value.integer,'5'                          , 'minimum number of worker threads (forked program)'),
-		'maximum' : (value.integer,'25'                         , 'maximum number of worker threads (forked program)'),
-#		'timeout' : (value.integer,'1'                          , 'how long to wait for work before peforming background work'),
-		'protocol': (value.redirector,'url'                     , 'what protocol to use (url: squid like / header: icap like)')
+		'enabled' : (value.boolean,value.lower,'false',                         'use redirector programs to filter http request'),
+		'program' : (value.exe,value.quote,'etc/exaproxy/redirector/url-allow', 'the program used to know where to send request'),
+		'minimum' : (value.integer,value.nop,'5',                               'minimum number of worker threads (forked program)'),
+		'maximum' : (value.integer,value.nop,'25',                              'maximum number of worker threads (forked program)'),
+#		'timeout' : (value.integer,value.nop,'1',                               'how long to wait for work before peforming background work'),
+		'protocol': (value.redirector,value.quote,'url',                        'what protocol to use (url: squid like / header: icap like)')
 	},
 
 	'http' : {
-		'transparent'     : (value.boolean,'false'   , 'do not insert Via headers'),
-		'x-forwarded-for' : (value.boolean,'true'    , 'insert x-forarded-for headers to webservers'),
-		'allow-connect'   : (value.boolean,'true'    , 'allow client to use CONNECT and https connections'),
+		'transparent'     : (value.boolean,value.lower,'false', 'do not insert Via headers'),
+		'x-forwarded-for' : (value.boolean,value.lower,'true',  'insert x-forarded-for headers to webservers'),
+		'allow-connect'   : (value.boolean,value.lower,'true',  'allow client to use CONNECT and https connections'),
 	},
 	'web' : {
-		'enabled' : (value.boolean,'true'              , 'enable the built-in webserver'),
-		'host'    : (value.unquote,'127.0.0.1'         , 'the address on which we will listen'),
-		'port'    : (value.integer,'8080'              , 'port on which the web server listen'),
-		'html'    : (value.folder,'etc/exaproxy/html'  , 'where are the proxy served pages are taken from'),
+		'enabled' : (value.boolean,value.lower,'true',             'enable the built-in webserver'),
+		'host'    : (value.unquote,value.quote,'127.0.0.1',        'the address on which we will listen'),
+		'port'    : (value.integer,value.nop,'8080',               'port on which the web server listen'),
+		'html'    : (value.folder,value.quote,'etc/exaproxy/html', 'where are the proxy served pages are taken from'),
 	},
 	'daemon' : {
-		'pidfile'     : (value.unquote,''                    , 'where to save the pid if we manage it'),
-		'user'        : (value.user,'nobody'                 , 'user to run as'),
-		'daemonise'   : (value.boolean,'false'               , 'should we run in the background'),
-		'reactor'     : (value.unquote,'epoll'               , 'what event mechanism to use (select/epoll)'),
-		'speed'       : (value.integer,'2'                   , 'when waiting for connection how long are we sleeping for'),
+		'pidfile'     : (value.unquote,value.quote,'',      'where to save the pid if we manage it'),
+		'user'        : (value.user,value.quote,'nobody',   'user to run as'),
+		'daemonise'   : (value.boolean,value.lower,'false', 'should we run in the background'),
+		'reactor'     : (value.unquote,value.quote,'epoll', 'what event mechanism to use (select/epoll)'),
+		'speed'       : (value.integer,value.nop,'2',       'when waiting for connection how long are we sleeping for'),
 	},
 	'dns' : {
-		'resolver'     : (value.resolver,'/etc/resolv.conf'  , 'resolver file'),
-		'timeout'      : (value.integer,'2'                  , 'how long to wait for DNS replies'),
-#		'force-ttl'    : (value.boolean,'true'               , 'do not use DNS ttl but the ttl value in this configuration'),
-		'ttl'          : (value.integer,'120'                , 'amount of time (in seconds) we will cache dns results for'),
-		'expire'       : (value.integer,'200'                , 'maximum number of cached dns entries we will expire during each cleanup'),
-		'definitions'  : (value.unquote,'etc/dns/types'      , 'location of file defining dns query types'),
+		'resolver'     : (value.resolver,value.quote,'/etc/resolv.conf',      'resolver file'),
+		'timeout'      : (value.integer,value.nop,'2',                        'how long to wait for DNS replies'),
+#		'force-ttl'    : (value.boolean,value.lower,'true',                   'do not use DNS ttl but the ttl value in this configuration'),
+		'ttl'          : (value.integer,value.nop,'120',                      'amount of time (in seconds) we will cache dns results for'),
+		'expire'       : (value.integer,value.nop,'200',                      'maximum number of cached dns entries we will expire during each cleanup'),
+		'definitions'  : (value.unquote,value.quote,'etc/exaproxy/dns/types', 'location of file defining dns query types'),
 	},
 	'logger' : {
-		'level'         : (value.syslog,'LOG_ERR'  , 'log message with at least the priority SYSLOG.<level>'),
-		'destination'   : (value.unquote,'stdout'  , 'where syslog should log'),
-		'logger'        : (value.boolean,'true'    , 'log message from the logger subsystem'),
-		'signal'        : (value.boolean,'true'    , 'log message from the signal subsystem'),
-		'configuration' : (value.boolean,'true'    , 'log message from the configuration subsystem'),
-		'supervisor'    : (value.boolean,'true'    , 'log message from the supervisor subsystem'),
-		'daemon'        : (value.boolean,'true'    , 'log message from the daemon subsystem'),
-		'server'        : (value.boolean,'true'    , 'log message from the server subsystem'),
-		'client'        : (value.boolean,'true'    , 'log message from the client subsystem'),
-		'manager'       : (value.boolean,'true'    , 'log message from the manager subsystem'),
-		'worker'        : (value.boolean,'true'    , 'log message from the worker subsystem'),
-		'download'      : (value.boolean,'true'    , 'log message from the download subsystem'),
-		'http'          : (value.boolean,'true'    , 'log message from the http subsystem'),
-		'client'        : (value.boolean,'true'    , 'log message from the client subsystem'),
+		'level'         : (value.syslog_value,value.syslog_name,'LOG_ERR', 'log message with at least the priority SYSLOG.<level>'),
+		'destination'   : (value.unquote,value.quote,'stdout',             'where syslog should log'),
+		'logger'        : (value.boolean,value.lower,'true',               'log message from the logger subsystem'),
+		'signal'        : (value.boolean,value.lower,'true',               'log message from the signal subsystem'),
+		'configuration' : (value.boolean,value.lower,'true',               'log message from the configuration subsystem'),
+		'supervisor'    : (value.boolean,value.lower,'true',               'log message from the supervisor subsystem'),
+		'daemon'        : (value.boolean,value.lower,'true',               'log message from the daemon subsystem'),
+		'server'        : (value.boolean,value.lower,'true',               'log message from the server subsystem'),
+		'client'        : (value.boolean,value.lower,'true',               'log message from the client subsystem'),
+		'manager'       : (value.boolean,value.lower,'true',               'log message from the manager subsystem'),
+		'worker'        : (value.boolean,value.lower,'true',               'log message from the worker subsystem'),
+		'download'      : (value.boolean,value.lower,'true',               'log message from the download subsystem'),
+		'http'          : (value.boolean,value.lower,'true',               'log message from the http subsystem'),
+		'client'        : (value.boolean,value.lower,'true',               'log message from the client subsystem'),
 	},
 	'profile' : {
-		'enabled'     : (value.boolean,'false'  , 'enable profiling'),
-		'destination' : (value.nop,'stdout'     , 'save profiling to file (instead to the screen on exits)'),
+		'enabled'     : (value.boolean,value.lower,'false', 'enable profiling'),
+		'destination' : (value.nop,value.quote,'stdout',    'save profiling to file (instead to the screen on exits)'),
 	},
 	'proxy' : {
-		'name'    : (value.nop,'ExaProxy'   , 'name'),
-		'version' : (value.nop,version      , 'version'),
+		'name'    : (value.nop,value.nop,'ExaProxy', 'name'),
+		'version' : (value.nop,value.nop,version,    'version'),
 	}
 }
 
@@ -247,9 +270,9 @@ def _configuration ():
 				conf = value.unquote(os.environ.get(env_name,'')) \
 				    or value.unquote(os.environ.get(env_name.replace('.','_'),'')) \
 				    or value.unquote(ini.get(proxy_section,option,nonedict)) \
-				    or default[option][1]
+				    or default[option][2]
 			except (ConfigParser.NoSectionError,ConfigParser.NoOptionError):
-				conf = default[option][1]
+				conf = default[option][2]
 			try:
 				configuration.setdefault(section,Store())[option] = convert(conf)
 			except TypeError:
@@ -275,17 +298,17 @@ def default ():
 			yield 'exaproxy.%s.%s %s: %s. default (%s)' % (section,option,' '*(20-len(section)-len(option)),value[2],value[1])
 
 def ini (diff=False):
-	for section,values in __configuration.items():
+	for section in sorted(__configuration):
 		if section == 'proxy':
 			continue
 		header = '\n[exaproxy.%s]' % section
-		for k,v in values.items():
-			if diff and defaults[section][k][0](defaults[section][k][1]) == v:
+		for k,v in __configuration[section].items():
+			if diff and defaults[section][k][0](defaults[section][k][2]) == v:
 				continue
 			if header:
 				print header
 				header = ''
-			print '%s = %s' % (k,v)
+			print '%s = %s' % (k,defaults[section][k][1](v))
 
 def env (diff=False):
 	print
@@ -293,6 +316,6 @@ def env (diff=False):
 		if section == 'proxy':
 			continue
 		for k,v in values.items():
-			if diff and defaults[section][k][0](defaults[section][k][1]) == v:
+			if diff and defaults[section][k][0](defaults[section][k][2]) == v:
 				continue
-			print 'exaproxy.%s.%s="%s"' % (section,k,v)
+			print 'exaproxy.%s.%s="%s"' % (section,k,defaults[section][k][1](v))

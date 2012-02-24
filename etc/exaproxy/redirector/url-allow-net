@@ -9,6 +9,10 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import sys
 
+def reply (response):
+		sys.stdout.write(response + '\n')
+		sys.stdout.flush()
+
 try:
 	while True:
 		data = sys.stdin.readline().strip()
@@ -16,15 +20,13 @@ try:
 		url, ip, _, method, __ = data.split()
 
 		if method == 'CONNECT':
-			if 'hsbc' not in url and 'twitter' not in url and 'twimg' not in url:
-				response = 'http://www.surfprotect.co.uk/'
-			else:
-				response = ''
-		else:
-			response = ''
+			reply('http://www.surfprotect.co.uk/')
+			continue
+		if url.endswith('.net'):
+			reply('')
+			continue
+		reply('http://www.surfprotect.co.uk/')
 
-		sys.stdout.write(response + '\n')
-		sys.stdout.flush()
 except KeyboardInterrupt, e:
 	sys.stderr.write('^C keyboard interrupt. exiting.\n')
 	sys.stderr.flush()
