@@ -102,7 +102,7 @@ class Worker (Thread):
 			return
 		
 		if self.protocol == 'url':	
-			return _classify_url (self, client_ip, method, url, tainted)
+			return self._classify_url (client_ip, method, url, tainted)
 		return 'file', 'internal_error.html'
 
 	def _classify_url (self, client_ip, method, url, tainted):
