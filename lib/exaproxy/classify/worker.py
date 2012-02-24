@@ -95,19 +95,29 @@ class Worker (Thread):
 		# so the shutdown will not be immediate
 		self.running = False
 
-	def _classify (self, client_ip, method, url, tainted):
+	def _classify (self, request, headers, tainted):
 		if not self.process:
 			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
-			classification, data = 'file', 'internal_error.html'
-			return
-		
-		if self.protocol == 'url':	
-			return self._classify_url (client_ip, method, url, tainted)
+			return 'file', 'internal_error.html'
+
+		if self.protocol == 'headers':
+			return self._classify_headers (request,headers,tainted)
+		if self.protocol == 'url':
+			return self._classify_url (request,tainted)
+
 		return 'file', 'internal_error.html'
 
-	def _classify_url (self, client_ip, method, url, tainted):
+	def _classify_headers (self, request, headers, tainted):
+		line = """Client-IP: %s\r\n\r\n%s""" % (
+			request.client,
+			headers
+		)
+		print "[%s]" % line
+		return 'permit', None
+
+	def _classify_url (self, request, tainted):
 		try:
-			squid = '%s %s - %s -' % (url, client_ip, method)
+			squid = '%s %s - %s -' % (request.url_noport, request.client, request.method)
 			self.process.stdin.write(squid + os.linesep)
 			response = self.process.stdout.readline().strip()
 		except IOError, e:
@@ -122,7 +132,7 @@ class Worker (Thread):
 		if response.startswith('http://'):
 			response = response[7:]
 
-			if response == url:
+			if response == request.url_noport:
 				return 'permit', None
 			if response.startswith(url.split('/', 1)[0]+'/'):
 				return 'rewrite', ('/'+response.split('/', 1)[1]) if '/' in url else ''
@@ -251,7 +261,7 @@ class Worker (Thread):
 					self.respond_proxy(client_id, request.host, request.port, request)
 					continue
 
-				classification, data = self._classify(request.client, request.method, request.url_noport, tainted)
+				classification, data = self._classify (request,header,tainted)
 
 				if classification == 'permit':
 					self.respond_proxy(client_id, request.host, request.port, request)
@@ -290,7 +300,7 @@ class Worker (Thread):
 
 				# we do allow connect
 				if self.configuration.http.allow_connect:
-					classification, data = self._classify(request.client, request.method, request.url_noport, tainted)
+					classification, data = self._classify(request,header,tainted)
 					if classification == 'redirect':
 						self.respond_redirect(client_id, data)
 
