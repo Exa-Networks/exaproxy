@@ -171,7 +171,7 @@ defaults = {
 		'out'     : (value.boolean,value.lower,'true',      'allow connections to remote web servers over IPv4'),
 	},
 	'tcp6' : {
-		'host'    : (value.unquote,value.quote,'::1',     'the host the proxy listen on'),
+		'host'    : (value.unquote,value.quote,'::1',   'the host the proxy listen on'),
 		'port'    : (value.integer,value.nop,'31280',   'the port the proxy listen on'),
 		'timeout' : (value.integer,value.nop,'5',       'time before we ...'),
 		'backlog' : (value.integer,value.nop,'200',     'when busy how many connection should the OS keep for us'),
