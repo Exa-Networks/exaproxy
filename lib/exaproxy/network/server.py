@@ -14,7 +14,6 @@ from exaproxy.network.functions import listen
 from exaproxy.util.logger import logger
 import socket
 
-
 class Server(object):
 	_listen = staticmethod(listen)
 

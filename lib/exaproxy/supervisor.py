@@ -18,11 +18,11 @@ from .reactor.redirector.manager import RedirectorManager
 from .reactor.content.manager import ContentManager
 from .reactor.client.manager import ClientManager
 from .reactor.resolver.manager import ResolverManager
+from .network.async import Poller
 from .network.server import Server
 from .http.page import Page
 from .monitor import Monitor
 
-from poll import Poller
 from .reactor import Reactor
 
 from .util.logger import logger
