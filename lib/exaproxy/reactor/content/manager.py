@@ -229,8 +229,8 @@ class ContentManager(object):
 				self.buffered.remove(downloader.sock)
 				buffer_change = True
 
-                                # we no longer care that we can write to the server
-                                self.poller.removeWriteSocket('write_download', sock)
+				# we no longer care that we can write to the server
+				self.poller.removeWriteSocket('write_download', sock)
 			else:
 				buffer_change = False
 				
