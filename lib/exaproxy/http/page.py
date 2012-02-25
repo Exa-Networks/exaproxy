@@ -411,6 +411,9 @@ class Page (object):
 				chart.append("[ %d, %s]" % (index, ','.join([values[_] for _ in _keys])))
 			index += 1
 
+		if cumulative:
+			chart.pop(0)
+
 		padding = []
 		index = 0
 		top = self.monitor.nb_recorded - nb_records
