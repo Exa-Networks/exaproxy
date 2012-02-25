@@ -74,8 +74,6 @@ if __name__ == '__main__':
 		print >> sys.stderr, 'configuration issue,', str(e)
 		sys.exit(1)
 
-	logger.syslog(configuration.logger.destination)
-
 	debug = False
 
 	for arg in sys.argv[1:]:
@@ -96,7 +94,7 @@ if __name__ == '__main__':
 		if arg in ['-de','--diff-env']:
 			env(True)
 			sys.exit(0)
-		if arg in ['-de','--diff-env']:
+		if arg in ['-d','--debug']:
 			debug = True
 
 	for section,value in configuration.logger.items():
@@ -106,6 +104,7 @@ if __name__ == '__main__':
 			logger.level = syslog.LOG_DEBUG if debug else value
 			continue
 		logger.status[section] = value or debug
+	logger.syslog(configuration.logger.destination)
 
 	if not configuration.profile.enabled:
 		Supervisor().run()
