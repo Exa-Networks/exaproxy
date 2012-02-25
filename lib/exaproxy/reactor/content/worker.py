@@ -52,10 +52,12 @@ class Content (object):
 				data = None
 		except socket.error, e:
 			if e.args[0] in errno_block:
-				logger.error('download','write failed as it would have blocked. Why were we woken up?')
-				logger.error('download','Error %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
+				logger.error('download','interrupted when trying to read, will retry' % len(data))
+				logger.error('download','reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 				data = ''
 			else:
+				logger.critical('download','unexpected error reading on socket')
+				logger.critical('download','reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 				data = None
 
 		return data
