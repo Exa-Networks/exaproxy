@@ -105,7 +105,7 @@ if __name__ == '__main__':
 		if section == 'level':
 			logger.level = syslog.LOG_DEBUG if debug else value
 			continue
-		logger.status[section] = value
+		logger.status[section] = value or debug
 
 	if not configuration.profile.enabled:
 		Supervisor().run()
