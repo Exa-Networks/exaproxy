@@ -29,6 +29,7 @@ class Redirector (Thread):
 		self.enabled = configuration.redirector.enable
 		self.protocol = configuration.redirector.protocol
 		self.transparent = configuration.http.transparent
+		self.universal = True if self.protocol == 'url' else False
 
 		# XXX: all this could raise things
 		r, w = os.pipe()                                # pipe for communication with the main thread
@@ -56,7 +57,7 @@ class Redirector (Thread):
 			process = subprocess.Popen([self.program,],
 				stdin=subprocess.PIPE,
 				stdout=subprocess.PIPE,
-				universal_newlines=True,
+				universal_newlines=self.universal,
 			)
 			logger.debug('worker %s' % self.wid,'spawn process %s' % self.program)
 		except KeyboardInterrupt:
@@ -91,22 +92,45 @@ class Redirector (Thread):
 	def _classify (self, request, headers, tainted):
 		if not self.process:
 			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
-			return 'file', 'internal_error.html'
+			return request, 'file', 'internal_error.html'
 
 		if self.protocol == 'headers':
 			return self._classify_headers (request,headers,tainted)
 		if self.protocol == 'url':
 			return self._classify_url (request,tainted)
 
-		return 'file', 'internal_error.html'
+		return request, 'file', 'internal_error.html'
 
 	def _classify_headers (self, request, headers, tainted):
-		line = """Client-IP: %s\r\n\r\n%s""" % (
+		line = """version:1\nclient:%s\nsize:%d\n%s""" % (
 			request.client,
+			len(headers),
 			headers
 		)
-		print "[%s]" % line
-		return 'permit', None
+
+		try:
+			self.process.stdin.write(line)
+			try:
+				length = self.process.stdout.readline()
+				headers = self.process.stdout.read(max(0,int(length.strip())))
+			except ValueError:
+				return request, 'file', 'internal_error.html'
+			except Exception,e:
+				return request, 'file', 'internal_error.html'
+			return request, 'permit', None
+		except IOError, e:
+			logger.error('worker %s' % self.wid, 'IO/Error when sending to process: %s' % str(e))
+			if tainted is False:
+				return 'requeue', None
+			return request, 'file', 'internal_error.html'
+
+		r = Header(self.configuration,headers,request.client)
+		if not r.isValid():
+			if tainted is False:
+				return 'requeue', None
+			return request, 'file', 'internal_error.html'
+
+		return request, 'permit', None
 
 	def _classify_url (self, request, tainted):
 		try:
@@ -116,28 +140,28 @@ class Redirector (Thread):
 		except IOError, e:
 			logger.error('worker %s' % self.wid, 'IO/Error when sending to process: %s' % str(e))
 			if tainted is False:
-				return 'requeue', None
-			return 'file', 'internal_error.html'
+				return request, 'requeue', None
+			return request, 'file', 'internal_error.html'
 
 		if not response:
-			return 'permit', None
+			return request, 'permit', None
 
 		if response.startswith('http://'):
 			response = response[7:]
 
 			if response == request.url_noport:
-				return 'permit', None
+				return request, 'permit', None
 			if response.startswith(request.url.split('/', 1)[0]+'/'):
-				return 'rewrite', ('/'+response.split('/', 1)[1]) if '/' in request.url else ''
-			return 'redirect', 'http://' + response
+				return request, 'rewrite', ('/'+response.split('/', 1)[1]) if '/' in request.url else ''
+			return request, 'redirect', 'http://' + response
 
 		if response.startswith('file://'):
-			return 'file', response[7:]
+			return request, 'file', response[7:]
 
 		if response.startswith('dns://'):
-			return 'dns', response[6:]
+			return request, 'dns', response[6:]
 
-		return 'file', 'internal_error.html'
+		return request, 'file', 'internal_error.html'
 
 	def respond(self, response):
 		self.response_box_write.write(str(len(response)) + ':' + response + ',')
@@ -252,7 +276,7 @@ class Redirector (Thread):
 					self.respond_proxy(client_id, request.host, request.port, request.content_length, request)
 					continue
 
-				classification, data = self._classify (request,header,tainted)
+				request, classification, data = self._classify (request,header,tainted)
 
 				if classification == 'permit':
 					self.respond_proxy(client_id, request.host, request.port, request.content_length, request)
@@ -291,7 +315,7 @@ class Redirector (Thread):
 
 				# we do allow connect
 				if self.configuration.http.allow_connect:
-					classification, data = self._classify(request,header,tainted)
+					request, classification, data = self._classify(request,header,tainted)
 					if classification == 'redirect':
 						self.respond_redirect(client_id, data)
 
