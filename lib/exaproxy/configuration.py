@@ -304,7 +304,7 @@ def default ():
 			continue
 		for option in sorted(defaults[section]):
 			value = defaults[section][option]
-			yield 'exaproxy.%s.%s %s: %s. default (%s)' % (section,option,' '*(20-len(section)-len(option)),value[2],value[1])
+			yield 'exaproxy.%s.%s %s: %s. default (%s)' % (section,option,' '*(20-len(section)-len(option)),value[3],value[2])
 
 def ini (diff=False):
 	for section in sorted(__configuration):
