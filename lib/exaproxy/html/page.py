@@ -166,7 +166,8 @@ class Page (object):
 	def _email (self,args):
 		if self.email_sent:
 			return '<center><b>You can only send one email per time ExaProxy is started</b></center>'
-		return mail.send(args)
+		self.email_sent, message = mail.send(args)
+		return message
 
 	def html (self,path):
 		if len(path) > 5000:
@@ -221,7 +222,7 @@ class Page (object):
 		if section == 'about':
 			if subsection == 'email':
 				if args:
-					return self._email(args)
+					return menu.about(self._email(args))
 				return menu.about(mail.form)
 			if subsection == 'licence':
 				return menu.about(licence)

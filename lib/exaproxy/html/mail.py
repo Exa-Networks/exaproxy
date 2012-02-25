@@ -65,7 +65,7 @@ class mail (object):
 	}
 </style>
 
-<form action="/email/index.html" method="get">
+<form action="/about/email.html" method="get">
 	<div class="indented">
 		<div class="contact">
 			<label>Title</label>
@@ -119,9 +119,9 @@ PS: ExaProxy will stop answering HTTP requests while it sends the email. Only on
 		_to = 'The ExaProxy Team <exaproxy@exa-networks.co.uk>'
 
 		if not _from:
-			return '<center><b>A email address is required to make sure our mail server let this mail through<br/>(press back on your browser)</b></center>'
+			return False,'<center><b>A email address is required to make sure our mail server let this mail through<br/>(press back on your browser)</b></center>'
 		if '@' not in _from:
-			return '<center><b>A valid email address is required to make sure our mail server let this mail through<br/>(press back on your browser)</b></center>'
+			return False,'<center><b>A valid email address is required to make sure our mail server let this mail through<br/>(press back on your browser)</b></center>'
 
 		formated = dict((k,"%s" % ','.join(v)) for (k,v) in answers.items())
 
@@ -144,7 +144,6 @@ PS: ExaProxy will stop answering HTTP requests while it sends the email. Only on
 			s = SMTP('mx.exa-networks.co.uk')
 			s.sendmail(_from, [_to,], msg.as_string())
 			s.quit()
-			self.email_sent = True
-			return '<center><b>Email sent, thank you</b></center>'
+			return True,'<center><b>Email sent, thank you</b></center>'
 		except (SMTPException,Exception),e:
-			return '<center><b>Could not send email</b></center><br>%s' % str(e)
+			return False,'<center><b>Could not send email</b></center><br>%s' % str(e)
