@@ -117,7 +117,7 @@ class ClientManager (object):
 
 				buffered, had_buffer,sent = None, None, 0
 				result = None
-				flipflop = None
+				buffer_change = None
 			else:
 				buffered, had_buffer, sent = res
 				self.total_sent += sent
@@ -127,28 +127,28 @@ class ClientManager (object):
 			if buffered:
 				if sock not in self.buffered:
 					self.buffered.append(sock)
-					flipflop = True
+					buffer_change = True
 
 					# watch for the socket's send buffer becoming less than full
 					self.poller.addWriteSocket('write_client', client.sock)
 				else:
-					flipflop = False
+					buffer_change = False
 
 			elif had_buffer and sock in self.buffered:
 				self.buffered.remove(sock)
-				flipflop = True
+				buffer_change = True
 
 				# we no longer care about writing to the client
 				self.poller.removeWriteSocket('write_client', client.sock)
 
 			else:
-				flipflop = False
+				buffer_change = False
 		else:
 			result = None
-			flipflop = None
+			buffer_change = None
 			name = None
 
-		return result, flipflop, name
+		return result, buffer_change, name
 
 	def sendDataByName(self, name, data):
 		client = self.byname.get(name, None)
@@ -163,7 +163,7 @@ class ClientManager (object):
 				buffered, had_buffer, sent = None, None, 0
 				#self.total_sent += sent
 				result = None
-				flipflop = None
+				buffer_change = None
 			else:
 				buffered, had_buffer, sent = res
 				self.total_sent += sent
@@ -172,27 +172,27 @@ class ClientManager (object):
 			if buffered:
 				if client.sock not in self.buffered:
 					self.buffered.append(client.sock)
-					flipflop = True
+					buffer_change = True
 
 					# watch for the socket's send buffer becoming less than full
 					self.poller.addWriteSocket('write_client', client.sock)
 				else:
-					flipflop = False
+					buffer_change = False
 
 			elif had_buffer and client.sock in self.buffered:
 				self.buffered.remove(client.sock)
-				flipflop = True
+				buffer_change = True
 
 				# we no longer care about writing to the client
 				self.poller.removeWriteSocket('write_client', client.sock)
 
 			else:
-				flipflop = False
+				buffer_change = False
 		else:
 			result = None
-			flipflop = None
+			buffer_change = None
 
-		return result, flipflop
+		return result, buffer_change
 
 
 	def startData(self, name, data, remaining):

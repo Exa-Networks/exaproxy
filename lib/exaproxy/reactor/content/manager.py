@@ -236,12 +236,12 @@ class ContentManager(object):
 			# registed interest in data becoming available to read
 			self.poller.addReadSocket('read_download', downloader.sock)
 
-			flipflop = downloader.sock in self.buffered
+			buffer_change = downloader.sock in self.buffered
 
 		else:
-			client_id, response, flipflop = None, None, None
+			client_id, response, buffer_change = None, None, None
 
-		return client_id, response, flipflop
+		return client_id, response, buffer_change
 
 	def retryDownload(self, client_id, command, args):
 		return None
@@ -270,28 +270,28 @@ class ContentManager(object):
 			if buffered:
 				if sock not in self.buffered:
 					self.buffered.append(sock)
-					flipflop = True
+					buffer_change = True
 
 					# watch for the socket's send buffer becoming less than full
 					self.poller.addWriteSocket('write_download', sock)
 				else:
-					flipflop = False
+					buffer_change = False
 
 			elif had_buffer and sock in self.buffered:
 				self.buffered.remove(sock)
-				flipflop = True
+				buffer_change = True
 
 				# we no longer care that we can write to the server
 				self.poller.removeWriteSocket('write_download', sock)
 			else:
-				flipflop = False
+				buffer_change = False
 
 		else:
 			buffered = None
-			flipflop = None
+			buffer_change = None
 			client_id = None
 
-                return buffered, flipflop, client_id
+		return buffered, buffer_change, client_id
 
 	def sendClientData(self, client_id, data):
 		downloader = self.byclientid.get(client_id, None)
@@ -304,42 +304,42 @@ class ContentManager(object):
 				if buffered:
 					if downloader.sock not in self.buffered:
 						self.buffered.append(downloader.sock)
-						flipflop = True
+						buffer_change = True
 
 						# watch for the socket's send buffer becoming less than full
 						self.poller.addWriteSocket('write_download', downloader.sock)
 					else:
-						flipflop = False
+						buffer_change = False
 
 				elif had_buffer and downloader.sock in self.buffered:
 					self.buffered.remove(downloader.sock)
-					flipflop = True
+					buffer_change = True
 
 					# we no longer care that we can write to the server
 					self.poller.removeWriteSocket('write_download', downloader.sock)
 				else:
-					flipflop = False
+					buffer_change = False
 
 
 			elif downloader.sock in self.opening:
 				buffered = downloader.bufferData(data)
 				if downloader.sock not in self.buffered:
 					self.buffered.append(downloader.sock)
-					flipflop = True
+					buffer_change = True
 
 				else:
-					flipflop = False
+					buffer_change = False
 
 
 			else:  # what is going on if we reach this point
 				self._terminate(downloader.sock, client_id)
 				buffered = None
-				flipflop = None
+				buffer_change = None
 		else:
 			buffered = None
-			flipflop = None
+			buffer_change = None
 
-		return buffered, flipflop
+		return buffered, buffer_change
 
 
 	def endClientDownload(self, client_id):

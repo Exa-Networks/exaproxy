@@ -75,9 +75,9 @@ class Reactor(object):
 
 				if data:
 					# we read something from the client so pass it on to the remote server
-					status, flipflop = self.content.sendClientData(client_id, data)
+					status, buffer_change = self.content.sendClientData(client_id, data)
 
-					if flipflop:
+					if buffer_change:
 						if status:
 							self.client.corkUploadByName(client_id)
 						else:
@@ -92,7 +92,7 @@ class Reactor(object):
 				client_id, page_data = self.content.readData(fetcher)
 
 				# send received data to the client that requested it
-				status, flipflop = self.client.sendDataByName(client_id, page_data)
+				status, buffer_change = self.client.sendDataByName(client_id, page_data)
 
 				# check to see if the client went away
 				if status is None:
@@ -101,7 +101,7 @@ class Reactor(object):
 						# should we just wait for the next loop when we'll be notified of the client disconnect?
 						self.content.endClientDownload(client_id)
 
-				elif flipflop:
+				elif buffer_change:
 					# status should be true here - we don't read from the server when buffering
 					if status:      # Buffering
 						self.content.corkClientDownload(client_id)
@@ -147,9 +147,9 @@ class Reactor(object):
 				# Check for any data beyond the initial headers that we may already
 				# have read and cached
 				if data:
-					status, flipflop = self.content.sendClientData(client_id, data)
+					status, buffer_change = self.content.sendClientData(client_id, data)
 
-					if flipflop:
+					if buffer_change:
 						if status:
 							self.client.corkUploadByName(client_id)
 						else:
@@ -161,9 +161,9 @@ class Reactor(object):
 
 			# clients we can write buffered data to
 			for client in events.get('write_client',[]):
-				status, flipflop, name = self.client.sendDataBySocket(client, '')
+				status, buffer_change, name = self.client.sendDataBySocket(client, '')
 
-				if flipflop:
+				if buffer_change:
 					# status should be False - we're here because we flushed buffered data
 					if not status:    # No buffer
 						self.content.uncorkClientDownload(name)
@@ -173,9 +173,9 @@ class Reactor(object):
 
 			# remote servers we can write buffered data to
 			for download in events.get('write_download',[]):
-				status, flipflop, client_id = self.content.sendSocketData(download, '')
+				status, buffer_change, client_id = self.content.sendSocketData(download, '')
 
-				if flipflop:
+				if buffer_change:
 					if status:
 						self.client.corkUploadByName(client_id)
 					else:
@@ -183,14 +183,14 @@ class Reactor(object):
 
 			# fully connected connections to remote web servers
 			for fetcher in events.get('opening_download',[]):
-				client_id, response, flipflop = self.content.startDownload(fetcher)
-				if flipflop:
+				client_id, response, buffer_change = self.content.startDownload(fetcher)
+				if buffer_change:
 					self.client.uncorkUploadByName(client_id)
 
 				if client_id in self.client:
 					if response:
-						status, flipflop = self.client.sendDataByName(client_id, response)
-						if flipflop:
+						status, buffer_change = self.client.sendDataByName(client_id, response)
+						if buffer_change:
 							# status should be True if we're here
 							if status:
 								self.content.corkClientDownload(client_id)
