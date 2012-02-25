@@ -411,7 +411,7 @@ class Page (object):
 				chart.append("[ %d, %s]" % (index, ','.join([values[_] for _ in _keys])))
 			index += 1
 
-		if cumulative:
+		if cumulative and chart:
 			chart.pop(0)
 
 		padding = []
