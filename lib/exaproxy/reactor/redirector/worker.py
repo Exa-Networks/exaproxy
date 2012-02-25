@@ -26,7 +26,7 @@ class Redirector (Thread):
 
 	def __init__ (self, configuration, name, request_box, program):
 		self.configuration = configuration
-		self.enabled = configuration.redirector.enabled
+		self.enabled = configuration.redirector.enable
 		self.protocol = configuration.redirector.protocol
 		self.transparent = configuration.http.transparent
 

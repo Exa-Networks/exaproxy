@@ -106,7 +106,7 @@ if __name__ == '__main__':
 		logger.status[section] = value or debug
 	logger.syslog(configuration.logger.destination)
 
-	if not configuration.profile.enabled:
+	if not configuration.profile.enable:
 		Supervisor().run()
 		sys.exit(0)
 

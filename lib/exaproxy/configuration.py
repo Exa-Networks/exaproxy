@@ -179,7 +179,7 @@ defaults = {
 		'out'     : (value.boolean,value.lower,'true',  'allow connections to remote web servers over IPv6'),
 	},
 	'redirector' : {
-		'enabled' : (value.boolean,value.lower,'false',                         'use redirector programs to filter http request'),
+		'enable'  : (value.boolean,value.lower,'false',                         'use redirector programs to filter http request'),
 		'program' : (value.exe,value.quote,'etc/exaproxy/redirector/url-allow', 'the program used to know where to send request'),
 		'minimum' : (value.integer,value.nop,'5',                               'minimum number of worker threads (forked program)'),
 		'maximum' : (value.integer,value.nop,'25',                              'maximum number of worker threads (forked program)'),
@@ -194,7 +194,7 @@ defaults = {
 		'extensions'      : (value.methods,value.list,'',       'allow new HTTP method (space separated)')
 	},
 	'web' : {
-		'enabled' : (value.boolean,value.lower,'true',             'enable the built-in webserver'),
+		'enable'  : (value.boolean,value.lower,'true',             'enable the built-in webserver'),
 		'host'    : (value.unquote,value.quote,'127.0.0.1',        'the address on which we will listen'),
 		'port'    : (value.integer,value.nop,'8080',               'port on which the web server listen'),
 		'html'    : (value.folder,value.quote,'etc/exaproxy/html', 'where are the proxy served pages are taken from'),
@@ -231,7 +231,7 @@ defaults = {
 		'client'        : (value.boolean,value.lower,'true',               'log message from the client subsystem'),
 	},
 	'profile' : {
-		'enabled'     : (value.boolean,value.lower,'false', 'enable profiling'),
+		'enable'      : (value.boolean,value.lower,'false', 'enable profiling'),
 		'destination' : (value.nop,value.quote,'stdout',    'save profiling to file (instead to the screen on exits)'),
 	},
 	'proxy' : {
