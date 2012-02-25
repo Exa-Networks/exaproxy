@@ -230,7 +230,7 @@ class ContentManager(object):
 				buffer_change = True
 
 				# we no longer care that we can write to the server
-				self.poller.removeWriteSocket('write_download', sock)
+				self.poller.removeWriteSocket('write_download', downloader.sock)
 			else:
 				buffer_change = False
 				
