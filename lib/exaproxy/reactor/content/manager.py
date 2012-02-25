@@ -208,11 +208,14 @@ class ContentManager(object):
 			self.opening[downloader.sock] = downloader
 			self.byclientid[downloader.client_id] = downloader
 
+			buffered = None
+			buffer_change = None
+
 			# register interest in the socket becoming available
 			self.poller.addWriteSocket('opening_download', downloader.sock)
 
 		elif downloader is not None:
-			buffered,sent = downloaderbuffer_change(request)
+			buffered,sent = downloader.writeData(request)
 			self.total_sent += sent
 			if buffered:
 				if downloader.sock not in self.buffered:
@@ -222,12 +225,24 @@ class ContentManager(object):
 					self.poller.addWriteSocket('write_download', downloader.sock)
 				else:
 					buffer_change = False
+			elif downloader.sock in self.buffered:
+				self.buffered.remove(downloader.sock)
+				buffer_change = True
+
+                                # we no longer care that we can write to the server
+                                self.poller.removeWriteSocket('write_download', sock)
+			else:
+				buffer_change = False
+				
 
 		elif client_id in self.byclientid:
+			buffered = None
+			buffer_change = None
+
 			# we have replaced the downloader with local content
 			self.endClientDownload(client_id)
 
-		return content, length
+		return content, length, buffered, buffer_change
 
 
 	def startDownload(self, sock):

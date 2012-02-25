@@ -138,7 +138,13 @@ class Reactor(object):
 			# all decisions we are currently able to process
 			for client_id, command, decision in decisions:
 				# send the possibibly rewritten request to the server
-				response, length = self.content.getContent(client_id, command, decision)
+				response, length, status, buffer_change = self.content.getContent(client_id, command, decision)
+
+				if buffer_change:
+					if status:
+						self.client.corkUploadByName(client_id)
+					else:
+						self.client.uncorkUploadByName(client_id)
 
 				# Signal to the client that we'll be streaming data to it or
 				# give it the location of the local content to return.
