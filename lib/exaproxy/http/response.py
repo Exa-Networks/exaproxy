@@ -11,7 +11,8 @@ import sys
 import time
 
 from exaproxy.util.version import version
-from .images import logo
+from exaproxy.html.images import logo
+from exaproxy.html.img import png
 
 
 _HTTP_NAMES = {
@@ -90,38 +91,4 @@ Cache-control: private
 Pragma: no-cache
 
 %s""" % (str(code),_HTTP_NAMES.get(code,'-'),date,str(version),sys.platform,len(message),encoding,message)
-
-def png (base64):
-	return '<img src="data:image/png;base64,%s"/>' % base64
-
-def jpg (base64):
-	return '<img src="data:image/jpeg;base64,%s"/>' % base64
-
-def html (title,header,color='#FF0000',image=png(logo),menu='',text='',):
-	if header: header += '<br/>'
-	return """\
-<html>
-	<head>
-		<title>%s</title>
-		<meta http-equiv="cache-control" content="no-cache">
-	</head>
-	<body leftmargin="0" topmargin="0" rightmargin="0" bgcolor="#FFFFFF" text="#000000" link="#0000FF" alink="#0000FF" vlink="#0000FF">
-		<center>
-			<div style="padding:15; color: #FFFFFF; background: %s; font-size: 40px; font-family: verdana,sans-serif,arial; font-weight: bold; border-bottom: solid 1px #A0A0A0;">
-				%s
-				%s
-			</div>
-		</center>
-		<br/>
-		%s
-		<br/>
-		<br/>
-		%s
-		<br/>
-		<br/>
-	</body>
-</html>
-
-""" % (title,color,header,image,menu,text)
-
 

@@ -20,7 +20,7 @@ from .reactor.client.manager import ClientManager
 from .reactor.resolver.manager import ResolverManager
 from .network.async import Poller
 from .network.server import Server
-from .http.page import Page
+from .html.page import Page
 from .monitor import Monitor
 
 from .reactor import Reactor
