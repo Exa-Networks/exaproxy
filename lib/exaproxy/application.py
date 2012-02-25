@@ -115,7 +115,7 @@ if __name__ == '__main__':
 	except:
 		import profile
 
-	if not configuration.profile.destination:
+	if not configuration.profile.destination or configuration.profile.destination == 'stdout':
 		profile.run('Supervisor().run()')
 		sys.exit(0)
 
