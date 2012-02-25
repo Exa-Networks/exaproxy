@@ -33,6 +33,7 @@ def help ():
 	sys.stdout.write('  -e, --env       : display the configuration using the env format\n')
 	sys.stdout.write(' -di, --diff-ini  : display non-default configurations values using the ini format\n')
 	sys.stdout.write(' -de, --diff-env  : display non-default configurations values using the env format\n')
+	sys.stdout.write('  -d, --debug     : shortcut to turn on all subsystems debugging to LOG_DEBUG\n')
 	
 	sys.stdout.write('\n')
 	sys.stdout.write('exaproxy will automatically look for its configuration file\n')
@@ -50,16 +51,14 @@ def help ():
 	sys.stdout.write('\n')
 	sys.stdout.write('multiple environment values can be set\n')
 	sys.stdout.write('\n')
-	sys.stdout.write('shortcut to turn all possible debugging on\n')
-	sys.stdout.write('env DEBUG_ALL=1 ./sbin/exaproxy\n')
-	sys.stdout.write('\n')
 	sys.stdout.write('valid configuration options are :\n')
 	sys.stdout.write('\n')
 	for line in default():
 			sys.stdout.write(' - %s\n' % line)
 	sys.stdout.write('\n')
 
-def main ():
+
+if __name__ == '__main__':
 	main = int(sys.version[0])
 	secondary = int(sys.version[2])
 
@@ -69,9 +68,15 @@ def main ():
 	if main == 2 and secondary == 4:
 		version_warning()
 
-#	if len(sys.argv) < 2:
-#		help()
-#		sys.exit(0)
+	try:
+		configuration = load()
+	except ConfigurationError,e:
+		print >> sys.stderr, 'configuration issue,', str(e)
+		sys.exit(1)
+
+	logger.syslog(configuration.logger.destination)
+
+	debug = False
 
 	for arg in sys.argv[1:]:
 		if arg in ['--',]:
@@ -91,31 +96,19 @@ def main ():
 		if arg in ['-de','--diff-env']:
 			env(True)
 			sys.exit(0)
-	
-	Supervisor().run()
-	sys.exit(0)
+		if arg in ['-de','--diff-env']:
+			debug = True
 
-if __name__ == '__main__':
-	try:
-		configuration = load()
-	except ConfigurationError,e:
-		print >> sys.stderr, 'configuration issue,', str(e)
-		sys.exit(1)
-
-	_all = os.environ.get('DEBUG_ALL','0') != '0'
 	for section,value in configuration.logger.items():
+		if section == 'destination':
+			continue
 		if section == 'level':
-			if _all:
-				logger.level = syslog.LOG_DEBUG
-			elif section != 'destination':
-				logger.level = value
-		else:
-			logger.status[section] = value or _all
-
-	logger.syslog(configuration.logger.destination)
+			logger.level = syslog.LOG_DEBUG if debug else value
+			continue
+		logger.status[section] = value
 
 	if not configuration.profile.enabled:
-		main()
+		Supervisor().run()
 		sys.exit(0)
 
 	try:
@@ -124,9 +117,10 @@ if __name__ == '__main__':
 		import profile
 
 	if not configuration.profile.destination:
-		profile.run('main()')
+		profile.run('Supervisor().run()')
 		sys.exit(0)
 
+	logger.status['supervisor'] = True
 	notice = ''
 	if os.path.isdir(configuration.profile.destination):
 		notice = 'profile can not use this filename as outpout, it is not a directory (%s)' % profiled
