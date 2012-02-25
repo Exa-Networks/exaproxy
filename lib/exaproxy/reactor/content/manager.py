@@ -212,7 +212,16 @@ class ContentManager(object):
 			self.poller.addWriteSocket('opening_download', downloader.sock)
 
 		elif downloader is not None:
-			downloader.writeData(request)
+			buffered,sent = downloaderbuffer_change(request)
+			self.total_sent += sent
+			if buffered:
+				if downloader.sock not in self.buffered:
+					self.buffered.append(downloader.sock)
+					buffer_change = True
+					# watch for the socket's send buffer becoming less than full
+					self.poller.addWriteSocket('write_download', downloader.sock)
+				else:
+					buffer_change = False
 
 		elif client_id in self.byclientid:
 			# we have replaced the downloader with local content
