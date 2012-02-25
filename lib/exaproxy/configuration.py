@@ -164,7 +164,7 @@ class value (object):
 defaults = {
 	'tcp4' : {
 		'host'    : (value.unquote,value.quote,'127.0.0.1', 'the host the proxy listen on'),
-		'port'    : (value.integer,value.nop,'31280',       'the port the proxy listen on'),
+		'port'    : (value.integer,value.nop,'3128',        'the port the proxy listen on'),
 		'timeout' : (value.integer,value.nop,'5',           'time before we ...'),
 		'backlog' : (value.integer,value.nop,'200',         'when busy how many connection should the OS keep for us'),
 		'listen'  : (value.boolean,value.lower,'true',      'should we listen for connections over IPv4'),
@@ -172,7 +172,7 @@ defaults = {
 	},
 	'tcp6' : {
 		'host'    : (value.unquote,value.quote,'::1',   'the host the proxy listen on'),
-		'port'    : (value.integer,value.nop,'31280',   'the port the proxy listen on'),
+		'port'    : (value.integer,value.nop,'3128',    'the port the proxy listen on'),
 		'timeout' : (value.integer,value.nop,'5',       'time before we ...'),
 		'backlog' : (value.integer,value.nop,'200',     'when busy how many connection should the OS keep for us'),
 		'listen'  : (value.boolean,value.lower,'false', 'should we listen for connections over IPv6'),
