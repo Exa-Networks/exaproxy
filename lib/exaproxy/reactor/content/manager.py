@@ -289,7 +289,6 @@ class ContentManager(object):
 	def sendSocketData(self, sock, data):
 		downloader = self.established.get(sock, None)
 		if downloader:
-			had_buffer = True if downloader.w_buffer else False
 			buffered,sent = downloader.writeData(data)
 			self.total_sent += sent
 			client_id = downloader.client_id
@@ -304,7 +303,7 @@ class ContentManager(object):
 				else:
 					buffer_change = False
 
-			elif had_buffer and sock in self.buffered:
+			elif sock in self.buffered:
 				self.buffered.remove(sock)
 				buffer_change = True
 
@@ -324,7 +323,6 @@ class ContentManager(object):
 		downloader = self.byclientid.get(client_id, None)
 		if downloader:
 			if downloader.sock in self.established:
-				had_buffer = True if downloader.w_buffer else False
 				buffered,sent = downloader.writeData(data)
 				self.total_sent += sent
 
@@ -338,7 +336,7 @@ class ContentManager(object):
 					else:
 						buffer_change = False
 
-				elif had_buffer and downloader.sock in self.buffered:
+				elif downloader.sock in self.buffered:
 					self.buffered.remove(downloader.sock)
 					buffer_change = True
 
