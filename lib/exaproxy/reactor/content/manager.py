@@ -234,13 +234,16 @@ class ContentManager(object):
 			else:
 				buffer_change = False
 				
-
 		elif client_id in self.byclientid:
 			buffered = None
 			buffer_change = None
 
 			# we have replaced the downloader with local content
 			self.endClientDownload(client_id)
+
+		else:
+			buffered = None
+			buffer_change = None
 
 		return content, length, buffered, buffer_change
 
