@@ -107,7 +107,6 @@ class Redirector (Thread):
 			len(headers),
 			headers
 		)
-
 		try:
 			self.process.stdin.write(line)
 			try:
@@ -117,7 +116,6 @@ class Redirector (Thread):
 				return request, 'file', 'internal_error.html'
 			except Exception,e:
 				return request, 'file', 'internal_error.html'
-			return request, 'permit', None
 		except IOError, e:
 			logger.error('worker %s' % self.wid, 'IO/Error when sending to process: %s' % str(e))
 			if tainted is False:
@@ -130,7 +128,7 @@ class Redirector (Thread):
 				return 'requeue', None
 			return request, 'file', 'internal_error.html'
 
-		return request, 'permit', None
+		return r, 'permit', None
 
 	def _classify_url (self, request, tainted):
 		try:
@@ -179,6 +177,9 @@ class Redirector (Thread):
 			else:
 				request['via'] = via
 			#request['via'] = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % ('test',os.getpid()), '1.1', request.host)
+		self.respond_direct(client_id, ip, port, length, request)
+
+	def respond_direct(self, client_id, ip, port, length, request):
 		header = request.toString()
 		self.respond('\0'.join((client_id, 'download', ip, str(port), str(length), header)))
 
