@@ -166,7 +166,7 @@ class Redirector (Thread):
 		self.response_box_write.write(str(len(response)) + ':' + response + ',')
 		self.response_box_write.flush()
 
-	def respond_proxy(self, client_id, ip, port, length, http):
+	def respond_proxy(self, client_id, ip, port, length, http, client_ip):
 		headers = http.headers
 		# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
 		headers.pop('proxy-connection',None)
@@ -174,13 +174,13 @@ class Redirector (Thread):
 		# NOTE: At the moment we only add it from the client to the server (which is what really matters)
 		if not self.transparent:
 			headers.set('via','Via: %s %s' % (http.request.version, self._proxy))
-		self.respond_direct(client_id, ip, port, length, http)
+		self.respond_direct(client_id, ip, port, length, http, client_ip)
 
-	def respond_direct(self, client_id, ip, port, length, http):
-		self.respond('\0'.join((client_id, 'download', ip, str(port), str(length), str(http))))
+	def respond_direct(self, client_id, ip, port, length, http, client_ip):
+		self.respond('\0'.join((client_id, 'download', ip, str(port), str(length), str(http), str(client_ip))))
 
-	def respond_connect(self, client_id, ip, port, http):
-		self.respond('\0'.join((client_id, 'connect', ip, str(port), str(http))))
+	def respond_connect(self, client_id, ip, port, http, client_ip):
+		self.respond('\0'.join((client_id, 'connect', ip, str(port), str(http), str(client_ip))))
 
 	def respond_file(self, client_id, code, reason):
 		self.respond('\0'.join((client_id, 'file', str(code), reason)))

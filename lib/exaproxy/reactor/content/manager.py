@@ -106,7 +106,7 @@ class ContentManager(object):
 		try:
 			if command == 'download':
 				try:
-					host, port, length, request = args.split('\0', 3)
+					host, port, length, request, client_ip = args.split('\0', 4)
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 
@@ -121,7 +121,7 @@ class ContentManager(object):
 
 			elif command == 'connect':
 				try:
-					host, port, request = args.split('\0', 2)
+					host, port, request, client_ip = args.split('\0', 3)
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 
