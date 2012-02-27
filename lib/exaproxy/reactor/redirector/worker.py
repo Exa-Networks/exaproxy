@@ -201,7 +201,7 @@ Encapsulated: req-hdr=0, null-body=%d
 	def respond_direct(self, client_id, ip, port, length, http):
 		self.respond('\0'.join((client_id, 'download', ip, str(port), str(length), str(http))))
 
-	def respond_connect(self, client_id, ip, port, http, client_ip):
+	def respond_connect(self, client_id, ip, port, http):
 		self.respond('\0'.join((client_id, 'connect', ip, str(port), str(http))))
 
 	def respond_file(self, client_id, code, reason):
