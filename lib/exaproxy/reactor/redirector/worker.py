@@ -300,12 +300,12 @@ Encapsulated: req-hdr=0, null-body=%d
 				request = http.request
 
 				if classification == 'permit':
-					self.respond_proxy(client_id, http.host, request.port, http.content_length, http, request.client)
+					self.respond_proxy(client_id, http.host, request.port, http.content_length, http, http.client)
 					continue
 
 				if classification == 'rewrite':
 					request.redirect(None, data)
-					self.respond_proxy(client_id, http.host, request.port, http.content_length, http, request.client)
+					self.respond_proxy(client_id, http.host, request.port, http.content_length, http, http.client)
 					continue
 
 				if classification == 'file':
@@ -318,20 +318,20 @@ Encapsulated: req-hdr=0, null-body=%d
 					continue
 
 				if classification == 'dns':
-					self.respond_proxy(client_id, data, request.port, http.content_length, http, request.client)
+					self.respond_proxy(client_id, data, request.port, http.content_length, http, http.client)
 					continue
 
 				if classification == 'requeue':
 					self.respond_requeue(client_id, peer, header, source)
 					continue
 
-				self.respond_proxy(client_id, http.host, request.port, http.content_length, http, request.client)
+				self.respond_proxy(client_id, http.host, request.port, http.content_length, http, http.client)
 				continue
 
 			# someone want to use us as https proxy
 			if request.method == 'CONNECT':
 				if not self.enabled:
-					self.respond_connect(client_id, http.host, request.port, http, request.client)
+					self.respond_connect(client_id, http.host, request.port, http, http.client)
 					continue
 
 				# we do allow connect
@@ -345,7 +345,7 @@ Encapsulated: req-hdr=0, null-body=%d
 						self.respond_requeue(client_id, peer, header, source)
 
 					else:
-						self.respond_connect(client_id, http.host, request.port, http, request.client)
+						self.respond_connect(client_id, http.host, request.port, http, http.client)
 
 					continue
 				else:
@@ -372,18 +372,18 @@ Encapsulated: req-hdr=0, null-body=%d
 						raise RuntimeError('should never reach here')
 					http.headers['max-forwards'] = 'Max-Forwards: %d' % (max_forward-1)
 				# Carefull, in the case of OPTIONS http.host is NOT http.headerhost
-				self.respond_proxy(client_id, http.headerhost, http.port, http, request.client)
+				self.respond_proxy(client_id, http.headerhost, http.port, http, http.client)
 				continue
 
 			# WEBDAV
 			if request.method in (
 			  'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE', 
 			  'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
-				self.respond_proxy(client_id, http.headerhost, http.port, http, request.client)
+				self.respond_proxy(client_id, http.headerhost, http.port, http, http.client)
 				continue
 
 			if request in self.configuration.http.extensions:
-				self.respond_proxy(client_id, http.headerhost, http.port, http, request.client)
+				self.respond_proxy(client_id, http.headerhost, http.port, http, http.client)
 				continue
 
 			self.respond_http(client_id, 405, '') # METHOD NOT ALLOWED
