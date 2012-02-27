@@ -85,11 +85,16 @@ class HTTP (object):
 		self.host = host if host is not None else self.host
 		self.path = path if path is not None else self.path
 
-		# XXX: need to handle port switch
 		if path is not None:
 			Request(self.method + ' ' + path + ' HTTP/' + self.version).parse()
 
 		if host is not None:
+			if host.count(':') > 1:
+				host = '['+host+']'
+
+			if self.port != 80:
+				host = host + ':' + str(port)
+
 			self.header.replace('host','Host: ' + host)
 
 	def __str__ (self):
