@@ -37,7 +37,7 @@ class Server(object):
 			# should we check to make sure it's a socket we provided
 			s, (ip,port) = sock.accept()
 			s.setblocking(0)
-			# XXX: we really should try to handle the entire queue at once
+			# NOTE: we really should try to handle the entire queue at once
 			yield s, ip
 		except socket.error, e:
 			# It doesn't really matter if accept fails temporarily. We will
