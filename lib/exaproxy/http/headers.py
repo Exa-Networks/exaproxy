@@ -50,10 +50,9 @@ class Headers (object):
 
 	def parse (self, lines):
 		if lines[0].isspace():
-			raise ValueError, 'Whitespace before headers'
+			raise ValueError('Malformed headers, headers starts with a white space')
 
-#		try:
-		if True:
+		try:
 			key = ''
 
 			for line in lines.split(self.separator):
@@ -68,12 +67,12 @@ class Headers (object):
 				# KeyError if split does not return two elements
 				key, value = line.split(':', 1)
 				self.set(key.strip().lower(),line)
-#		except (KeyError,TypeError,IndexError):
-#			raise ValueError, 'Malformed headers'
+		except (KeyError,TypeError,IndexError):
+			raise ValueError('Malformed headers (line : %s) headers %s' % (line,lines.replace('\n','\\n').replace('\r','\\r')))
 
 		# we got a line starting with a :
 		if '' in self._data:
-			raise ValueError, 'Malformed headers'
+			raise ValueError ('Malformed headers, line starts with colon (:)')
 		
 		return self
 
