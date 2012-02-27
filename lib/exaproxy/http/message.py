@@ -39,8 +39,8 @@ class HTTP (object):
 				self.request = Request(first).parse()
 				self.headers = Headers('\n').parse(remaining)
 
-			# Can you have a port here too ? I do not think so.
-			self.headerhost = self.headers.get('host',[':'])[0].split(':',1)[1].strip()
+			headerhost = self.headers.get('host',[':'])[0].split(':',1)[1].strip()
+			self.headerhost = self.extractHost(headerhost)
 
 			if self.request.host and self.request.host != '*':
 				self.host = self.request.host
@@ -61,7 +61,7 @@ class HTTP (object):
 			self.headers.replace('x-proxy-version',self.proxy_name)
 
 			if self.x_forwarded_for:
-				client = self.headers.get('x-forwarded-for', ':%s' % self.ip).split(':', 1)[1].split(',')[-1].strip()
+				client = self.headers.get('x-forwarded-for', ':%s' % self.ip)[0].split(':', 1)[1].split(',')[-1].strip()
 				if not isip(client):
 					logger.info('header', 'Invalid address in X-Forwarded-For: %s' % client)
 					client = self.ip
@@ -96,6 +96,20 @@ class HTTP (object):
 				host = host + ':' + str(port)
 
 			self.header.replace('host','Host: ' + host)
+
+
+        def extractHost(self, hoststring):
+                if ':' in hoststring:
+                        # check to see if we have an IPv6 address
+                        if hoststring.startswith('[') and ']' in hoststring:
+                                host = hoststring[1:].split(']', 1)[0]
+                        else:
+                                host = hoststring.split(':', 1)[0]
+		else:
+			host = hoststring
+
+                return host
+
 
 	def __str__ (self):
 		return str(self.request) + self.separator + str(self.headers) + self.separator + self.separator
