@@ -1,17 +1,11 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-allow.py
+icap-safe-youtube.py
 
 Created by Thomas Mangin on 2011-11-29.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
-
-# redirect.php is a simple to force hostname :
-# <?php 
-# header('HTTP/1.1 301 Moved Permanently');
-# header( 'Location: http://www.surfprotect.co.uk/' ) ; ?>
-# ?>
 
 import re
 import sys
