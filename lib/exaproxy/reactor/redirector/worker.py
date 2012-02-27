@@ -196,22 +196,22 @@ Encapsulated: req-hdr=0, null-body=%d
 		# NOTE: At the moment we only add it from the client to the server (which is what really matters)
 		if not self.transparent:
 			headers.set('via','Via: %s %s' % (http.request.version, self._proxy))
-		self.respond_direct(client_id, ip, port, length, http)
+		self.respond_download(client_id, ip, port, length, http)
 
-	def respond_direct(self, client_id, ip, port, length, http):
-		self.respond('\0'.join((client_id, 'download', ip, str(port), str(length), str(http))))
+	def respond_download(self, client_id, ip, port, length, http):
+		self.respond('\0'.join((client_id, 'download', ip, port, str(length), str(http))))
 
-	def respond_connect(self, client_id, ip, port, http):
-		self.respond('\0'.join((client_id, 'connect', ip, str(port), str(http))))
+	def respond_connect(self, client_id, http):
+		self.respond('\0'.join((client_id, 'connect', http.host, http.request.port, str(http))))
 
 	def respond_file(self, client_id, code, reason):
 		self.respond('\0'.join((client_id, 'file', str(code), reason)))
 
-	def respond_rewrite(self, client_id, code, reason, protocol, url, host, client_ip):
-		self.respond('\0'.join((client_id, 'rewrite', str(code), reason, protocol, url, host, str(client_ip))))
+	def respond_rewrite(self, client_id, code, reason, http):
+		self.respond('\0'.join((client_id, 'rewrite', code, reason, http.request.protocol, http.url, http.host, str(http.client))))
 
 	def respond_http(self, client_id, code, *data):
-		self.respond('\0'.join((client_id, 'http', str(code))+data))
+		self.respond('\0'.join((client_id, 'http', code)+data))
 
 	def respond_monitor(self, client_id, path):
 		self.respond('\0'.join((client_id, 'monitor', path)))
@@ -281,7 +281,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 			http = HTTP(self.configuration,header,peer)
 			if not http.parse():
-				self.respond_http(client_id, 400, 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header)
+				self.respond_http(client_id, '400', 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header)
 				continue
 
 			request = http.request
@@ -309,8 +309,7 @@ Encapsulated: req-hdr=0, null-body=%d
 					continue
 
 				if classification == 'file':
-					#self.respond_file(client_id, '250', data)
-					self.respond_rewrite(client_id, 250, data, request.protocol, http.url, http.host, http.client)
+					self.respond_rewrite(client_id, '250', data, http)
 					continue
 
 				if classification == 'redirect':
@@ -331,7 +330,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			# someone want to use us as https proxy
 			if request.method == 'CONNECT':
 				if not self.enabled:
-					self.respond_connect(client_id, http.host, request.port, http)
+					self.respond_connect(client_id, http)
 					continue
 
 				# we do allow connect
@@ -345,29 +344,29 @@ Encapsulated: req-hdr=0, null-body=%d
 						self.respond_requeue(client_id, peer, header, source)
 
 					else:
-						self.respond_connect(client_id, http.host, request.port, http)
+						self.respond_connect(client_id, http)
 
 					continue
 				else:
-					self.respond_http(client_id, 501, 'CONNECT NOT ALLOWED\n')
+					self.respond_http(client_id, '501', 'CONNECT NOT ALLOWED\n')
 					continue
 
 			if request.method in ('OPTIONS','TRACE'):
 				if 'max-forwards' in http.headers:
 					max_forwards = http.headers.get('max-forwards').split(':')[-1].strip()
 					if not max_forwards.isdigit():
-						self.respond_http(client_id, 400, 'INVALID MAX-FORWARDS\n')
+						self.respond_http(client_id, '400', 'INVALID MAX-FORWARDS\n')
 						continue
 					max_forward = int(max_forwards)
 					if max_forward < 0 :
-						self.respond_http(client_id, 400, 'INVALID MAX-FORWARDS\n')
+						self.respond_http(client_id, '400', 'INVALID MAX-FORWARDS\n')
 						continue
 					if max_forward == 0:
 						if request.method == 'OPTIONS':
-							self.respond_http(client_id, 200, '')
+							self.respond_http(client_id, '200', '')
 							continue
 						if request.method == 'TRACE':
-							self.respond_http(client_id, 200, header)
+							self.respond_http(client_id, '200', header)
 							continue
 						raise RuntimeError('should never reach here')
 					http.headers['max-forwards'] = 'Max-Forwards: %d' % (max_forward-1)
@@ -386,7 +385,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				self.respond_proxy(client_id, http.headerhost, http.port, http)
 				continue
 
-			self.respond_http(client_id, 405, '') # METHOD NOT ALLOWED
+			self.respond_http(client_id, '405', '') # METHOD NOT ALLOWED
 			continue
 
 		self.respond_hangup(self.wid)
