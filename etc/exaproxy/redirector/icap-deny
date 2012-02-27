@@ -17,14 +17,27 @@ import sys
 
 try:
 	while True:
-		version = sys.stdin.readline()
-		if version.strip() != 'version:1':
-			sys.exit(0)
-		client = sys.stdin.readline()
-		if not client.strip().startswith('client:'):
-			sys.exit(0)
-		size = int(sys.stdin.readline().strip()[5:])
-		_ = sys.stdin.read(size)
+		line = sys.stdin.readline()
+		method,uri,version = line.rstrip().split()
+		if method != 'REQMOD':
+			sys.stderr.write('ICAP METHOD not supported %s\n' % method)
+			sys.stderr.flush()
+		if version != 'ICAP/1.0':
+			sys.stderr.write('ICAP version not supported %s\n' % version)
+			sys.stderr.flush()
+		
+		client = ''
+		while True:
+			line = sys.stdin.readline().rstrip()
+			if not line:
+				break
+			if line.startswith('Pragma: client='):
+				client = line[15]
+			last = line
+
+		# we know ExaProxy send the Encapsulation as last parameter .. yes we do :)
+		length = int(last.rstrip().split('=')[-1])
+		_ = sys.stdin.read(length)
 
 		if _[:7].upper() == 'CONNECT':
 			headers = _ if 'exa-networks.co.uk' in _ else """\
@@ -40,11 +53,13 @@ Host: www.surfprotect.co.uk
 Connection: close
 
 """
-		print >> sys.stderr, "BEFORE", _ 
-		print >> sys.stderr, "AFTER ", headers
-		sys.stdout.write('%d\n' % len(headers))
-		sys.stdout.flush()
-		sys.stdout.write('%s' % headers)
+		# Always return the Encapsulated size as last header and with a null-body
+		reply = """\
+ICAP/1.0 200 OK
+Encapsulated: res-hdr=0, null-body=%d
+
+%s""" % (len(headers),headers)
+		sys.stdout.write(reply)
 		sys.stdout.flush()
 except KeyboardInterrupt, e:
 	sys.stderr.write('^C keyboard interrupt. exiting.\n')

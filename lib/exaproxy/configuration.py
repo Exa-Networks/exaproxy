@@ -138,7 +138,7 @@ class value (object):
 
 	@staticmethod
 	def redirector (name):
-		if name in ('url','headers'):
+		if name == 'url' or name.startswith('icap://'):
 			return name
 		raise TypeError('invalid redirector protocol %s, options are url or header' % name)
 
@@ -184,7 +184,7 @@ defaults = {
 		'minimum' : (value.integer,value.nop,'5',                               'minimum number of worker threads (forked program)'),
 		'maximum' : (value.integer,value.nop,'25',                              'maximum number of worker threads (forked program)'),
 #		'timeout' : (value.integer,value.nop,'1',                               'how long to wait for work before peforming background work'),
-		'protocol': (value.redirector,value.quote,'url',                        'what protocol to use (url: squid like / headers: icap like)')
+		'protocol': (value.redirector,value.quote,'url',                        'what protocol to use (url: squid like / icap:://<uri> icap like)')
 	},
 
 	'http' : {

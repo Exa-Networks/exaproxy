@@ -29,7 +29,9 @@ class Redirector (Thread):
 		self.enabled = configuration.redirector.enable
 		self.protocol = configuration.redirector.protocol
 		self.transparent = configuration.http.transparent
+
 		self.universal = True if self.protocol == 'url' else False
+		self.icap = self.protocol[len('icap://'):].split('/')[0] if self.protocol.startswith('icap://') else ''
 
 		r, w = os.pipe()                                # pipe for communication with the main thread
 		self.response_box_write = os.fdopen(w,'w',0)    # results are written here
@@ -95,15 +97,22 @@ class Redirector (Thread):
 			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
 			return request, 'file', 'internal_error.html'
 
-		if self.protocol == 'headers':
-			return self._classify_headers (http,headers,tainted)
 		if self.protocol == 'url':
 			return self._classify_url (http,tainted)
+		if self.protocol.startswith('icap://'):
+			return self._classify_icap (http,headers,tainted)
 
 		return request, 'file', 'internal_error.html'
 
-	def _classify_headers (self, http, headers, tainted):
-		line = """version:1\nclient:%s\nsize:%d\n%s""" % (
+	def _classify_icap (self, http, headers, tainted):
+		line = """\
+REQMOD %s ICAP/1.0
+Host: %s
+Pragma: client=%s
+Encapsulated: req-hdr=0, null-body=%d
+
+%s""" % (
+			self.protocol,self.icap,
 			http.client,
 			len(headers),
 			headers
@@ -111,8 +120,21 @@ class Redirector (Thread):
 		try:
 			self.process.stdin.write(line)
 			try:
-				length = self.process.stdout.readline()
-				headers = self.process.stdout.read(max(0,int(length.strip())))
+				icap = []
+				while True:
+					line = self.process.stdout.readline().rstrip()
+					if not line:
+						break
+					icap.append(line)
+					# BIG Shortcut for performance - we know the last header is the size
+				code = icap[0].split()[1]
+				# 304 (no modified)
+				if code == '304':
+					return http, 'permit', None
+				length = int(icap[-1].split('=')[-1])
+				if length < 0:
+					return http, 'file', 'internal_error.html'
+				headers = self.process.stdout.read(length)
 			except ValueError:
 				return http, 'file', 'internal_error.html'
 			except Exception,e:
