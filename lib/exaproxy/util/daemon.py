@@ -16,6 +16,11 @@ import resource
 
 from .logger import logger
 
+def signed (value):
+	if value == sys.maxint:
+		return -1
+	return value
+
 class Daemon (object):
 	def __init__ (self,configuration):
 		self.daemonize = configuration.daemonise
@@ -26,8 +31,10 @@ class Daemon (object):
 				# default on mac are (256,-1)
 				resource.setrlimit(resource.RLIMIT_NOFILE, (configuration.filemax, -1))
 			except (resource.error,ValueError),e:
+				soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 				logger.error('daemon','could not increase file descriptor limit : %s' % str(e))
-				logger.error('daemon','current limits (soft, hard) are : %s' % str(resource.getrlimit(resource.RLIMIT_NOFILE)))
+				logger.error('daemon','the current limit is %d' % signed(soft))
+				logger.error('daemon','the maxium possible limit is %d' % signed(hard))
 
 	def drop_privileges (self):
 		"""returns true if we are left with insecure privileges"""
