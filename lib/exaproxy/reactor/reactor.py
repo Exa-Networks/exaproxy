@@ -20,8 +20,9 @@ class Reactor(object):
 		self.client = client      # Currently open client connections
 		self.resolver = resolver  # The DNS query manager
 		self.poller = poller      # Interface to the poller
-		self.running = True
-		self._loop = None
+		self.running = True       # Until we stop we run :)
+		self.nb_events = 0L       # Number of events received
+		self.nb_loops = 0L        # Number of loop iteration
 
 	def run(self):
 		poller = self.poller
@@ -42,6 +43,10 @@ class Reactor(object):
 		while self.running:
 			# wait until we have something to do
 			events = poller.poll()
+
+			self.nb_loops += 1
+			for name,ev in events.items():
+				self.nb_events += len(ev)
 
 			logger.debug('supervisor','events : ' + ', '.join(events.keys()))
 

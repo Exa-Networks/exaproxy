@@ -37,6 +37,8 @@ options_performance = [
 	('/performance/clients.html',     'Clients'),
 	('/performance/servers.html',     'Servers'),
 	('/performance/transfered.html',  'Transfered'),
+	('/performance/loops.html',       'Loops'),
+	('/performance/events.html',      'Events'),
 ]
 
 options_about = [
@@ -164,6 +166,28 @@ class Page (object):
 			True,
 		)
 
+	def _loops (self):
+		return graph(
+			self.monitor,
+			'Proxy Bytes Transfered / seconds',
+			5000,
+			[
+				'running.load.loops',
+			],
+			True,
+		)
+
+	def _events (self):
+		return graph(
+			self.monitor,
+			'Proxy Bytes Transfered / seconds',
+			5000,
+			[
+				'running.load.events',
+			],
+			True,
+		)
+
 	def _email (self,args):
 		if self.email_sent:
 			return '<center><b>You can only send one email per time ExaProxy is started</b></center>'
@@ -218,6 +242,10 @@ class Page (object):
 				return menu.performance(self._received())
 			if subsection == 'transfered':
 				return menu.performance(self._transfer())
+			if subsection == 'loops':
+				return menu.performance(self._loops())
+			if subsection == 'events':
+				return menu.performance(self._events())
 			return menu.performance(index)
 
 		if section == 'about':
