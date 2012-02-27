@@ -88,8 +88,8 @@ class ResolverManager(object):
 					data = self.sending.pop(identifier, None)
 
 				if data:
-					client_id, original, hostname, command, decision, peer = data
-					yield client_id, 'rewrite', '\0'.join(('503', 'dns.html', '', '', hostname, peer))
+					client_id, original, hostname, command, decision = data
+					yield client_id, 'rewrite', '\0'.join(('503', 'dns.html', '', '', hostname, 'peer'))
 
 		if count:
 			self.active = self.active[count:]
@@ -106,22 +106,19 @@ class ResolverManager(object):
 
 		return res
 
-	def extractInfo(self, command, decision):
+	def extractHostname(self, command, decision):
 		data = decision.split('\0')
 
 		if command == 'download':
 			hostname = data[0]
-			peer = data[4]
 
 		elif command == 'connect':
 			hostname = decision.split('\0')[0]
-			peer = data[3]
 
 		else:
 			hostname = None
-			peer = None
 
-		return hostname, peer
+		return hostname
 
 	def resolveDecision(self, command, decision, ip):
 		if command in ('download', 'connect'):
@@ -133,7 +130,7 @@ class ResolverManager(object):
 		return newdecision
 
 	def startResolving(self, client_id, command, decision):
-		hostname, peer = self.extractInfo(command, decision)
+		hostname = self.extractHostname(command, decision)
 
 		if hostname:
 			if hostname in self.cache:
@@ -145,13 +142,13 @@ class ResolverManager(object):
 					response = client_id, command, resolved
 
 				else:
-					newdecision = '\0'.join(('503', 'dns.html', 'http', '', hostname, peer))
+					newdecision = '\0'.join(('503', 'dns.html', 'http', '', hostname, 'peer'))
 					response = client_id, 'rewrite', newdecision
 
 			else:
 				identifier, _ = self.worker.resolveHost(hostname)
 				response = None
-				self.resolving[identifier] = client_id, hostname, hostname, command, decision, peer
+				self.resolving[identifier] = client_id, hostname, hostname, command, decision
 				self.clients[client_id] = identifier
 				self.active.append((time.time(), client_id))
 		else:
@@ -161,7 +158,7 @@ class ResolverManager(object):
 		return identifier, response
 
 	def startResolvingTCP(self, client_id, command, decision):
-		hostname, peer = self.extractInfo(command, decision)
+		hostname = self.extractHostname(command, decision)
 
 		if hostname:
 			worker = self.resolver_factory.createTCPClient(self.configuration, self.resolv)
@@ -173,10 +170,10 @@ class ResolverManager(object):
 
 			if all_sent:
 				self.poller.addReadSocket('read_resolver', worker.socket)
-				self.resolving[identifier] = client_id, hostname, hostname, command, decision, peer
+				self.resolving[identifier] = client_id, hostname, hostname, command, decision
 			else:
 				self.poller.addWriteSocket('write_resolver', worker.socket)
-				self.sending[worker.socket] = client_id, hostname, hostname, command, decision, peer
+				self.sending[worker.socket] = client_id, hostname, hostname, command, decision
 
 		else:
 			identifier = None
@@ -197,7 +194,7 @@ class ResolverManager(object):
 				data = None
 
 			if data:
-				client_id, original, hostname, command, decision, peer = data
+				client_id, original, hostname, command, decision = data
 				self.clients.pop(client_id)
 
 				# check to see if we received an incomplete response
@@ -213,7 +210,7 @@ class ResolverManager(object):
 						self.poller.addReadSocket('read_resolver', worker.socket)
 					else:
 						self.poller.addWriteSocket('write_resolver', worker.socket)
-						self.sending[worker.socket] = client_id, original, hostname, command, decision, peer
+						self.sending[worker.socket] = client_id, original, hostname, command, decision
 
 				# check to see if the worker started a new request
 				if newidentifier:
@@ -225,7 +222,7 @@ class ResolverManager(object):
 						self.poller.addReadSocket('read_resolver', worker.socket)
 					elif completed and not newcomplete:
 						self.poller.addWriteSocket('write_resolver', worker.socket)
-						self.sending[worker.socket] = client_id, original, hostname, command, decision, peer
+						self.sending[worker.socket] = client_id, original, hostname, command, decision
 
 				# we just started a new (TCP) request and have not yet completely sent it
 				elif not completed:
@@ -233,7 +230,7 @@ class ResolverManager(object):
 
 				# maybe we read the wrong response?
 				elif forhost != hostname:
-					self.resolving[identifier] = client_id, original, hostname, command, decision, peer
+					self.resolving[identifier] = client_id, original, hostname, command, decision
 					self.clients[client_id] = identifier
 					self.active.append((time.time(), client_id))
 					response = None
@@ -246,7 +243,7 @@ class ResolverManager(object):
 
 				# not found
 				else:
-					newdecision = '\0'.join(('503', 'dns.html', 'http', '', hostname, peer))
+					newdecision = '\0'.join(('503', 'dns.html', 'http', '', hostname, 'peer'))
 					response = client_id, 'rewrite', newdecision
 					self.cacheDestination(original, ip)
 			else:
@@ -267,7 +264,7 @@ class ResolverManager(object):
 		"""Continue sending data over the connected TCP socket"""
 		data = self.sending.get(sock)
 		if data:
-			client_id, original, hostname, command, decision, peer = data
+			client_id, original, hostname, command, decision = data
 			worker = self.workers[sock]
 			identifier = self.clients[client_id]
 
