@@ -199,7 +199,7 @@ class ResolverManager(object):
 				# check to see if we received an incomplete response
 				if not completed:
 					worker = self.worker = self.resolver_factory.createTCPClient(self.configuration, self.resolv)
-					# XXX:	this will start with a request for an A record again even if
+					# Note:	this will start with a request for an A record again even if
 					#	the UDP client choked only once it asked for the AAAA
 					newidentifier, all_sent = worker.resolveHost(hostname)
 					newhost = hostname

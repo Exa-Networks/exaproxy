@@ -31,7 +31,6 @@ class Redirector (Thread):
 		self.transparent = configuration.http.transparent
 		self.universal = True if self.protocol == 'url' else False
 
-		# XXX: all this could raise things
 		r, w = os.pipe()                                # pipe for communication with the main thread
 		self.response_box_write = os.fdopen(w,'w',0)    # results are written here
 		self.response_box_read = os.fdopen(r,'r',0)     # read from the main thread
@@ -171,8 +170,8 @@ class Redirector (Thread):
 		headers = http.headers
 		# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
 		headers.pop('proxy-connection',None)
-		# XXX: To be RFC compliant we need to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45 on the reply too
-		# XXX: At the moment we only add it from the client to the server (which is what really matters)
+		# NOTE: To be RFC compliant we need to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45 on the reply too
+		# NOTE: At the moment we only add it from the client to the server (which is what really matters)
 		if not self.transparent:
 			headers.set('via','Via: %s %s' % (http.request.version, self._proxy))
 		self.respond_direct(client_id, ip, port, length, http)
@@ -243,10 +242,10 @@ class Redirector (Thread):
 
 			stats_timestamp = self.stats_timestamp
 			if stats_timestamp:
-				# XXX: is this actually atomic as I am guessing?
+				# Is this actually atomic as I am guessing?
 				# There's a race condition here if not. We're unlikely to hit it though, unless
 				# the classifier can take a long time
-				self.stats_timestamp = None if stats_timestamp == stats_timestamp else self.stats_timestamp
+				self.stats_timestamp = None if stats_timestamp == self.stats_timestamp else self.stats_timestamp
 
 				# we still have work to do after this so don't continue
 				stats = self._stats()

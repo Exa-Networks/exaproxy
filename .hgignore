@@ -1,0 +1,5 @@
+✿ cat .hgignore 
+syntax: glob
+*~
+*pyc
+*.swp
