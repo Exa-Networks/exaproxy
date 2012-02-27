@@ -271,18 +271,18 @@ class Redirector (Thread):
 			# classify and return the filtered page
 			if request.method in ('GET', 'PUT', 'POST','HEAD','DELETE'):
 				if not self.enabled:
-					self.respond_proxy(client_id, request.host, request.port, http.content_length, http)
+					self.respond_proxy(client_id, request.host, request.port, http.content_length, http, request.client)
 					continue
 
 				http, classification, data = self._classify (http,header,tainted)
 
 				if classification == 'permit':
-					self.respond_proxy(client_id, request.host, request.port, http.content_length, http)
+					self.respond_proxy(client_id, request.host, request.port, http.content_length, http, request.client)
 					continue
 
 				if classification == 'rewrite':
 					request.redirect(None, data)
-					self.respond_proxy(client_id, request.host, request.port, http.content_length, http)
+					self.respond_proxy(client_id, request.host, request.port, http.content_length, http, request.client)
 					continue
 
 				if classification == 'file':
@@ -295,20 +295,20 @@ class Redirector (Thread):
 					continue
 
 				if classification == 'dns':
-					self.respond_proxy(client_id, data, request.port, http.content_length, http)
+					self.respond_proxy(client_id, data, request.port, http.content_length, http, request.client)
 					continue
 
 				if classification == 'requeue':
 					self.respond_requeue(client_id, peer, header, source)
 					continue
 
-				self.respond_proxy(client_id, request.host, request.port, http.content_length, http)
+				self.respond_proxy(client_id, request.host, request.port, http.content_length, http, request.client)
 				continue
 
 			# someone want to use us as https proxy
 			if request.method == 'CONNECT':
 				if not self.enabled:
-					self.respond_connect(client_id, request.host, request.port, http)
+					self.respond_connect(client_id, request.host, request.port, http, request.client)
 					continue
 
 				# we do allow connect
@@ -322,7 +322,7 @@ class Redirector (Thread):
 						self.respond_requeue(client_id, peer, header, source)
 
 					else:
-						self.respond_connect(client_id, request.host, request.port, http)
+						self.respond_connect(client_id, request.host, request.port, http, request.client)
 
 					continue
 				else:
@@ -349,18 +349,18 @@ class Redirector (Thread):
 						raise RuntimeError('should never reach here')
 					http.headers['max-forwards'] = 'Max-Forwards: %d' % (max_forward-1)
 				# Carefull, in the case of OPTIONS request.host is NOT request.headerhost
-				self.respond_proxy(client_id, http.headerhost, http.port, http)
+				self.respond_proxy(client_id, http.headerhost, http.port, http, request.client)
 				continue
 
 			# WEBDAV
 			if request.method in (
 			  'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE', 
 			  'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
-				self.respond_proxy(client_id, http.headerhost, http.port, http)
+				self.respond_proxy(client_id, http.headerhost, http.port, http, request.client)
 				continue
 
 			if request in self.configuration.http.extensions:
-				self.respond_proxy(client_id, http.headerhost, http.port, http)
+				self.respond_proxy(client_id, http.headerhost, http.port, http, request.client)
 				continue
 
 			self.respond_http(client_id, 405, '') # METHOD NOT ALLOWED
