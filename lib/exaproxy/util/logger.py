@@ -123,6 +123,12 @@ class _Logger (object):
 		self.status = {}
 		self._syslog = None
 
+	def setLevel(self, level):
+		self.level = level
+
+	def setDebug(self):
+		self.level = syslog.LOG_DEBUG
+
 	def syslog (self,destination):
 		try:
 			if destination == 'print':

@@ -8,8 +8,6 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 import sys
-# XXX: not good to have to import syslog here
-import syslog
 
 from exaproxy.supervisor import Supervisor
 from exaproxy.util.logger import logger
@@ -101,7 +99,10 @@ if __name__ == '__main__':
 		if section == 'destination':
 			continue
 		if section == 'level':
-			logger.level = syslog.LOG_DEBUG if debug else value
+			if debug:
+				logger.setDebug()
+			else:
+				logger.setLevel(value)
 			continue
 		logger.status[section] = value or debug
 	logger.syslog(configuration.logger.destination)
