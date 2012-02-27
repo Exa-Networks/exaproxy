@@ -109,7 +109,7 @@ class Page (object):
 		return graph(
 			self.monitor,
 			'Proxy Connections',
-			30000,
+			5000,
 			[
 				'running.proxy.clients.number',
 				'running.proxy.download.opening',
@@ -122,7 +122,7 @@ class Page (object):
 		return graph(
 			self.monitor,
 			'Proxy Processes',
-			30000,
+			5000,
 			[
 				'running.processes.forked',
 				'running.processes.min',
@@ -134,7 +134,7 @@ class Page (object):
 		return graph(
 			self.monitor,
 			'Proxy Bytes Sent / seconds',
-			30000,
+			5000,
 			[
 				'running.transfer.request',
 			],
@@ -145,7 +145,7 @@ class Page (object):
 		return graph(
 			self.monitor,
 			'Proxy Bytes Received / seconds',
-			30000,
+			5000,
 			[
 				'running.transfer.download',
 			],
@@ -156,7 +156,7 @@ class Page (object):
 		return graph(
 			self.monitor,
 			'Proxy Bytes Transfered / seconds',
-			30000,
+			5000,
 			[
 				'running.transfer.request',
 				'running.transfer.download',
