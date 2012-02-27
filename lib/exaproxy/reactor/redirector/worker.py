@@ -271,23 +271,24 @@ class Redirector (Thread):
 			# classify and return the filtered page
 			if request.method in ('GET', 'PUT', 'POST','HEAD','DELETE'):
 				if not self.enabled:
-					self.respond_proxy(client_id, request.host, request.port, http.content_length, http, request.client)
+					self.respond_proxy(client_id, http.host, request.port, http.content_length, http, http.client)
 					continue
 
 				http, classification, data = self._classify (http,header,tainted)
+				request = http.request
 
 				if classification == 'permit':
-					self.respond_proxy(client_id, request.host, request.port, http.content_length, http, request.client)
+					self.respond_proxy(client_id, http.host, request.port, http.content_length, http, request.client)
 					continue
 
 				if classification == 'rewrite':
 					request.redirect(None, data)
-					self.respond_proxy(client_id, request.host, request.port, http.content_length, http, request.client)
+					self.respond_proxy(client_id, http.host, request.port, http.content_length, http, request.client)
 					continue
 
 				if classification == 'file':
 					#self.respond_file(client_id, '250', data)
-					self.respond_rewrite(client_id, 250, data, request.protocol, request.url, request.host, request.client)
+					self.respond_rewrite(client_id, 250, data, request.protocol, http.url, http.host, http.client)
 					continue
 
 				if classification == 'redirect':
@@ -302,13 +303,13 @@ class Redirector (Thread):
 					self.respond_requeue(client_id, peer, header, source)
 					continue
 
-				self.respond_proxy(client_id, request.host, request.port, http.content_length, http, request.client)
+				self.respond_proxy(client_id, http.host, request.port, http.content_length, http, request.client)
 				continue
 
 			# someone want to use us as https proxy
 			if request.method == 'CONNECT':
 				if not self.enabled:
-					self.respond_connect(client_id, request.host, request.port, http, request.client)
+					self.respond_connect(client_id, http.host, request.port, http, request.client)
 					continue
 
 				# we do allow connect
@@ -322,7 +323,7 @@ class Redirector (Thread):
 						self.respond_requeue(client_id, peer, header, source)
 
 					else:
-						self.respond_connect(client_id, request.host, request.port, http, request.client)
+						self.respond_connect(client_id, http.host, request.port, http, request.client)
 
 					continue
 				else:
@@ -348,7 +349,7 @@ class Redirector (Thread):
 							continue
 						raise RuntimeError('should never reach here')
 					http.headers['max-forwards'] = 'Max-Forwards: %d' % (max_forward-1)
-				# Carefull, in the case of OPTIONS request.host is NOT request.headerhost
+				# Carefull, in the case of OPTIONS http.host is NOT http.headerhost
 				self.respond_proxy(client_id, http.headerhost, http.port, http, request.client)
 				continue
 
