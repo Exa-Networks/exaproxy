@@ -42,6 +42,7 @@ class Supervisor(object):
 		self.configuration = load()
 
 		self.pid = PID(self.configuration.daemon.pidfile)
+
 		self.daemon = Daemon(self.configuration.daemon.daemonise,self.configuration.daemon.user)
 
 		self.poller = Poller(self.configuration.daemon.reactor, self.configuration.daemon.speed)
@@ -183,6 +184,14 @@ class Supervisor(object):
 			except KeyboardInterrupt:
 				logger.info('supervisor','^C received')
 				self._shutdown = True
+			except OSError,e:
+				# XXX: we need to stop listening and re-fork ourselves
+				if e.errno == 24: #Too many open files
+					logger.critical('supervisor','Too many opened files, shutting down')
+					self._shutfown = True
+				else:
+					# Not sure we can get here but if so, let the user know
+					raise
 
 #			finally:
 #				from leak import objgraph
