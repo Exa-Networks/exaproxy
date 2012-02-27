@@ -15,6 +15,7 @@ from .mail import mail
 from .img import png
 from .index import index
 from .licence import licence
+from .humans import humans
 
 
 options = [
@@ -184,7 +185,7 @@ class Page (object):
 		if not path.endswith('.html'):
 			if path != '/humans.txt':
 				return menu.root('<center><b>invalid extension</b></center>')
-			return _humans_txt
+			return humans.txt
 		if not path.startswith('/'):
 			return menu.root('<center><b>invalid url</b></center>')
 
@@ -229,5 +230,5 @@ class Page (object):
 			return menu.about('')
 
 		if section == 'humans':
-			return menu.root(_humans_html)
+			return menu.root(humans.html)
 		return menu.root('')

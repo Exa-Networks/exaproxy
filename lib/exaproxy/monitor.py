@@ -13,7 +13,7 @@ class _Container (object):
 
 class Monitor (object):
 	nb_recorded = 60
-	
+
 	def __init__(self,supervisor):
 		self._supervisor = supervisor
 		self._container = _Container(supervisor)

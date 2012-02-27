@@ -34,7 +34,7 @@ def help ():
 	sys.stdout.write(' -di, --diff-ini  : display non-default configurations values using the ini format\n')
 	sys.stdout.write(' -de, --diff-env  : display non-default configurations values using the env format\n')
 	sys.stdout.write('  -d, --debug     : shortcut to turn on all subsystems debugging to LOG_DEBUG\n')
-	
+
 	sys.stdout.write('\n')
 	sys.stdout.write('exaproxy will automatically look for its configuration file\n')
 	sys.stdout.write(' - if the program was untar, within its etc/exaproxy folder\n')

@@ -9,8 +9,8 @@ Copyright (c) 2012 Exa Networks. All rights reserved.
 
 from .images import thomas,david
 
-
-txt = """\
+class humans:
+	txt = """\
 /* TEAM */
 
   Slave Driver / Grand Visionary: Thomas Mangin
@@ -22,7 +22,7 @@ txt = """\
 /* Other contributors */
 """
 
-html = """\
+	html = """\
 <b style="padding: 20px 20px 20px 20px;">/* TEAM */</b>
 <br>
 <br style="clear:both;"/>

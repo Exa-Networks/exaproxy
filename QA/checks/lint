@@ -1,8 +1,7 @@
 #!/bin/sh
 env \
 	PYTHONPATH=$PYTHONPATH:lib \
-	python2.6 \
-		/opt/local/bin/pylint-2.6 \
+		pylint \
 			--variable-rgx="[a-z_][a-z0-9_]{0,30}$" \
 			--disable-msg=W0312 \
 			--disable-msg=C0324 \
