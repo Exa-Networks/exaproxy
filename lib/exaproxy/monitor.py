@@ -108,15 +108,17 @@ class Monitor (object):
 		return {
 			'running.pid.saved' : str(self._supervisor.pid._saved_pid),
 			'running.processes.forked' : str(len(manager.worker)),
-			'running.processes.min' : str(manager.low),
-			'running.processes.max' : str(manager.high),
-			'running.proxy.clients.number': str(len(client.byname)),
-			'running.proxy.download.opening': str(len(content.opening)),
-			'running.proxy.download.established': str(len(content.established)),
-			'running.proxy.download' : str(len(content.byclientid)),
-			'running.exiting' : str(bool(not reactor.running or self._supervisor._refork)),
-			'running.transfer.request' : str(client.total_sent),
-			'running.transfer.download' : str(content.total_sent),
+			'running.processes.min' : manager.low,
+			'running.processes.max' : manager.high,
+			'running.proxy.clients.number': len(client.byname),
+			'running.proxy.download.opening': len(content.opening),
+			'running.proxy.download.established': len(content.established),
+			'running.proxy.download' : len(content.byclientid),
+			'running.exiting' : bool(not reactor.running or self._supervisor._refork),
+			'running.transfer.request' : client.total_sent,
+			'running.transfer.download' : content.total_sent,
+			'running.load.loops' : reactor.nb_loops,
+			'running.load.events' : reactor.nb_events,
 		}
 
 	def record (self):

@@ -102,7 +102,7 @@ class Page (object):
 		introduction = "<div style='padding: 10px 10px 10px 10px; font-weight:bold;'>ExaProxy Statistics</div><br/>\n"
 		line = []
 		for k,v in sorted(self.monitor.statistics().items()):
-			line.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (k,cgi.escape(v)))
+			line.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (k,cgi.escape(str(v))))
 		return introduction + _listing % ('\n'.join(line))
 
 	def _connections (self):

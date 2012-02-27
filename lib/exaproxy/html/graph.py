@@ -50,17 +50,17 @@ def graph (monitor,title,reload_time,_keys,cumulative=False,split=False):
 	for k in keys:
 		columns = "data.addColumn('number', 'Seconds');\n" + '\n'.join(["data.addColumn('number', '%s');" % _ for _ in k])
 		nb_records = len(monitor.history)
-		last = ['0']*len(k)
+		last = [0]*len(k)
 
 		chart = []
 		index = monitor.nb_recorded - nb_records
 		for values in monitor.history:
 			if cumulative:
 				new = [values[_] for _ in k]
-				chart.append("[ %d, %s]" % (index, ','.join([str(max(0,long(n)-long(l))).rstrip('L') for (n,l) in zip(new,last)])))
+				chart.append("[ %d, %s]" % (index, ','.join([str(max(0,n-l)).rstrip('L') for (n,l) in zip(new,last)])))
 				last = new
 			else:
-				chart.append("[ %d, %s]" % (index, ','.join([values[_] for _ in k])))
+				chart.append("[ %d, %s]" % (index, ','.join([str(values[_]) for _ in k])))
 			index += 1
 
 		if cumulative and chart:
