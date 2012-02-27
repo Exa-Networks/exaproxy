@@ -17,7 +17,7 @@ import time
 
 #import fcntl
 
-from exaproxy.http.header import Header
+from exaproxy.http.message import HTTP
 
 from exaproxy.util.logger import logger
 
@@ -124,7 +124,7 @@ class Redirector (Thread):
 				return 'requeue', None
 			return http, 'file', 'internal_error.html'
 
-		h = Header(self.configuration,headers,http.client)
+		h = HTTP(self.configuration,headers,http.client)
 		if not h.parse():
 			if tainted is False:
 				return 'requeue', None
@@ -258,7 +258,7 @@ class Redirector (Thread):
 			if source == 'nop':
 				continue
 
-			http = Header(self.configuration,header,peer)
+			http = HTTP(self.configuration,header,peer)
 			if not http.parse():
 				self.respond_http(client_id, 400, 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header)
 				continue
