@@ -12,6 +12,7 @@ import sys
 import pwd
 import errno
 import socket
+import resource
 
 from .logger import logger
 
@@ -20,6 +21,12 @@ class Daemon (object):
 		self.daemonize = daemonize
 		self.user = user
 		#mask = os.umask(0137)
+		try:
+			# default on mac are (256,-1)
+			resource.setrlimit(resource.RLIMIT_NOFILE, (4096, -1))
+		except (resource.error,ValueError),e:
+			logger.error('daemon','could not increase file descriptor limit : %s' % str(e))
+			logger.error('daemon','current limits (soft, hard) are : %s' % str(resource.getrlimit(resource.RLIMIT_NOFILE)))
 
 	def drop_privileges (self):
 		"""returns true if we are left with insecure privileges"""
