@@ -44,7 +44,9 @@ class Redirector (Thread):
 		self.program = program                        # the squid redirector program to fork
 		self.running = True                           # the thread is active
 
-		self.stats_timestamp = None			# time of the most recent outstanding request to generate stats
+		self.stats_timestamp = None                   # time of the most recent outstanding request to generate stats
+
+		self._proxy = 'ExaProxy-%s-id-%d' % (configuration.proxy.version,os.getpid())
 
 		# Do not move, we need the forking AFTER the setup
 		self.process = self._createProcess()          # the forked program to handle classification
@@ -89,21 +91,21 @@ class Redirector (Thread):
 		# so the shutdown will not be immediate
 		self.running = False
 
-	def _classify (self, request, headers, tainted):
+	def _classify (self, http, headers, tainted):
 		if not self.process:
 			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
 			return request, 'file', 'internal_error.html'
 
 		if self.protocol == 'headers':
-			return self._classify_headers (request,headers,tainted)
+			return self._classify_headers (http,headers,tainted)
 		if self.protocol == 'url':
-			return self._classify_url (request,tainted)
+			return self._classify_url (http,tainted)
 
 		return request, 'file', 'internal_error.html'
 
-	def _classify_headers (self, request, headers, tainted):
+	def _classify_headers (self, http, headers, tainted):
 		line = """version:1\nclient:%s\nsize:%d\n%s""" % (
-			request.client,
+			http.client,
 			len(headers),
 			headers
 		)
@@ -113,79 +115,73 @@ class Redirector (Thread):
 				length = self.process.stdout.readline()
 				headers = self.process.stdout.read(max(0,int(length.strip())))
 			except ValueError:
-				return request, 'file', 'internal_error.html'
+				return http, 'file', 'internal_error.html'
 			except Exception,e:
-				return request, 'file', 'internal_error.html'
+				return http, 'file', 'internal_error.html'
 		except IOError, e:
 			logger.error('worker %s' % self.wid, 'IO/Error when sending to process: %s' % str(e))
 			if tainted is False:
 				return 'requeue', None
-			return request, 'file', 'internal_error.html'
+			return http, 'file', 'internal_error.html'
 
-		r = Header(self.configuration,headers,request.client)
-		if not r.isValid():
+		h = Header(self.configuration,headers,http.client)
+		if not h.parse():
 			if tainted is False:
 				return 'requeue', None
-			return request, 'file', 'internal_error.html'
+			return http, 'file', 'internal_error.html'
 
-		return r, 'permit', None
+		return h, 'permit', None
 
-	def _classify_url (self, request, tainted):
+	def _classify_url (self, http, tainted):
 		try:
-			squid = '%s %s - %s -' % (request.url_noport, request.client, request.method)
+			squid = '%s %s - %s -' % (http.url_noport, http.client, http.request.method)
 			self.process.stdin.write(squid + os.linesep)
 			response = self.process.stdout.readline().strip()
 		except IOError, e:
 			logger.error('worker %s' % self.wid, 'IO/Error when sending to process: %s' % str(e))
 			if tainted is False:
-				return request, 'requeue', None
-			return request, 'file', 'internal_error.html'
+				return http, 'requeue', None
+			return http, 'file', 'internal_error.html'
 
 		if not response:
-			return request, 'permit', None
+			return http, 'permit', None
 
 		if response.startswith('http://'):
 			response = response[7:]
 
-			if response == request.url_noport:
-				return request, 'permit', None
-			if response.startswith(request.url.split('/', 1)[0]+'/'):
-				return request, 'rewrite', ('/'+response.split('/', 1)[1]) if '/' in request.url else ''
-			return request, 'redirect', 'http://' + response
+			if response == http.url_noport:
+				return http, 'permit', None
+			if response.startswith(http.url.split('/', 1)[0]+'/'):
+				return http, 'rewrite', ('/'+response.split('/', 1)[1]) if '/' in http.url else ''
+			return http, 'redirect', 'http://' + response
 
 		if response.startswith('file://'):
-			return request, 'file', response[7:]
+			return http, 'file', response[7:]
 
 		if response.startswith('dns://'):
-			return request, 'dns', response[6:]
+			return http, 'dns', response[6:]
 
-		return request, 'file', 'internal_error.html'
+		return http, 'file', 'internal_error.html'
 
 	def respond(self, response):
 		self.response_box_write.write(str(len(response)) + ':' + response + ',')
 		self.response_box_write.flush()
 
-	def respond_proxy(self, client_id, ip, port, length, request):
+	def respond_proxy(self, client_id, ip, port, length, http):
+		headers = http.headers
 		# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
-		request.pop('proxy-connection',None)
+		headers.pop('proxy-connection',None)
 		# XXX: To be RFC compliant we need to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45 on the reply too
 		# XXX: At the moment we only add it from the client to the server (which is what really matters)
 		if not self.transparent:
-			via = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % (self.configuration.proxy.version,os.getpid()), '1.1', request.host)
-			if 'via' in request:
-				request['via'] = '%s\0%s' % (request['via'],via)
-			else:
-				request['via'] = via
-			#request['via'] = 'Via: %s %s, %s %s' % (request.version, 'ExaProxy-%s-%d' % ('test',os.getpid()), '1.1', request.host)
-		self.respond_direct(client_id, ip, port, length, request)
+			headers.set('via','Via: %s %s' % (http.request.version, self._proxy))
+		self.respond_direct(client_id, ip, port, length, http)
 
-	def respond_direct(self, client_id, ip, port, length, request):
-		header = request.toString()
-		self.respond('\0'.join((client_id, 'download', ip, str(port), str(length), header)))
+	def respond_direct(self, client_id, ip, port, length, http):
+		self.respond('\0'.join((client_id, 'download', ip, str(port), str(length), str(http))))
 
-	def respond_connect(self, client_id, ip, port, request):
-		header = request.toString()
-		self.respond('\0'.join((client_id, 'connect', ip, str(port), header)))
+	def respond_connect(self, client_id, ip, port, http):
+		self.respond('\0'.join((client_id, 'connect', ip, str(port), str(http))))
 
 	def respond_file(self, client_id, code, reason):
 		self.respond('\0'.join((client_id, 'file', str(code), reason)))
@@ -262,10 +258,12 @@ class Redirector (Thread):
 			if source == 'nop':
 				continue
 
-			request = Header(self.configuration,header,peer)
-			if not request.isValid():
-				self.respond_http(client_id, 400, 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % str(header))
+			http = Header(self.configuration,header,peer)
+			if not http.parse():
+				self.respond_http(client_id, 400, 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header)
 				continue
+
+			request = http.request
 
 			if source == 'web':
 				self.respond_monitor(client_id, request.path)
@@ -274,18 +272,18 @@ class Redirector (Thread):
 			# classify and return the filtered page
 			if request.method in ('GET', 'PUT', 'POST','HEAD','DELETE'):
 				if not self.enabled:
-					self.respond_proxy(client_id, request.host, request.port, request.content_length, request)
+					self.respond_proxy(client_id, request.host, request.port, http.content_length, http)
 					continue
 
-				request, classification, data = self._classify (request,header,tainted)
+				http, classification, data = self._classify (http,header,tainted)
 
 				if classification == 'permit':
-					self.respond_proxy(client_id, request.host, request.port, request.content_length, request)
+					self.respond_proxy(client_id, request.host, request.port, http.content_length, http)
 					continue
 
 				if classification == 'rewrite':
 					request.redirect(None, data)
-					self.respond_proxy(client_id, request.host, request.port, request.content_length, request)
+					self.respond_proxy(client_id, request.host, request.port, http.content_length, http)
 					continue
 
 				if classification == 'file':
@@ -298,25 +296,26 @@ class Redirector (Thread):
 					continue
 
 				if classification == 'dns':
-					self.respond_proxy(client_id, data, request.port, request.content_length, request)
+					self.respond_proxy(client_id, data, request.port, http.content_length, http)
 					continue
 
 				if classification == 'requeue':
 					self.respond_requeue(client_id, peer, header, source)
 					continue
 
-				self.respond_proxy(client_id, request.host, request.port, request.content_length, request)
+				self.respond_proxy(client_id, request.host, request.port, http.content_length, http)
 				continue
 
 			# someone want to use us as https proxy
 			if request.method == 'CONNECT':
 				if not self.enabled:
-					self.respond_connect(client_id, request.host, request.port, request)
+					self.respond_connect(client_id, request.host, request.port, http)
 					continue
 
 				# we do allow connect
 				if self.configuration.http.allow_connect:
-					request, classification, data = self._classify(request,header,tainted)
+					http, classification, data = self._classify(http,header,tainted)
+					request = http.request
 					if classification == 'redirect':
 						self.respond_redirect(client_id, data)
 
@@ -324,7 +323,7 @@ class Redirector (Thread):
 						self.respond_requeue(client_id, peer, header, source)
 
 					else:
-						self.respond_connect(client_id, request.host, request.port, request)
+						self.respond_connect(client_id, request.host, request.port, http)
 
 					continue
 				else:
@@ -332,8 +331,8 @@ class Redirector (Thread):
 					continue
 
 			if request.method in ('OPTIONS','TRACE'):
-				if 'max-forwards' in request:
-					max_forwards = request.get('max-forwards').split(':')[-1].strip()
+				if 'max-forwards' in http.headers:
+					max_forwards = http.headers.get('max-forwards').split(':')[-1].strip()
 					if not max_forwards.isdigit():
 						self.respond_http(client_id, 400, 'INVALID MAX-FORWARDS\n')
 						continue
@@ -349,20 +348,20 @@ class Redirector (Thread):
 							self.respond_http(client_id, 200, header)
 							continue
 						raise RuntimeError('should never reach here')
-					request['max-forwards'] = 'Max-Forwards: %d' % (max_forward-1)
+					http.headers['max-forwards'] = 'Max-Forwards: %d' % (max_forward-1)
 				# Carefull, in the case of OPTIONS request.host is NOT request.headerhost
-				self.respond_proxy(client_id, request.headerhost, request.port, request)
+				self.respond_proxy(client_id, http.headerhost, http.port, http)
 				continue
 
 			# WEBDAV
 			if request.method in (
 			  'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE', 
 			  'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
-				self.respond_proxy(client_id, request.headerhost, request.port, request)
+				self.respond_proxy(client_id, http.headerhost, http.port, http)
 				continue
 
 			if request in self.configuration.http.extensions:
-				self.respond_proxy(client_id, request.headerhost, request.port, request)
+				self.respond_proxy(client_id, http.headerhost, http.port, http)
 				continue
 
 			self.respond_http(client_id, 405, '') # METHOD NOT ALLOWED

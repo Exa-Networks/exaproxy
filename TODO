@@ -26,3 +26,17 @@ Performance
  - look at Regex for header parsing performance
  - why pypy takes more CPU than cPython in some cases
 
+
+Traceback (most recent call last):
+  File "app_main.py", line 51, in run_toplevel
+  File "/Users/thomas/bin/pypy-1.7/lib-python/2.7/runpy.py", line 162, in _run_module_as_main
+  File "/Users/thomas/bin/pypy-1.7/lib-python/2.7/runpy.py", line 72, in _run_code
+  File "/Users/thomas/source/hg/exaproxy/lib/exaproxy/util/debug.py", line 72, in <module>
+  File "/Users/thomas/source/hg/exaproxy/lib/exaproxy/application.py", line 110, in <module>
+  File "/Users/thomas/source/hg/exaproxy/lib/exaproxy/supervisor.py", line 181, in run
+  File "/Users/thomas/source/hg/exaproxy/lib/exaproxy/reactor/redirector/manager.py", line 135, in provision
+  File "/Users/thomas/source/hg/exaproxy/lib/exaproxy/reactor/redirector/manager.py", line 55, in spawn
+  File "/Users/thomas/source/hg/exaproxy/lib/exaproxy/reactor/redirector/manager.py", line 44, in _spawn
+  File "/Users/thomas/source/hg/exaproxy/lib/exaproxy/reactor/redirector/worker.py", line 35, in __init__
+OSError: [Errno 24] Too many open files
+
