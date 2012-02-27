@@ -43,9 +43,8 @@ class Supervisor(object):
 
 		self.pid = PID(self.configuration.daemon.pidfile)
 
-		self.daemon = Daemon(self.configuration.daemon.daemonise,self.configuration.daemon.user)
-
-		self.poller = Poller(self.configuration.daemon.reactor, self.configuration.daemon.speed)
+		self.daemon = Daemon(self.configuration.daemon)
+		self.poller = Poller(self.configuration.daemon)
 
 		self.poller.setupRead('read_proxy')           # Listening proxy sockets
 		self.poller.setupRead('read_web')             # Listening webserver sockets

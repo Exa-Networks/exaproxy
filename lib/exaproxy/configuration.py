@@ -205,6 +205,7 @@ defaults = {
 		'daemonise'   : (value.boolean,value.lower,'false', 'should we run in the background'),
 		'reactor'     : (value.unquote,value.quote,'epoll', 'what event mechanism to use (select/epoll)'),
 		'speed'       : (value.integer,value.nop,'2',       'when waiting for connection how long are we sleeping for'),
+		'filemax'     : (value.integer,value.nop,'10240',   'the maximum number of open file descriptors, tcp connections and programs'),
 	},
 	'dns' : {
 		'resolver'     : (value.resolver,value.quote,'/etc/resolv.conf',      'resolver file'),

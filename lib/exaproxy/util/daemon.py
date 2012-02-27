@@ -17,16 +17,17 @@ import resource
 from .logger import logger
 
 class Daemon (object):
-	def __init__ (self,daemonize,user):
-		self.daemonize = daemonize
-		self.user = user
+	def __init__ (self,configuration):
+		self.daemonize = configuration.daemonise
+		self.user = configuration.user
 		#mask = os.umask(0137)
-		try:
-			# default on mac are (256,-1)
-			resource.setrlimit(resource.RLIMIT_NOFILE, (4096, -1))
-		except (resource.error,ValueError),e:
-			logger.error('daemon','could not increase file descriptor limit : %s' % str(e))
-			logger.error('daemon','current limits (soft, hard) are : %s' % str(resource.getrlimit(resource.RLIMIT_NOFILE)))
+		if configuration.filemax:
+			try:
+				# default on mac are (256,-1)
+				resource.setrlimit(resource.RLIMIT_NOFILE, (configuration.filemax, -1))
+			except (resource.error,ValueError),e:
+				logger.error('daemon','could not increase file descriptor limit : %s' % str(e))
+				logger.error('daemon','current limits (soft, hard) are : %s' % str(resource.getrlimit(resource.RLIMIT_NOFILE)))
 
 	def drop_privileges (self):
 		"""returns true if we are left with insecure privileges"""
