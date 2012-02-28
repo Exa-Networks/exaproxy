@@ -66,7 +66,6 @@ class Respond (object):
 	def hangup (wid):
 		return '\0'.join(('', 'hangup', wid))
 
-
 class Redirector (Thread):
 	# TODO : if the program is a function, fork and run :)
 
@@ -94,6 +93,12 @@ class Redirector (Thread):
 		self.stats_timestamp = None                   # time of the most recent outstanding request to generate stats
 
 		self._proxy = 'ExaProxy-%s-id-%d' % (configuration.proxy.version,os.getpid())
+
+		if self.protocol == 'url':
+			self.classify = self._classify_url
+		if self.protocol.startswith('icap://'):
+			self.classify = self._classify_icap
+
 
 		# Do not move, we need the forking AFTER the setup
 		self.process = self._createProcess()          # the forked program to handle classification
@@ -148,19 +153,11 @@ class Redirector (Thread):
 			headers.set('via','Via: %s %s' % (message.request.version, self._proxy))
 		return message
 
-	def _classify (self, message, headers, tainted):
+	def _classify_icap (self, message, headers, tainted):
 		if not self.process:
 			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
 			return message, 'file', 'internal_error.html'
 
-		if self.protocol == 'url':
-			return self._classify_url (message,tainted)
-		if self.protocol.startswith('icap://'):
-			return self._classify_icap (message,headers,tainted)
-
-		return message, 'file', 'internal_error.html'
-
-	def _classify_icap (self, message, headers, tainted):
 		line = """\
 REQMOD %s ICAP/1.0
 Host: %s
@@ -240,7 +237,11 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		return h, 'permit', None
 
-	def _classify_url (self, message, tainted):
+	def _classify_url (self, message, headers, tainted):
+		if not self.process:
+			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
+			return message, 'file', 'internal_error.html'
+
 		try:
 			squid = '%s %s - %s -' % (message.url_noport, message.client, message.request.method)
 			self.process.stdin.write(squid + os.linesep)
@@ -277,6 +278,41 @@ Encapsulated: req-hdr=0, null-body=%d
 	def respond(self, response):
 		self.response_box_write.write(str(len(response)) + ':' + response + ',')
 		self.response_box_write.flush()
+
+	def request (self,client_id, message, classification, data):
+		if classification == 'permit':
+			return Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
+
+		if classification == 'rewrite':
+			message.redirect(None, data)
+			return Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
+
+		if classification == 'file':
+			return Respond.rewrite(client_id, '250', data, http)
+
+		if classification == 'redirect':
+			return Respond.redirect(client_id, data)
+
+		if classification == 'intercept':
+			return Respond.download(client_id, data, message.port, message.content_length, self.transparent(message))
+
+		if classification == 'requeue':
+			return Respond.requeue(client_id, peer, header, source)
+
+		return Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
+
+	def connect (self,client_id, message, classification, data):
+		if classification == 'requeue':
+			return Respond.requeue(client_id, peer, header, source)
+
+		if classification == 'redirect':
+			return Respond.redirect(client_id, data)
+
+		if classification == 'intercept':
+			return Respond.connect(client_id, data, message.port, http)
+
+		return Respond.connect(client_id, message.host, message.port, http)
+
 
 	def run (self):
 		while self.running:
@@ -344,39 +380,8 @@ Encapsulated: req-hdr=0, null-body=%d
 				if not self.enabled:
 					self.respond(Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message)))
 					continue
+				self.respond(self.request(client_id,*self.classify (message,header,tainted)))
 
-				message, classification, data = self._classify (message,header,tainted)
-
-				if classification == 'permit':
-					self.respond(Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message)))
-					continue
-
-				if classification == 'rewrite':
-					message.redirect(None, data)
-					self.respond(Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message)))
-					continue
-
-				if classification == 'file':
-					self.respond(Respond.rewrite(client_id, '250', data, http))
-					continue
-
-				if classification == 'redirect':
-					self.respond(Respond.redirect(client_id, data))
-					continue
-
-				if classification == 'intercept':
-					self.respond(Respond.download(client_id, data, message.port, message.content_length, self.transparent(message)))
-					continue
-
-				if classification == 'requeue':
-					self.respond(Respond.requeue(client_id, peer, header, source))
-					continue
-
-				if classification == None:
-					continue
-
-				self.respond(Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message)))
-				continue
 
 			# someone want to use us as https proxy
 			if method == 'CONNECT':
@@ -386,18 +391,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 				# we do allow connect
 				if self.configuration.http.allow_connect:
-					message, classification, data = self._classify(message,header,tainted)
-					if classification == 'requeue':
-						self.respond(Respond.requeue(client_id, peer, header, source))
-						continue
-					if classification == 'redirect':
-						self.respond(Respond.redirect(client_id, data))
-						continue
-					if classification == 'intercept':
-						self.respond(Respond.connect(client_id, data, message.port, http))
-						continue
-					self.respond(Respond.connect(client_id, message.host, message.port, http))
-					continue
+					self.respond(self.connect(client_id,*self.classify(message,header,tainted)))
 				else:
 					self.respond(Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n')))
 					continue
