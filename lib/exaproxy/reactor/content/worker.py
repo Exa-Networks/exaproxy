@@ -52,8 +52,8 @@ class Content (object):
 				data = None
 		except socket.error, e:
 			if e.args[0] in errno_block:
-				logger.error('download','interrupted when trying to read, will retry' % len(data))
-				logger.error('download','reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
+				logger.info('download','interrupted when trying to read, will retry' % len(data))
+				logger.info('download','reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 				data = ''
 			else:
 				logger.critical('download','unexpected error reading on socket')

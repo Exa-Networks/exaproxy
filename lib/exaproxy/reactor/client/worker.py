@@ -179,8 +179,8 @@ class Client (object):
 
 			except socket.error, e:
 				if e.args[0] in errno_block:
-					logger.error('client','interrupted when trying to sent %d bytes, will retry' % len(data))
-					logger.error('client','reason: errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
+					logger.info('client','interrupted when trying to sent %d bytes, will retry' % len(data))
+					logger.info('client','reason: errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 					data = yield (True if w_buffer else False), had_buffer, 0
 				else:
 					logger.critical('client','unexpected error writing on socket')

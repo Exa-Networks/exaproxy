@@ -87,6 +87,8 @@ class ContentManager(object):
 	def getDownloader(self, client_id, host, port, command, request):
 		downloader = self.byclientid.get(client_id, None)
 		if downloader:
+			# XXX: A DNS redirector for part of a site could cause this test to fails
+			# XXX: would it kill any download in progress for the client if it is a proxy ?
 			if host != downloader.host or port != downloader.port:
 				self.endClientDownload(client_id)
 				downloader = None
