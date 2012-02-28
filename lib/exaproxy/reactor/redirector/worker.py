@@ -151,7 +151,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				return 'requeue', None
 			return http, 'file', 'internal_error.html'
 
-		# QUICK and DIRTY
+		# QUICK and DIRTY, let do a intercept using the CONNECT syntax
 		if headers.startswith('CONNECT'):
 			_ = headers.replace('\r\n','\n').split('\n\n',1)
 			if _[1]: # is not an empty string
@@ -241,7 +241,7 @@ Encapsulated: req-hdr=0, null-body=%d
 		self.respond('\0'.join((client_id, 'rewrite', code, reason, http.request.protocol, http.url, http.host, str(http.client))))
 
 	def respond_http(self, client_id, code, *data):
-		self.respond('\0'.join((client_id, 'http', code)+data))
+		self.respond('\0'.join((client_id, 'http')+data))
 
 	def respond_monitor(self, client_id, path):
 		self.respond('\0'.join((client_id, 'monitor', path)))
@@ -311,7 +311,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 			http = HTTP(self.configuration,header,peer)
 			if not http.parse():
-				self.respond_http(client_id, '400', 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header)
+				self.respond_http(client_id, http('400', 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header))
 				continue
 
 			method = http.request.method
@@ -380,25 +380,25 @@ Encapsulated: req-hdr=0, null-body=%d
 					self.respond_connect(client_id, http.host, http.port, http)
 					continue
 				else:
-					self.respond_http(client_id, '501', 'CONNECT NOT ALLOWED\n')
+					self.respond_http(client_id, http('501', 'CONNECT NOT ALLOWED\n'))
 					continue
 
 			if method in ('OPTIONS','TRACE'):
 				if 'max-forwards' in http.headers:
 					max_forwards = http.headers.get('max-forwards').split(':')[-1].strip()
 					if not max_forwards.isdigit():
-						self.respond_http(client_id, '400', 'INVALID MAX-FORWARDS\n')
+						self.respond_http(client_id, http('400', 'INVALID MAX-FORWARDS\n'))
 						continue
 					max_forward = int(max_forwards)
 					if max_forward < 0 :
-						self.respond_http(client_id, '400', 'INVALID MAX-FORWARDS\n')
+						self.respond_http(client_id, http('400', 'INVALID MAX-FORWARDS\n'))
 						continue
 					if max_forward == 0:
 						if method == 'OPTIONS':
-							self.respond_http(client_id, '200', '')
+							self.respond_http(client_id, http('200', ''))
 							continue
 						if method == 'TRACE':
-							self.respond_http(client_id, '200', header)
+							self.respond_http(client_id, http('200', header))
 							continue
 						raise RuntimeError('should never reach here')
 					http.headers['max-forwards'] = 'Max-Forwards: %d' % (max_forward-1)
@@ -417,7 +417,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				self.respond_proxy(client_id, http.headerhost, http.port, http)
 				continue
 
-			self.respond_http(client_id, '405', '') # METHOD NOT ALLOWED
+			self.respond_http(client_id, http('405', '')) # METHOD NOT ALLOWED
 			continue
 
 		self.respond_hangup(self.wid)

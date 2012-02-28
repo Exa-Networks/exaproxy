@@ -148,15 +148,10 @@ class ContentManager(object):
 				length = 0
 
 			elif command == 'http':
-				try:
-					code, data = args.split('\0', 1)
-				except (ValueError, TypeError), e:
-					raise ParsingError()
-
 				downloader = None
 				newdownloader = False
 				request = ''
-				content = ('close', http(code, data))
+				content = ('close', args)
 				length = 0
 
 			elif command == 'file':
