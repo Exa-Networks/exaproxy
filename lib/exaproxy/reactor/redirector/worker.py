@@ -387,6 +387,7 @@ Encapsulated: req-hdr=0, null-body=%d
 					self.respond(Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message)))
 					continue
 				self.respond(self.request(client_id,*self.classify (message,header,tainted)))
+				continue
 
 
 			# someone want to use us as https proxy
@@ -400,7 +401,7 @@ Encapsulated: req-hdr=0, null-body=%d
 					self.respond(self.connect(client_id,*self.classify(message,header,tainted,peer,source)))
 				else:
 					self.respond(Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n')))
-					continue
+				continue
 
 			if method in ('OPTIONS','TRACE'):
 				if 'max-forwards' in message.headers:
