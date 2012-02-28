@@ -386,7 +386,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				continue
 
 			# classify and return the filtered page
-			if method in ('GET', 'PUT', 'POST','HEAD','DELETE'):
+			if method in ('GET', 'PUT', 'POST','HEAD','DELETE','PATCH'):
 				if not self.enabled:
 					self.respond(Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message)))
 					continue
