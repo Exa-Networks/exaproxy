@@ -42,7 +42,7 @@ class Respond (object):
 		return '\0'.join((client_id, 'rewrite', code, reason, message.request.protocol, message.url, message.host, str(message.client)))
 
 	@staticmethod
-	def http (client_id, code, *data):
+	def http (client_id, *data):
 		return '\0'.join((client_id, 'http')+data)
 
 	@staticmethod
@@ -288,7 +288,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			return Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
 		if classification == 'file':
-			return Respond.rewrite(client_id, '250', data, http)
+			return Respond.rewrite(client_id, '250', data, message)
 
 		if classification == 'redirect':
 			return Respond.redirect(client_id, data)
@@ -301,7 +301,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		return Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
-	def connect (self,client_id, message, classification, data):
+	def connect (self,client_id, message, classification, data, peer, source):
 		if classification == 'requeue':
 			return Respond.requeue(client_id, peer, header, source)
 
@@ -309,9 +309,9 @@ Encapsulated: req-hdr=0, null-body=%d
 			return Respond.redirect(client_id, data)
 
 		if classification == 'intercept':
-			return Respond.connect(client_id, data, message.port, http)
+			return Respond.connect(client_id, data, message.port, message)
 
-		return Respond.connect(client_id, message.host, message.port, http)
+		return Respond.connect(client_id, message.host, message.port, message)
 
 
 	def run (self):
@@ -391,7 +391,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 				# we do allow connect
 				if self.configuration.http.allow_connect:
-					self.respond(self.connect(client_id,*self.classify(message,header,tainted)))
+					self.respond(self.connect(client_id,*self.classify(message,header,tainted,peer,source)))
 				else:
 					self.respond(Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n')))
 					continue
