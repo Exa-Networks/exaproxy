@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+icap-deny.py
+
+Created by Thomas Mangin on 2011-11-29.
+Copyright (c) 2011 Exa Networks. All rights reserved.
+"""
+
+# redirect.php is a simple to force hostname :
+# <?php 
+# header('HTTP/1.1 301 Moved Permanently');
+# header( 'Location: http://www.surfprotect.co.uk/' ) ; ?>
+# ?>
+
+import sys
+
+try:
+	while True:
+		line = sys.stdin.readline()
+		method,uri,version = line.rstrip().split()
+		if method != 'REQMOD':
+			sys.stderr.write('ICAP METHOD not supported %s\n' % method)
+			sys.stderr.flush()
+		if version != 'ICAP/1.0':
+			sys.stderr.write('ICAP version not supported %s\n' % version)
+			sys.stderr.flush()
+		
+		client = ''
+		while True:
+			line = sys.stdin.readline().rstrip()
+			if not line:
+				break
+			if line.startswith('Pragma: client='):
+				client = line[15]
+			last = line
+
+		# we know ExaProxy send the Encapsulation as last parameter .. yes we do :)
+		length = int(last.rstrip().split('=')[-1])
+		_ = sys.stdin.read(length)
+
+		if _.startswith('CONNECT www.google.'):
+			headers = """\
+CONNECT nosslsearch.google.com:443 HTTP/1.1
+Proxy-Connection: keep-alive
+Host: nosslsearch.google.com
+
+"""
+		else:
+			headers = _
+		# Always return the Encapsulated size as last header and with a null-body
+		reply = """\
+ICAP/1.0 200 OK
+Encapsulated: res-hdr=0, null-body=%d
+
+%s""" % (len(headers),headers)
+		print >> sys.stderr, reply
+		sys.stdout.write(reply)
+		sys.stdout.flush()
+except KeyboardInterrupt, e:
+	sys.stderr.write('^C keyboard interrupt. exiting.\n')
+	sys.stderr.flush()
+except Exception, e:
+	sys.stderr.write('CHILD FAILED %s\n' % str(e))
+	sys.stderr.flush()

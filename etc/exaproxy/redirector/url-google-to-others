@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+url-goole-no-ssl.py
+
+Created by Thomas Mangin on 2012-01-14.
+Copyright (c) 2012 Exa Networks. All rights reserved.
+"""
+
+import os
+import sys
+
+cwd = os.getcwd()
+prg = sys.argv[0]
+
+try:
+	while True:
+		data = sys.stdin.readline()
+		if 'CONNECT' not in data and 'www.google.' in data:
+			sys.stdout.write('redirect://%s' % 'http://bing.com\n')
+			sys.stdout.flush()
+			continue
+		# This is scandalous that browser let you do that !
+		if 'CONNECT' in data and 'www.google.' in data:
+			sys.stdout.write('redirect://%s' % 'https://www.wolframalpha.com\n')
+			sys.stdout.flush()
+			continue
+		sys.stdout.write('\n')
+		sys.stdout.flush()
+except KeyboardInterrupt, e:
+	sys.stderr.write('^C keyboard interrupt. exiting.\n')
+	sys.stderr.flush()
+except Exception, e:
+	sys.stderr.write('CHILD FAILED %s\n' % str(e))
+	sys.stderr.flush()
