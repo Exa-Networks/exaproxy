@@ -33,10 +33,14 @@ class Request (object):
 			if '/' in remaining:
 				port,path = remaining.split('/')
 				self.path = '/' + path
-				if not port.startswith(':'):
-					raise ValueError('Malformed headers, ipv6 address was followed by an invalid port')
+				if port:
+					if not port.startswith(':'):
+						raise ValueError('Malformed headers, ipv6 address was followed by an invalid port')
 
-				self.port = self._checkport(port[1:])
+					self.port = self._checkport(port[1:])
+				else:
+					self.port = '80'
+	
 				return self
 			else:
 				self.port = self._checkport(remaining)
