@@ -398,7 +398,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 				# we do allow connect
 				if self.configuration.http.allow_connect:
-					self.respond(self.connect(client_id,*self.classify(message,header,tainted,peer,source)))
+					self.respond(self.connect(client_id,*(self.classify(message,header,tainted)+(peer,source))))
 				else:
 					self.respond(Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n')))
 				continue
