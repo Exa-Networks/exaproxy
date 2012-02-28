@@ -229,6 +229,9 @@ Encapsulated: req-hdr=0, null-body=%d
 				h.port = request.port
 				return h,'permit',None
 
+		if headers.startswith('HTTP'):
+			return message, 'http', headers
+
 		h = HTTP(self.configuration,headers,message.client)
 		if not h.parse():
 			if tainted is False:
@@ -298,6 +301,9 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		if classification == 'requeue':
 			return Respond.requeue(client_id, peer, header, source)
+
+		if classification == 'http':
+			return Respond.http(client_id, data)
 
 		return Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
