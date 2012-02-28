@@ -232,6 +232,10 @@ Encapsulated: req-hdr=0, null-body=%d
 		if headers.startswith('HTTP'):
 			return message, 'http', headers
 
+		if headers.startswith ('GET file://'):
+			print 'name',headers.split(' ',2)[1][7:]
+			return message, 'file', headers.split(' ',2)[1][7:]
+
 		h = HTTP(self.configuration,headers,message.client)
 		if not h.parse():
 			if tainted is False:
