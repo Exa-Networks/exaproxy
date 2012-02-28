@@ -101,6 +101,7 @@ class ContentManager(object):
 
 		if downloader.sock is None:
 			downloader = None
+			newdownloader = False
 
 		return downloader, newdownloader
 
