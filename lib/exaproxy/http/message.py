@@ -47,9 +47,11 @@ class HTTP (object):
 			else:
 				# can raise KeyError, but host is a required header
 				self.host = self.headerhost
+			self.port = self.request.port
 
-			if self.host != self.headerhost and self.request.method != 'OPTIONS' and self.host != '*':
-				raise HostMismatch, 'Make up your mind: %s - %s' % (self.host, self.headerhost)
+			# That does not let us use ICAP and connect to redirect things :p
+			#if self.host != self.headerhost and self.request.method != 'OPTIONS' and self.host != '*':
+			#	raise HostMismatch, 'Make up your mind: %s - %s' % (self.host, self.headerhost)
 
 			# David, why are you trying to force that header - broken clients ?
 			# If we relay the version we should not have to add any headers.
@@ -70,7 +72,7 @@ class HTTP (object):
 				self.client = remote_ip
 
 			self.content_length = int(self.headers.get('content-length', [':0'])[0].split(':',1)[1].strip())
-			self.url = self.host + ((':%s' % self.request.port) if self.request.port is not None else '') + self.request.path
+			self.url = self.host + ((':%s' % self.port) if self.port is not None else '') + self.request.path
 			self.url_noport = self.host + self.request.path
 
 		except KeyboardInterrupt:

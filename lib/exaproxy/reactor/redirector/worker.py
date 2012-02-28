@@ -18,6 +18,7 @@ import time
 #import fcntl
 
 from exaproxy.http.message import HTTP
+from exaproxy.http.request import Request
 
 from exaproxy.util.logger import logger
 
@@ -95,14 +96,14 @@ class Redirector (Thread):
 	def _classify (self, http, headers, tainted):
 		if not self.process:
 			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
-			return request, 'file', 'internal_error.html'
+			return http, 'file', 'internal_error.html'
 
 		if self.protocol == 'url':
 			return self._classify_url (http,tainted)
 		if self.protocol.startswith('icap://'):
 			return self._classify_icap (http,headers,tainted)
 
-		return request, 'file', 'internal_error.html'
+		return http, 'file', 'internal_error.html'
 
 	def _classify_icap (self, http, headers, tainted):
 		line = """\
@@ -120,30 +121,56 @@ Encapsulated: req-hdr=0, null-body=%d
 		try:
 			self.process.stdin.write(line)
 			try:
-				icap = []
+				code = self.process.stdout.readline().rstrip().split()[1]
+				length = -1
+
 				while True:
 					line = self.process.stdout.readline().rstrip()
 					if not line:
 						break
-					icap.append(line)
-					# BIG Shortcut for performance - we know the last header is the size
-				code = icap[0].split()[1]
+					if line.startswith('Encapsulated: res-hdr=0, null-body='):
+						# BIG Shortcut for performance - we know the last header is the size
+						length = int(line.split('=')[-1])
+						continue
+
 				# 304 (no modified)
 				if code == '304':
 					return http, 'permit', None
-				length = int(icap[-1].split('=')[-1])
+
 				if length < 0:
 					return http, 'file', 'internal_error.html'
 				headers = self.process.stdout.read(length)
+
 			except ValueError:
 				return http, 'file', 'internal_error.html'
-			except Exception,e:
+			except Exception:
 				return http, 'file', 'internal_error.html'
 		except IOError, e:
 			logger.error('worker %s' % self.wid, 'IO/Error when sending to process: %s' % str(e))
 			if tainted is False:
 				return 'requeue', None
 			return http, 'file', 'internal_error.html'
+
+		# QUICK and DIRTY
+		if headers.startswith('CONNECT'):
+			_ = headers.replace('\r\n','\n').split('\n\n',1)
+			if _[1]: # is not an empty string
+				connect = _[0]
+				headers = _[1]
+				request = Request(connect.split('\n')[0]).parse()
+
+				if not request:
+					return http, 'file', 'internal_error.html'
+				h = HTTP(self.configuration,headers,http.client)
+				if not h.parse():
+					if tainted is False:
+						return 'requeue', None
+					return http, 'file', 'internal_error.html'
+
+				# The trick to not have to extend ICAP
+				h.host = request.host
+				h.port = request.port
+				return h,'permit',None
 
 		h = HTTP(self.configuration,headers,http.client)
 		if not h.parse():
@@ -179,8 +206,11 @@ Encapsulated: req-hdr=0, null-body=%d
 		if response.startswith('file://'):
 			return http, 'file', response[7:]
 
-		if response.startswith('dns://'):
-			return http, 'dns', response[6:]
+		if response.startswith('intercept://'):
+			return http, 'intercept', response[6:]
+
+		if response.startswith('redirect://'):
+			return http, 'redirect', response[11:]
 
 		return http, 'file', 'internal_error.html'
 
@@ -201,8 +231,8 @@ Encapsulated: req-hdr=0, null-body=%d
 	def respond_download(self, client_id, ip, port, length, http):
 		self.respond('\0'.join((client_id, 'download', ip, port, str(length), str(http))))
 
-	def respond_connect(self, client_id, http):
-		self.respond('\0'.join((client_id, 'connect', http.host, http.request.port, str(http))))
+	def respond_connect(self, client_id, host, port, http):
+		self.respond('\0'.join((client_id, 'connect', host, port, str(http))))
 
 	def respond_file(self, client_id, code, reason):
 		self.respond('\0'.join((client_id, 'file', str(code), reason)))
@@ -284,28 +314,27 @@ Encapsulated: req-hdr=0, null-body=%d
 				self.respond_http(client_id, '400', 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header)
 				continue
 
-			request = http.request
+			method = http.request.method
 
 			if source == 'web':
-				self.respond_monitor(client_id, request.path)
+				self.respond_monitor(client_id, http.request.path)
 				continue
 
 			# classify and return the filtered page
-			if request.method in ('GET', 'PUT', 'POST','HEAD','DELETE'):
+			if method in ('GET', 'PUT', 'POST','HEAD','DELETE'):
 				if not self.enabled:
-					self.respond_proxy(client_id, http.host, request.port, http.content_length, http)
+					self.respond_proxy(client_id, http.host, http.port, http.content_length, http)
 					continue
 
 				http, classification, data = self._classify (http,header,tainted)
-				request = http.request
 
 				if classification == 'permit':
-					self.respond_proxy(client_id, http.host, request.port, http.content_length, http)
+					self.respond_proxy(client_id, http.host, http.port, http.content_length, http)
 					continue
 
 				if classification == 'rewrite':
-					request.redirect(None, data)
-					self.respond_proxy(client_id, http.host, request.port, http.content_length, http)
+					http.request.redirect(None, data)
+					self.respond_proxy(client_id, http.host, http.port, http.content_length, http)
 					continue
 
 				if classification == 'file':
@@ -316,42 +345,45 @@ Encapsulated: req-hdr=0, null-body=%d
 					self.respond_redirect(client_id, data)
 					continue
 
-				if classification == 'dns':
-					self.respond_proxy(client_id, data, request.port, http.content_length, http)
+				if classification == 'intercept':
+					self.respond_proxy(client_id, data, http.port, http.content_length, http)
 					continue
 
 				if classification == 'requeue':
 					self.respond_requeue(client_id, peer, header, source)
 					continue
 
-				self.respond_proxy(client_id, http.host, request.port, http.content_length, http)
+				if classification == None:
+					continue
+
+				self.respond_proxy(client_id, http.host, http.port, http.content_length, http)
 				continue
 
 			# someone want to use us as https proxy
-			if request.method == 'CONNECT':
+			if method == 'CONNECT':
 				if not self.enabled:
-					self.respond_connect(client_id, http)
+					self.respond_connect(client_id, http.host, http.port, http)
 					continue
 
 				# we do allow connect
 				if self.configuration.http.allow_connect:
 					http, classification, data = self._classify(http,header,tainted)
-					request = http.request
+					if classification == 'requeue':
+						self.respond_requeue(client_id, peer, header, source)
+						continue
 					if classification == 'redirect':
 						self.respond_redirect(client_id, data)
-
-					elif classification == 'requeue':
-						self.respond_requeue(client_id, peer, header, source)
-
-					else:
-						self.respond_connect(client_id, http)
-
+						continue
+					if classification == 'intercept':
+						self.respond_connect(client_id, data, http.port, http)
+						continue
+					self.respond_connect(client_id, http.host, http.port, http)
 					continue
 				else:
 					self.respond_http(client_id, '501', 'CONNECT NOT ALLOWED\n')
 					continue
 
-			if request.method in ('OPTIONS','TRACE'):
+			if method in ('OPTIONS','TRACE'):
 				if 'max-forwards' in http.headers:
 					max_forwards = http.headers.get('max-forwards').split(':')[-1].strip()
 					if not max_forwards.isdigit():
@@ -362,10 +394,10 @@ Encapsulated: req-hdr=0, null-body=%d
 						self.respond_http(client_id, '400', 'INVALID MAX-FORWARDS\n')
 						continue
 					if max_forward == 0:
-						if request.method == 'OPTIONS':
+						if method == 'OPTIONS':
 							self.respond_http(client_id, '200', '')
 							continue
-						if request.method == 'TRACE':
+						if method == 'TRACE':
 							self.respond_http(client_id, '200', header)
 							continue
 						raise RuntimeError('should never reach here')
@@ -375,13 +407,13 @@ Encapsulated: req-hdr=0, null-body=%d
 				continue
 
 			# WEBDAV
-			if request.method in (
+			if method in (
 			  'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE', 
 			  'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
 				self.respond_proxy(client_id, http.headerhost, http.port, http)
 				continue
 
-			if request in self.configuration.http.extensions:
+			if http.request in self.configuration.http.extensions:
 				self.respond_proxy(client_id, http.headerhost, http.port, http)
 				continue
 
