@@ -26,3 +26,10 @@ Performance
  - look at Regex for header parsing performance
  - why pypy takes more CPU than cPython in some cases
 
+Cleanup
+ - Better tracking of DNS expiration
+
+Feature
+ - More monitoring
+ - easy to parse text version of the monitoring
+
