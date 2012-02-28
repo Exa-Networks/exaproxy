@@ -139,7 +139,7 @@ class ContentManager(object):
 
 			elif command == 'redirect':
 				redirect_url = args
-				headers = 'HTTP/1.1 302 Surfprotected\r\nLocation: %s\r\n\r\n\r\n' % redirect_url
+				headers = 'HTTP/1.1 302 Surfprotected\r\nCache-Control: no-store, must-revalidate\r\nLocation: %s\r\n\r\n\r\n' % redirect_url
 
 				downloader = None
 				newdownloader = False
