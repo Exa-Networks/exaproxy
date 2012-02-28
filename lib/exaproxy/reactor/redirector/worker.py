@@ -333,7 +333,7 @@ Encapsulated: req-hdr=0, null-body=%d
 					continue
 
 				if classification == 'rewrite':
-					http.request.redirect(None, data)
+					http.redirect(None, data)
 					self.respond_proxy(client_id, http.host, http.port, http.content_length, http)
 					continue
 

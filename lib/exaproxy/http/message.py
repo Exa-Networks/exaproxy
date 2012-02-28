@@ -50,14 +50,8 @@ class HTTP (object):
 			self.port = self.request.port
 
 			# That does not let us use ICAP and connect to redirect things :p
-			#if self.host != self.headerhost and self.request.method != 'OPTIONS' and self.host != '*':
-			#	raise HostMismatch, 'Make up your mind: %s - %s' % (self.host, self.headerhost)
-
-			# David, why are you trying to force that header - broken clients ?
-			# If we relay the version we should not have to add any headers.
-
-			#if request.method == 'CONNECT':
-			#	self.headers.default('host','Host: ' + request.host)
+			if self.host != self.headerhost and self.request.method != 'OPTIONS' and self.host != '*':
+				raise HostMismatch, 'Make up your mind: %s - %s' % (self.host, self.headerhost)
 
 			# Is this the best place to add headers?
 			self.headers.replace('x-proxy-version',self.proxy_name)
@@ -72,7 +66,7 @@ class HTTP (object):
 				self.client = remote_ip
 
 			self.content_length = int(self.headers.get('content-length', [':0'])[0].split(':',1)[1].strip())
-			self.url = self.host + ((':%s' % self.port) if self.port is not None else '') + self.request.path
+			self.url = self.host + ((':%s' % self.port) if self.port != '80' else '') + self.request.path
 			self.url_noport = self.host + self.request.path
 
 		except KeyboardInterrupt:
@@ -89,7 +83,7 @@ class HTTP (object):
 		self.path = path if path is not None else self.path
 
 		if path is not None:
-			Request(self.method + ' ' + path + ' HTTP/' + self.version).parse()
+			Request(self.request.method + ' ' + path + ' HTTP/' + self.request.version).parse()
 
 		if host is not None:
 			if host.count(':') > 1:
