@@ -98,17 +98,16 @@ class HTTP (object):
 			self.header.replace('host','Host: ' + host)
 
 
-        def extractHost(self, hoststring):
-                if ':' in hoststring:
-                        # check to see if we have an IPv6 address
-                        if hoststring.startswith('[') and ']' in hoststring:
-                                host = hoststring[1:].split(']', 1)[0]
-                        else:
-                                host = hoststring.split(':', 1)[0]
+	def extractHost(self, hoststring):
+		if ':' in hoststring:
+			# check to see if we have an IPv6 address
+			if hoststring.startswith('[') and ']' in hoststring:
+				host = hoststring[1:].split(']', 1)[0]
+			else:
+				host = hoststring.split(':', 1)[0]
 		else:
 			host = hoststring
-
-                return host
+		return host
 
 
 	def __str__ (self):
