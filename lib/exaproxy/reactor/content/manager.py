@@ -253,7 +253,11 @@ class ContentManager(object):
 			self.poller.removeWriteSocket('write_download', downloader.sock)
 
 			self.established[sock] = downloader
-			client_id, response = downloader.startConversation()
+			client_id, res, response = downloader.startConversation()
+
+			# check to see if we were unable to connect
+			if res is not True:
+				_,response = self.readLocalContent('400', 'noconnect.html')
 
 			# we're no longer interested in the socket connecting since it's connected
 			self.poller.removeWriteSocket('opening_download', downloader.sock)

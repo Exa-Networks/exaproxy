@@ -10,6 +10,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 from exaproxy.util.logger import logger
 from exaproxy.network.functions import connect
 from exaproxy.network.errno_list import errno_block
+from exaproxy.network.errno_list import errno_unavailable
 
 import socket
 import errno
@@ -39,9 +40,9 @@ class Content (object):
 
 		logger.info('download', 'download socket is now open for client %s %s' % (self.client_id, self.sock))
 
-		self.writeData('')
+		res,sent = self.writeData('')
 		response='HTTP/1.1 200 Connection Established\r\n\r\n' if self.method == 'connect' else ''
-		return self.client_id, response
+		return self.client_id, res is not None, response
 
 	def readData(self, buflen=DEFAULT_READ_BUFFER_SIZE):
 		"""Read data that we have already received from the remote server"""
@@ -77,8 +78,10 @@ class Content (object):
 			if e.args[0] in errno_block:
 				logger.error('download', 'Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 				res = True if self.w_buffer else False
+			elif e.args[0] in errno_unavailable:
+				res = None
 			else:
-				res = None,0
+				res = None
 
 		return res,sent
 

@@ -25,4 +25,6 @@ errno_fatal = set((
 	errno.ECONNRESET,
 ))
 
-
+errno_unavailable = set((
+	errno.ECONNREFUSED, errno.EHOSTUNREACH,
+))
