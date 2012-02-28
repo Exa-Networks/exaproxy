@@ -74,7 +74,7 @@ class HTTP (object):
 		except Exception, e:
 			logger.error('header','could not parse header %s %s' % (type(e),str(e)))
 			for line in traceback.format_exc().split('\n'):
-				logger.error('header', line)
+				logger.info('header', line)
 			return None
 		return self
 
