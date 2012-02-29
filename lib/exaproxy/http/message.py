@@ -8,7 +8,7 @@ Copyright (c) 2012 Exa Networks. All rights reserved.
 
 import traceback
 
-from exaproxy.util.logger import logger
+from exaproxy.util.log import log
 from exaproxy.network.functions import isip
 
 from .request import Request
@@ -25,7 +25,7 @@ class HTTP (object):
 		self.x_forwarded_for = configuration.http.x_forwarded_for
 
 	def parse (self):
-		logger.info('header','parsing %s' % str(self.raw))
+		log.info('header','parsing %s' % str(self.raw))
 
 		try:
 			first, remaining = self.raw.split('\n',1)
@@ -58,7 +58,7 @@ class HTTP (object):
 			if self.x_forwarded_for:
 				client = self.headers.get('x-forwarded-for', ':%s' % self.ip)[0].split(':', 1)[1].split(',')[-1].strip()
 				if not isip(client):
-					logger.info('header', 'Invalid address in X-Forwarded-For: %s' % client)
+					log.info('header', 'Invalid address in X-Forwarded-For: %s' % client)
 					client = self.ip
 				self.client = client
 			else:
@@ -71,9 +71,9 @@ class HTTP (object):
 		except KeyboardInterrupt:
 			raise
 		except Exception, e:
-			logger.error('header','could not parse header %s %s' % (type(e),str(e)))
+			log.error('header','could not parse header %s %s' % (type(e),str(e)))
 			for line in traceback.format_exc().split('\n'):
-				logger.info('header', line)
+				log.info('header', line)
 			return None
 		return self
 

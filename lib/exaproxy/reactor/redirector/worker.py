@@ -21,8 +21,7 @@ from exaproxy.http.message import HTTP
 from exaproxy.http.request import Request
 from exaproxy.http.response import http
 
-from exaproxy.util.logger import logger
-
+from exaproxy.util.log import log
 class Respond (object):
 	@staticmethod
 	def download (client_id, ip, port, length, message):
@@ -112,32 +111,32 @@ class Redirector (Thread):
 				stdout=subprocess.PIPE,
 				universal_newlines=self.universal,
 			)
-			logger.debug('worker %s' % self.wid,'spawn process %s' % self.program)
+			log.debug('worker %s' % self.wid,'spawn process %s' % self.program)
 		except KeyboardInterrupt:
 			process = None
 		except (subprocess.CalledProcessError,OSError,ValueError):
-			logger.error('worker %s' % self.wid,'could not spawn process %s' % self.program)
+			log.error('worker %s' % self.wid,'could not spawn process %s' % self.program)
 			process = None
 		return process
 
 	def destroyProcess (self):
 		if not self.enabled:
 			return
-		logger.debug('worker %s' % self.wid,'destroying process %s' % self.program)
+		log.debug('worker %s' % self.wid,'destroying process %s' % self.program)
 		if not self.process:
 			return
 		try:
 			if self.process:
 				self.process.terminate()
 				self.process.wait()
-				logger.info('worker %s' % self.wid,'terminated process PID %s' % self.process.pid)
+				log.info('worker %s' % self.wid,'terminated process PID %s' % self.process.pid)
 		except OSError, e:
 			# No such processs
 			if e[0] != errno.ESRCH:
-				logger.error('worker %s' % self.wid,'PID %s died' % self.process.pid)
+				log.error('worker %s' % self.wid,'PID %s died' % self.process.pid)
 
 	def stop (self):
-		logger.debug('worker %s' % self.wid,'shutdown')
+		log.debug('worker %s' % self.wid,'shutdown')
 		# The worker thread may be blocked reading from the queue
 		# so the shutdown will not be immediate
 		self.running = False
@@ -154,7 +153,7 @@ class Redirector (Thread):
 
 	def _classify_icap (self, message, headers, tainted):
 		if not self.process:
-			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
+			log.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
 			return message, 'file', 'internal_error.html'
 
 		line = """\
@@ -193,16 +192,16 @@ Encapsulated: req-hdr=0, null-body=%d
 				headers = self.process.stdout.read(length)
 			except ValueError:
 				for line in traceback.format_exc().split('\n'):
-					logger.info('worker %s' % self.wid, line)
+					log.info('worker %s' % self.wid, line)
 				return message, 'file', 'internal_error.html'
 			except Exception:
 				for line in traceback.format_exc().split('\n'):
-					logger.info('worker %s' % self.wid, line)
+					log.info('worker %s' % self.wid, line)
 				return message, 'file', 'internal_error.html'
 		except IOError:
-			logger.error('worker %s' % self.wid, 'IO/Error when sending to process')
+			log.error('worker %s' % self.wid, 'IO/Error when sending to process')
 			for line in traceback.format_exc().split('\n'):
-				logger.info('worker %s' % self.wid, line)
+				log.info('worker %s' % self.wid, line)
 			if tainted is False:
 				return 'requeue', None
 			return message, 'file', 'internal_error.html'
@@ -245,7 +244,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 	def _classify_url (self, message, headers, tainted):
 		if not self.process:
-			logger.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
+			log.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
 			return message, 'file', 'internal_error.html'
 
 		try:
@@ -253,7 +252,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			self.process.stdin.write(squid + os.linesep)
 			response = self.process.stdout.readline().strip()
 		except IOError, e:
-			logger.error('worker %s' % self.wid, 'IO/Error when sending to process: %s' % str(e))
+			log.error('worker %s' % self.wid, 'IO/Error when sending to process: %s' % str(e))
 			if tainted is False:
 				return message, 'requeue', None
 			return message, 'file', 'internal_error.html'
@@ -325,7 +324,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 	def run (self):
 		while self.running:
-			logger.debug('worker %s' % self.wid,'waiting for some work')
+			log.debug('worker %s' % self.wid,'waiting for some work')
 			try:
 				# The timeout is really caused by the SIGALARM sent on the main thread every second
 				# BUT ONLY IF the timeout is present in this call
@@ -334,23 +333,23 @@ Encapsulated: req-hdr=0, null-body=%d
 				if self.enabled:
 					if not self.process or self.process.poll() is not None:
 						if self.running:
-							logger.error('worker %s' % self.wid, 'forked process died !')
+							log.error('worker %s' % self.wid, 'forked process died !')
 						self.running = False
 						continue
 			except ValueError:
-				logger.error('worker %s' % self.wid, 'Problem reading from request_box')
+				log.error('worker %s' % self.wid, 'Problem reading from request_box')
 				continue
 
 			try:
 				client_id, peer, header, source, tainted = data
 			except TypeError:
-				logger.alert('worker %s' % self.wid, 'Received invalid message: %s' % data)
+				log.alert('worker %s' % self.wid, 'Received invalid message: %s' % data)
 				continue
 
 			if self.enabled:
 				if not self.process or self.process.poll() is not None:
 					if self.running:
-						logger.error('worker %s' % self.wid, 'forked process died !')
+						log.error('worker %s' % self.wid, 'forked process died !')
 					self.running = False
 					if source != 'nop':
 						self.respond(Respond.requeue(client_id, peer, header, source))
@@ -368,7 +367,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				self.respond(Respond.stats(self.wid, stats))
 
 			if not self.running:
-				logger.debug('worker %s' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')
+				log.debug('worker %s' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')
 
 			if source == 'nop':
 				continue

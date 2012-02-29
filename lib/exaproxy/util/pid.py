@@ -17,7 +17,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import os
 import errno
 
-from .logger import logger
+from .log import log
 
 class PID (object):
 	def __init__ (self,pid_file):
@@ -41,7 +41,7 @@ class PID (object):
 			if e[0] == errno.ENOENT:
 				pass
 			if e[0] in (errno.EPERM,errno.EACCES):
-				logger.warning('daemon',"PIDfile already exists, not updated %s" % self.pid_file)
+				log.warning('daemon',"PIDfile already exists, not updated %s" % self.pid_file)
 				return
 			raise
 		except ValueError, e:
@@ -53,7 +53,7 @@ class PID (object):
 		except OSError, e:
 			# No such processs
 			if e[0] != errno.ESRCH:
-				logger.warning('daemon',"PID %s is still running" % self.pid_file)
+				log.warning('daemon',"PID %s is still running" % self.pid_file)
 				return
 
 		ownid = os.getpid()
@@ -64,7 +64,7 @@ class PID (object):
 		try:
 			fd = os.open(self.pid_file,flags,mode)
 		except OSError, e:
-			logger.warning('daemon',"PIDfile already exists, not updated %s" % self.pid_file)
+			log.warning('daemon',"PIDfile already exists, not updated %s" % self.pid_file)
 			return
 
 		try:
@@ -74,9 +74,9 @@ class PID (object):
 			f.close()
 			self._saved_pid = True
 		except IOError, e:
-			logger.warning('daemon',"Can not create PIDfile %s" % self.pid_file)
+			log.warning('daemon',"Can not create PIDfile %s" % self.pid_file)
 			return
-		logger.info('daemon',"Created PIDfile %s with value %d" % (self.pid_file,ownid))
+		log.info('daemon',"Created PIDfile %s with value %d" % (self.pid_file,ownid))
 
 	def remove (self):
 		if not self.pid_file or not self._saved_pid:
@@ -87,6 +87,6 @@ class PID (object):
 			if e.errno == errno.ENOENT:
 				pass
 			else:
-				logger.warning('daemon',"Can not remove PIDfile %s" % self.pid_file)
+				log.warning('daemon',"Can not remove PIDfile %s" % self.pid_file)
 				return
-		logger.info('daemon',"Removed PIDfile %s" % self.pid_file)
+		log.info('daemon',"Removed PIDfile %s" % self.pid_file)

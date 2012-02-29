@@ -13,7 +13,7 @@ import errno
 import socket
 import resource
 
-from .logger import logger
+from .log import log
 
 def signed (value):
 	if value == sys.maxint:
@@ -31,9 +31,9 @@ class Daemon (object):
 				resource.setrlimit(resource.RLIMIT_NOFILE, (configuration.filemax, -1))
 			except (resource.error,ValueError),e:
 				soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
-				logger.error('daemon','could not increase file descriptor limit : %s' % str(e))
-				logger.error('daemon','the current limit is %d' % signed(soft))
-				logger.error('daemon','the maxium possible limit is %d' % signed(hard))
+				log.error('daemon','could not increase file descriptor limit : %s' % str(e))
+				log.error('daemon','the current limit is %d' % signed(soft))
+				log.error('daemon','the maxium possible limit is %d' % signed(hard))
 
 	def drop_privileges (self):
 		"""returns true if we are left with insecure privileges"""
@@ -88,7 +88,7 @@ class Daemon (object):
 				if pid > 0:
 					os._exit(0)
 			except OSError, e:
-				logger.debug('daemon','Can not fork, errno %d : %s' % (e.errno,e.strerror))
+				log.debug('daemon','Can not fork, errno %d : %s' % (e.errno,e.strerror))
 
 		# do not detach if we are already supervised or run by init like process
 		if not self._is_socket(sys.__stdin__.fileno()) and not os.getppid() == 1:

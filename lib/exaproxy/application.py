@@ -9,7 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import sys
 
 from exaproxy.supervisor import Supervisor
-from exaproxy.util.logger import logger
+from exaproxy.util.log import log
 from exaproxy.configuration import ConfigurationError,load,ini,env,default
 
 def version_warning ():
@@ -77,6 +77,7 @@ if __name__ == '__main__':
 		sys.exit(1)
 
 	debug = False
+	pdb = False
 
 	for arg in sys.argv[1:]:
 		if arg in ['--',]:
@@ -101,18 +102,18 @@ if __name__ == '__main__':
 		if arg in ['-p','--pdb']:
 			pdb = True
 
-	for section,value in configuration.logger.items():
+	for section,value in configuration.log.items():
 		if section == 'destination':
 			continue
 		if section == 'level':
 			if debug:
-				logger.setDebug()
+				log.setDebug()
 			else:
-				logger.setLevel(value)
+				log.setLevel(value)
 			continue
-		logger.status[section] = value or debug
-	logger.pdb = pdb
-	logger.syslog(configuration.logger.destination)
+		log.status[section] = value or debug
+	log.pdb = pdb
+	log.syslog(configuration.log.destination)
 
 	if not configuration.profile.enable:
 		Supervisor().run()
@@ -127,7 +128,7 @@ if __name__ == '__main__':
 		profile.run('Supervisor().run()')
 		sys.exit(0)
 
-	logger.status['supervisor'] = True
+	log.status['supervisor'] = True
 	notice = ''
 	if os.path.isdir(configuration.profile.destination):
 		notice = 'profile can not use this filename as outpout, it is not a directory (%s)' % profiled
@@ -135,11 +136,11 @@ if __name__ == '__main__':
 		notice = 'profile can not use this filename as outpout, it already exists (%s)' % profiled
 
 	if not notice:
-		logger.debug('supervisor','profiling ....')
+		log.debug('supervisor','profiling ....')
 		profile.run('main()',filename=configuration.profile.destination)
 	else:
-		logger.debug('supervisor',"-"*len(notice))
-		logger.debug('supervisor',notice)
-		logger.debug('supervisor',"-"*len(notice))
+		log.debug('supervisor',"-"*len(notice))
+		log.debug('supervisor',notice)
+		log.debug('supervisor',"-"*len(notice))
 		main()
 	sys.exit(0)

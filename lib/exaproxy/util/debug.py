@@ -11,7 +11,7 @@ import sys
 
 import traceback
 
-from .logger import logger
+from .log import log
 
 debug = os.environ.get('PDB',None)
 
@@ -32,7 +32,7 @@ def bug_report (type, value, trace):
 	print >> sys.stderr, '-- Logging History'
 	print >> sys.stderr, ''
 	print >> sys.stderr, ''
-	print >> sys.stderr, logger.history()
+	print >> sys.stderr, log.history()
 	print >> sys.stderr, ''
 	print >> sys.stderr, ''
 	print >> sys.stderr, '-- Traceback'
@@ -54,14 +54,14 @@ if debug is None:
 	def intercept_nopdb (type, value, trace):
 		bug_report(type, value, trace)
 	sys.excepthook = intercept_nopdb
-	logger.pdb = False
+	log.pdb = False
 elif debug not in ['0','']:
 	def intercept_pdb (type, value, trace):
 		bug_report(type, value, trace)
 		import pdb
 		pdb.pm()
 	sys.excepthook = intercept_pdb
-	logger.pdb = True
+	log.pdb = True
 
 del sys.argv[0]
 

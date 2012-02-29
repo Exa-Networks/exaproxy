@@ -10,8 +10,7 @@ import socket
 import errno
 
 from exaproxy.network.errno_list import errno_block
-from exaproxy.util.logger import logger
-
+from exaproxy.util.log import log
 
 
 class Client (object):
@@ -159,11 +158,11 @@ class Client (object):
 						if not w_buffer:
 							break      # terminate the client connection
 						elif data:
-							logger.error('client', 'Tried to send data to client after we told it to close. Dropping it.')
+							log.error('client', 'Tried to send data to client after we told it to close. Dropping it.')
 
 					if not had_buffer or data == '':
 						sent = sock.send(w_buffer)
-						logger.info('client', 'wrote to socket %s sent %d bytes' % (str(sock),sent))
+						log.info('client', 'wrote to socket %s sent %d bytes' % (str(sock),sent))
 						w_buffer = w_buffer[sent:]
 					else:
 						sent = 0
@@ -178,12 +177,12 @@ class Client (object):
 
 			except socket.error, e:
 				if e.args[0] in errno_block:
-					logger.info('client','interrupted when trying to sent %d bytes, will retry' % len(data))
-					logger.info('client','reason: errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
+					log.info('client','interrupted when trying to sent %d bytes, will retry' % len(data))
+					log.info('client','reason: errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 					data = yield (True if w_buffer else False), had_buffer, 0
 				else:
-					logger.critical('client','unexpected error writing on socket')
-					logger.critical('client','reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
+					log.critical('client','unexpected error writing on socket')
+					log.critical('client','reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 					yield None # stop the client connection
 					break # and don't come back
 

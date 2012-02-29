@@ -8,8 +8,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # http://code.google.com/speed/articles/web-metrics.html
 
-from exaproxy.util.logger import logger
-
+from exaproxy.util.log import log
 class Reactor(object):
 	def __init__(self, web, proxy, decider, content, client, resolver, poller):
 		self.web = web            # Manage listening web sockets
@@ -47,7 +46,7 @@ class Reactor(object):
 			for name,ev in events.items():
 				self.nb_events += len(ev)
 
-			logger.debug('supervisor','events : ' + ', '.join(events.keys()))
+			log.debug('supervisor','events : ' + ', '.join(events.keys()))
 
 			# handle new connections before anything else
 			for sock in events.get('read_proxy',[]):

@@ -223,10 +223,10 @@ defaults = {
 		'expire'       : (value.integer,value.nop,'200',                      'maximum number of cached dns entries we will expire during each cleanup'),
 		'definitions'  : (value.unquote,value.path,'etc/exaproxy/dns/types',  'location of file defining dns query types'),
 	},
-	'logger' : {
+	'log' : {
 		'level'         : (value.syslog_value,value.syslog_name,'LOG_ERR', 'log message with at least the priority SYSLOG.<level>'),
 		'destination'   : (value.unquote,value.quote,'stdout',             'where syslog should log'),
-		'logger'        : (value.boolean,value.lower,'true',               'log messages from the logger subsystem'),
+		'log'           : (value.boolean,value.lower,'true',               'log messages from the log subsystem'),
 		'signal'        : (value.boolean,value.lower,'true',               'log messages from the signal subsystem'),
 		'configuration' : (value.boolean,value.lower,'true',               'log messages from the configuration subsystem'),
 		'supervisor'    : (value.boolean,value.lower,'true',               'log messages from the supervisor subsystem'),

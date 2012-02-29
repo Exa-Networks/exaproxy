@@ -9,7 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import socket
 import errno
 
-from exaproxy.util.logger import logger
+from exaproxy.util.log import log
 from exaproxy.network.errno_list import errno_block
 
 
@@ -57,11 +57,11 @@ def listen (ip,port,timeout=None,backlog=0):
 		return s
 	except socket.error, e:
 		if e.args[0] == errno.EADDRINUSE:
-			logger.debug('server','could not listen, port already in use %s:%d' % (ip,port))
+			log.debug('server','could not listen, port already in use %s:%d' % (ip,port))
 		elif e.args[0] == errno.EADDRNOTAVAIL:
-			logger.debug('server','could not listen, invalid address %s:%d' % (ip,port))
+			log.debug('server','could not listen, invalid address %s:%d' % (ip,port))
 		else:
-			logger.debug('server','could not listen on %s:%d - %s' % (ip,port,str(e)))
+			log.debug('server','could not listen on %s:%d - %s' % (ip,port,str(e)))
 		return None
 
 
@@ -80,7 +80,7 @@ def connect (ip,port,immediate=True):
 #		s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 64*1024)
 #	except socket.error, e:
 #		print "CANNOT SET RCVBUF"
-#		logger.debug('server','could not set sock rcvbuf size')
+#		log.debug('server','could not set sock rcvbuf size')
 #	except Exception,e:
 #		print "*"*10
 #		print type(e),str(e)

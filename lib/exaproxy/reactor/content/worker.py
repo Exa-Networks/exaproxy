@@ -6,7 +6,7 @@ Created by Thomas Mangin on 2011-12-01.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-from exaproxy.util.logger import logger
+from exaproxy.util.log import log
 from exaproxy.network.functions import connect
 from exaproxy.network.errno_list import errno_block
 from exaproxy.network.errno_list import errno_unavailable
@@ -37,7 +37,7 @@ class Content (object):
 		Don't send anything yet if the client sent a CONNECT - instead,
 		we respond with our own HTTP header indicating that we connected"""
 
-		logger.info('download', 'download socket is now open for client %s %s' % (self.client_id, self.sock))
+		log.info('download', 'download socket is now open for client %s %s' % (self.client_id, self.sock))
 
 		res,sent = self.writeData('')
 		response='HTTP/1.1 200 Connection Established\r\n\r\n' if self.method == 'connect' else ''
@@ -52,12 +52,12 @@ class Content (object):
 				data = None
 		except socket.error, e:
 			if e.args[0] in errno_block:
-				logger.info('download','interrupted when trying to read, will retry' % len(data))
-				logger.info('download','reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
+				log.info('download','interrupted when trying to read, will retry' % len(data))
+				log.info('download','reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 				data = ''
 			else:
-				logger.critical('download','unexpected error reading on socket')
-				logger.critical('download','reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
+				log.critical('download','unexpected error reading on socket')
+				log.critical('download','reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 				data = None
 
 		return data
@@ -69,13 +69,13 @@ class Content (object):
 
 		try:
 			sent = self.sock.send(w_buffer)
-			logger.info('download', 'sent %s of %s bytes of data : %s' % (sent, len(data), self.sock))
+			log.info('download', 'sent %s of %s bytes of data : %s' % (sent, len(data), self.sock))
 			self.w_buffer = w_buffer[sent:]
 			res = True if self.w_buffer else False
 		except socket.error, e:
 			sent = 0
 			if e.args[0] in errno_block:
-				logger.error('download', 'Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
+				log.error('download', 'Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 				res = True if self.w_buffer else False
 			elif e.args[0] in errno_unavailable:
 				res = None

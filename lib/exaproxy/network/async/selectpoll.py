@@ -11,8 +11,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import select
 import socket
 
-from exaproxy.util.logger import logger
-
+from exaproxy.util.log import log
 from exaproxy.network.errno_list import errno_block
 from interface import IPoller
 
@@ -22,44 +21,44 @@ def poll_select(read, write, timeout=None):
 		r, w, x = select.select(read, write, read + write, timeout)
 	except socket.error, e:
 		if e.args[0] in errno_block:
-			logger.error('select', 'select not ready, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
+			log.error('select', 'select not ready, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 			return [], [], []
 
 		if e.args[0] in errno_fatal:
-			logger.error('select', 'select problem, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
-			logger.error('select', 'poller read  : %s' % str(read))
-			logger.error('select', 'poller write : %s' % str(write))
-			logger.error('select', 'read : %s' % str(read))
+			log.error('select', 'select problem, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
+			log.error('select', 'poller read  : %s' % str(read))
+			log.error('select', 'poller write : %s' % str(write))
+			log.error('select', 'read : %s' % str(read))
 		else:
-			logger.critical('select', 'select problem, debug it. errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
+			log.critical('select', 'select problem, debug it. errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 
 		for f in read:
 			try:
 				poll([f], [], [f], 0.1)
 			except socket.error:
 				print "CANNOT POLL (read): %s" % str(f)
-				logger.error('select', 'can not poll (read) : %s' % str(f))
+				log.error('select', 'can not poll (read) : %s' % str(f))
 
 		for f in write:
 			try:
 				poll([], [f], [f], 0.1)
 			except socket.error:
 				print "CANNOT POLL (write): %s" % str(f)
-				logger.error('select', 'can not poll (write) : %s' % str(f))
+				log.error('select', 'can not poll (write) : %s' % str(f))
 
 		raise e
 	except (ValueError, AttributeError, TypeError), e:
-		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
+		log.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
 		raise e
 	except select.error, e:
 		if e.args[0] in errno_block:
 			return [], [], []
-		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
+		log.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
 		raise e
 	except KeyboardInterrupt,e:
 		raise e
 	except Exception, e:
-		logger.critical('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
+		log.critical('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
 		raise e
 
 	return r, w, x

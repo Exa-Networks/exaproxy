@@ -9,7 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 # http://code.google.com/speed/articles/web-metrics.html
 # http://itamarst.org/writings/pycon05/fast.html
 
-from exaproxy.util.logger import logger
+from exaproxy.util.log import log
 from .functions import listen
 import socket
 
@@ -41,7 +41,7 @@ class Server(object):
 		except socket.error, e:
 			# It doesn't really matter if accept fails temporarily. We will
 			# try again next loop
-			logger.debug('server', 'failure on accept %s' % str(e))
+			log.debug('server', 'failure on accept %s' % str(e))
 
 	def stop(self):
 		for sock in self.socks:

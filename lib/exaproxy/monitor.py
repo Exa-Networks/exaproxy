@@ -40,12 +40,12 @@ class Monitor (object):
 		conf = self._supervisor.configuration
 		content = self._supervisor.content
 		client = self._supervisor.client
-		logger = self._supervisor.logger
+		log = self._supervisor.log
 		manager = self._supervisor.manager
 		reactor = self._supervisor.reactor
 
 		return {
-			'exaproxy.global.debugging' : str(bool(logger.pdb)),
+			'exaproxy.global.debugging' : str(bool(log.pdb)),
 			'exaproxy.daemon.deamonize' : str(conf.daemon.daemonize),
 			'exaproxy.daemon.pidfile' : str(conf.daemon.pidfile),
 			'exaproxy.daemon.sleep' : str(conf.daemon.speed),
@@ -59,16 +59,16 @@ class Monitor (object):
 			'exaproxy.daemon.user' : str(conf.daemon.user),
 			'exaproxy.daemon.reactor' : str(conf.daemon.reactor),
 			'exaproxy.global.version' : '%s %s' % (conf.proxy.name,str(conf.proxy.version)),
-			'exaproxy.logger.level.daemon' : str(conf.logger.daemon),
-			'exaproxy.logger.level.supervisor' : str(conf.logger.supervisor),
-			'exaproxy.logger.level.signal' : str(conf.logger.signal),
-			'exaproxy.logger.level.worker' : str(conf.logger.worker),
-			'exaproxy.logger.level.server' : str(conf.logger.server),
-			'exaproxy.logger.level.manager' : str(conf.logger.manager),
-			'exaproxy.logger.level.client' : str(conf.logger.client),
-			'exaproxy.logger.level.download' : str(conf.logger.download),
-			'exaproxy.logger.level.http' : str(conf.logger.http),
-			'exaproxy.logger.level.configuration' : str(conf.logger.configuration),
+			'exaproxy.log.level.daemon' : str(conf.log.daemon),
+			'exaproxy.log.level.supervisor' : str(conf.log.supervisor),
+			'exaproxy.log.level.signal' : str(conf.log.signal),
+			'exaproxy.log.level.worker' : str(conf.log.worker),
+			'exaproxy.log.level.server' : str(conf.log.server),
+			'exaproxy.log.level.manager' : str(conf.log.manager),
+			'exaproxy.log.level.client' : str(conf.log.client),
+			'exaproxy.log.level.download' : str(conf.log.download),
+			'exaproxy.log.level.http' : str(conf.log.http),
+			'exaproxy.log.level.configuration' : str(conf.log.configuration),
 			'exaproxy.tcp4.host' : str(conf.tcp4.host),
 			'exaproxy.tcp4.port' : str(conf.tcp4.port),
 			'exaproxy.tcp4.backlog' : str(conf.tcp4.backlog),
@@ -100,7 +100,7 @@ class Monitor (object):
 		conf = self._supervisor.configuration
 		content = self._supervisor.content
 		client = self._supervisor.client
-		logger = self._supervisor.logger
+		log = self._supervisor.log
 		manager = self._supervisor.manager
 		reactor = self._supervisor.reactor
 

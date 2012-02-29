@@ -8,7 +8,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import os
 
-from exaproxy.util.logger import logger
+from exaproxy.util.log import log
 from exaproxy.http.response import http, file_header
 from .worker import Content
 
@@ -57,7 +57,7 @@ class ContentManager(object):
 
 				content = 'file', (header, filename)
 		else:
-			logger.debug('download', 'no file exists for %s: %s' % (str(name), str(filename)))
+			log.debug('download', 'no file exists for %s: %s' % (str(name), str(filename)))
 			content = 'close', http(501, 'no file exists for %s: %s' % (str(name), str(filename)))
 
 		return content
@@ -74,10 +74,10 @@ class ContentManager(object):
 
 				content = 'close', http(code, body)
 			except IOError:
-				logger.debug('download', 'no file exists for %s: %s' % (str(reason), str(filename)))
+				log.debug('download', 'no file exists for %s: %s' % (str(reason), str(filename)))
 				content = 'close', http(501, 'no file exists for %s' % str(reason))
 		else:
-			logger.debug('download', 'no file exists for %s: %s' % (str(reason), str(filename)))
+			log.debug('download', 'no file exists for %s: %s' % (str(reason), str(filename)))
 			content = 'close', http(501, 'no file exists for %s' % str(reason))
 
 		return content
@@ -194,7 +194,7 @@ class ContentManager(object):
 				length = 0
 
 		except ParsingError:
-			logger.error('download', 'problem getting content %s %s' % (type(e),str(e)))
+			log.error('download', 'problem getting content %s %s' % (type(e),str(e)))
 			downloader = None
 			newdownloader = False
 			request = ''

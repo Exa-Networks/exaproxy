@@ -11,8 +11,7 @@ from Queue import Queue
 
 from .worker import Redirector
 
-from exaproxy.util.logger import logger
-
+from exaproxy.util.log import log
 # Do we really need to call join() on the thread as we are stoppin on our own ?
 
 class RedirectorManager (object):
@@ -43,13 +42,13 @@ class RedirectorManager (object):
 		worker = Redirector(self.configuration,wid,self.queue,self.program)
 		self.poller.addReadSocket('read_workers', worker.response_box_read)
 		self.worker[wid] = worker
-		logger.debug('manager',"added a worker")
-		logger.debug('manager',"we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
+		log.debug('manager',"added a worker")
+		log.debug('manager',"we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
 		self.worker[wid].start()
 
 	def spawn (self,number=1):
 		"""create the set number of worker"""
-		logger.info('manager',"spawning %d more worker" % number)
+		log.info('manager',"spawning %d more worker" % number)
 		for _ in range(number):
 			self._spawn()
 
@@ -61,7 +60,7 @@ class RedirectorManager (object):
 		self.spawn(number)
 
 	def reap (self,wid):
-		logger.debug('manager','we are killing worker %s' % wid)
+		log.debug('manager','we are killing worker %s' % wid)
 		worker = self.worker[wid]
 		self.worker.pop(wid)
 		self.closing[wid] = worker
@@ -69,7 +68,7 @@ class RedirectorManager (object):
 
 	def start (self):
 		"""spawn our minimum number of workers"""
-		logger.info('manager',"starting workers.")
+		log.info('manager',"starting workers.")
 		self.spawn(max(0,self.low-len(self.worker)))
 
 	def stop (self):
@@ -77,7 +76,7 @@ class RedirectorManager (object):
 		self.running = False
 		threads = self.worker.values() + self.closing.values()
 		if len(self.worker):
-			logger.info('manager',"stopping %d workers." % len(self.worker))
+			log.info('manager',"stopping %d workers." % len(self.worker))
 			for wid in set(self.worker):
 				self.reap(wid)
 			for thread in threads:
@@ -112,7 +111,7 @@ class RedirectorManager (object):
 		if size < num_workers:
 			if size <= self.low:
 				return
-			logger.debug('manager',"we have too many workers, killing the oldest")
+			log.debug('manager',"we have too many workers, killing the oldest")
 			# if we have to kill one, at least stop the one who had the most chance to memory leak :)
 			worker = self._oldest()
 			if worker:
@@ -121,16 +120,16 @@ class RedirectorManager (object):
 		else:
 			# bad we are bleeding workers !
 			if num_workers < self.low:
-				logger.info('manager',"we lost some workers, respawing")
+				log.info('manager',"we lost some workers, respawing")
 				self.respawn()
 			# nothing we can do we have reach our limit
 			if num_workers >= self.high:
-				logger.warning('manager',"we need more workers by we reach our ceiling ! help !")
+				log.warning('manager',"we need more workers by we reach our ceiling ! help !")
 				return
 			# try to figure a good number to add ..
 			# no less than one, no more than to reach self.high, lower between self.low and a quarter of the allowed growth
 			nb_to_add = int(min(max(1,min(self.low,(self.high-self.low)/4)),self.high-num_workers))
-			logger.warning('manager',"we are low on workers, adding a few (%d)" % nb_to_add)
+			log.warning('manager',"we are low on workers, adding a few (%d)" % nb_to_add)
 			self.spawn(nb_to_add)
 
 	def request(self, client_id, peer, request, source):

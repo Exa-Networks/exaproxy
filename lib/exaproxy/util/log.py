@@ -55,8 +55,10 @@ class LazyFormat (object):
 	def split (self,c):
 		return str(self).split(c)
 
-class _Logger (object):
-	_instance = None
+class Log (object):
+	_log = None
+	_usage = None
+
 	_syslog = None
 
 	_inserted = 0
@@ -145,11 +147,11 @@ class _Logger (object):
 			self._syslog.setLevel(logging.DEBUG)
 			self._syslog.addHandler(handler)
 		except IOError,e :
-			self.error('logger','could not use SYSLOG %s' % str(e))
+			self.error('log','could not use SYSLOG %s' % str(e))
 
 	def log (self,source,message,level):
 		if level <= syslog.LOG_ERR and self.pdb:
-			logger.level = syslog.LOG_EMERG # silence the logger as we debug
+			log.level = syslog.LOG_EMERG # silence Log as we debug
 			import pdb
 			pdb.set_trace()
 
@@ -193,16 +195,16 @@ class _Logger (object):
 		for log in self.log(source,message,syslog.LOG_EMERG):
 			self._syslog.emmergency(log)
 
-def Logger ():
-	if _Logger._instance:
-		return _Logger._instance
-	instance = _Logger()
-	_Logger._instance = instance
+def Report ():
+	if Log._log:
+		return Log._log
+	instance = Log()
+	Log._log = instance
 	return instance
 
-logger = Logger()
+log = Report()
 
 if __name__ == '__main__':
-	logger = Logger()
-	logger.debug('source','debug test')
+	log = Log()
+	log.debug('source','debug test')
 	

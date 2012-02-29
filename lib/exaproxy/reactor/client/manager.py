@@ -6,7 +6,7 @@ Created by David Farrar  on 2011-11-30.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-from exaproxy.util.logger import logger
+from exaproxy.util.log import log
 from .worker import Client
 
 class ClientManager (object):
@@ -36,7 +36,7 @@ class ClientManager (object):
 		# watch for request data becoming available to read
 		self.poller.addReadSocket('opening_client', client.sock)
 
-		logger.info('client','new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
+		log.info('client','new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
 		return peer
 
 	def readRequest(self, sock):
@@ -55,7 +55,7 @@ class ClientManager (object):
 			elif request is None:
 				self.cleanup(sock, client.name)
 		else:
-			logger.error('client','trying to read headers from a client that does not exist %s' % sock)
+			log.error('client','trying to read headers from a client that does not exist %s' % sock)
 			name, peer, request, content, source = None, None, None, None, None
 
 		return name, peer, request, content, source
@@ -76,7 +76,7 @@ class ClientManager (object):
 			elif request is None:
 				self.cleanup(sock, client.name)
 		else:
-			logger.error('client','trying to read from a client that does not exist %s' % sock)
+			log.error('client','trying to read from a client that does not exist %s' % sock)
 			name, peer, request, content = None, None, None, None
 
 
@@ -98,7 +98,7 @@ class ClientManager (object):
 			elif request is None:
 				self.cleanup(client.sock, name)
 		else:
-			logger.error('client','trying to read from a client that does not exist %s' % name)
+			log.error('client','trying to read from a client that does not exist %s' % name)
 			name, peer, request, content = None, None, None, None
 
 
@@ -200,7 +200,7 @@ class ClientManager (object):
 			try:
 				command, d = data
 			except (ValueError, TypeError):
-				logger.error('client', 'invalid command sent to client %s' % name)
+				log.error('client', 'invalid command sent to client %s' % name)
 				self.cleanup(client.sock, name)
 				res = None
 			else:
@@ -233,7 +233,7 @@ class ClientManager (object):
 				# buffered data we read with the HTTP headers
 				name, peer, request, content = client.readRelated(remaining)
 				if request:
-					logger.error('client', 'reading multiple requests')
+					log.error('client', 'reading multiple requests')
 					self.cleanup(client.sock, name)
 					buffered, had_buffer = None, None
 					content = None
@@ -279,7 +279,7 @@ class ClientManager (object):
 				self.poller.uncorkReadSocket('read_client', client.sock)
 
 	def cleanup(self, sock, name):
-		logger.debug('client','cleanup for socket %s' % sock)
+		log.debug('client','cleanup for socket %s' % sock)
 		client = self.bysock.get(sock, None)
 		client, source = (client,None) or self.norequest.get(sock, (None,None))
 		client = client or self.byname.get(name, None)
