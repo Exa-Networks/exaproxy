@@ -70,7 +70,7 @@ Server: exaproxy/%s (%s)
 Content-Length: %d
 Connection: close
 Content-Type: text/html
-Cache-control: private
+Cache-Control: no-store
 Pragma: no-cache
 
 """ % (str(code), _HTTP_NAMES.get(code,'-'),date, str(version), str(sys.platform), size)
@@ -87,7 +87,7 @@ Date: %s
 Server: exaproxy/%s (%s)
 Content-Length: %d
 Content-Type: text/%s
-Cache-control: private
+Cache-Control: no-store
 Pragma: no-cache
 
 %s""" % (str(code),_HTTP_NAMES.get(code,'-'),date,str(version),sys.platform,len(message),encoding,message)
