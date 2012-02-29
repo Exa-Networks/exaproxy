@@ -31,6 +31,7 @@ def help ():
 	sys.stdout.write(' -di, --diff-ini  : display non-default configurations values using the ini format\n')
 	sys.stdout.write(' -de, --diff-env  : display non-default configurations values using the env format\n')
 	sys.stdout.write('  -d, --debug     : shortcut to turn on all subsystems debugging to LOG_DEBUG\n')
+	sys.stdout.write('  -p, --pdb       : on logging of serious errors start the python debugger\n')
 
 	sys.stdout.write('\n')
 	sys.stdout.write('ExaProxy will automatically look for its configuration file (in windows ini format)\n')
@@ -97,6 +98,8 @@ if __name__ == '__main__':
 			sys.exit(0)
 		if arg in ['-d','--debug']:
 			debug = True
+		if arg in ['-p','--pdb']:
+			pdb = True
 
 	for section,value in configuration.logger.items():
 		if section == 'destination':
@@ -108,6 +111,7 @@ if __name__ == '__main__':
 				logger.setLevel(value)
 			continue
 		logger.status[section] = value or debug
+	logger.pdb = pdb
 	logger.syslog(configuration.logger.destination)
 
 	if not configuration.profile.enable:
