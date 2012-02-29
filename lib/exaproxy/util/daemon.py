@@ -22,7 +22,7 @@ def signed (value):
 
 class Daemon (object):
 	def __init__ (self,configuration):
-		self.daemonize = configuration.daemonise
+		self.daemonize = configuration.daemonize
 		self.user = configuration.user
 		#mask = os.umask(0137)
 		if configuration.filemax:
