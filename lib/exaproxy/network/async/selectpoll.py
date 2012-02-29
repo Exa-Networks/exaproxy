@@ -32,7 +32,7 @@ def poll_select(read, write, timeout=None):
 			logger.error('select', 'poller write : %s' % str(write))
 			logger.error('select', 'read : %s' % str(read))
 		else:
-			logger.error('select', 'select problem, debug it. errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
+			logger.critical('select', 'select problem, debug it. errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 
 		for f in read:
 			try:
@@ -57,8 +57,10 @@ def poll_select(read, write, timeout=None):
 			return [], [], []
 		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
 		raise e
+	except KeyboardInterrupt,e:
+		raise e
 	except Exception, e:
-		logger.error('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
+		logger.critical('select',"fatal error encountered during select - %s %s" % (type(e),str(e)))
 		raise e
 
 	return r, w, x
