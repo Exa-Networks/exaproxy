@@ -78,7 +78,7 @@ class value (object):
 
 	@staticmethod
 	def list (_):
-		return ' '.join(_)
+		return "'%s'" % ' '.join(_)
 
 	@staticmethod
 	def lower (_):
@@ -107,6 +107,15 @@ class value (object):
 		first = options[0]
 		if not first: raise TypeError('%s does not exists' % first)
 		return first
+
+	@staticmethod
+	def path (path):
+		split = sys.argv[0].split('lib/exaproxy')
+		if len(split) > 1:
+			prefix = os.sep.join(split[:1])
+			if prefix and path.startswith(prefix):
+				path = path[len(prefix):]
+		return "'%s'" % path
 
 	@staticmethod
 	def conf(path):
@@ -179,7 +188,7 @@ defaults = {
 	},
 	'redirector' : {
 		'enable'  : (value.boolean,value.lower,'false',                         'use redirector programs to filter http request'),
-		'program' : (value.exe,value.quote,'etc/exaproxy/redirector/url-allow', 'the program used to know where to send request'),
+		'program' : (value.exe,value.path,'etc/exaproxy/redirector/url-allow', 'the program used to know where to send request'),
 		'minimum' : (value.integer,value.nop,'5',                               'minimum number of worker threads (forked program)'),
 		'maximum' : (value.integer,value.nop,'25',                              'maximum number of worker threads (forked program)'),
 #		'timeout' : (value.integer,value.nop,'1',                               'how long to wait for work before peforming background work'),
@@ -196,7 +205,7 @@ defaults = {
 		'enable'  : (value.boolean,value.lower,'true',             'enable the built-in webserver'),
 		'host'    : (value.unquote,value.quote,'127.0.0.1',        'the address on which we will listen'),
 		'port'    : (value.integer,value.nop,'8080',               'port on which the web server listen'),
-		'html'    : (value.folder,value.quote,'etc/exaproxy/html', 'where are the proxy served pages are taken from'),
+		'html'    : (value.folder,value.path,'etc/exaproxy/html', 'where are the proxy served pages are taken from'),
 	},
 	'daemon' : {
 		'pidfile'     : (value.unquote,value.quote,'',      'where to save the pid if we manage it'),
