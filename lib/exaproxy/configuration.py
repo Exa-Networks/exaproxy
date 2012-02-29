@@ -340,4 +340,4 @@ def env (diff=False):
 			if defaults[section][k][1] == value.quote:
 				print "exaproxy.%s.%s='%s'" % (section,k,v)
 				continue
-			print "exaproxy.%s.%s='%s'" % (section,k,defaults[section][k][1](v))
+			print "exaproxy.%s.%s=%s" % (section,k,defaults[section][k][1](v))
