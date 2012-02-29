@@ -264,6 +264,10 @@ class ContentManager(object):
 			# registed interest in data becoming available to read
 			self.poller.addReadSocket('read_download', downloader.sock)
 
+			if downloader.sock in self.buffered:
+				# watch for the socket's send buffer becoming less than full
+				self.poller.addWriteSocket('write_download', downloader.sock)
+
 			buffer_change = downloader.sock in self.buffered
 
 		else:
