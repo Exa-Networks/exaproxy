@@ -56,7 +56,7 @@ class HTTP (object):
 			self.headers.replace('x-proxy-version',self.proxy_name)
 
 			if self.x_forwarded_for:
-				client = self.headers.get('x-forwarded-for', ':%s' % self.ip)[0].split(':', 1)[1].split(',')[-1].strip()
+				client = self.headers.get('x-forwarded-for', ':%s' % self.client)[0].split(':', 1)[1].split(',')[-1].strip()
 				if isip(client):
 					self.client = client
 				else:
