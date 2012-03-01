@@ -8,6 +8,7 @@ Copyright (c) 2012 Exa Networks. All rights reserved.
 
 class Request (object):
 	def __init__ (self,request):
+		self.raw = request
 		method, self.uri, version = request.split()
 		self.method = method.upper()
 		self.version = version.split('/')[-1]
@@ -73,5 +74,5 @@ class Request (object):
 		return port
 
 	def __str__ (self):
-		return "%s %s HTTP/%s" % (self.method,self.path,self.version)
+		return self.raw
 
