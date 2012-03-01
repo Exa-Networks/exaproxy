@@ -168,7 +168,6 @@ class value (object):
 			raise TypeError('invalid log level %s' % log)
 		return _syslog_value_name[log]
 
-
 defaults = {
 	'tcp4' : {
 		'host'    : (value.unquote,value.quote,'127.0.0.1', 'the host the proxy listen on'),
@@ -237,6 +236,10 @@ defaults = {
 		'download'      : (value.boolean,value.lower,'true',               'log messages from the download subsystem'),
 		'http'          : (value.boolean,value.lower,'true',               'log messages from the http subsystem'),
 		'client'        : (value.boolean,value.lower,'true',               'log messages from the client subsystem'),
+	},
+	'usage' : {
+		'enable'        : (value.boolean,value.lower,'false',              'enable traffic logging'),
+		'destination'   : (value.unquote,value.quote,'stdout',             'where syslog should log'),
 	},
 	'profile' : {
 		'enable'      : (value.boolean,value.lower,'false', 'enable profiling'),
@@ -320,7 +323,8 @@ def ini (diff=False):
 		if section == 'proxy':
 			continue
 		header = '\n[exaproxy.%s]' % section
-		for k,v in __configuration[section].items():
+		for k in sorted(__configuration[section]):
+			v = __configuration[section][k]
 			if diff and defaults[section][k][0](defaults[section][k][2]) == v:
 				continue
 			if header:
