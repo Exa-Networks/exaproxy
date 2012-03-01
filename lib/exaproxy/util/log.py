@@ -147,7 +147,7 @@ class SysLog (object):
 			self._syslog.setLevel(logging.DEBUG)
 			self._syslog.addHandler(handler)
 		except IOError,e :
-			self.error('log','could not use SYSLOG %s' % str(e))
+			self.error('supervisor','could not use SYSLOG %s' % str(e))
 
 	def log (self,source,message,level):
 		if level <= syslog.LOG_ERR and self.pdb:

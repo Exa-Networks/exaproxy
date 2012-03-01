@@ -28,6 +28,8 @@ Performance
 
 Cleanup
  - Better tracking of DNS expiration
+ - Order configuation
+ - Log HTTP requests
 
 Feature
  - More monitoring

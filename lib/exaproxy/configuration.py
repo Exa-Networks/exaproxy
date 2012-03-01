@@ -226,7 +226,6 @@ defaults = {
 	'log' : {
 		'level'         : (value.syslog_value,value.syslog_name,'LOG_ERR', 'log message with at least the priority SYSLOG.<level>'),
 		'destination'   : (value.unquote,value.quote,'stdout',             'where syslog should log'),
-		'log'           : (value.boolean,value.lower,'true',               'log messages from the log subsystem'),
 		'signal'        : (value.boolean,value.lower,'true',               'log messages from the signal subsystem'),
 		'configuration' : (value.boolean,value.lower,'true',               'log messages from the configuration subsystem'),
 		'supervisor'    : (value.boolean,value.lower,'true',               'log messages from the supervisor subsystem'),
