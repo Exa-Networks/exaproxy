@@ -20,7 +20,7 @@ class HostMismatch(Exception):
 class HTTP (object):
 	def __init__(self,configuration,headers,remote_ip):
 		self.raw = headers
-		self.ip = remote_ip
+		self.client = remote_ip
 		self.proxy_name = "X-Proxy-Version: %s version %s" % (configuration.proxy.name, configuration.proxy.version)
 		self.x_forwarded_for = configuration.http.x_forwarded_for
 
@@ -57,12 +57,10 @@ class HTTP (object):
 
 			if self.x_forwarded_for:
 				client = self.headers.get('x-forwarded-for', ':%s' % self.ip)[0].split(':', 1)[1].split(',')[-1].strip()
-				if not isip(client):
+				if isip(client):
+					self.client = client
+				else:
 					log.info('header', 'Invalid address in X-Forwarded-For: %s' % client)
-					client = self.ip
-				self.client = client
-			else:
-				self.client = remote_ip
 
 			self.content_length = int(self.headers.get('content-length', [':0'])[0].split(':',1)[1].strip())
 			self.url = self.host + ((':%s' % self.port) if self.port != '80' else '') + self.request.path
