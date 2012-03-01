@@ -55,7 +55,7 @@ class LazyFormat (object):
 	def split (self,c):
 		return str(self).split(c)
 
-class Log (object):
+class SysLog (object):
 	_log = None
 	_usage = None
 
@@ -195,14 +195,31 @@ class Log (object):
 		for log in self.log(source,message,syslog.LOG_EMERG):
 			self._syslog.emmergency(log)
 
-def Report ():
-	if Log._log:
-		return Log._log
-	instance = Log()
+#	def syslog (self,message):
+#		self._syslog.debug('9ld.%03d %-7s %02d %08X %s %4d %9ld %9ld %9ld %s %ld/%ld %s %s' % (
+#			
+#		))
+#		1330359799.854    828 82.219.28.33 TCP_MISS/200 1640 GET http://www.microsoft.com/ - DIRECT/65.55.12.249 text/html
+#		1330359799.921    895 82.219.204.14 TCP_MISS/200 30165 GET http://www.worldbookday.com/resources/schools/primary-schools/ - DIRECT/217.168.156.188 text/html
+#		1330359799.989    254 82.219.28.33 TCP_MISS/200 1015 GET http://clients1.google.co.uk/complete/search? - DIRECT/173.194.34.120 text/javascript
+#		1330359800.032    145 82.219.28.33 TCP_MISS/200 886 GET http://www.stereoboard.com/fancybox/fancy_shadow_se.png - DIRECT/217.160.94.78 image/png
+
+def Log ():
+	if SysLog._log:
+		return SysLog._log
+	instance = SysLog()
 	Log._log = instance
 	return instance
 
-log = Report()
+def Usage ():
+	if SysLog._usage:
+		return SysLog._usage
+	instance = SysLog()
+	Log._usage = instance
+	return instance
+
+log = Log()
+usage = Usage()
 
 if __name__ == '__main__':
 	log = Log()
