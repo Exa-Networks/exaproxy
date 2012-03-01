@@ -59,8 +59,6 @@ class SysLog (object):
 	_log = None
 	_usage = None
 
-	_syslog = None
-
 	_inserted = 0
 	_max_history = 20
 	_history = []
@@ -74,54 +72,13 @@ class SysLog (object):
 	
 	pdb = False
 
-	# we use os.pid everytime as we may fork and the class is instance before it
-
-	def toggle (self):
-		if self._toggle_level:
-			self.level = self._toggle_level
-			self.status = {}
-			for k,v in self._toggle_status.items():
-				self.status[k] = v
-			self._toggle_level = None
-			self._toggle_status = {}
-		else:
-			self._toggle_level = self.level
-			self.level = syslog.LOG_DEBUG
-			for k,v in self.status.items():
-				self._toggle_status[k] = v
-				self.status[k] = True
-
-	def history (self):
-		with self._lock:
-			return '\n'.join(self._format(*_) for _ in self._history)
-
-	def _record (self,timestamp,level,source,message):
-		with self._lock:
-			self._history.append((timestamp,level,source,message))
-			if len(self._history) > self._max_history:
-				self._history.pop(0)
-
-	def _format (self,timestamp,level,source,message):
-		now = time.strftime('%a, %d %b %Y %H:%M:%S',timestamp)
-		return '%s %-9s %-6d %-13s %s' % (now,_named_level[level],self._pid,source,message)
-
-	def _prefixed (self,level,source,message):
-		ts = time.localtime()
-		self._record(ts,level,source,message)
-		return self._format(ts,level,source,message)
-
 	def __init__ (self):
+		self._syslog = None
 		self.level = syslog.LOG_WARNING
-		self.status = {}
+		self._active = {}
 		self._syslog = None
 
-	def setLevel(self, level):
-		self.level = level
-
-	def setDebug(self):
-		self.level = syslog.LOG_DEBUG
-
-	def syslog (self,destination):
+	def init (self,destination):
 		try:
 			if destination == 'print':
 				self._syslog = Printer()
@@ -146,8 +103,53 @@ class SysLog (object):
 			self._syslog = logging.getLogger()
 			self._syslog.setLevel(logging.DEBUG)
 			self._syslog.addHandler(handler)
+			return self
 		except IOError,e :
-			self.error('supervisor','could not use SYSLOG %s' % str(e))
+			print >> sys.stderr, 'could not use SYSLOG %s' % str(e)
+			sys.exit(1)
+
+	def active (self,name,state=True):
+		self._active[name] = state
+
+	def setLevel(self, level):
+		self.level = level
+
+	def setDebug(self):
+		self.level = syslog.LOG_DEBUG
+
+	def _record (self,timestamp,level,source,message):
+		with self._lock:
+			self._history.append((timestamp,level,source,message))
+			if len(self._history) > self._max_history:
+				self._history.pop(0)
+
+	def _format (self,timestamp,level,source,message):
+		now = time.strftime('%a, %d %b %Y %H:%M:%S',timestamp)
+		return '%s %-9s %-6d %-13s %s' % (now,_named_level[level],self._pid,source,message)
+
+	def _prefixed (self,level,source,message):
+		ts = time.localtime()
+		self._record(ts,level,source,message)
+		return self._format(ts,level,source,message)
+
+	def toggle (self):
+		if self._toggle_level:
+			self.level = self._toggle_level
+			self._active = {}
+			for k,v in self._toggle_status.items():
+				self._active[k] = v
+			self._toggle_level = None
+			self._toggle_status = {}
+		else:
+			self._toggle_level = self.level
+			self.level = syslog.LOG_DEBUG
+			for k,v in self._active.items():
+				self._toggle_status[k] = v
+				self._active[k] = True
+
+	def history (self):
+		with self._lock:
+			return '\n'.join(self._format(*_) for _ in self._history)
 
 	def log (self,source,message,level):
 		if level <= syslog.LOG_ERR and self.pdb:
@@ -155,7 +157,7 @@ class SysLog (object):
 			import pdb
 			pdb.set_trace()
 
-		if not self.status.get(source.split(' ',1)[0],False):
+		if not self._active.get(source.split(' ',1)[0],False):
 			#print "--recording", level, source, message
 			self._record(time.localtime(),level,source,message)
 
@@ -195,14 +197,26 @@ class SysLog (object):
 		for log in self.log(source,message,syslog.LOG_EMERG):
 			self._syslog.emmergency(log)
 
-#	def syslog (self,message):
-#		self._syslog.debug('9ld.%03d %-7s %02d %08X %s %4d %9ld %9ld %9ld %s %ld/%ld %s %s' % (
-#			
-#		))
-#		1330359799.854    828 82.219.28.33 TCP_MISS/200 1640 GET http://www.microsoft.com/ - DIRECT/65.55.12.249 text/html
-#		1330359799.921    895 82.219.204.14 TCP_MISS/200 30165 GET http://www.worldbookday.com/resources/schools/primary-schools/ - DIRECT/217.168.156.188 text/html
-#		1330359799.989    254 82.219.28.33 TCP_MISS/200 1015 GET http://clients1.google.co.uk/complete/search? - DIRECT/173.194.34.120 text/javascript
-#		1330359800.032    145 82.219.28.33 TCP_MISS/200 886 GET http://www.stereoboard.com/fancybox/fancy_shadow_se.png - DIRECT/217.160.94.78 image/png
+	#		1330359799.854    828 82.219.28.33 TCP_MISS/200 1640 GET http://www.microsoft.com/ - DIRECT/65.55.12.249 text/html
+	#		1330359799.921    895 82.219.204.14 TCP_MISS/200 30165 GET http://www.worldbookday.com/resources/schools/primary-schools/ - DIRECT/217.168.156.188 text/html
+	#		1330359799.989    254 82.219.28.33 TCP_MISS/200 1015 GET http://clients1.google.co.uk/complete/search? - DIRECT/173.194.34.120 text/javascript
+	#		1330359800.032    145 82.219.28.33 TCP_MISS/200 886 GET http://www.stereoboard.com/fancybox/fancy_shadow_se.png - DIRECT/217.160.94.78 image/png
+
+	def syslog (self,message,connection,destination_ip,encoding='data/unknown'):
+		assert(connection in ('TCP_MISS/200','ABORTED','TIMEOUT'))
+		#ABORTED : The response was not completed due to the connection being aborted (usually by the client).
+		#TIMEOUT : The response was not completed due to a connection timeout.
+
+		self._syslog.debug('%9.03f %6d %s %s 0 %s %s - DIRECT/%s %s' % (
+			time.time(),
+			len(message.raw),
+			message.client,
+			connection,
+			message.request.method,
+			message.request.uri,
+			destination_ip,
+			encoding
+		))
 
 def Log ():
 	if SysLog._log:
@@ -221,7 +235,30 @@ def Usage ():
 log = Log()
 usage = Usage()
 
-if __name__ == '__main__':
-	log = Log()
-	log.debug('source','debug test')
-	
+#if __name__ == '__main__':
+#	from exaproxy.http.message import HTTP
+#
+#	class Configuration:
+#		class Proxy:
+#			version = '0'
+#			name = 'test'
+#		proxy = Proxy()
+#		class HTTP:
+#			x_forwarded_for = False
+#		http = HTTP()
+#	configuration = Configuration()
+#
+#	header = """\
+#GET /devices/7n7qkp.xml HTTP/1.1
+#User-Agent:  Prey/0.4 (mac)
+#Host: control.preyproject.com
+#Accept: */*
+#Accept-Encoding: deflate, gzip
+#
+#"""
+#
+#	message = HTTP(configuration,header,'127.0.0.2').parse()
+#	
+#	usage = Usage().init('stdout')
+#	usage.syslog(message,'TCP_MISS/200','10.0.0.1')
+#

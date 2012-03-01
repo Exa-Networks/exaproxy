@@ -102,6 +102,9 @@ if __name__ == '__main__':
 		if arg in ['-p','--pdb']:
 			pdb = True
 
+	log.init(configuration.log.destination)
+	log.pdb = pdb
+
 	for section,value in configuration.log.items():
 		if section == 'destination':
 			continue
@@ -111,9 +114,7 @@ if __name__ == '__main__':
 			else:
 				log.setLevel(value)
 			continue
-		log.status[section] = value or debug
-	log.pdb = pdb
-	log.syslog(configuration.log.destination)
+		log.active(section,value or debug)
 
 	if not configuration.profile.enable:
 		Supervisor().run()
@@ -128,7 +129,7 @@ if __name__ == '__main__':
 		profile.run('Supervisor().run()')
 		sys.exit(0)
 
-	log.status['supervisor'] = True
+	log.active('supervisor')
 	notice = ''
 	if os.path.isdir(configuration.profile.destination):
 		notice = 'profile can not use this filename as outpout, it is not a directory (%s)' % profiled
