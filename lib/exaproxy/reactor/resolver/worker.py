@@ -62,7 +62,10 @@ class DNSClient(object):
 		request_s = self.dns_factory.createRequestString(identifier, qtype, hostname)
 
 		# and send it over the wire
-		self.socket.sendto(request_s, (self.server, self.port))
+		try:
+			self.socket.sendto(request_s, (self.server, self.port))
+		except IOError, e:
+			pass
 		return identifier, True
 
 	def getResponse(self):
