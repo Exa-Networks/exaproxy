@@ -23,6 +23,7 @@ class HTTP (object):
 		self.client = remote_ip
 		self.proxy_name = "X-Proxy-Version: %s version %s" % (configuration.proxy.name, configuration.proxy.version)
 		self.x_forwarded_for = configuration.http.x_forwarded_for
+		self.x_forwarded_key = configuration.http.x_forwarded_key
 
 	def parse (self):
 		log.info('header','parsing %s' % str(self.raw))
@@ -56,11 +57,11 @@ class HTTP (object):
 			self.headers.replace('x-proxy-version',self.proxy_name)
 
 			if self.x_forwarded_for:
-				client = self.headers.get('x-forwarded-for', ':%s' % self.client)[0].split(':', 1)[1].split(',')[-1].strip()
+				client = self.headers.get(self.x_forwarded_key, ':%s' % self.client)[0].split(':', 1)[1].split(',')[-1].strip()
 				if isip(client):
 					self.client = client
 				else:
-					log.info('header', 'Invalid address in X-Forwarded-For: %s' % client)
+					log.info('header', 'Invalid address in Client identifier header: %s' % client)
 
 			self.content_length = int(self.headers.get('content-length', [':0'])[0].split(':',1)[1].strip())
 			self.url = self.host + ((':%s' % self.port) if self.port != '80' else '') + self.request.path

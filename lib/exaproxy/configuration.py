@@ -57,6 +57,10 @@ class value (object):
 		return int(_)
 
 	@staticmethod
+	def lowunquote (_):
+		return _.strip().strip('\'"').lower()
+
+	@staticmethod
 	def unquote (_):
 		 return _.strip().strip('\'"')
 
@@ -196,7 +200,8 @@ defaults = {
 
 	'http' : {
 		'transparent'     : (value.boolean,value.lower,'false', 'do not insert Via headers'),
-		'x-forwarded-for' : (value.boolean,value.lower,'true',  'insert X-Forwarded-For headers to webservers'),
+		'x-forwarded-for' : (value.boolean,value.lower,'true',  'read client address from the HTTP headers'),
+		'x-forwarded-key' : (value.lowunquote,value.quote,'x-forwarded-for', 'read client address from this header'),
 		'allow-connect'   : (value.boolean,value.lower,'true',  'allow client to use CONNECT and https connections'),
 		'extensions'      : (value.methods,value.list,'',       'allow new HTTP method (space separated)')
 	},
