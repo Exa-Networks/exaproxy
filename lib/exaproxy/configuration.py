@@ -200,8 +200,7 @@ defaults = {
 
 	'http' : {
 		'transparent'     : (value.boolean,value.lower,'false', 'do not insert Via headers'),
-		'x-forwarded-for' : (value.boolean,value.lower,'true',  'read client address from the HTTP headers'),
-		'x-forwarded-key' : (value.lowunquote,value.quote,'x-forwarded-for', 'read client address from this header'),
+		'x-forwarded-for' : (value.lowunquote,value.quote,'',   'read client address from this header'),
 		'allow-connect'   : (value.boolean,value.lower,'true',  'allow client to use CONNECT and https connections'),
 		'extensions'      : (value.methods,value.list,'',       'allow new HTTP method (space separated)')
 	},
