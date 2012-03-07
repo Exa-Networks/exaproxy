@@ -31,12 +31,11 @@ class HTTP (object):
 			first, remaining = self.raw.split('\n',1)
 			if '\r' in self.raw:
 				self.separator = '\r\n'
-				self.request = Request(first.rstrip('\r')).parse()
-				self.headers = Headers('\r\n').parse(remaining)
 			else:
 				self.separator = '\n'
-				self.request = Request(first).parse()
-				self.headers = Headers('\n').parse(remaining)
+
+			self.request = Request(first.rstrip('\r')).parse()
+			self.headers = Headers(self.separator).parse(remaining)
 
 			headerhost = self.headers.get('host',[':'])[0].split(':',1)[1].strip()
 			self.headerhost = self.extractHost(headerhost)

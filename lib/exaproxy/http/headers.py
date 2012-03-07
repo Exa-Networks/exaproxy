@@ -54,7 +54,8 @@ class Headers (object):
 		try:
 			key = ''
 
-			for line in lines.split(self.separator):
+			for line in lines.split('\n'):
+				line = line.strip('\r')
 				if not line: break
 
 				if line[0].isspace():
