@@ -74,5 +74,8 @@ class Request (object):
 		return port
 
 	def __str__ (self):
+		if self.protocol == 'http':
+			return self.method + ' ' + self.path + ' HTTP/' + self.version
+
 		return self.raw
 
