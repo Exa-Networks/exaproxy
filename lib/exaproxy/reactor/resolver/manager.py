@@ -142,7 +142,6 @@ class ResolverManager(object):
 					response = client_id, command, resolved
 
 				else:
-					print 'cached dns miss for', hostname
 					newdecision = '\0'.join(('503', 'dns.html', 'http', '', hostname, 'peer'))
 					response = client_id, 'rewrite', newdecision
 
