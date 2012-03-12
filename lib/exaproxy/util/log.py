@@ -262,13 +262,19 @@ class Logger(Syslog):
 	def __init__(self, name, active, port=8888, level=syslog.LOG_DEBUG):
 		self.name = str(name)
 		self.destination = ('127.0.0.1', port)
+
+		self.tosyslog = (port == 514)
 		Syslog.__init__(self, active, level)
 
 
 	def log (self, text, loglevel):
 		if self.active is True and loglevel <= self.level:
-			levelname = self._named_level.get(loglevel, 'unknown')
-			message = '\0'.join((self.name, levelname, text))
+			if self.tosyslog:
+				message = '<%d>%s' % (loglevel, text)
+			else:
+				levelname = self._named_level.get(loglevel, 'unknown')
+				message = '\0'.join((self.name, levelname, text))
+
 			s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 			return s.sendto(message, self.destination)
 
