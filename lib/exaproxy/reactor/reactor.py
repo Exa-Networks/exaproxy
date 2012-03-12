@@ -8,9 +8,11 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # http://code.google.com/speed/articles/web-metrics.html
 
-from exaproxy.util.log import log
+from exaproxy.util.log import Logger
+
+
 class Reactor(object):
-	def __init__(self, web, proxy, decider, content, client, resolver, poller):
+	def __init__(self, configuration, web, proxy, decider, content, client, resolver, logger, poller):
 		self.web = web            # Manage listening web sockets
 		self.proxy = proxy        # Manage listening proxy sockets
 		self.decider = decider    # Task manager for handling child decider processes
@@ -18,9 +20,12 @@ class Reactor(object):
 		self.client = client      # Currently open client connections
 		self.resolver = resolver  # The DNS query manager
 		self.poller = poller      # Interface to the poller
+		self.logger = logger      # Log writing interfaces
 		self.running = True       # Until we stop we run :)
 		self.nb_events = 0L       # Number of events received
 		self.nb_loops = 0L        # Number of loop iteration
+
+		self.log = Logger('supervisor', configuration.log.supervisor)
 
 	def run(self):
 		poller = self.poller
@@ -46,7 +51,7 @@ class Reactor(object):
 			for name,ev in events.items():
 				self.nb_events += len(ev)
 
-			log.debug('supervisor','events : ' + ', '.join(events.keys()))
+			self.log.debug('events : ' + ', '.join(events.keys()))
 
 			# handle new connections before anything else
 			for sock in events.get('read_proxy',[]):
@@ -207,9 +212,12 @@ class Reactor(object):
 							else:
 								self.content.uncorkClientDownload(client_id)
 
+
 			# DNS servers we still have data to write to (should be TCP only)
 			for resolver in events.get('write_resolver', []):
 				self.resolver.continueSending(resolver)
+
+			decisions = []
 
 #			# retry connecting - opportunistic
 #			for client_id, decision in retry_download:
@@ -217,6 +225,8 @@ class Reactor(object):
 #				if not self.content.retryDownload(client_id, decision):
 #					break
 
+			for logger in events.get('read_log', []):
+				self.logger.logItems(logger)
 
-			decisions = []
+
 

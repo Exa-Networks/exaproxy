@@ -8,7 +8,7 @@ Copyright (c) 2012 Exa Networks. All rights reserved.
 
 import traceback
 
-from exaproxy.util.log import log
+from exaproxy.util.log import Logger
 from exaproxy.network.functions import isip
 
 from .request import Request
@@ -23,9 +23,10 @@ class HTTP (object):
 		self.client = remote_ip
 		self.proxy_name = "X-Proxy-Version: %s version %s" % (configuration.proxy.name, configuration.proxy.version)
 		self.x_forwarded_for = configuration.http.x_forwarded_for
+		self.log = Logger('header', configuration.log.header)
 
 	def parse (self):
-		log.info('header','parsing %s' % str(self.raw))
+		self.log.info('parsing %s' % str(self.raw))
 
 		try:
 			first, remaining = self.raw.split('\n',1)
@@ -59,7 +60,7 @@ class HTTP (object):
 				if isip(client):
 					self.client = client
 				else:
-					log.info('header', 'Invalid address in Client identifier header: %s' % client)
+					self.log.info('Invalid address in Client identifier header: %s' % client)
 
 			self.content_length = int(self.headers.get('content-length', [':0'])[0].split(':',1)[1].strip())
 			self.url = self.host + ((':%s' % self.port) if self.port != '80' else '') + self.request.path
@@ -68,9 +69,9 @@ class HTTP (object):
 		except KeyboardInterrupt:
 			raise
 		except Exception, e:
-			log.error('header','could not parse header %s %s' % (type(e),str(e)))
+			self.log.error('could not parse header %s %s' % (type(e),str(e)))
 			for line in traceback.format_exc().split('\n'):
-				log.info('header', line)
+				self.log.info(line)
 			return None
 		return self
 

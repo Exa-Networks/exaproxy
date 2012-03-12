@@ -21,7 +21,11 @@ from exaproxy.http.message import HTTP
 from exaproxy.http.request import Request
 from exaproxy.http.response import http
 
-from exaproxy.util.log import log
+from exaproxy.util.log import Logger
+from exaproxy.util.log import UsageLogger
+
+
+
 class Respond (object):
 	@staticmethod
 	def download (client_id, ip, port, length, message):
@@ -72,6 +76,8 @@ class Redirector (Thread):
 		self.enabled = configuration.redirector.enable
 		self.protocol = configuration.redirector.protocol
 		self._transparent = configuration.http.transparent
+		self.log = Logger('worker ' + str(name), configuration.log.worker)
+		self.usage = UsageLogger('usage', configuration.log.worker, port=configuration.usage.port)
 
 		self.universal = True if self.protocol == 'url' else False
 		self.icap = self.protocol[len('icap://'):].split('/')[0] if self.protocol.startswith('icap://') else ''
@@ -111,32 +117,32 @@ class Redirector (Thread):
 				stdout=subprocess.PIPE,
 				universal_newlines=self.universal,
 			)
-			log.debug('worker %s' % self.wid,'spawn process %s' % self.program)
+			self.log.debug('spawn process %s' % self.program)
 		except KeyboardInterrupt:
 			process = None
 		except (subprocess.CalledProcessError,OSError,ValueError):
-			log.error('worker %s' % self.wid,'could not spawn process %s' % self.program)
+			self.log.error('could not spawn process %s' % self.program)
 			process = None
 		return process
 
 	def destroyProcess (self):
 		if not self.enabled:
 			return
-		log.debug('worker %s' % self.wid,'destroying process %s' % self.program)
+		self.log.debug('destroying process %s' % self.program)
 		if not self.process:
 			return
 		try:
 			if self.process:
 				self.process.terminate()
 				self.process.wait()
-				log.info('worker %s' % self.wid,'terminated process PID %s' % self.process.pid)
+				self.log.info('terminated process PID %s' % self.process.pid)
 		except OSError, e:
 			# No such processs
 			if e[0] != errno.ESRCH:
-				log.error('worker %s' % self.wid,'PID %s died' % self.process.pid)
+				self.log.error('PID %s died' % self.process.pid)
 
 	def stop (self):
-		log.debug('worker %s' % self.wid,'shutdown')
+		self.log.debug('shutdown')
 		# The worker thread may be blocked reading from the queue
 		# so the shutdown will not be immediate
 		self.running = False
@@ -153,7 +159,7 @@ class Redirector (Thread):
 
 	def _classify_icap (self, message, headers, tainted):
 		if not self.process:
-			log.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
+			self.log.error('No more process to evaluate: %s' % str(squid))
 			return message, 'file', 'internal_error.html'
 
 		line = """\
@@ -192,16 +198,16 @@ Encapsulated: req-hdr=0, null-body=%d
 				headers = self.process.stdout.read(length)
 			except ValueError:
 				for line in traceback.format_exc().split('\n'):
-					log.info('worker %s' % self.wid, line)
+					self.log.info(line)
 				return message, 'file', 'internal_error.html'
 			except Exception:
 				for line in traceback.format_exc().split('\n'):
-					log.info('worker %s' % self.wid, line)
+					self.log.info(line)
 				return message, 'file', 'internal_error.html'
 		except IOError:
-			log.error('worker %s' % self.wid, 'IO/Error when sending to process')
+			self.log.error('IO/Error when sending to process')
 			for line in traceback.format_exc().split('\n'):
-				log.info('worker %s' % self.wid, line)
+				self.log.info(line)
 			if tainted is False:
 				return 'requeue', None
 			return message, 'file', 'internal_error.html'
@@ -244,7 +250,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 	def _classify_url (self, message, headers, tainted):
 		if not self.process:
-			log.error('worker %s' % self.wid, 'No more process to evaluate: %s' % str(squid))
+			self.log.error('No more process to evaluate: %s' % str(squid))
 			return message, 'file', 'internal_error.html'
 
 		try:
@@ -252,7 +258,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			self.process.stdin.write(squid + os.linesep)
 			response = self.process.stdout.readline().strip()
 		except IOError, e:
-			log.error('worker %s' % self.wid, 'IO/Error when sending to process: %s' % str(e))
+			self.log.error('IO/Error when sending to process: %s' % str(e))
 			if tainted is False:
 				return message, 'requeue', None
 			return message, 'file', 'internal_error.html'
@@ -286,45 +292,45 @@ Encapsulated: req-hdr=0, null-body=%d
 
 	def request (self,client_id, message, classification, data):
 		if classification == 'permit':
-			return Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
+			return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
 		if classification == 'rewrite':
 			message.redirect(None, data)
-			return Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
+			return ('REWRITE', data), Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
 		if classification == 'file':
-			return Respond.rewrite(client_id, '250', data, message)
+			return ('FILE', data), Respond.rewrite(client_id, '250', data, message)
 
 		if classification == 'redirect':
-			return Respond.redirect(client_id, data)
+			return ('REDIRECT', data), Respond.redirect(client_id, data)
 
 		if classification == 'intercept':
-			return Respond.download(client_id, data, message.port, message.content_length, self.transparent(message))
+			return ('INTERCEPT', data), Respond.download(client_id, data, message.port, message.content_length, self.transparent(message))
 
 		if classification == 'requeue':
-			return Respond.requeue(client_id, peer, header, source)
+			return (None, None), Respond.requeue(client_id, peer, header, source)
 
 		if classification == 'http':
-			return Respond.http(client_id, data)
+			return ('LOCAL', ''), Respond.http(client_id, data)
 
-		return Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
+		return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
 	def connect (self,client_id, message, classification, data, peer, source):
 		if classification == 'requeue':
-			return Respond.requeue(client_id, peer, header, source)
+			return (None, None), Respond.requeue(client_id, peer, header, source)
 
 		if classification == 'redirect':
-			return Respond.redirect(client_id, data)
+			return ('REDIRECT', data), Respond.redirect(client_id, data)
 
 		if classification == 'intercept':
-			return Respond.connect(client_id, data, message.port, message)
+			return ('INTERCEPT', data), Respond.connect(client_id, data, message.port, message)
 
-		return Respond.connect(client_id, message.host, message.port, message)
+		return ('PERMIT', message.host), Respond.connect(client_id, message.host, message.port, message)
 
 
 	def run (self):
 		while self.running:
-			log.debug('worker %s' % self.wid,'waiting for some work')
+			self.log.debug('waiting for some work')
 			try:
 				# The timeout is really caused by the SIGALARM sent on the main thread every second
 				# BUT ONLY IF the timeout is present in this call
@@ -333,23 +339,23 @@ Encapsulated: req-hdr=0, null-body=%d
 				if self.enabled:
 					if not self.process or self.process.poll() is not None:
 						if self.running:
-							log.error('worker %s' % self.wid, 'forked process died !')
+							self.log.error('forked process died !')
 						self.running = False
 						continue
 			except ValueError:
-				log.error('worker %s' % self.wid, 'Problem reading from request_box')
+				self.log.error('Problem reading from request_box')
 				continue
 
 			try:
 				client_id, peer, header, source, tainted = data
 			except TypeError:
-				log.alert('worker %s' % self.wid, 'Received invalid message: %s' % data)
+				self.log.alert('Received invalid message: %s' % data)
 				continue
 
 			if self.enabled:
 				if not self.process or self.process.poll() is not None:
 					if self.running:
-						log.error('worker %s' % self.wid, 'forked process died !')
+						self.log.error('forked process died !')
 					self.running = False
 					if source != 'nop':
 						self.respond(Respond.requeue(client_id, peer, header, source))
@@ -367,7 +373,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				self.respond(Respond.stats(self.wid, stats))
 
 			if not self.running:
-				log.debug('worker %s' % self.wid, 'Consumed a message before we knew we should stop. Handling it before hangup')
+				self.log.debug('Consumed a message before we knew we should stop. Handling it before hangup')
 
 			if source == 'nop':
 				continue
@@ -387,8 +393,13 @@ Encapsulated: req-hdr=0, null-body=%d
 			if method in ('GET', 'PUT', 'POST','HEAD','DELETE','PATCH'):
 				if not self.enabled:
 					self.respond(Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message)))
+					self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
 					continue
-				self.respond(self.request(client_id,*self.classify (message,header,tainted)))
+
+				(operation, destination), response = self.request(client_id,*self.classify (message,header,tainted))
+				self.respond(response)
+				if operation is not None:
+					self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
 				continue
 
 
@@ -400,9 +411,13 @@ Encapsulated: req-hdr=0, null-body=%d
 
 				# we do allow connect
 				if self.configuration.http.allow_connect:
-					self.respond(self.connect(client_id,*(self.classify(message,header,tainted)+(peer,source))))
+					(operation, destination), response = self.connect(client_id,*(self.classify(message,header,tainted)+(peer,source)))
+					self.respond(response)
+					if operation is not None:
+						self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
 				else:
 					self.respond(Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n')))
+					self.usage.logRequest(client_id, peer, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
 				continue
 
 			if method in ('OPTIONS','TRACE'):
@@ -410,22 +425,27 @@ Encapsulated: req-hdr=0, null-body=%d
 					max_forwards = message.headers.get('max-forwards').split(':')[-1].strip()
 					if not max_forwards.isdigit():
 						self.respond(Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n')))
+						self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
 						continue
 					max_forward = int(max_forwards)
 					if max_forward < 0 :
 						self.respond(Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n')))
+						self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
 						continue
 					if max_forward == 0:
 						if method == 'OPTIONS':
 							self.respond(Respond.http(client_id, http('200', '')))
+							self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', 'OPTIONS')
 							continue
 						if method == 'TRACE':
 							self.respond(Respond.http(client_id, http('200', header)))
+							self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', 'TRACE')
 							continue
 						raise RuntimeError('should never reach here')
 					message.headers['max-forwards'] = 'Max-Forwards: %d' % (max_forward-1)
 				# Carefull, in the case of OPTIONS message.host is NOT message.headerhost
 				self.respond(Respond.download(client_id, message.headerhost, message.port, self.transparent(message)))
+				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.headerhost)
 				continue
 
 			# WEBDAV
@@ -433,13 +453,16 @@ Encapsulated: req-hdr=0, null-body=%d
 			  'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE', 
 			  'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
 				self.respond(Respond.download(client_id, message.headerhost, message.port, self.transparent(message)))
+				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', method)
 				continue
 
 			if message.request in self.configuration.http.extensions:
 				self.respond(Respond.download(client_id, message.headerhost, message.port, self.transparent(message)))
+				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.request)
 				continue
 
 			self.respond(Respond.http(client_id, http('405', ''))) # METHOD NOT ALLOWED
+			self.usage.logRequest(client_id, peer, method, message.url, 'DENY', methos)
 			continue
 
 		self.respond(Respond.hangup(self.wid))

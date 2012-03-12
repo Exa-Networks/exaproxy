@@ -17,11 +17,12 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import os
 import errno
 
-from .log import log
+from .log import Logger
 
 class PID (object):
-	def __init__ (self,pid_file):
-		self.pid_file = pid_file
+	def __init__ (self, configuration):
+		self.log = Logger('daemon', configuration.log.daemon)
+		self.pid_file = configuration.daemon.pidfile
 		self._saved_pid = False
 		#mask = os.umask(0137)
 
@@ -41,7 +42,7 @@ class PID (object):
 			if e[0] == errno.ENOENT:
 				pass
 			if e[0] in (errno.EPERM,errno.EACCES):
-				log.warning('daemon',"PIDfile already exists, not updated %s" % self.pid_file)
+				self.log.warning("PIDfile already exists, not updated %s" % self.pid_file)
 				return
 			raise
 		except ValueError, e:
@@ -53,7 +54,7 @@ class PID (object):
 		except OSError, e:
 			# No such processs
 			if e[0] != errno.ESRCH:
-				log.warning('daemon',"PID %s is still running" % self.pid_file)
+				self.log.warning("PID %s is still running" % self.pid_file)
 				return
 
 		ownid = os.getpid()
@@ -64,7 +65,7 @@ class PID (object):
 		try:
 			fd = os.open(self.pid_file,flags,mode)
 		except OSError, e:
-			log.warning('daemon',"PIDfile already exists, not updated %s" % self.pid_file)
+			self.log.warning("PIDfile already exists, not updated %s" % self.pid_file)
 			return
 
 		try:
@@ -74,9 +75,9 @@ class PID (object):
 			f.close()
 			self._saved_pid = True
 		except IOError, e:
-			log.warning('daemon',"Can not create PIDfile %s" % self.pid_file)
+			self.log.warning("Can not create PIDfile %s" % self.pid_file)
 			return
-		log.info('daemon',"Created PIDfile %s with value %d" % (self.pid_file,ownid))
+		self.log.info("Created PIDfile %s with value %d" % (self.pid_file,ownid))
 
 	def remove (self):
 		if not self.pid_file or not self._saved_pid:
@@ -87,6 +88,6 @@ class PID (object):
 			if e.errno == errno.ENOENT:
 				pass
 			else:
-				log.warning('daemon',"Can not remove PIDfile %s" % self.pid_file)
+				self.log.warning("Can not remove PIDfile %s" % self.pid_file)
 				return
-		log.info('daemon',"Removed PIDfile %s" % self.pid_file)
+		self.log.info("Removed PIDfile %s" % self.pid_file)

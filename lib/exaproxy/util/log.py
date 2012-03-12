@@ -10,255 +10,304 @@ import os
 import sys
 import time
 import syslog
+import socket
 import logging
 import logging.handlers
 
-from threading import Lock
+class LogManager:
+	def __init__(self, poller):
+		self.workers = {}
+		self.poller = poller
 
-_named_level = {
-	syslog.LOG_EMERG   :  'EMERGENCY', # 0
-	syslog.LOG_ALERT   :  'ALERT'    , # 1
-	syslog.LOG_CRIT    :  'CRITICAL' , # 2
-	syslog.LOG_ERR     :  'ERROR'    , # 3
-	syslog.LOG_WARNING :  'WARNING'  , # 4
-	syslog.LOG_NOTICE  :  'NOTICE'   , # 5
-	syslog.LOG_INFO    :  'INFO'     , # 6
-	syslog.LOG_DEBUG   :  'DEBUG'    , # 7
-}
+	def addWorker(self, worker):
+		self.workers[worker.socket] = worker
+		self.poller.addReadSocket('read_log', worker.socket)
 
-def hex_string (value):
-	return '%s' % [(hex(ord(_))) for _ in value]
+	def removeWorker(self, socket):
+		worker = self.workers.pop(socket, None)
+		if worker:
+			self.poller.removeReadSocket('read_log', worker.socket)
 
-def single_line (value):
-	return '[%s]' % value.replace('\r\n','\\r\\n')
+	def logItems(self, socket):
+		worker = self.workers.get(socket, None)
+		if worker is not None:
+			worker.writeItems()
+
+class History:
+	def __init__ (self):
+		self.history = []
+		self.length = 100
+		self.position = 0
+
+	def record (self, loglevel, message, timestamp):
+		self.history.append((loglevel, message, timestamp))
+
+		if self.position >= self.length:
+			self.history = self.history[1:]
+		else:
+			self.position += 1
+
+	def snapshot(self):
+		return self.history[:]
+
 
 
 class Printer (object):
-	def __getattr__ (self,value):
-		def _print (message):
-			#sys.stdout.write('%s %s\n' % (value.upper(),message))
-			sys.stdout.write('%s\n' % message)
-			sys.stdout.flush()
-		return _print
+	def log (self, message):
+		#sys.stdout.write('%s %s\n' % (value.upper(),message))
+		sys.stdout.write('%s\n' % message)
+		sys.stdout.flush()
 
-class LazyFormat (object):
-	def __init__ (self,prefix,format,message):
-		self.prefix = prefix
-		self.format = format
-		self.message = message
-	
-	def __str__ (self):
-		if self.format:
-			return self.prefix + self.format(self.message)
-		return self.prefix + self.message
-	
-	def split (self,c):
-		return str(self).split(c)
 
-class SysLog (object):
-	_log = None
-	_usage = None
+class Syslog:
+	_named_level = {
+		syslog.LOG_EMERG   :  'emergency', # 0
+		syslog.LOG_ALERT   :  'alert'    , # 1
+		syslog.LOG_CRIT    :  'critical' , # 2
+		syslog.LOG_ERR     :  'error'    , # 3
+		syslog.LOG_WARNING :  'WARNING'  , # 4
+		syslog.LOG_NOTICE  :  'NOTICE'   , # 5
+		syslog.LOG_INFO    :  'INFO'     , # 6
+		syslog.LOG_DEBUG   :  'DEBUG'    , # 7
+	}
 
-	_inserted = 0
-	_max_history = 20
-	_history = []
-	_lock = Lock()
+	def __init__ (self, active, level):
+		self.active = active
+		self.level = level
+		self.oldactive = None
+		self.oldlevel = None
 	
-	_config = ''
-	_pid = os.getpid()
-	
-	_toggle_level = None
-	_toggle_status = {}
-	
-	pdb = False
+	def toggleDebug (self):
+		if self.oldlevel is not None:
+			self.active = self.oldactive
+			self.level = self.oldlevel
+			self.oldactive = None
+			self.oldlevel = None
+		else:
+			self.oldactive = self.active
+			self.oldlevel = self.level
+			self.active = True
+			self.level = self.debuglevel
 
-	def __init__ (self):
-		self._syslog = None
-		self.level = syslog.LOG_WARNING
-		self._active = {}
-		self._syslog = None
 
-	def init (self,destination):
+class LogWriter(Syslog):
+	history = History()
+	max_log_items = 20
+
+	def __init__ (self, active, destination, configuration, port=8888, level=syslog.LOG_WARNING):
+		if port is not None:
+			self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+			self.socket.bind(('127.0.0.1', port))
+			self.socket.setblocking(0)
+		else:
+			self.socket = None
+		self.configuration = configuration
+		self.active_names = {}
+		self.level = level
+		self.pid = os.getpid()
+
 		try:
 			if destination == 'print':
-				self._syslog = Printer()
-				return
-			if destination in ('stdout','stderr'):
-				handler = logging.StreamHandler()
-			elif destination == '':
-				if sys.platform == 'darwin':
-					address = '/var/run/syslog'
-				else:
-					address = '/dev/log'
-				if not os.path.exists(address):
-					address = ('localhost', 514)
-				handler = logging.handlers.SysLogHandler(address)
-			elif destination.lower().startswith('host:'):
-				# If the address is invalid, each syslog call will print an error.
-				# See how it can be avoided, as the socket error is encapsulated and not returned
-				address = (destination[5:].strip(), 514)
-				handler = logging.handlers.SysLogHandler(address)
+				issyslog = False
+				_syslog = Printer()
 			else:
-				handler = logging.handlers.RotatingFileHandler(destination, maxBytes=5*1024*1024, backupCount=5)
-			self._syslog = logging.getLogger()
-			self._syslog.setLevel(logging.DEBUG)
-			self._syslog.addHandler(handler)
-			return self
-		except IOError,e :
-			print >> sys.stderr, 'could not use SYSLOG %s' % str(e)
+				issyslog, handler = self.getHandler(destination)
+				_syslog = logging.getLogger()
+				_syslog.addHandler(handler)
+				_syslog.setLevel(level)
+		except IOError, e:
+			print >> sys.stderr, 'Could not use SYSLOG: %s' % str(e)
 			sys.exit(1)
+		
+		self.issyslog = issyslog
+		self._syslog = _syslog
 
-	def active (self,name,state=True):
-		self._active[name] = state
+		Syslog.__init__(self, active, level)
 
-	def setLevel(self, level):
-		self.level = level
+	def getHandler(self, destination):
+		if destination in ('stdout', 'stderr'):
+			handler = logging.StreamHandler()
+			issyslog = False
 
-	def setDebug(self):
-		self.level = syslog.LOG_DEBUG
+		elif destination == '':
+			if sys.platform == 'darwin':
+				address = '/var/run/syslog'
+			else:
+				address = '/dev/log'
 
-	def _record (self,timestamp,level,source,message):
-		with self._lock:
-			self._history.append((timestamp,level,source,message))
-			if len(self._history) > self._max_history:
-				self._history.pop(0)
+			if not os.path.exists(address):
+				address = 'localhost', 514
 
-	def _format (self,timestamp,level,source,message):
-		now = time.strftime('%a, %d %b %Y %H:%M:%S',timestamp)
-		return '%s %-9s %-6d %-13s %s' % (now,_named_level[level],self._pid,source,message)
+			handler = logging.handlers.SysLogHandler(address)
+			issyslog = True
 
-	def _prefixed (self,level,source,message):
-		ts = time.localtime()
-		self._record(ts,level,source,message)
-		return self._format(ts,level,source,message)
+		elif destination.lower().startswith('host:'):
+			# If the address is invalid, each syslog call will print an error.
+			# See how it can be avoided, as the socket error is encapsulated and not returned
+			address = (destination[5:].strip(), 514)
+			handler = logging.handlers.SysLogHandler(address)
+			issyslog = True
 
-	def toggle (self):
-		if self._toggle_level:
-			self.level = self._toggle_level
-			self._active = {}
-			for k,v in self._toggle_status.items():
-				self._active[k] = v
-			self._toggle_level = None
-			self._toggle_status = {}
 		else:
-			self._toggle_level = self.level
-			self.level = syslog.LOG_DEBUG
-			for k,v in self._active.items():
-				self._toggle_status[k] = v
-				self._active[k] = True
+			handler = logging.handlers.RotatingFileHandler(destination, maxBytes=5*1024*1024, backupCount=5)
 
-	def history (self):
-		with self._lock:
-			return '\n'.join(self._format(*_) for _ in self._history)
+		return True, handler
+		return issyslog, handler
 
-	def log (self,source,message,level):
-		if level <= syslog.LOG_ERR and self.pdb:
-			log.level = syslog.LOG_EMERG # silence Log as we debug
-			import pdb
-			pdb.set_trace()
+	def getHistory (self):
+		def history():
+			for text, loglevel, timestamp in self.history.snapshot():
+				yield self._format(text, loglevel, timestamp)
 
-		if not self._active.get(source.split(' ',1)[0],False):
-			#print "--recording", level, source, message
-			self._record(time.localtime(),level,source,message)
+		return os.linesep.join(history())
 
-		for line in message.split('\n'):
-			if level <= self.level:
-					yield self._prefixed(level,source,line)
+	def _format (self, name, text, timestamp):
+		date_string = time.strftime('%a, %d %b %Y %H:%M:%S',timestamp)
+		template = '%s %-6d %-13s %%s' % (date_string, self.pid, name)
 
-	def debug (self,source,message):
-		for log in self.log(source,message,syslog.LOG_DEBUG):
-			self._syslog.debug(log)
+		return '\n'.join(template % line for line in text.split('\n'))
 
-	def info (self,source,message):
-		for log in self.log(source,message,syslog.LOG_INFO):
-			self._syslog.info(log)
+	def _sys_format (self, name, text):
+		for line in text.split('\n'):
+			yield 'ExaProxy %-6d %-13s %s' % (self.pid, name, line)
 
-	def notice (self,source,message):
-		for log in self.log(source,message,syslog.LOG_NOTICE):
-			self._syslog.notice(log)
+	def logMessage (self, message):
+		try:
+			name, level, text = message.split('\0', 2)
+			# XXX: should be passed in the message to us
+			timestamp = time.localtime()
+			name = name.split()[0]
+		except ValueError:
+			name = 'unknown'
+			level = 'unknown'
+			text = message
+			timestamp = time.localtime()
 
-	def warning (self,source,message):
-		for log in self.log(source,message,syslog.LOG_WARNING):
-			self._syslog.warning(log)
+		if self.active is True:
+			active = self.active_names.get(name)
+		else:
+			active = False
 
-	def error (self,source,message):
-		for log in self.log(source,message,syslog.LOG_ERR):
-			self._syslog.error(log)
+		if active is None:
+			if hasattr(self.configuration, name):
+				active = getattr(self.configuration, name, None)
+				if isinstance(active, bool):
+					self.active_names[name] = active
 
-	def critical (self,source,message):
-		for log in self.log(source,message,syslog.LOG_CRIT):
-			self._syslog.critical(log)
+		if active is True:
+			self.history.record(level, text, timestamp)
+			if self.issyslog:
+				self.syslog(name, level, text)
+			else:
+				self.writelog(name, level, text, timestamp)
 
-	def alert (self,source,message):
-		for log in self.log(source,message,syslog.LOG_ALERT):
-			self._syslog.alert(log)
+	def writeItems (self):
+		try:
+			for _ in xrange(self.max_log_items):
+				message, peer = self.socket.recvfrom(65535)
+				self.logMessage(message)
+		except socket.error, e:
+			pass
 
-	def emmergency (self,source,message):
-		for log in self.log(source,message,syslog.LOG_EMERG):
-			self._syslog.emmergency(log)
+	def writelog (self, name, loglevel,  message, timestamp):
+		text = self._format(name, message, timestamp)
+		self._syslog.log(text)
 
-	#		1330359799.854    828 82.219.28.33 TCP_MISS/200 1640 GET http://www.microsoft.com/ - DIRECT/65.55.12.249 text/html
-	#		1330359799.921    895 82.219.204.14 TCP_MISS/200 30165 GET http://www.worldbookday.com/resources/schools/primary-schools/ - DIRECT/217.168.156.188 text/html
-	#		1330359799.989    254 82.219.28.33 TCP_MISS/200 1015 GET http://clients1.google.co.uk/complete/search? - DIRECT/173.194.34.120 text/javascript
-	#		1330359800.032    145 82.219.28.33 TCP_MISS/200 886 GET http://www.stereoboard.com/fancybox/fancy_shadow_se.png - DIRECT/217.160.94.78 image/png
+	def syslog (self, name, loglevel, message):
+		if loglevel <= self.level:
+			logger = getattr(self, 'log_' + loglevel, None)
+			if logger is not None:
+				for line in self._sys_format(name, message):
+					logger(line)
 
-	def syslog (self,message,connection,destination_ip,encoding='data/unknown'):
-		assert(connection in ('TCP_MISS/200','ABORTED','TIMEOUT'))
-		#ABORTED : The response was not completed due to the connection being aborted (usually by the client).
-		#TIMEOUT : The response was not completed due to a connection timeout.
+	# wrappers to avoid exposing methods of self._syslog we don't want
+	# to be visible when supplying loglevel to getattr()
 
-		self._syslog.debug('%9.03f %6d %s %s 0 %s %s - DIRECT/%s %s' % (
-			time.time(),
-			len(message.raw),
-			message.client,
-			connection,
-			message.request.method,
-			message.request.uri,
-			destination_ip,
-			encoding
-		))
+	def log_debug (self, message):
+		self._syslog.debug(message)
 
-def Log ():
-	if SysLog._log:
-		return SysLog._log
-	instance = SysLog()
-	Log._log = instance
-	return instance
+	def log_info (self, message):
+		self._syslog.info(message)
 
-def Usage ():
-	if SysLog._usage:
-		return SysLog._usage
-	instance = SysLog()
-	Log._usage = instance
-	return instance
+	def log_notice (self, message):
+		self._syslog.notice(message)
 
-log = Log()
-usage = Usage()
+	def log_warning (self, message):
+		self._syslog.warning(message)
 
+	def log_error (self, message):
+		self._syslog.error(message)
+
+	def log_critical (self, message):
+		self._syslog.critical(message)
+
+	def log_alert (self, message):
+		self._syslog.alert(message)
+
+	def log_emergency (self, message):
+		self._syslog.emergency(message)
+
+
+
+class Logger(Syslog):
+	facility = syslog.LOG_DAEMON
+	debuglevel = syslog.LOG_DEBUG
+
+	def __init__(self, name, active, port=8888, level=syslog.LOG_DEBUG):
+		self.name = str(name)
+		self.destination = ('127.0.0.1', port)
+		Syslog.__init__(self, active, level)
+
+
+	def log (self, text, loglevel):
+		if self.active is True and loglevel <= self.level:
+			levelname = self._named_level.get(loglevel, 'unknown')
+			message = '\0'.join((self.name, levelname, text))
+			s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+			return s.sendto(message, self.destination)
+
+	def debug (self, message):
+		self.log(message, syslog.LOG_DEBUG)
+
+	def info (self, message):
+		self.log(message, syslog.LOG_INFO)
+
+	def notice (self, message):
+		self.log(message, syslog.LOG_NOTICE)
+
+	def warning (self, message):
+		self.log(message, syslog.LOG_WARNING)
+
+	def error (self, message):
+		self.log(message, syslog.LOG_ERR)
+
+	def critical (self, message):
+		self.log(message, syslog.LOG_CRIT)
+
+	def alert (self, message):
+		self.log(message, syslog.LOG_ALERT)
+
+	def emergency (self, message):
+		self.log(message, syslog.LOG_EMERG)
+
+
+class UsageLogger(Logger):
+	def logRequest (self, client_id, client_ip, command, url, status, destination):
+		if self.active:
+			now = time.time()
+			line = '%s %.02f %s %s %s %s %s/%s' % (
+				time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(now)),
+				now, client_id, client_ip, command, url, status, destination
+			)
+
+			self.log(line, syslog.LOG_NOTICE)
+
+
+
+#
 #if __name__ == '__main__':
-#	from exaproxy.http.message import HTTP
+#	class config:
+#		log = {'test':'active'}
 #
-#	class Configuration:
-#		class Proxy:
-#			version = '0'
-#			name = 'test'
-#		proxy = Proxy()
-#		class HTTP:
-#			x_forwarded_for = False
-#		http = HTTP()
-#	configuration = Configuration()
-#
-#	header = """\
-#GET /devices/7n7qkp.xml HTTP/1.1
-#User-Agent:  Prey/0.4 (mac)
-#Host: control.preyproject.com
-#Accept: */*
-#Accept-Encoding: deflate, gzip
-#
-#"""
-#
-#	message = HTTP(configuration,header,'127.0.0.2').parse()
-#	
-#	usage = Usage().init('stdout')
-#	usage.syslog(message,'TCP_MISS/200','10.0.0.1')
-#
+#	logger = Logger('test', config)
+#	logger.notice('This is a test message')

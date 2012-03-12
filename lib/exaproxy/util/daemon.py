@@ -13,7 +13,7 @@ import errno
 import socket
 import resource
 
-from .log import log
+from .log import Logger
 
 def signed (value):
 	if value == sys.maxint:
@@ -22,18 +22,19 @@ def signed (value):
 
 class Daemon (object):
 	def __init__ (self,configuration):
-		self.daemonize = configuration.daemonize
-		self.user = configuration.user
+		self.daemonize = configuration.daemon.daemonize
+		self.user = configuration.daemon.user
+		self.log = Logger('daemon', configuration.log.daemon)
 		#mask = os.umask(0137)
-		if configuration.filemax:
+		if configuration.daemon.filemax:
 			try:
 				# default on mac are (256,-1)
-				resource.setrlimit(resource.RLIMIT_NOFILE, (configuration.filemax, -1))
+				resource.setrlimit(resource.RLIMIT_NOFILE, (configuration.daemon.filemax, -1))
 			except (resource.error,ValueError),e:
 				soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
-				log.error('daemon','could not increase file descriptor limit : %s' % str(e))
-				log.error('daemon','the current limit is %d' % signed(soft))
-				log.error('daemon','the maxium possible limit is %d' % signed(hard))
+				self.log.error('could not increase file descriptor limit : %s' % str(e))
+				self.log.error('the current limit is %d' % signed(soft))
+				self.log.error('the maxium possible limit is %d' % signed(hard))
 
 	def drop_privileges (self):
 		"""returns true if we are left with insecure privileges"""
@@ -88,7 +89,7 @@ class Daemon (object):
 				if pid > 0:
 					os._exit(0)
 			except OSError, e:
-				log.debug('daemon','Can not fork, errno %d : %s' % (e.errno,e.strerror))
+				self.log.debug('Can not fork, errno %d : %s' % (e.errno,e.strerror))
 
 		# do not detach if we are already supervised or run by init like process
 		if not self._is_socket(sys.__stdin__.fileno()) and not os.getppid() == 1:

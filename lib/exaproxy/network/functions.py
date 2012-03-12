@@ -9,9 +9,12 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import socket
 import errno
 
-from exaproxy.util.log import log
+from exaproxy.util.log import Logger
 from exaproxy.network.errno_list import errno_block
+from exaproxy.configuration import load
 
+configuration = load()
+log = Logger('server', configuration.log.server)
 
 def _ipv4(address):
 	try:
@@ -57,7 +60,7 @@ def listen (ip,port,timeout=None,backlog=0):
 		return s
 	except socket.error, e:
 		if e.args[0] == errno.EADDRINUSE:
-			log.debug('server','could not listen, port already in use %s:%d' % (ip,port))
+			log.debug('could not listen, port already in use %s:%d' % (ip,port))
 		elif e.args[0] == errno.EADDRNOTAVAIL:
 			log.debug('server','could not listen, invalid address %s:%d' % (ip,port))
 		else:

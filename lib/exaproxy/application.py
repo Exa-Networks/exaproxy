@@ -9,7 +9,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import sys
 
 from exaproxy.supervisor import Supervisor
-from exaproxy.util.log import log
+from exaproxy.util.log import Logger
 from exaproxy.configuration import ConfigurationError,load,ini,env,default
 
 def version_warning ():
@@ -76,6 +76,7 @@ if __name__ == '__main__':
 		print >> sys.stderr, 'configuration issue,', str(e)
 		sys.exit(1)
 
+	log = Logger('supervisor', configuration.log.supervisor)
 	debug = False
 	pdb = False
 
@@ -102,20 +103,6 @@ if __name__ == '__main__':
 		if arg in ['-p','--pdb']:
 			pdb = True
 
-	log.init(configuration.log.destination)
-	log.pdb = pdb
-
-	for section,value in configuration.log.items():
-		if section == 'destination':
-			continue
-		if section == 'level':
-			if debug:
-				log.setDebug()
-			else:
-				log.setLevel(value)
-			continue
-		log.active(section,value or debug)
-
 	if not configuration.profile.enable:
 		Supervisor().run()
 		sys.exit(0)
@@ -129,7 +116,6 @@ if __name__ == '__main__':
 		profile.run('Supervisor().run()')
 		sys.exit(0)
 
-	log.active('supervisor')
 	notice = ''
 	if os.path.isdir(configuration.profile.destination):
 		notice = 'profile can not use this filename as outpout, it is not a directory (%s)' % profiled
@@ -137,11 +123,11 @@ if __name__ == '__main__':
 		notice = 'profile can not use this filename as outpout, it already exists (%s)' % profiled
 
 	if not notice:
-		log.debug('supervisor','profiling ....')
+		log.debug('profiling ....')
 		profile.run('main()',filename=configuration.profile.destination)
 	else:
-		log.debug('supervisor',"-"*len(notice))
-		log.debug('supervisor',notice)
-		log.debug('supervisor',"-"*len(notice))
+		log.debug("-"*len(notice))
+		log.debug(notice)
+		log.debug("-"*len(notice))
 		main()
 	sys.exit(0)

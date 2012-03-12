@@ -8,7 +8,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import os
 
-from exaproxy.util.log import log
+from exaproxy.util.log import Logger
 from exaproxy.http.response import http, file_header
 from .worker import Content
 
@@ -18,7 +18,7 @@ class ParsingError (Exception):
 class ContentManager(object):
 	downloader_factory = Content
 
-	def __init__(self, poller, location, page):
+	def __init__(self, poller, location, page, configuration):
 		self.total_sent = 0L
 		self.opening = {}
 		self.established = {}
@@ -27,6 +27,7 @@ class ContentManager(object):
 		self.retry = []
 
 		self.poller = poller
+		self.log = Logger('download', configuration.log.download)
 
 		self.location = location
 		self.page = page
@@ -57,7 +58,7 @@ class ContentManager(object):
 
 				content = 'file', (header, filename)
 		else:
-			log.debug('download', 'no file exists for %s: %s' % (str(name), str(filename)))
+			self.log.debug('no file exists for %s: %s' % (str(name), str(filename)))
 			content = 'close', http(501, 'no file exists for %s: %s' % (str(name), str(filename)))
 
 		return content
@@ -74,10 +75,10 @@ class ContentManager(object):
 
 				content = 'close', http(code, body)
 			except IOError:
-				log.debug('download', 'no file exists for %s: %s' % (str(reason), str(filename)))
+				self.log.debug('no file exists for %s: %s' % (str(reason), str(filename)))
 				content = 'close', http(501, 'no file exists for %s' % str(reason))
 		else:
-			log.debug('download', 'no file exists for %s: %s' % (str(reason), str(filename)))
+			self.log.debug('no file exists for %s: %s' % (str(reason), str(filename)))
 			content = 'close', http(501, 'no file exists for %s' % str(reason))
 
 		return content
@@ -95,7 +96,7 @@ class ContentManager(object):
 				newdownloader = False
 
 		if downloader is None:
-			downloader = self.downloader_factory(client_id, host, port, command, request)
+			downloader = self.downloader_factory(client_id, host, port, command, request, self.log)
 			newdownloader = True
 
 		if downloader.sock is None:
@@ -194,7 +195,7 @@ class ContentManager(object):
 				length = 0
 
 		except ParsingError:
-			log.error('download', 'problem getting content %s %s' % (type(e),str(e)))
+			self.log.error('problem getting content %s %s' % (type(e),str(e)))
 			downloader = None
 			newdownloader = False
 			request = ''

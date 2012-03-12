@@ -11,9 +11,11 @@ import sys
 
 import traceback
 
-from .log import log
+from exaproxy.util.log import LogWriter
 
 debug = os.environ.get('PDB',None)
+#XXX
+writer = LogWriter(True, 'print', None, port=None)
 
 def bug_report (type, value, trace):
 	print >> sys.stderr, ''
@@ -32,7 +34,7 @@ def bug_report (type, value, trace):
 	print >> sys.stderr, '-- Logging History'
 	print >> sys.stderr, ''
 	print >> sys.stderr, ''
-	print >> sys.stderr, log.history()
+	print >> sys.stderr, writer.getHistory()
 	print >> sys.stderr, ''
 	print >> sys.stderr, ''
 	print >> sys.stderr, '-- Traceback'

@@ -10,20 +10,20 @@ import socket
 import errno
 
 from exaproxy.network.errno_list import errno_block
-from exaproxy.util.log import log
 
 
 class Client (object):
 	eor = '\r\n\r\n'
 	eorn = '\n\n'
 
-	def __init__(self, name, sock, peer):
+	def __init__(self, name, sock, peer, logger):
 		self.name = name
 		self.sock = sock
 		self.peer = peer
 		self.reader = self._read(sock)
 		self.writer = self._write(sock)
 
+		self.log = logger
 		self.blockupload = None
 
 		# start the _read coroutine
@@ -158,11 +158,10 @@ class Client (object):
 						if not w_buffer:
 							break      # terminate the client connection
 						elif data:
-							log.error('client', 'Tried to send data to client after we told it to close. Dropping it.')
+							self.log.error('Tried to send data to client after we told it to close. Dropping it.')
 
 					if not had_buffer or data == '':
 						sent = sock.send(w_buffer)
-						log.info('client', 'wrote to socket %s sent %d bytes' % (str(sock),sent))
 						w_buffer = w_buffer[sent:]
 					else:
 						sent = 0
@@ -177,12 +176,12 @@ class Client (object):
 
 			except socket.error, e:
 				if e.args[0] in errno_block:
-					log.info('client','interrupted when trying to sent %d bytes, will retry' % len(data))
-					log.info('client','reason: errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
+					self.log.info('interrupted when trying to sent %d bytes, will retry' % len(data))
+					self.log.info('reason: errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 					data = yield (True if w_buffer else False), had_buffer, 0
 				else:
-					log.critical('client','unexpected error writing on socket')
-					log.critical('client','reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
+					self.log.critical('unexpected error writing on socket')
+					self.log.critical('reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 					yield None # stop the client connection
 					break # and don't come back
 

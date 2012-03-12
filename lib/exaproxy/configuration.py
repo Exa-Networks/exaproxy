@@ -100,7 +100,7 @@ class value (object):
 
 	@staticmethod
 	def folder(path):
-		path = value.unquote(path)
+		path = os.path.expanduser(value.unquote(path))
 		paths = [
 			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),path)),
 			os.path.normpath(os.path.join('/','etc','exaproxy','exaproxy.conf',path)),
@@ -119,6 +119,9 @@ class value (object):
 			prefix = os.sep.join(split[:1])
 			if prefix and path.startswith(prefix):
 				path = path[len(prefix):]
+		home = os.path.expanduser('~')
+		if path.startswith(home):
+			return "'~%s'" % path[len(home):]
 		return "'%s'" % path
 
 	@staticmethod
@@ -147,6 +150,15 @@ class value (object):
 		first = value.conf(path)
 		if not os.access(first, os.X_OK): raise TypeError('%s is not an executable' % first)
 		return first
+
+	@staticmethod
+	def syslog (path):
+		path = value.unquote(path)
+		if path in ('stdout','stderr'):
+			return path
+		if path.startswith('host:'):
+			return path
+		return path
 
 	@staticmethod
 	def redirector (name):
@@ -191,7 +203,7 @@ defaults = {
 	},
 	'redirector' : {
 		'enable'  : (value.boolean,value.lower,'false',                         'use redirector programs to filter http request'),
-		'program' : (value.exe,value.path,'etc/exaproxy/redirector/url-allow', 'the program used to know where to send request'),
+		'program' : (value.exe,value.path,'etc/exaproxy/redirector/url-allow',  'the program used to know where to send request'),
 		'minimum' : (value.integer,value.nop,'5',                               'minimum number of worker threads (forked program)'),
 		'maximum' : (value.integer,value.nop,'25',                              'maximum number of worker threads (forked program)'),
 #		'timeout' : (value.integer,value.nop,'1',                               'how long to wait for work before peforming background work'),
@@ -227,6 +239,7 @@ defaults = {
 		'definitions'  : (value.unquote,value.path,'etc/exaproxy/dns/types',  'location of file defining dns query types'),
 	},
 	'log' : {
+		'enable'        : (value.boolean,value.lower,'true',               'enable traffic logging'),
 		'level'         : (value.syslog_value,value.syslog_name,'LOG_ERR', 'log message with at least the priority SYSLOG.<level>'),
 		'destination'   : (value.unquote,value.quote,'stdout',             'where syslog should log'),
 		'signal'        : (value.boolean,value.lower,'true',               'log messages from the signal subsystem'),
@@ -239,15 +252,18 @@ defaults = {
 		'worker'        : (value.boolean,value.lower,'true',               'log messages from the worker subsystem'),
 		'download'      : (value.boolean,value.lower,'true',               'log messages from the download subsystem'),
 		'http'          : (value.boolean,value.lower,'true',               'log messages from the http subsystem'),
-		'client'        : (value.boolean,value.lower,'true',               'log messages from the client subsystem'),
+		'header'        : (value.boolean,value.lower,'true',               'log messages from the header subsystem'),
 	},
 	'usage' : {
 		'enable'        : (value.boolean,value.lower,'false',              'enable traffic logging'),
-		'destination'   : (value.unquote,value.quote,'stdout',             'where syslog should log'),
+		'level'         : (value.syslog_value,value.syslog_name,'LOG_ERR', 'log message with at least the priority SYSLOG.<level>'),
+		'destination'   : (value.syslog,value.quote,'stdout',              'where syslog should log'),
+		'port'          : (value.integer,value.nop,'8889',                 'port the usage logger listens on'),
+		'usage'         : (value.boolean,value.lower,'true',               'log messages from the usage subsystem'),
 	},
 	'profile' : {
 		'enable'      : (value.boolean,value.lower,'false', 'enable profiling'),
-		'destination' : (value.nop,value.quote,'stdout',    'save profiling to file (instead of to the screen on exit)'),
+		'destination' : (value.syslog,value.quote,'stdout', 'save profiling to file (instead of to the screen on exit)'),
 	},
 	'proxy' : {
 		'name'    : (value.nop,value.nop,'ExaProxy', 'name'),
@@ -319,7 +335,7 @@ def default ():
 			continue
 		for option in sorted(defaults[section]):
 			values = defaults[section][option]
-			default = "'%s'" % values[2] if values[1] in (value.list,value.path,value.quote) else values[2]
+			default = "'%s'" % values[2] if values[1] in (value.list,value.path,value.quote,value.syslog) else values[2]
 			yield 'exaproxy.%s.%s %s: %s. default (%s)' % (section,option,' '*(20-len(section)-len(option)),values[3],default)
 
 def ini (diff=False):
