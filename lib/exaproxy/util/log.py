@@ -270,7 +270,7 @@ class Logger(Syslog):
 	def log (self, text, loglevel):
 		if self.active is True and loglevel <= self.level:
 			if self.tosyslog:
-				message = '<%d>%s' % (loglevel, text)
+				message = '<%d>%s: %s' % (loglevel, self.name, text)
 			else:
 				levelname = self._named_level.get(loglevel, 'unknown')
 				message = '\0'.join((self.name, levelname, text))
