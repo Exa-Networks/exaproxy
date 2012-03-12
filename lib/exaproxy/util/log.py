@@ -67,11 +67,13 @@ class Syslog:
 		syslog.LOG_ALERT   :  'alert'    , # 1
 		syslog.LOG_CRIT    :  'critical' , # 2
 		syslog.LOG_ERR     :  'error'    , # 3
-		syslog.LOG_WARNING :  'WARNING'  , # 4
-		syslog.LOG_NOTICE  :  'NOTICE'   , # 5
-		syslog.LOG_INFO    :  'INFO'     , # 6
-		syslog.LOG_DEBUG   :  'DEBUG'    , # 7
+		syslog.LOG_WARNING :  'warning'  , # 4
+		syslog.LOG_NOTICE  :  'notice'   , # 5
+		syslog.LOG_INFO    :  'info'     , # 6
+		syslog.LOG_DEBUG   :  'debug'    , # 7
 	}
+
+	_enumerated_level = dict((v,k) for (k,v) in _named_level.iteritems())
 
 	def __init__ (self, active, level):
 		self.active = active
@@ -216,9 +218,11 @@ class LogWriter(Syslog):
 		text = self._format(name, message, timestamp)
 		self._syslog.log(text)
 
-	def syslog (self, name, loglevel, message):
+	def syslog (self, name, levelname, message):
+		loglevel = self._enumerated_level.get(levelname, syslog.LOG_DEBUG)
+
 		if loglevel <= self.level:
-			logger = getattr(self, 'log_' + loglevel, None)
+			logger = getattr(self, 'log_' + levelname, None)
 			if logger is not None:
 				for line in self._sys_format(name, message):
 					logger(line)
