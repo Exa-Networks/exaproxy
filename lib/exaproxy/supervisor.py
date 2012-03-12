@@ -35,7 +35,7 @@ class Supervisor(object):
 	# clear = [hex(ord(c)) for c in os.popen('clear').read()]
 	# clear = ''.join([chr(int(c,16)) for c in ['0x1b', '0x5b', '0x48', '0x1b', '0x5b', '0x32', '0x4a']])
 
-	def __init__ (self):
+	def __init__ (self,debug):
 		configuration = load()
 		self.configuration = configuration
 
@@ -44,6 +44,10 @@ class Supervisor(object):
 		self.signal_log = Logger('signal', configuration.log.signal)
 		self.log_writer = LogWriter(configuration.log.enable, configuration.log.destination, configuration.log, level=configuration.log.level)
 		self.usage_writer = LogWriter(configuration.usage.enable, configuration.usage.destination, configuration.usage, port=configuration.usage.port, level=configuration.usage.level)
+
+		if debug:
+			self.log_writer.toggleDebug()
+			self.usage_writer.toggleDebug()
 
 		self.log.info('starting %s' % sys.argv[0])
 		self.log.info('python version %s' % sys.version.replace(os.linesep,' '))

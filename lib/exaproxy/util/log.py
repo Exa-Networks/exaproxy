@@ -60,6 +60,8 @@ class Printer (object):
 
 
 class Syslog:
+	debuglevel = syslog.LOG_DEBUG
+
 	_named_level = {
 		syslog.LOG_EMERG   :  'emergency', # 0
 		syslog.LOG_ALERT   :  'alert'    , # 1
@@ -91,6 +93,7 @@ class Syslog:
 
 
 class LogWriter(Syslog):
+	debug = False
 	history = History()
 	max_log_items = 20
 
@@ -251,7 +254,6 @@ class LogWriter(Syslog):
 
 class Logger(Syslog):
 	facility = syslog.LOG_DAEMON
-	debuglevel = syslog.LOG_DEBUG
 
 	def __init__(self, name, active, port=8888, level=syslog.LOG_DEBUG):
 		self.name = str(name)

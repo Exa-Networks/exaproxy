@@ -104,7 +104,7 @@ if __name__ == '__main__':
 			pdb = True
 
 	if not configuration.profile.enable:
-		Supervisor().run()
+		Supervisor(debug).run()
 		sys.exit(0)
 
 	try:
