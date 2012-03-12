@@ -6,6 +6,8 @@ Created by Thomas Mangin on 2012-02-05.
 Copyright (c) 2012 Exa Networks. All rights reserved.
 """
 
+#from exaproxy.util.debug import debug as pdb
+
 class _Container (object):
 	def __init__ (self,supervisor):
 		self.supervisor = supervisor
@@ -45,7 +47,7 @@ class Monitor (object):
 		reactor = self._supervisor.reactor
 
 		return {
-			'exaproxy.global.debugging' : str(bool(log.pdb)),
+			'exaproxy.global.debugging' : str(bool(pdb)),
 			'exaproxy.daemon.deamonize' : str(conf.daemon.daemonize),
 			'exaproxy.daemon.pidfile' : str(conf.daemon.pidfile),
 			'exaproxy.daemon.sleep' : str(conf.daemon.speed),

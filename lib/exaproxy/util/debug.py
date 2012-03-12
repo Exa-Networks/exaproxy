@@ -56,18 +56,15 @@ if debug is None:
 	def intercept_nopdb (type, value, trace):
 		bug_report(type, value, trace)
 	sys.excepthook = intercept_nopdb
-	log.pdb = False
 elif debug not in ['0','']:
 	def intercept_pdb (type, value, trace):
 		bug_report(type, value, trace)
 		import pdb
 		pdb.pm()
 	sys.excepthook = intercept_pdb
-	log.pdb = True
-
-del sys.argv[0]
 
 if sys.argv:
+	del sys.argv[0]
 	__file__ = os.path.abspath(sys.argv[0])
 	__name__ = '__main__'
 	execfile(sys.argv[0])
