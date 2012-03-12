@@ -22,7 +22,7 @@ class HTTP (object):
 		self.raw = headers
 		self.client = remote_ip
 		self.proxy_name = "X-Proxy-Version: %s version %s" % (configuration.proxy.name, configuration.proxy.version)
-		self.x_forwarded_for = configuration.http.x_forwarded_for
+		self.forward = configuration.http.forward
 		self.log = Logger('header', configuration.log.header)
 
 	def parse (self):
@@ -55,8 +55,8 @@ class HTTP (object):
 			# Is this the best place to add headers?
 			self.headers.replace('x-proxy-version',self.proxy_name)
 
-			if self.x_forwarded_for:
-				client = self.headers.get(self.x_forwarded_for, ':%s' % self.client)[0].split(':', 1)[1].split(',')[-1].strip()
+			if self.forward:
+				client = self.headers.get(self.forward, ':%s' % self.client)[0].split(':', 1)[1].split(',')[-1].strip()
 				if isip(client):
 					self.client = client
 				else:
