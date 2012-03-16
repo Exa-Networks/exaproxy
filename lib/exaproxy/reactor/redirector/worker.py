@@ -279,7 +279,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			return message, 'file', response[7:]
 
 		if response.startswith('intercept://'):
-			return message, 'intercept', response[6:]
+			return message, 'intercept', response[12:]
 
 		if response.startswith('redirect://'):
 			return message, 'redirect', response[11:]
