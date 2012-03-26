@@ -209,7 +209,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			for line in traceback.format_exc().split('\n'):
 				self.log.info(line)
 			if tainted is False:
-				return 'requeue', None
+				return None, 'requeue', None
 			return message, 'file', 'internal_error.html'
 
 		# QUICK and DIRTY, let do a intercept using the CONNECT syntax
@@ -225,7 +225,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				h = HTTP(self.configuration,headers,message.client)
 				if not h.parse():
 					if tainted is False:
-						return 'requeue', None
+						return None, 'requeue', None
 					return message, 'file', 'internal_error.html'
 
 				# The trick to not have to extend ICAP
@@ -237,13 +237,12 @@ Encapsulated: req-hdr=0, null-body=%d
 			return message, 'http', headers
 
 		if headers.startswith ('GET file://'):
-			print 'name',headers.split(' ',2)[1][7:]
 			return message, 'file', headers.split(' ',2)[1][7:]
 
 		h = HTTP(self.configuration,headers,message.client)
 		if not h.parse():
 			if tainted is False:
-				return 'requeue', None
+				return None, 'requeue', None
 			return message, 'file', 'internal_error.html'
 
 		return h, 'permit', None
