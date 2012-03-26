@@ -314,9 +314,9 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
-	def connect (self,client_id, peer, message, classification, data, peer, source):
+	def connect (self,client_id, client, message, classification, data, peer, source):
 		if classification == 'requeue':
-			return (None, None), Respond.requeue(client_id, peer, header, source)
+			return (None, None), Respond.requeue(client_id, client, header, source)
 
 		if classification == 'redirect':
 			return ('REDIRECT', data), Respond.redirect(client_id, data)
