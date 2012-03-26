@@ -289,7 +289,7 @@ Encapsulated: req-hdr=0, null-body=%d
 		self.response_box_write.write(str(len(response)) + ':' + response + ',')
 		self.response_box_write.flush()
 
-	def request (self,client_id, message, classification, data):
+	def request (self,client_id, peer, message, classification, data):
 		if classification == 'permit':
 			return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
@@ -314,7 +314,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
-	def connect (self,client_id, message, classification, data, peer, source):
+	def connect (self,client_id, peer, message, classification, data, peer, source):
 		if classification == 'requeue':
 			return (None, None), Respond.requeue(client_id, peer, header, source)
 
@@ -395,7 +395,7 @@ Encapsulated: req-hdr=0, null-body=%d
 					self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
 					continue
 
-				(operation, destination), response = self.request(client_id,*self.classify (message,header,tainted))
+				(operation, destination), response = self.request(client_id, peer, *self.classify (message,header,tainted))
 				self.respond(response)
 				if operation is not None:
 					self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
@@ -410,7 +410,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 				# we do allow connect
 				if self.configuration.http.allow_connect:
-					(operation, destination), response = self.connect(client_id,*(self.classify(message,header,tainted)+(peer,source)))
+					(operation, destination), response = self.connect(client_id, peer, *(self.classify(message,header,tainted)+(peer,source)))
 					self.respond(response)
 					if operation is not None:
 						self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
