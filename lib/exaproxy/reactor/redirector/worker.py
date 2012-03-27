@@ -410,7 +410,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 				# we do allow connect
 				if self.configuration.http.allow_connect:
-					(operation, destination), response = self.connect(client_id, peer, header, *(self.classify(message,header,tainted)+(peer,header,source)))
+					(operation, destination), response = self.connect(client_id, *(self.classify(message,header,tainted)+(peer,header,source)))
 					self.respond(response)
 					if operation is not None:
 						self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
