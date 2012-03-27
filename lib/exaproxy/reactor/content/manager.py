@@ -168,14 +168,14 @@ class ContentManager(object):
 
 			elif command == 'rewrite':
 				try:
-					code, reason, protocol, url, host, client_ip = args.split('\0', 5)
+					code, reason, comment, protocol, url, host, client_ip = args.split('\0', 6)
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 
 				downloader = None
 				newdownloader = False
 				request = ''
-				content = self.readLocalContent(code, reason, {'url':url, 'host':host, 'client_ip':client_ip, 'protocol':protocol})
+				content = self.readLocalContent(code, reason, {'url':url, 'host':host, 'client_ip':client_ip, 'protocol':protocol, 'comment':comment})
 				length = 0
 
 			elif command == 'monitor':

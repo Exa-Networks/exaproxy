@@ -40,8 +40,8 @@ class Respond (object):
 		return '\0'.join((client_id, 'file', str(code), reason))
 
 	@staticmethod
-	def rewrite (client_id, code, reason, message):
-		return '\0'.join((client_id, 'rewrite', code, reason, message.request.protocol, message.url, message.host, str(message.client)))
+	def rewrite (client_id, code, reason, comment, message):
+		return '\0'.join((client_id, 'rewrite', code, reason, comment, message.request.protocol, message.url, message.host, str(message.client)))
 
 	@staticmethod
 	def http (client_id, *data):
@@ -180,10 +180,16 @@ Encapsulated: req-hdr=0, null-body=%d
 				code = self.process.stdout.readline().rstrip().split()[1]
 				length = -1
 
+				comment = ''
 				while True:
 					line = self.process.stdout.readline().rstrip()
 					if not line:
 						break
+
+					if line.startswith('Pragma: comment:'):
+						comment = line.split(':',2)[2].strip()
+						continue
+
 					if line.startswith('Encapsulated: res-hdr=0, null-body='):
 						# BIG Shortcut for performance - we know the last header is the size
 						length = int(line.split('=')[-1])
@@ -191,26 +197,26 @@ Encapsulated: req-hdr=0, null-body=%d
 
 				# 304 (no modified)
 				if code == '304':
-					return message, 'permit', None
+					return message, 'permit', None, None
 
 				if length < 0:
-					return message, 'file', 'internal_error.html'
+					return message, 'file', 'internal_error.html', ''
 				headers = self.process.stdout.read(length)
 			except ValueError:
 				for line in traceback.format_exc().split('\n'):
 					self.log.info(line)
-				return message, 'file', 'internal_error.html'
+				return message, 'file', 'internal_error.html', ''
 			except Exception:
 				for line in traceback.format_exc().split('\n'):
 					self.log.info(line)
-				return message, 'file', 'internal_error.html'
+				return message, 'file', 'internal_error.html', ''
 		except IOError:
 			self.log.error('IO/Error when sending to process')
 			for line in traceback.format_exc().split('\n'):
 				self.log.info(line)
 			if tainted is False:
-				return None, 'requeue', None
-			return message, 'file', 'internal_error.html'
+				return message, 'requeue', None, None
+			return message, 'file', 'internal_error.html', ''
 
 		# QUICK and DIRTY, let do a intercept using the CONNECT syntax
 		if headers.startswith('CONNECT'):
@@ -221,36 +227,36 @@ Encapsulated: req-hdr=0, null-body=%d
 				request = Request(connect.split('\n')[0]).parse()
 
 				if not request:
-					return message, 'file', 'internal_error.html'
+					return message, 'file', 'internal_error.html', ''
 				h = HTTP(self.configuration,headers,message.client)
 				if not h.parse():
 					if tainted is False:
-						return None, 'requeue', None
-					return message, 'file', 'internal_error.html'
+						return None, 'requeue', None, None
+					return message, 'file', 'internal_error.html', ''
 
 				# The trick to not have to extend ICAP
 				h.host = request.host
 				h.port = request.port
-				return h,'permit',None
+				return h,'permit',None,comment
 
 		if headers.startswith('HTTP'):
-			return message, 'http', headers
+			return message, 'http', headers, comment
 
 		if headers.startswith ('GET file://'):
-			return message, 'file', headers.split(' ',2)[1][7:]
+			return message, 'file', headers.split(' ',2)[1][7:], comment
 
 		h = HTTP(self.configuration,headers,message.client)
 		if not h.parse():
 			if tainted is False:
 				return None, 'requeue', None
-			return message, 'file', 'internal_error.html'
+			return message, 'file', 'internal_error.html', comment
 
-		return h, 'permit', None
+		return h, 'permit', None, comment
 
 	def _classify_url (self, message, headers, tainted):
 		if not self.process:
 			self.log.error('No more process to evaluate: %s' % str(squid))
-			return message, 'file', 'internal_error.html'
+			return message, 'file', 'internal_error.html', ''
 
 		try:
 			squid = '%s %s - %s -' % (message.url_noport, message.client, message.request.method)
@@ -259,37 +265,37 @@ Encapsulated: req-hdr=0, null-body=%d
 		except IOError, e:
 			self.log.error('IO/Error when sending to process: %s' % str(e))
 			if tainted is False:
-				return message, 'requeue', None
-			return message, 'file', 'internal_error.html'
+				return message, 'requeue', None, ''
+			return message, 'file', 'internal_error.html', ''
 
 		if not response:
-			return message, 'permit', None
+			return message, 'permit', None, ''
 
 		if response.startswith('http://'):
 			response = response[7:]
 
 			if response == message.url_noport:
-				return message, 'permit', None
+				return message, 'permit', None, ''
 			if response.startswith(message.url.split('/', 1)[0]+'/'):
-				return message, 'rewrite', ('/'+response.split('/', 1)[1]) if '/' in message.url else ''
-			return message, 'redirect', 'http://' + response
+				return message, 'rewrite', ('/'+response.split('/', 1)[1]) if '/' in message.url else '', ''
+			return message, 'redirect', 'http://' + response, ''
 
 		if response.startswith('file://'):
-			return message, 'file', response[7:]
+			return message, 'file', response[7:], ''
 
 		if response.startswith('intercept://'):
-			return message, 'intercept', response[12:]
+			return message, 'intercept', response[12:], ''
 
 		if response.startswith('redirect://'):
-			return message, 'redirect', response[11:]
+			return message, 'redirect', response[11:], ''
 
-		return message, 'file', 'internal_error.html'
+		return message, 'file', 'internal_error.html', ''
 
 	def respond(self, response):
 		self.response_box_write.write(str(len(response)) + ':' + response + ',')
 		self.response_box_write.flush()
 
-	def request (self,client_id, message, classification, data, peer, header, source):
+	def request (self,client_id, message, classification, data, comment, peer, header, source):
 		if classification == 'permit':
 			return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
@@ -298,7 +304,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			return ('REWRITE', data), Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
 		if classification == 'file':
-			return ('FILE', data), Respond.rewrite(client_id, '250', data, message)
+			return ('FILE', data), Respond.rewrite(client_id, '250', data, comment, message)
 
 		if classification == 'redirect':
 			return ('REDIRECT', data), Respond.redirect(client_id, data)
@@ -314,7 +320,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
-	def connect (self,client_id, message, classification, data, peer, header, source):
+	def connect (self,client_id, message, classification, data, comment, peer, header, source):
 		if classification == 'requeue':
 			return (None, None), Respond.requeue(client_id, peer, header, source)
 
