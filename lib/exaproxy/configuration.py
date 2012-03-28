@@ -284,11 +284,14 @@ class Store (dict):
 		return dict.__setitem__(self,key.replace('_','-'),value)
 
 
-def _configuration ():
-	_conf_paths = (
+def _configuration (conf):
+	_conf_paths = [
 		os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),'etc','exaproxy','exaproxy.conf')),
 		os.path.normpath(os.path.join('/','etc','exaproxy','exaproxy.conf')),
-	)
+	]
+
+	if conf:
+		_conf_paths = [os.path.normpath(conf)] + _conf_paths
 
 	ini_file = [path for path in _conf_paths if os.path.exists(path)][0]
 	if not ini_file:
@@ -322,11 +325,13 @@ def _configuration ():
 
 __configuration = None
 
-def load ():
+def load (conf=None):
 	global __configuration
 	if __configuration:
 		return __configuration
-	__configuration = _configuration()
+	if conf is None:
+		raise RuntimeError('You can not have an import using load() before main() initialised it')
+	__configuration = _configuration(conf)
 	return __configuration
 
 def default ():

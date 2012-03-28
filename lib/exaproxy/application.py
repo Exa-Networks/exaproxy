@@ -8,10 +8,6 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import sys
 
-from exaproxy.supervisor import Supervisor
-from exaproxy.util.log import Logger
-from exaproxy.configuration import ConfigurationError,load,ini,env,default
-
 def version_warning ():
 	sys.stdout.write('\n')
 	sys.stdout.write('************ WARNING *** WARNING *** WARNING *** WARNING *********\n')
@@ -26,6 +22,7 @@ def help ():
 	sys.stdout.write('usage:\n exaproxy [options]\n')
 	sys.stdout.write('\n')
 	sys.stdout.write('  -h, --help      : this help\n')
+	sys.stdout.write('  -c, --conf-file : configuration file to use (ini format)\n')
 	sys.stdout.write('  -i, --ini       : display the configuration using the ini format\n')
 	sys.stdout.write('  -e, --env       : display the configuration using the env format\n')
 	sys.stdout.write(' -di, --diff-ini  : display non-default configurations values using the ini format\n')
@@ -70,15 +67,31 @@ if __name__ == '__main__':
 	if main == 2 and secondary == 4:
 		version_warning()
 
+	from exaproxy.configuration import ConfigurationError,load,ini,env,default
+
+	debug = False
+	pdb = False
+	next = ''
+	arguments = {
+		'configuration' : '',
+	}
+
+	for arg in sys.argv[1:]:
+		if next:
+			arguments[next] = arg
+			next = ''
+			continue
+		if arg in ['-c','--conf-file']:
+			next = 'configuration'
+
 	try:
-		configuration = load()
+		configuration = load(arguments['configuration'])
 	except ConfigurationError,e:
 		print >> sys.stderr, 'configuration issue,', str(e)
 		sys.exit(1)
 
+	from exaproxy.util.log import Logger
 	log = Logger('supervisor', configuration.log.supervisor)
-	debug = False
-	pdb = False
 
 	for arg in sys.argv[1:]:
 		if arg in ['--',]:
@@ -102,6 +115,8 @@ if __name__ == '__main__':
 			debug = True
 		if arg in ['-p','--pdb']:
 			pdb = True
+
+	from exaproxy.supervisor import Supervisor
 
 	if not configuration.profile.enable:
 		Supervisor(debug).run()
