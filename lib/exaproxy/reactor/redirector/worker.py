@@ -244,10 +244,10 @@ Encapsulated: req-hdr=0, null-body=%d
 			return message, 'http', headers, comment
 
 		if headers.startswith ('GET file://'):
-			return message, 'file', headers.split(' ',2)[1][7:], comment
+			return message, 'file', headers.split(' ',1)[1][7:], comment
 
 		if headers.startswith('GET redirect://'):
-			response_url = headers.split(' ',2)[1][11:]
+			response_url = headers.split(' ',1)[1][11:]
 			return message, 'rewrite', response_url, ''
 
 		h = HTTP(self.configuration,headers,message.client)
