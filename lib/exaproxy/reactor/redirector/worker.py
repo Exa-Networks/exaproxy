@@ -171,7 +171,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 %s""" % (
 			self.protocol,self.icap,
-			message.client, message.host
+			message.client, message.host,
 			len(headers),
 			headers
 		)
