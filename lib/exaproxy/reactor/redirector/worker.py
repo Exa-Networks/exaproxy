@@ -248,7 +248,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		if headers.startswith('GET redirect://'):
 			response_url = headers.split(' ',1)[1][11:]
-			return message, 'rewrite', response_url, ''
+			return message, 'redirect', response_url
 
 		h = HTTP(self.configuration,headers,message.client)
 		if not h.parse():
