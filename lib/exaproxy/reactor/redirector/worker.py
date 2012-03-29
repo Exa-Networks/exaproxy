@@ -166,11 +166,12 @@ class Redirector (Thread):
 REQMOD %s ICAP/1.0
 Host: %s
 Pragma: client=%s
+Pragma: host=%s
 Encapsulated: req-hdr=0, null-body=%d
 
 %s""" % (
 			self.protocol,self.icap,
-			message.client,
+			message.client, message.host
 			len(headers),
 			headers
 		)
