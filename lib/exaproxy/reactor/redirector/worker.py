@@ -246,7 +246,7 @@ Encapsulated: req-hdr=0, null-body=%d
 		if headers.startswith ('GET file://'):
 			return message, 'file', headers.split(' ',2)[1][7:], comment
 
-		if headers.startswith('GET redirect://')
+		if headers.startswith('GET redirect://'):
 			response_url = headers.split(' ',2)[1][11:]
 			return message, 'rewrite', response_url, ''
 
