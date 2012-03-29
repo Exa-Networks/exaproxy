@@ -89,7 +89,7 @@ class ResolverManager(object):
 
 				if data:
 					client_id, original, hostname, command, decision = data
-					yield client_id, 'rewrite', '\0'.join(('503', 'dns.html', '', '', hostname, 'peer'))
+					yield client_id, 'rewrite', '\0'.join(('503', 'dns.html', '', '', '', hostname, 'peer'))
 
 		if count:
 			self.active = self.active[count:]
