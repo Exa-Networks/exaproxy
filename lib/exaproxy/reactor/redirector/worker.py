@@ -249,7 +249,7 @@ Encapsulated: req-hdr=0, null-body=%d
 		h = HTTP(self.configuration,headers,message.client)
 		if not h.parse():
 			if tainted is False:
-				return None, 'requeue', None
+				return None, 'requeue', None, None
 			return message, 'file', 'internal_error.html', comment
 
 		return h, 'permit', None, comment
