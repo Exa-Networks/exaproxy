@@ -48,7 +48,7 @@ class Headers (object):
 			return default
 
 	def parse (self, lines):
-		if lines[0].isspace():
+		if lines and lines[0].isspace():
 			raise ValueError('Malformed headers, headers starts with a white space')
 
 		try:
