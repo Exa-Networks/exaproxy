@@ -240,15 +240,11 @@ Encapsulated: req-hdr=0, null-body=%d
 				h.port = request.port
 				return h,'permit',None,comment
 
-		if headers.startswith('HTTP'):
+		if not headers[:3].isdigit():
 			return message, 'http', headers, comment
 
 		if headers.startswith ('GET file://'):
 			return message, 'file', headers.split(' ',1)[1][7:], comment
-
-		if headers.startswith('GET redirect://'):
-			response_url = headers.split(' ',1)[1][11:]
-			return message, 'redirect', response_url, ''
 
 		h = HTTP(self.configuration,headers,message.client)
 		if not h.parse():
