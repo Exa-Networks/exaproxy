@@ -67,8 +67,13 @@ class DNSQuery:
 
 class DNSResource:
 	def __init__(self, data, packet_s, names):
-		name, ptr = convert.dns_string(data)
-		total_read = len(name) + 2
+		if data.startswith('\0'):
+			name = '.'
+			ptr = None
+			total_read = 1
+		else:
+			name, ptr = convert.dns_string(data)
+			total_read = len(name) + 2
 
 		if ptr is not None:
 			parts = [name] if name else []
