@@ -13,8 +13,6 @@ import traceback
 
 from exaproxy.util.log import LogWriter
 
-debug = os.environ.get('PDB',None)
-#XXX
 writer = LogWriter(True, 'print', None, port=None)
 
 def bug_report (type, value, trace):
@@ -52,16 +50,19 @@ def bug_report (type, value, trace):
 
 	#print >> sys.stderr, 'the program failed with message :', value
 
-if debug is None:
-	def intercept_nopdb (type, value, trace):
+def intercept (type, value, trace):
+	interactive = os.environ.get('PDB',None)
+
+	if interactive in ['0','']:
+		# PDB was set to 0 or '' which is undocumented, and we do nothing
+		pass
+	else:
 		bug_report(type, value, trace)
-	sys.excepthook = intercept_nopdb
-elif debug not in ['0','']:
-	def intercept_pdb (type, value, trace):
-		bug_report(type, value, trace)
-		import pdb
-		pdb.pm()
-	sys.excepthook = intercept_pdb
+		if interactive == 'true':
+			import pdb
+			pdb.pm()
+
+sys.excepthook = intercept
 
 if sys.argv:
 	del sys.argv[0]

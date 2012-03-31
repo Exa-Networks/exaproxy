@@ -115,11 +115,13 @@ if __name__ == '__main__':
 			debug = True
 		if arg in ['-p','--pdb']:
 			pdb = True
+			# The following may fail on old version of python
+			os.environ['PDB'] = 'true'
 
 	from exaproxy.supervisor import Supervisor
 
 	if not configuration.profile.enable:
-		Supervisor(debug).run()
+		Supervisor(debug,pdb).run()
 		sys.exit(0)
 
 	try:

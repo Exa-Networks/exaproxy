@@ -35,7 +35,7 @@ class Supervisor(object):
 	# clear = [hex(ord(c)) for c in os.popen('clear').read()]
 	# clear = ''.join([chr(int(c,16)) for c in ['0x1b', '0x5b', '0x48', '0x1b', '0x5b', '0x32', '0x4a']])
 
-	def __init__ (self,debug):
+	def __init__ (self,debug,pdb):
 		configuration = load()
 		self.configuration = configuration
 
@@ -72,7 +72,7 @@ class Supervisor(object):
 		self.poller.setupWrite('write_download')      # Established connections we have buffered data to send to
 		self.poller.setupWrite('opening_download')    # Opening connections
 
-		self.monitor = Monitor(self)
+		self.monitor = Monitor(self,pdb)
 		self.page = Page(self.monitor)
 		self.manager = RedirectorManager(
 			self.configuration,
