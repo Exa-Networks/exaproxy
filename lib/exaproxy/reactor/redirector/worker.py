@@ -240,7 +240,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				h.port = request.port
 				return h,'permit',None,comment
 
-		if not headers[:3].isdigit():
+		if not headers[:3].isdigit() and headers[4:].endswith(' '):
 			return message, 'http', headers, comment
 
 		if headers.startswith ('GET file://'):
