@@ -104,7 +104,7 @@ class DNSTypeCodec:
 
 	def decodeResource(self, value, question, response, ttl, data_s=''):
 		name, decoder = self.byvalue.get(value, (None, None))
-		if name is not None:
+		if name is not None and decoder is not None:
 			decoded = decoder(response, data_s)
 		else:
 			decoded = None
