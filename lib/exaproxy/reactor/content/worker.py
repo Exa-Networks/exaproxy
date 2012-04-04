@@ -71,12 +71,14 @@ class Content (object):
 			sent = self.sock.send(w_buffer)
 			self.log.info('sent %s of %s bytes of data : %s' % (sent, len(data), self.sock))
 			self.w_buffer = w_buffer[sent:]
-			res = True if self.w_buffer else False
+			res = bool(self.w_buffer)
 		except socket.error, e:
 			sent = 0
+			self.w_buffer = w_buffer
+
 			if e.args[0] in errno_block:
 				self.log.error('Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
-				res = True if self.w_buffer else False
+				res = bool(self.w_buffer)
 			elif e.args[0] in errno_unavailable:
 				res = None
 			else:
