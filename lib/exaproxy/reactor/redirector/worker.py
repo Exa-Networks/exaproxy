@@ -427,7 +427,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				continue
 
 			if method in ('OPTIONS','TRACE'):
-				if 'max-forwards' in message.headers:
+				if message.headers.get('max-forwards',''):
 					max_forwards = message.headers.get('max-forwards').split(':')[-1].strip()
 					if not max_forwards.isdigit():
 						self.respond(Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n')))
