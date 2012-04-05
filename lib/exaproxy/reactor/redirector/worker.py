@@ -428,7 +428,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 			if method in ('OPTIONS','TRACE'):
 				if message.headers.get('max-forwards',''):
-					max_forwards = message.headers.get('max-forwards').split(':')[-1].strip()
+					max_forwards = message.headers.get('max-forwards','Max-Fowards: -1')[-1].split(':')[-1].strip()
 					if not max_forwards.isdigit():
 						self.respond(Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n')))
 						self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
@@ -448,7 +448,7 @@ Encapsulated: req-hdr=0, null-body=%d
 							self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', 'TRACE')
 							continue
 						raise RuntimeError('should never reach here')
-					message.headers['max-forwards'] = 'Max-Forwards: %d' % (max_forward-1)
+					message.headers.set('max-forwards','Max-Forwards: %d' % (max_forward-1))
 				# Carefull, in the case of OPTIONS message.host is NOT message.headerhost
 				self.respond(Respond.download(client_id, message.headerhost, message.port, message.content_length, self.transparent(message)))
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.headerhost)
