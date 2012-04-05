@@ -1,0 +1,9 @@
+#!/bin/sh
+
+( \
+	echo "OPTIONS / HTTP/1.1" ;
+	echo "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0.1) Gecko/20100101 Firefox/8.0.1";
+	echo "Host: www.apache.org";
+	echo "Max-Forwards: 0";
+	echo;
+sleep 100) | telnet 127.0.0.1 3128
