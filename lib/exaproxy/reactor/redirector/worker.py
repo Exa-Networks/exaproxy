@@ -450,7 +450,7 @@ Encapsulated: req-hdr=0, null-body=%d
 						raise RuntimeError('should never reach here')
 					message.headers['max-forwards'] = 'Max-Forwards: %d' % (max_forward-1)
 				# Carefull, in the case of OPTIONS message.host is NOT message.headerhost
-				self.respond(Respond.download(client_id, message.headerhost, message.port, self.transparent(message)))
+				self.respond(Respond.download(client_id, message.headerhost, message.port, message.content_length, self.transparent(message)))
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.headerhost)
 				continue
 
@@ -458,12 +458,12 @@ Encapsulated: req-hdr=0, null-body=%d
 			if method in (
 			  'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE', 
 			  'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
-				self.respond(Respond.download(client_id, message.headerhost, message.port, self.transparent(message)))
+				self.respond(Respond.download(client_id, message.headerhost, message.port, message.content_length, self.transparent(message)))
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', method)
 				continue
 
 			if message.request in self.configuration.http.extensions:
-				self.respond(Respond.download(client_id, message.headerhost, message.port, self.transparent(message)))
+				self.respond(Respond.download(client_id, message.headerhost, message.port, message.content_length, self.transparent(message)))
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.request)
 				continue
 
