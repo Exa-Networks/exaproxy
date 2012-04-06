@@ -142,7 +142,7 @@ class ResolverManager(object):
 					response = client_id, command, resolved
 
 				else:
-					newdecision = '\0'.join(('503', 'dns.html', 'http', '', hostname, 'peer'))
+					newdecision = '\0'.join(('503', 'dns.html', 'http', '', '', hostname, 'peer'))
 					response = client_id, 'rewrite', newdecision
 
 			else:
@@ -243,7 +243,7 @@ class ResolverManager(object):
 
 				# not found
 				else:
-					newdecision = '\0'.join(('503', 'dns.html', 'http', '', hostname, 'peer'))
+					newdecision = '\0'.join(('503', 'dns.html', 'http', '', '', hostname, 'peer'))
 					response = client_id, 'rewrite', newdecision
 					#self.cacheDestination(original, ip)
 			else:
