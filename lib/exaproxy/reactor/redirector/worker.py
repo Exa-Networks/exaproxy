@@ -468,7 +468,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				continue
 
 			self.respond(Respond.http(client_id, http('405', ''))) # METHOD NOT ALLOWED
-			self.usage.logRequest(client_id, peer, method, message.url, 'DENY', methos)
+			self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
 			continue
 
 		self.respond(Respond.hangup(self.wid))
