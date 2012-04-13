@@ -62,9 +62,9 @@ def listen (ip,port,timeout=None,backlog=0):
 		if e.args[0] == errno.EADDRINUSE:
 			log.debug('could not listen, port already in use %s:%d' % (ip,port))
 		elif e.args[0] == errno.EADDRNOTAVAIL:
-			log.debug('server','could not listen, invalid address %s:%d' % (ip,port))
+			log.debug('could not listen, invalid address %s:%d' % (ip,port))
 		else:
-			log.debug('server','could not listen on %s:%d - %s' % (ip,port,str(e)))
+			log.debug('could not listen on %s:%d - %s' % (ip,port,str(e)))
 		return None
 
 
