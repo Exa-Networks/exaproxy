@@ -31,9 +31,9 @@ class EPoller (IPoller):
 	def addReadSocket(self, name, socket):
 		sockets, poller, fdtosock, corked = self.sockets[name]
 		if socket not in sockets:
-			fileno = socket.fileno()
 			sockets.append(socket)
 			try:
+				fileno = socket.fileno()
 				poller.register(socket, EPOLLIN | EPOLLHUP)
 				res = True
 			except socket.error, e:
@@ -56,7 +56,11 @@ class EPoller (IPoller):
 	def removeReadSocket(self, name, socket):
 		sockets, poller, fdtosock, corked = self.sockets[name]
 		if socket in sockets:
-			fdtosock.pop(socket.fileno(), None)
+			try:
+				fdtosock.pop(socket.fileno(), None)
+			except socket.error:
+				pass
+
 			sockets.remove(socket)
 			if socket not in corked:
 				poller.unregister(socket)
@@ -126,9 +130,9 @@ class EPoller (IPoller):
 	def addWriteSocket(self, name, socket):
 		sockets, poller, fdtosock, corked = self.sockets[name]
 		if socket not in sockets:
-			fileno = socket.fileno()
 			sockets.append(socket)
 			try:
+				fileno = socket.fileno()
 				poller.register(socket, EPOLLOUT | EPOLLHUP)
 				res = True
 			except socket.error, e:
@@ -150,7 +154,11 @@ class EPoller (IPoller):
 	def removeWriteSocket(self, name, socket):
 		sockets, poller, fdtosock, corked = self.sockets[name]
 		if socket in sockets:
-			fdtosock.pop(socket.fileno(), None)
+			try:
+				fdtosock.pop(socket.fileno(), None)
+			except socket.error:
+				pass
+
 			sockets.remove(socket)
 			if socket not in corked:
 				poller.unregister(socket)
