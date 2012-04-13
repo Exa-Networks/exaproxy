@@ -28,76 +28,76 @@ class EPoller (IPoller):
 		self.errors = {}
 
 
-	def addReadSocket(self, name, socket):
+	def addReadSocket(self, name, sock):
 		sockets, poller, fdtosock, corked = self.sockets[name]
-		if socket not in sockets:
-			sockets.append(socket)
+		if sock not in sockets:
+			sockets.append(sock)
 			try:
-				fileno = socket.fileno()
-				poller.register(socket, EPOLLIN | EPOLLHUP)
+				fileno = sock.fileno()
+				poller.register(sock, EPOLLIN | EPOLLHUP)
 				res = True
 			except socket.error, e:
-				sockets.remove(socket)
+				sockets.remove(sock)
 				res = False
-				print "ERROR registering socket (%s): %s" % (str(socket), str(e))
+				print "ERROR registering socket (%s): %s" % (str(sock), str(e))
 
-				if socket not in self.errors:
-					self.errors[socket] = name
+				if sock not in self.errors:
+					self.errors[sock] = name
 				else:
 					print "NOTE: trying to poll closed socket again (addReadSocket)"
 					
 			else:
-				fdtosock[fileno] = socket
+				fdtosock[fileno] = sock
 		else:
 			res = False
 
 		return res
 
-	def removeReadSocket(self, name, socket):
+	def removeReadSocket(self, name, sock):
 		sockets, poller, fdtosock, corked = self.sockets[name]
-		if socket in sockets:
+		if sock in sockets:
 			try:
-				fdtosock.pop(socket.fileno(), None)
+				fdtosock.pop(sock.fileno(), None)
 			except socket.error:
 				pass
 
-			sockets.remove(socket)
-			if socket not in corked:
-				poller.unregister(socket)
+			sockets.remove(sock)
+			if sock not in corked:
+				poller.unregister(sock)
 			else:
-				corked.pop(socket)
+				corked.pop(sock)
 
-		if socket in self.errors:
-			self.errors.pop(socket)
+		if sock in self.errors:
+			self.errors.pop(sock)
 
-	def removeClosedReadSocket(self, name, socket):
+	def removeClosedReadSocket(self, name, sock):
 		pass
 
-	def corkReadSocket(self, name, socket):
+	def corkReadSocket(self, name, sock):
 		sockets, poller, fdtosock, corked = self.sockets[name]
-		if socket in sockets and socket not in corked:
-			corked[socket] = True
-			poller.unregister(socket)
+		if sock in sockets and sock not in corked:
+			corked[sock] = True
+			poller.unregister(sock)
 			res = True
 		else:
 			res = False
 
 		return res
 
-	def uncorkReadSocket(self, name, socket):
+	def uncorkReadSocket(self, name, sock):
 		sockets, poller, fdtosock, corked = self.sockets[name]
-		if socket in sockets:
-			if corked.pop(socket, None):
+		if sock in sockets:
+			if corked.pop(sock, None):
 				try:
-					poller.register(socket, EPOLLIN | EPOLLHUP)
+					poller.register(sock, EPOLLIN | EPOLLHUP)
 					res = True
 				except socket.error, e:
-					sockets.remove(socket)
+					sockets.remove(sock)
 					res = False
-					print "ERROR reregistering socket (%s): %s" % (str(socket), str(e))
+					print "ERROR reregistering socket (%s): %s" % (str(sock), str(e))
 
-					if socket not in self.errors:
-						self.errors[socket] = name
+					if sock not in self.errors:
+						self.errors[sock] = name
 					else:
 						print "NOTE: trying to poll closed socket again (uncorkReadSocket)"
 			else:
@@ -127,75 +127,75 @@ class EPoller (IPoller):
 			self.setupRead(name)
 
 
-	def addWriteSocket(self, name, socket):
+	def addWriteSocket(self, name, sock):
 		sockets, poller, fdtosock, corked = self.sockets[name]
-		if socket not in sockets:
-			sockets.append(socket)
+		if sock not in sockets:
+			sockets.append(sock)
 			try:
-				fileno = socket.fileno()
-				poller.register(socket, EPOLLOUT | EPOLLHUP)
+				fileno = sock.fileno()
+				poller.register(sock, EPOLLOUT | EPOLLHUP)
 				res = True
 			except socket.error, e:
-				sockets.remove(socket)
+				sockets.remove(sock)
 				res = False
-				print "ERROR registering socket (%s): %s" % (str(socket), str(e))
+				print "ERROR registering socket (%s): %s" % (str(sock), str(e))
 
-				if socket not in self.errors:
-					self.errors[socket] = name
+				if sock not in self.errors:
+					self.errors[sock] = name
 				else:
 					print "NOTE: trying to poll closed socket again (addWriteSocket)"
 			else:
-				fdtosock[fileno] = socket
+				fdtosock[fileno] = sock
 		else:
 			res = False
 
 		return res
 
-	def removeWriteSocket(self, name, socket):
+	def removeWriteSocket(self, name, sock):
 		sockets, poller, fdtosock, corked = self.sockets[name]
-		if socket in sockets:
+		if sock in sockets:
 			try:
-				fdtosock.pop(socket.fileno(), None)
+				fdtosock.pop(sock.fileno(), None)
 			except socket.error:
 				pass
 
-			sockets.remove(socket)
-			if socket not in corked:
-				poller.unregister(socket)
+			sockets.remove(sock)
+			if sock not in corked:
+				poller.unregister(sock)
 			else:
-				corked.pop(socket)
+				corked.pop(sock)
 
-		if socket in self.errors:
-			self.errors.pop(socket, None)
+		if sock in self.errors:
+			self.errors.pop(sock, None)
 
-	def removeClosedWriteSocket(self, name, socket):
+	def removeClosedWriteSocket(self, name, sock):
 		pass
 
-	def corkWriteSocket(self, name, socket):
+	def corkWriteSocket(self, name, sock):
 		sockets, poller, fdtosock, corked = self.sockets[name]
-		if socket in sockets and socket not in corked:
-			poller.unregister(socket)
-			corked[socket] = True
+		if sock in sockets and sock not in corked:
+			poller.unregister(sock)
+			corked[sock] = True
 			res = True
 		else:
 			res = False
 
 		return res
 
-	def uncorkWriteSocket(self, name, socket):
+	def uncorkWriteSocket(self, name, sock):
 		sockets, poller, fdtosock, corked = self.sockets[name]
-		if socket in sockets:
-			if corked.pop(socket, None):
+		if sock in sockets:
+			if corked.pop(sock, None):
 				try:
-					poller.register(socket, EPOLLOUT | EPOLLHUP)
+					poller.register(sock, EPOLLOUT | EPOLLHUP)
 					res = True
 				except socket.error, e:
-					sockets.remove(socket)
+					sockets.remove(sock)
 					res = False
-					print "ERROR reregistering socket (%s): %s" % (str(socket), str(e))
+					print "ERROR reregistering socket (%s): %s" % (str(sock), str(e))
 
-					if socket not in self.errors:
-						self.errors[socket] = name
+					if sock not in self.errors:
+						self.errors[sock] = name
 					else:
 						print "NOTE: trying to poll closed socket again (uncorkWriteSocket)"
 			else:
@@ -249,8 +249,8 @@ class EPoller (IPoller):
 #			for sock_fd, sock_events in events:
 #				if sock_events & select.EPOLLHUP:
 #					print "REMOVING SOCKET BECAUSE WE WERE TOLD IT CLOSED", sock_fd
-#					socket = fdtosock.pop(sock_fd, None)
+#					sock = fdtosock.pop(sock_fd, None)
 #					poller.unregister(sock_fd)
-#					sockets.remove(socket)
+#					sockets.remove(sock)
 
 		return response
