@@ -14,13 +14,15 @@ class DNSPacketFactory:
 	def serializeRequest(self, request, extended=False):
 		encoded = self.codec.encodeRequest(request)
 		if extended:
-			encoded = struct.pack('>Hs', len(encoded), encoded)
+			encoded = struct.pack('>H', len(encoded)) + encoded
 
 		return encoded
 
 	def normalizeRequest(self, request_s, extended=False):
 		if extended:
-			length, request_s = struct.unpack('>Hs', request_s)
+			(length,) = struct.unpack('>H', (request_s + '\0\0')[:2])
+			request_s = request_s[2:]
+
 			if length != len(request_s):
 				request_s = ''
 
@@ -32,20 +34,22 @@ class DNSPacketFactory:
 
 		encoded = self.codec.encodeRequest(request)
 		if extended:
-			encoded = struct.pack('>Hs', len(encoded), encoded)
+			encoded = struct.pack('>H', len(encoded)) + encoded
 
 		return encoded
 
 	def serializeResponse(self, response, extended=False):
 		encoded = self.codec.encodeResponse(response)
 		if extended:
-			encoded = struct.pack('>Hs', len(encoded), encoded)
+			encoded = struct.pack('>H', len(encoded)) + encoded
 
 		return encoded
 
 	def normalizeResponse(self, response_s, extended=False):
 		if extended:
-			length, request_s = struct.unpack('>Hs', response_s)
+			(length,) = struct.unpack('>H', (response_s + '\0\0')[:2])
+			response_s = response_s[2:]
+
 			if length != len(response_s):
 				request_s = ''
 
