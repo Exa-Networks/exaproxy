@@ -2,6 +2,8 @@ from codec import DNSCodec
 from codec import DNSRequestType
 from codec import DNSResponseType
 
+import struct
+
 class DNSPacketFactory:
 	request_factory = DNSRequestType
 	response_factory = DNSResponseType
