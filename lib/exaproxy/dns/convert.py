@@ -32,11 +32,11 @@ def dns_string(s):
 			ptr = u8(s[1])
 			break
 
-		if remaining <= 0:
-			parts = []
+		if length == 0:
 			break
 
-		if length == 0:
+		if remaining <= 0:
+			parts = []
 			break
 
 		parts.append(s[1:1+length])
