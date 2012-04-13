@@ -49,9 +49,9 @@ class HTTP (object):
 			self.port = self.request.port
 
 			# That does not let us use ICAP and connect to redirect things :p
-			if self.headerhost:
-				if self.host != self.headerhost and self.request.method != 'OPTIONS' and self.host != '*':
-					raise HostMismatch, 'Make up your mind: %s - %s' % (self.host, self.headerhost)
+			#if self.headerhost:
+			#	if self.host != self.headerhost and self.request.method != 'OPTIONS' and self.host != '*':
+			#		raise HostMismatch, 'Make up your mind: %s - %s' % (self.host, self.headerhost)
 
 			# Is this the best place to add headers?
 			self.headers.replace('x-proxy-version',self.proxy_name)
