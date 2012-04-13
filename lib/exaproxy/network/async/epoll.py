@@ -10,6 +10,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import select
 import errno
+import socket
 
 from interface import IPoller
 
