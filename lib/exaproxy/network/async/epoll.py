@@ -32,8 +32,19 @@ class EPoller (IPoller):
 		if socket not in sockets:
 			fileno = socket.fileno()
 			sockets.append(socket)
-			poller.register(socket, EPOLLIN | EPOLLHUP)
-			fdtosock[fileno] = socket
+			try:
+				poller.register(socket, EPOLLIN | EPOLLHUP)
+				res = True
+			except socket.error, e:
+				sockets.remove(socket)
+				res = False
+				print "ERROR registering socket (%s): %s" % (str(socket), str(e))
+			else:
+				fdtosock[fileno] = socket
+		else:
+			res = False
+
+		return res
 
 	def removeReadSocket(self, name, socket):
 		sockets, poller, fdtosock, corked = self.sockets[name]
@@ -50,15 +61,32 @@ class EPoller (IPoller):
 
 	def corkReadSocket(self, name, socket):
 		sockets, poller, fdtosock, corked = self.sockets[name]
-		if socket in sockets:
+		if socket in sockets and socket not in corked:
 			corked[socket] = True
 			poller.unregister(socket)
+			res = True
+		else:
+			res = False
+
+		return res
 
 	def uncorkReadSocket(self, name, socket):
 		sockets, poller, fdtosock, corked = self.sockets[name]
 		if socket in sockets:
 			if corked.pop(socket, None):
-				poller.register(socket, EPOLLIN | EPOLLHUP)
+				try:
+					poller.register(socket, EPOLLIN | EPOLLHUP)
+					res = True
+				except socket.error, e:
+					sockets.remove(socket)
+					res = False
+					print "ERROR reregistering socket (%s): %s" % (str(socket), str(e))
+			else:
+				res = False
+		else:
+			res = False
+
+		return res
 
 	def setupRead(self, name):
 		if name not in self.sockets:
@@ -83,9 +111,21 @@ class EPoller (IPoller):
 	def addWriteSocket(self, name, socket):
 		sockets, poller, fdtosock, corked = self.sockets[name]
 		if socket not in sockets:
+			fileno = socket.fileno()
 			sockets.append(socket)
-			poller.register(socket, EPOLLOUT | EPOLLHUP)
-			fdtosock[socket.fileno()] = socket
+			try:
+				poller.register(socket, EPOLLOUT | EPOLLHUP)
+				res = True
+			except socket.error, e:
+				sockets.remove(socket)
+				res = False
+				print "ERROR registering socket (%s): %s" % (str(socket), str(e))
+			else:
+				fdtosock[fileno] = socket
+		else:
+			res = False
+
+		return res
 
 	def removeWriteSocket(self, name, socket):
 		sockets, poller, fdtosock, corked = self.sockets[name]
@@ -102,13 +142,32 @@ class EPoller (IPoller):
 
 	def corkWriteSocket(self, name, socket):
 		sockets, poller, fdtosock, corked = self.sockets[name]
-		if socket in sockets:
+		if socket in sockets and socket not in corked:
 			poller.unregister(socket)
+			corked[socket] = True
+			res = True
+		else:
+			res = False
+
+		return res
 
 	def uncorkWriteSocket(self, name, socket):
 		sockets, poller, fdtosock, corked = self.sockets[name]
 		if socket in sockets:
-			poller.register(socket, EPOLLOUT | EPOLLHUP)
+			if corked.pop(socket, None):
+				try:
+					poller.register(socket, EPOLLOUT | EPOLLHUP)
+					res = True
+				except socket.error, e:
+					sockets.remove(socket)
+					res = False
+					print "ERROR reregistering socket (%s): %s" % (str(socket), str(e))
+			else:
+				res = False
+		else:
+			res = False
+
+		return res
 
 	def setupWrite(self, name):
 		if name not in self.sockets:
