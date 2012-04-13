@@ -25,6 +25,7 @@ class EPoller (IPoller):
 		self.sockets = {}
 		self.pollers = {}
 		self.master = self.epoll()
+		self.errors = {}
 
 
 	def addReadSocket(self, name, socket):
@@ -39,6 +40,12 @@ class EPoller (IPoller):
 				sockets.remove(socket)
 				res = False
 				print "ERROR registering socket (%s): %s" % (str(socket), str(e))
+
+				if socket not in self.errors:
+					self.errors[socket] = name
+				else:
+					print "NOTE: trying to poll closed socket again (addReadSocket)"
+					
 			else:
 				fdtosock[fileno] = socket
 		else:
@@ -55,6 +62,9 @@ class EPoller (IPoller):
 				poller.unregister(socket)
 			else:
 				corked.pop(socket)
+
+		if socket in self.errors:
+			self.errors.pop(socket)
 
 	def removeClosedReadSocket(self, name, socket):
 		pass
@@ -81,6 +91,11 @@ class EPoller (IPoller):
 					sockets.remove(socket)
 					res = False
 					print "ERROR reregistering socket (%s): %s" % (str(socket), str(e))
+
+					if socket not in self.errors:
+						self.errors[socket] = name
+					else:
+						print "NOTE: trying to poll closed socket again (uncorkReadSocket)"
 			else:
 				res = False
 		else:
@@ -120,6 +135,11 @@ class EPoller (IPoller):
 				sockets.remove(socket)
 				res = False
 				print "ERROR registering socket (%s): %s" % (str(socket), str(e))
+
+				if socket not in self.errors:
+					self.errors[socket] = name
+				else:
+					print "NOTE: trying to poll closed socket again (addWriteSocket)"
 			else:
 				fdtosock[fileno] = socket
 		else:
@@ -136,6 +156,9 @@ class EPoller (IPoller):
 				poller.unregister(socket)
 			else:
 				corked.pop(socket)
+
+		if socket in self.errors:
+			self.errors.pop(socket, None)
 
 	def removeClosedWriteSocket(self, name, socket):
 		pass
@@ -162,6 +185,11 @@ class EPoller (IPoller):
 					sockets.remove(socket)
 					res = False
 					print "ERROR reregistering socket (%s): %s" % (str(socket), str(e))
+
+					if socket not in self.errors:
+						self.errors[socket] = name
+					else:
+						print "NOTE: trying to poll closed socket again (uncorkWriteSocket)"
 			else:
 				res = False
 		else:
@@ -206,6 +234,9 @@ class EPoller (IPoller):
 			events = poller.poll(0)
 
 			response[name] = [fdtosock[sock_fd] for (sock_fd, sock_events) in events]
+
+		for fd, name in self.errors.itervalues():
+			response.setdefault(name, []).append(fd)
 
 #			for sock_fd, sock_events in events:
 #				if sock_events & select.EPOLLHUP:
