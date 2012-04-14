@@ -6,10 +6,13 @@ from exaproxy.network.functions import connect
 from exaproxy.network.functions import errno_block
 
 
-def cycle_identifiers():
-	while True:
-		for identifier in xrange(0xffff):
-			yield identifier
+def next_identifier():
+	def cycle_identifiers():
+		while True:
+			for identifier in xrange(0xffff):
+				yield identifier
+
+	return cycle_identifiers().next
 
 
 class DNSClient(object):
@@ -23,7 +26,7 @@ class DNSClient(object):
 		self.servers = config['nameserver']
 		self.port = port
 		self.extended = False
-		self.next_identifier = cycle_identifiers()
+		self.next_identifier = next_identifier()
 
 	@property
 	def server(self):
@@ -139,7 +142,7 @@ class TCPClient(DNSClient):
 
 		self.socket = self.startConnecting()
 		self.dns_factory = self.DNSFactory(configuration.dns.definitions)
-		self.next_identifier = cycle_identifiers()
+		self.next_identifier = next_identifier()
 
 		self.reader = None
 		self.writer = None
