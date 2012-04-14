@@ -241,6 +241,8 @@ class ClientManager (object):
 
 				elif request is None:
 					self.cleanup(client.sock, name)
+					buffered, had_buffer = None, None
+					content = None
 
 			else:
 				# close the client connection only if sendDataBySocket is not due to be called
