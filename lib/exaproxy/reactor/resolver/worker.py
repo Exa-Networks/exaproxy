@@ -11,7 +11,6 @@ def cycle_identifiers():
 		for identifier in xrange(0xffff):
 			yield identifier
 
-next_identifier = cycle_identifiers().next
 
 class DNSClient(object):
 	DNSFactory = DNSPacketFactory
@@ -24,6 +23,7 @@ class DNSClient(object):
 		self.servers = config['nameserver']
 		self.port = port
 		self.extended = False
+		self.next_identifier = cycle_identifiers()
 
 	@property
 	def server(self):
@@ -58,7 +58,7 @@ class DNSClient(object):
 				qtype = 'AAAA'
 
 		# create an A request ready to send on the wire
-		identifier = next_identifier()
+		identifier = self.next_identifier()
 		request_s = self.dns_factory.createRequestString(identifier, qtype, hostname)
 
 		# and send it over the wire
@@ -139,6 +139,7 @@ class TCPClient(DNSClient):
 
 		self.socket = self.startConnecting()
 		self.dns_factory = self.DNSFactory(configuration.dns.definitions)
+		self.next_identifier = cycle_identifiers()
 
 		self.reader = None
 		self.writer = None
@@ -191,7 +192,7 @@ class TCPClient(DNSClient):
 				qtype = 'AAAA'
 
 		# create an A request ready to send on the wire
-		identifier = next_identifier()
+		identifier = self.next_identifier()
 		request_s = self.dns_factory.createRequestString(identifier, qtype, hostname, extended=True)
 
 		self.writer = self._write(self.socket, request_s)
