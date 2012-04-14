@@ -242,7 +242,7 @@ class ResolverManager(object):
 				response = None
 
 			if response:
-				if worker.sholdClose():
+				if worker.shouldClose():
 					self.poller.removeReadSocket('read_resolver', sock)
 					self.poller.removeWriteSocket('write_resolver', sock)
 					worker.close()
