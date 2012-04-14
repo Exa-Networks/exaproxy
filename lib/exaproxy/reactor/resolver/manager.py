@@ -165,6 +165,7 @@ class ResolverManager(object):
 			self.workers[worker.socket] = worker
 
 			identifier, all_sent = worker.resolveHost(hostname)
+			self.resolving[identifier] = client_id, hostname, hostname, command, decision
 			self.clients[client_id] = identifier
 			self.active.append((time.time(), client_id))
 
@@ -190,27 +191,18 @@ class ResolverManager(object):
 				identifier, forhost, ip, completed, newidentifier, newhost, newcomplete = result
 				data = self.resolving.pop(identifier, None)
 			else:
-				# most likely we have not read a full request over TCP
+				# unable to parse response
 				data = None
 
 			if data:
 				client_id, original, hostname, command, decision = data
-				self.clients.pop(client_id)
+				self.clients.pop(client_id, None)
 
 				# check to see if we received an incomplete response
 				if not completed:
-					worker = self.worker = self.resolver_factory.createTCPClient(self.configuration, self.resolv)
-					# Note:	this will start with a request for an A record again even if
-					#	the UDP client choked only once it asked for the AAAA
-					newidentifier, all_sent = worker.resolveHost(hostname)
+					newidentifier = self.startResolvingTCP(client_id, command, decision)
 					newhost = hostname
 					response = None
-
-					if newidentifier:
-						self.poller.addReadSocket('read_resolver', worker.socket)
-					else:
-						self.poller.addWriteSocket('write_resolver', worker.socket)
-						self.sending[worker.socket] = client_id, original, hostname, command, decision
 
 				# check to see if the worker started a new request
 				if newidentifier:
@@ -252,8 +244,9 @@ class ResolverManager(object):
 			if response:
 				if worker.sholdClose():
 					self.poller.removeReadSocket('read_resolver', sock)
-					self.workers.pop(sock)
+					self.poller.removeWriteSocket('write_resolver', sock)
 					worker.close()
+					self.workers.pop(sock)
 
 		else:
 			response = None
