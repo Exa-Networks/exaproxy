@@ -66,7 +66,7 @@ class DNSResponseType(DNSBaseType):
 	def __init__(self, identifier, complete, queries=[], responses=[], authorities=[], additionals=[]):
 		ok = complete is True and None not in (identifier, queries, responses, authorities, additionals)
 
-		self.identifier = identifier if ok else None
+		self.identifier = identifier
 		self.complete = bool(complete)
 		self.queries = (queries or []) if ok else []
 		self.responses = (responses or []) if ok else []
