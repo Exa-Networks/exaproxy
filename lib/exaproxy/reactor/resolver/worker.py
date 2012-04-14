@@ -111,8 +111,11 @@ class DNSClient(object):
 
 		return response.identifier, response.qhost, value, response.isComplete(), newidentifier, newhost, newcomplete
 
-	def isClosed(self):
+	def shouldClose(self):
 		raise NotImplementedError
+
+	def close (self):
+		pass
 
 
 
@@ -124,7 +127,7 @@ class UDPClient(DNSClient):
 		DNSClient.__init__(self, configuration, resolv, port)
 
 
-	def isClosed(self):
+	def shouldClose(self):
 		return False
 
 
@@ -199,9 +202,11 @@ class TCPClient(DNSClient):
 		# let the manager know whether or not we have sent the entire query
 		return identifier, res is False
 
-	def isClosed(self):
-		self.socket.close()
+	def shouldClose(self):
 		return True
+
+	def close(self):
+		self.socket.close()
 
 class DNSResolver(object):
 	def createUDPClient(self,configuration,resolv,port=53):

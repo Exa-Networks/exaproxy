@@ -250,9 +250,10 @@ class ResolverManager(object):
 				response = None
 
 			if response:
-				if worker.isClosed():
+				if worker.sholdClose():
 					self.poller.removeReadSocket('read_resolver', sock)
 					self.workers.pop(sock)
+					worker.close()
 
 		else:
 			response = None
