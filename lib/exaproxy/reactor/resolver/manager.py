@@ -215,6 +215,7 @@ class ResolverManager (object):
 				client_id, original, hostname, command, decision = data
 				self.clients.pop(client_id, None)
 
+
 				# check to see if we received an incomplete response
 				if not completed:
 					newidentifier = self.startResolvingTCP(client_id, command, decision)

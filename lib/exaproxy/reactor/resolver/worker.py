@@ -74,6 +74,10 @@ class DNSClient(object):
 			pass
 		return identifier, True
 
+	def readResponse (self):
+		response_s, peer = self.socket.recvfrom(65535)
+		return response_s
+
 	def getResponse(self):
 		"""Read a response from the wire and return the desired result if present"""
 
@@ -83,7 +87,9 @@ class DNSClient(object):
 		newhost = None
 
 		# Read the response from the wire
-		response_s, peer = self.socket.recvfrom(65535)
+		response_s = self.readResponse()
+		if not response_s:
+			return None
 
 		# and convert it into something we can play with
 		response = self.dns_factory.normalizeResponse(response_s, extended=self.extended)
@@ -157,12 +163,22 @@ class TCPClient(DNSClient):
 	def _read(self, sock):
 		data = ''
 		while True:
-			buffer = sock.recv(65535)
-			if buffer:
-				data += buffer
-				yield None
+			try:
+				buffer_s = sock.recv(65535)
+				if buffer_s:
+					data += buffer_s
 
-		yield data
+			except socket.error, e:
+				yield None
+				continue
+
+
+			yield data
+
+			if not buffer_s:
+				break
+
+		yield ''
 
 	def _write(self, sock, data):
 		while data:
@@ -179,6 +195,9 @@ class TCPClient(DNSClient):
 					data = ''
 					break
 		yield False
+
+	def readResponse(self):
+		return self.reader.next()
 
 	def continueSending(self):
 		if self.writer:
@@ -202,6 +221,7 @@ class TCPClient(DNSClient):
 		request_s = self.dns_factory.createRequestString(identifier, qtype, hostname, extended=True)
 
 		self.writer = self._write(self.socket, request_s)
+		self.reader = self._read(self.socket)
 
 		# and start sending it over the wire
 		res = self.writer.next()
