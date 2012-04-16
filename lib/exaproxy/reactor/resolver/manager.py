@@ -207,6 +207,7 @@ class ResolverManager (object):
 			if result:
 				identifier, forhost, ip, completed, newidentifier, newhost, newcomplete = result
 				data = self.resolving.pop((worker.w_id, identifier), None)
+
 			else:
 				# unable to parse response
 				data = None

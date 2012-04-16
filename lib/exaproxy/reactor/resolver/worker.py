@@ -89,10 +89,6 @@ class DNSClient(object):
 		# Read the response from the wire
 		response_s = self.readResponse()
 
-		if response_s is None:
-			# the socket is closed and we've already seen the complete response
-			return None, None, None, True, None, None, None
-
 		if not response_s:
 			return None
 
