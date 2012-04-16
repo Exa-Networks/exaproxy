@@ -19,6 +19,8 @@ class DNSClient(object):
 	DNSFactory = DNSPacketFactory
 	tcp_factory = staticmethod(connect)
 
+	next_wid = next_identifier()
+
 	def __init__(self, configuration, resolv=None, port=53):
 		self.configuration = configuration
 		self.dns_factory = self.DNSFactory(configuration.dns.definitions)
@@ -27,6 +29,7 @@ class DNSClient(object):
 		self.port = port
 		self.extended = False
 		self.next_identifier = next_identifier()
+		self.w_id = self.next_wid()
 
 	@property
 	def server(self):

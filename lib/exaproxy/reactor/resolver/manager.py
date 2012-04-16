@@ -3,10 +3,12 @@ import time
 from .worker import DNSResolver
 from exaproxy.network.functions import isip
 
-class ResolverManager(object):
+
+
+class ResolverManager (object):
 	resolver_factory = DNSResolver()
 
-	def __init__(self, poller, configuration):
+	def __init__ (self, poller, configuration):
 		self.poller = poller
 		self.configuration = configuration # needed when creating new resolver instances
 		self.resolv = configuration.dns.resolver
@@ -15,19 +17,19 @@ class ResolverManager(object):
 		# The actual work is done in the worker
 		self.worker = self.resolver_factory.createUDPClient(configuration, self.resolv)
 
-		# All currently active clients (UDP and TCP)
+		# All currently active clients (one UDP and many TCP)
 		self.workers = {}
 		self.workers[self.worker.socket] = self.worker
-                self.poller.addReadSocket('read_resolver', self.worker.socket)
+		self.poller.addReadSocket('read_resolver', self.worker.socket)
 
 		# Track the clients currently expecting results
-		self.clients = {}
+		self.clients = {}         #   client_id : identifier
 
 		# Key should be the hostname rather than the request ID?
-		self.resolving = {}
+		self.resolving = {}       #   identifier, worker_id : 
 
 		# TCP workers that have not yet sent a complete request
-		self.sending = {}
+		self.sending = {}         #   sock :
 
 		# track the current queries and when they were started
 		self.active = []
@@ -35,18 +37,21 @@ class ResolverManager(object):
 		self.cache = {}
 		self.cached = []
 
-	def cacheDestination(self, hostname, ip):
+	def cacheDestination (self, hostname, ip):
 		if hostname not in self.cache:
-			self.cache[hostname] = ip
-			self.cached.append((time.time(), hostname))
+			if ip is not None:
+				self.cache[hostname] = ip
+				self.cached.append((time.time(), hostname))
 
-	def expireCache(self):
+	def expireCache (self):
 		if not self.cached:
 			return
 
 		count = len(self.cached)
+
+
 		stop = min(count, self.configuration.dns.expire)
-		position = stop-1
+		position = stop - 1
 
 		cutoff = time.time() - self.configuration.dns.ttl
 
@@ -64,32 +69,37 @@ class ResolverManager(object):
 				break
 
 			position += 1
-
 			self.cache.pop(hostname, None)
 
 		if position:
 			self.cached = self.cached[position:]
-			
+		
 
 	def cleanup(self):
 		cutoff = time.time() - self.timeout
 		count = 0
 
-		for timestamp, client_id in self.active:
+		for timestamp, client_id, sock in self.active:
 			if timestamp > cutoff:
 				break
 
 			count += 1
-			identifier = self.clients.get(client_id)
+			identifier = self.clients.pop(client_id, None)
+			worker = self.workers.get(sock)
 
 			if identifier is not None:
 				data = self.resolving.pop(identifier, None)
 				if not data:
-					data = self.sending.pop(identifier, None)
+					data = self.sending.pop(sock, None)
 
 				if data:
 					client_id, original, hostname, command, decision = data
 					yield client_id, 'rewrite', '\0'.join(('503', 'dns.html', '', '', '', hostname, 'peer'))
+
+			if worker is not None:
+				if worker is not self.worker:
+					worker.close()
+					self.workers.pop(sock)
 
 		if count:
 			self.active = self.active[count:]
@@ -132,6 +142,13 @@ class ResolverManager(object):
 	def startResolving(self, client_id, command, decision):
 		hostname = self.extractHostname(command, decision)
 
+		print 'dns worker count:    %3d' % len(self.workers)
+		print 'dns client count:    %3d' % len(self.clients)
+		print 'dns resolving count: %3d' % len(self.resolving)
+		print 'dns sending count:   %3d' % len(self.sending)
+		print 'dns active count:    %3d' % len(self.active)
+		print
+
 		if hostname:
 			if hostname in self.cache:
 				identifier = None
@@ -148,9 +165,9 @@ class ResolverManager(object):
 			else:
 				identifier, _ = self.worker.resolveHost(hostname)
 				response = None
-				self.resolving[identifier] = client_id, hostname, hostname, command, decision
-				self.clients[client_id] = identifier
-				self.active.append((time.time(), client_id))
+				self.resolving[(self.worker.w_id, identifier)] = client_id, hostname, hostname, command, decision
+				self.clients[client_id] = (self.worker.w_id, identifier)
+				self.active.append((time.time(), client_id, self.worker.socket))
 		else:
 			identifier = None
 			response = None
@@ -165,13 +182,13 @@ class ResolverManager(object):
 			self.workers[worker.socket] = worker
 
 			identifier, all_sent = worker.resolveHost(hostname)
-			self.resolving[identifier] = client_id, hostname, hostname, command, decision
-			self.clients[client_id] = identifier
-			self.active.append((time.time(), client_id))
+			self.resolving[(worker.w_id, identifier)] = client_id, hostname, hostname, command, decision
+			self.clients[client_id] = (worker.w_id, identifier)
+			self.active.append((time.time(), client_id, self.worker.socket))
 
 			if all_sent:
 				self.poller.addReadSocket('read_resolver', worker.socket)
-				self.resolving[identifier] = client_id, hostname, hostname, command, decision
+				self.resolving[(worker.w_id, identifier)] = client_id, hostname, hostname, command, decision
 			else:
 				self.poller.addWriteSocket('write_resolver', worker.socket)
 				self.sending[worker.socket] = client_id, hostname, hostname, command, decision
@@ -189,7 +206,7 @@ class ResolverManager(object):
 
 			if result:
 				identifier, forhost, ip, completed, newidentifier, newhost, newcomplete = result
-				data = self.resolving.pop(identifier, None)
+				data = self.resolving.pop((worker.w_id, identifier), None)
 			else:
 				# unable to parse response
 				data = None
@@ -206,8 +223,8 @@ class ResolverManager(object):
 
 				# check to see if the worker started a new request
 				if newidentifier:
-					self.resolving[newidentifier] = client_id, original, newhost, command, decision
-					self.clients[client_id] = newidentifier
+					self.resolving[(worker.w_id, newidentifier)] = client_id, original, newhost, command, decision
+					self.clients[client_id] = (worker.w_id, newidentifier)
 					response = None
 
 					if completed and newcomplete:
@@ -222,9 +239,9 @@ class ResolverManager(object):
 
 				# maybe we read the wrong response?
 				elif forhost != hostname:
-					self.resolving[identifier] = client_id, original, hostname, command, decision
-					self.clients[client_id] = identifier
-					self.active.append((time.time(), client_id))
+					self.resolving[(worker.w_id, identifier)] = client_id, original, hostname, command, decision
+					self.clients[client_id] = (worker.w_id, identifier)
+					self.active.append((time.time(), client_id, worker.socket))
 					response = None
 
 				# success
@@ -242,7 +259,7 @@ class ResolverManager(object):
 				response = None
 
 			if response:
-				if worker.shouldClose():
+				if worker is not self.worker:
 					self.poller.removeReadSocket('read_resolver', sock)
 					self.poller.removeWriteSocket('write_resolver', sock)
 					worker.close()
@@ -260,13 +277,13 @@ class ResolverManager(object):
 		if data:
 			client_id, original, hostname, command, decision = data
 			worker = self.workers[sock]
-			identifier = self.clients[client_id]
+			w_id, identifier = self.clients[client_id]
 
 			res = worker.continueSending()
 
 			if res is False: # we've sent all we need to send
 				tmp = self.sending.pop(sock)
-				self.resolving[identifier] = tmp
+				self.resolving[(w_id, identifier)] = tmp
 
 				self.poller.removeWriteSocket('write_resolver', sock)
 				self.poller.addReadSocket('read_resolver', sock)
