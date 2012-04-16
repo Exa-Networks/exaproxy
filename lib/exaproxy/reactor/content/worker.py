@@ -56,8 +56,8 @@ class Content (object):
 				self.log.info('reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 				data = ''
 			else:
-				self.log.critical('unexpected error reading on socket')
-				self.log.critical('reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
+				self.log.info('unexpected error reading on socket')
+				self.log.info('reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 				data = None
 
 		return data
