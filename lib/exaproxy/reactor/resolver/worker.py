@@ -88,6 +88,11 @@ class DNSClient(object):
 
 		# Read the response from the wire
 		response_s = self.readResponse()
+
+		if response_s is None:
+			# the socket is closed and we've already seen the complete response
+			return None, None, None, True, None, None, None
+
 		if not response_s:
 			return None
 
@@ -169,16 +174,15 @@ class TCPClient(DNSClient):
 					data += buffer_s
 
 			except socket.error, e:
-				yield None
+				yield ''
 				continue
-
 
 			yield data
 
 			if not buffer_s:
 				break
 
-		yield ''
+		yield None
 
 	def _write(self, sock, data):
 		while data:
