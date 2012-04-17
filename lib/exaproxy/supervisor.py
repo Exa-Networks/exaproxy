@@ -29,6 +29,9 @@ from exaproxy.util.log import Logger
 from exaproxy.util.log import LogWriter
 from exaproxy.util.log import LogManager
 
+from leak import objgraph
+import time
+
 class Supervisor(object):
 	alarm_time = 1
 	# import os
@@ -148,6 +151,7 @@ class Supervisor(object):
 
 		signal.alarm(self.alarm_time)
 
+		count = 30
 		while True:
 			try:
 				if self._toggle_debug:
@@ -205,11 +209,17 @@ class Supervisor(object):
 					raise
 
 			finally:
-				from leak import objgraph
-				print objgraph.show_most_common_types(limit=20)
-				import random
-				obj = objgraph.by_type('ReceivedRoute')[random.randint(0,2000)]
-				objgraph.show_backrefs([obj], max_depth=10)
+				count += 1
+				if count >= 30:
+					count = 0
+
+					print "*"*10, time.strftime('%d-%m-%Y %H:%M:%S')
+					print objgraph.show_most_common_types(limit=20)
+					print "*"*10
+					print
+				#import random
+				#obj = objgraph.by_type('ReceivedRoute')[random.randint(0,2000)]
+				#objgraph.show_backrefs([obj], max_depth=10)
 
 	def initialise (self):
 		self.daemon.daemonise()
