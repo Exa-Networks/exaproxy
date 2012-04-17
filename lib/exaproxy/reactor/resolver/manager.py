@@ -142,13 +142,6 @@ class ResolverManager (object):
 	def startResolving(self, client_id, command, decision):
 		hostname = self.extractHostname(command, decision)
 
-		print 'dns worker count:    %3d' % len(self.workers)
-		print 'dns client count:    %3d' % len(self.clients)
-		print 'dns resolving count: %3d' % len(self.resolving)
-		print 'dns sending count:   %3d' % len(self.sending)
-		print 'dns active count:    %3d' % len(self.active)
-		print
-
 		if hostname:
 			if hostname in self.cache:
 				identifier = None
