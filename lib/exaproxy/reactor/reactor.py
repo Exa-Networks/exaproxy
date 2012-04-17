@@ -10,9 +10,6 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 from exaproxy.util.log import Logger
 
-from guppy import hpy
-h = hpy()
-
 
 class Reactor(object):
 	def __init__(self, configuration, web, proxy, decider, content, client, resolver, logger, poller):
@@ -45,9 +42,6 @@ class Reactor(object):
 			decisions.append((client_id, command, decision))
 
 		self.resolver.expireCache()
-
-		print h.heap()
-		print
 
 		while self.running:
 			# wait until we have something to do
