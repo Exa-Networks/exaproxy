@@ -151,7 +151,6 @@ class TCPClient(DNSClient):
 		self.extended = True
 
 		self.socket = self.startConnecting()
-		self.dns_factory = self.DNSFactory(configuration.dns.definitions)
 		self.next_identifier = next_identifier()
 
 		self.reader = None
@@ -234,6 +233,11 @@ class TCPClient(DNSClient):
 
 	def close(self):
 		self.socket.close()
+		if self.reader:
+			self.reader.close()
+
+		if self.writer:
+			self.writer.close()
 
 class DNSResolver(object):
 	def createUDPClient(self,configuration,resolv,port=53):
