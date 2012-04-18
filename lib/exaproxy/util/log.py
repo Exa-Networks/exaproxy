@@ -276,6 +276,7 @@ class Logger(Syslog):
 				message = '\0'.join((self.name, levelname, text))
 
 			s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+			s.close()
 			return s.sendto(message, self.destination)
 
 	def debug (self, message):
