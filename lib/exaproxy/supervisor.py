@@ -31,7 +31,7 @@ from exaproxy.util.log import LogManager
 
 import time
 
-if True:
+if False:
 	from leak import objgraph
 else:
 	objgraph = None
