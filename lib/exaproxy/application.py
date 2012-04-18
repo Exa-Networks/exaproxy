@@ -7,6 +7,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 import sys
+from leak import objgraph
 
 def version_warning ():
 	sys.stdout.write('\n')
@@ -29,6 +30,7 @@ def help ():
 	sys.stdout.write(' -de, --diff-env  : display non-default configurations values using the env format\n')
 	sys.stdout.write('  -d, --debug     : shortcut to turn on all subsystems debugging to LOG_DEBUG\n')
 	sys.stdout.write('  -p, --pdb       : on logging of serious errors start the python debugger\n')
+	sys.stdout.write('  -m, --memory    : display memory usage information on exit\n')
 
 	sys.stdout.write('\n')
 	sys.stdout.write('ExaProxy will automatically look for its configuration file (in windows ini format)\n')
@@ -56,6 +58,18 @@ def help ():
 			sys.stdout.write(' - %s\n' % line)
 	sys.stdout.write('\n')
 
+def __exit(memory,code):
+	if memory:
+		print "memory utilisation"
+		print
+		print objgraph.show_most_common_types(limit=20)
+		print
+		print
+		print "generating memory utilisation graph"
+		print
+		obj = objgraph.by_type('Supervisor')
+		objgraph.show_backrefs([obj], max_depth=10)
+	sys.exit(code)
 
 if __name__ == '__main__':
 	main = int(sys.version[0])
@@ -71,6 +85,7 @@ if __name__ == '__main__':
 
 	debug = False
 	pdb = False
+	memory = False
 	next = ''
 	arguments = {
 		'configuration' : '',
@@ -117,12 +132,14 @@ if __name__ == '__main__':
 			pdb = True
 			# The following may fail on old version of python
 			os.environ['PDB'] = 'true'
+		if arg in ['-m','--memory']:
+			memory = True
 
 	from exaproxy.supervisor import Supervisor
 
 	if not configuration.profile.enable:
 		Supervisor(debug,pdb).run()
-		sys.exit(0)
+		__exit(memory,0)
 
 	try:
 		import cProfile as profile
@@ -131,7 +148,7 @@ if __name__ == '__main__':
 
 	if not configuration.profile.destination or configuration.profile.destination == 'stdout':
 		profile.run('Supervisor().run()')
-		sys.exit(0)
+		__exit(memory,0)
 
 	notice = ''
 	if os.path.isdir(configuration.profile.destination):
@@ -147,4 +164,4 @@ if __name__ == '__main__':
 		log.debug(notice)
 		log.debug("-"*len(notice))
 		main()
-	sys.exit(0)
+	__exit(memory,0)

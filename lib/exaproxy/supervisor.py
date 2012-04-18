@@ -29,8 +29,12 @@ from exaproxy.util.log import Logger
 from exaproxy.util.log import LogWriter
 from exaproxy.util.log import LogManager
 
-from leak import objgraph
 import time
+
+if True:
+	from leak import objgraph
+else:
+	objgraph = None
 
 class Supervisor(object):
 	alarm_time = 1
@@ -199,27 +203,31 @@ class Supervisor(object):
 			except KeyboardInterrupt:
 				self.log.info('^C received')
 				self._shutdown = True
+				objgraph = None
 			except OSError,e:
+				objgraph = None
 				# XXX: we need to stop listening and re-fork ourselves
 				if e.errno == 24: #Too many open files
 					self.log.critical('Too many opened files, shutting down')
 					self._shutfown = True
 				else:
-					# Not sure we can get here but if so, let the user know
+					# Not sure we can get here, let the user know by raising
 					raise
 
 			finally:
-				count += 1
-				if count >= 30:
-					count = 0
-
-					print "*"*10, time.strftime('%d-%m-%Y %H:%M:%S')
-					print objgraph.show_most_common_types(limit=20)
-					print "*"*10
-					print
-				#import random
-				#obj = objgraph.by_type('ReceivedRoute')[random.randint(0,2000)]
-				#objgraph.show_backrefs([obj], max_depth=10)
+				try:
+					global objgraph
+					if objgraph:
+						count += 1
+						if count >= 30:
+							print "*"*10, time.strftime('%d-%m-%Y %H:%M:%S')
+							print objgraph.show_most_common_types(limit=20)
+							print "*"*10
+							print
+				except KeyboardInterrupt:
+					self.log.info('^C received')
+					self._shutdown = True
+					objgraph = None
 
 	def initialise (self):
 		self.daemon.daemonise()
