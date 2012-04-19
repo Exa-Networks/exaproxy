@@ -207,7 +207,7 @@ defaults = {
 		'minimum' : (value.integer,value.nop,'5',                               'minimum number of worker threads (forked program)'),
 		'maximum' : (value.integer,value.nop,'25',                              'maximum number of worker threads (forked program)'),
 #		'timeout' : (value.integer,value.nop,'1',                               'how long to wait for work before peforming background work'),
-		'protocol': (value.redirector,value.quote,'url',                        'what protocol to use (url: squid like / icap:://<uri> icap like)')
+		'protocol': (value.redirector,value.quote,'url',                        'what protocol to use (url -> squid like / icap:://<uri> -> icap like)')
 	},
 
 	'http' : {
