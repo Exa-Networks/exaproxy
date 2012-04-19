@@ -284,11 +284,12 @@ class ClientManager (object):
 	def cleanup(self, sock, name):
 		self.log.debug('cleanup for socket %s' % sock)
 		client = self.bysock.get(sock, None)
-		client, source = (client,None) or self.norequest.get(sock, (None,None))
+		client, source = (client,None) if client else self.norequest.get(sock, (None,None))
 		client = client or self.byname.get(name, None)
 
 		self.bysock.pop(sock, None)
 		self.norequest.pop(sock, (None,None))
+		self.byname.pop(name, None)
 
 		if client:
 			self.poller.removeWriteSocket('write_client', client.sock)
@@ -297,8 +298,6 @@ class ClientManager (object):
 	
 			client.shutdown()
 
-
-		self.byname.pop(name, None)
 		if sock in self.buffered:
 			self.buffered.remove(sock)
 
