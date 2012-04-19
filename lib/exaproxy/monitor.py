@@ -48,6 +48,7 @@ class Monitor (object):
 		return {
 			'exaproxy.global.debugging' : str(bool(self.pdb)),
 			'exaproxy.daemon.deamonize' : str(conf.daemon.daemonize),
+			'exaproxy.daemon.identifier' : str(conf.daemon.identifier),
 			'exaproxy.daemon.pidfile' : str(conf.daemon.pidfile),
 			'exaproxy.daemon.sleep' : str(conf.daemon.speed),
 			'exaproxy.profile.enable' : str(conf.profile.enable),

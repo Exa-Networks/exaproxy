@@ -107,6 +107,7 @@ if __name__ == '__main__':
 
 	from exaproxy.util.log import Logger
 	log = Logger('supervisor', configuration.log.supervisor)
+	log.setIdentifier(configuration.daemon.identifier)
 
 	for arg in sys.argv[1:]:
 		if arg in ['--',]:

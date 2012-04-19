@@ -223,6 +223,7 @@ defaults = {
 		'html'    : (value.folder,value.path,'etc/exaproxy/html',  'where internal proxy html pages are served from'),
 	},
 	'daemon' : {
+		'identifier'  : (value.unquote,value.nop,'ExaProxy','a name for the log (to diferenciate multiple instances more easily)'),
 		'pidfile'     : (value.unquote,value.quote,'',      'where to save the pid if we manage it'),
 		'user'        : (value.user,value.quote,'nobody',   'user to run as'),
 		'daemonize'   : (value.boolean,value.lower,'false', 'should we run in the background'),
@@ -285,13 +286,18 @@ class Store (dict):
 
 
 def _configuration (conf):
-	_conf_paths = [
-		os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),'etc','exaproxy','exaproxy.conf')),
-		os.path.normpath(os.path.join('/','etc','exaproxy','exaproxy.conf')),
-	]
+	location = os.path.join(os.sep,*os.path.join(value.location.split(os.sep)))
+	while location:
+		location, directory = os.path.split(location)
+		if directory == 'lib':
+			break
 
+	_conf_paths = []
 	if conf:
-		_conf_paths = [os.path.normpath(conf)] + _conf_paths
+		_conf_paths.append(os.path.abspath(os.path.normpath(conf)))
+	if location:
+		_conf_paths.append(os.path.normpath(os.path.join(location,'etc','exaproxy','exaproxy.conf')))
+	_conf_paths.append(os.path.normpath(os.path.join('/','etc','exaproxy','exaproxy.conf')))
 
 	ini_file = [path for path in _conf_paths if os.path.exists(path)][0]
 	if not ini_file:

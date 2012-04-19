@@ -14,6 +14,8 @@ import socket
 import logging
 import logging.handlers
 
+from exaproxy.configuration import load
+
 class LogManager:
 	def __init__(self, poller):
 		self.workers = {}
@@ -61,6 +63,7 @@ class Printer (object):
 
 class Syslog:
 	debuglevel = syslog.LOG_DEBUG
+	identifier = ['ExaProxy']
 
 	_named_level = {
 		syslog.LOG_EMERG   :  'emergency', # 0
@@ -80,7 +83,12 @@ class Syslog:
 		self.level = level
 		self.oldactive = None
 		self.oldlevel = None
-	
+
+	def setIdentifier (self,name):
+		if name:
+			self.identifier.pop()
+			self.identifier.append(name)
+
 	def toggleDebug (self):
 		if self.oldlevel is not None:
 			self.active = self.oldactive
@@ -168,13 +176,13 @@ class LogWriter(Syslog):
 
 	def _format (self, name, text, timestamp):
 		date_string = time.strftime('%a, %d %b %Y %H:%M:%S',timestamp)
-		template = '%s %-6d %-13s %%s' % (date_string, self.pid, name)
+		template = '%s %s %-6d %-13s %%s' % (date_string, self.identifier[0], self.pid, name)
 
 		return '\n'.join(template % line for line in text.split('\n'))
 
 	def _sys_format (self, name, text):
 		for line in text.split('\n'):
-			yield 'ExaProxy %-6d %-13s %s' % (self.pid, name, line)
+			yield '%s %-6d %-13s %s' % (self.identifier[0], self.pid, name, line)
 
 	def logMessage (self, message):
 		try:
@@ -309,9 +317,9 @@ class UsageLogger(Logger):
 	def logRequest (self, client_id, client_ip, command, url, status, destination):
 		if self.active:
 			now = time.time()
-			line = '%s %.02f %s %s %s %s %s/%s' % (
+			line = '%s %s %.02f %s %s %s %s %s/%s' % (
 				time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(now)),
-				now, client_id, client_ip, command, url, status, destination
+				self.identifier[0], now, client_id, client_ip, command, url, status, destination
 			)
 
 			self.log(line, syslog.LOG_NOTICE)
