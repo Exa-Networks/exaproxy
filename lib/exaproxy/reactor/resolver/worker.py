@@ -15,44 +15,27 @@ def next_identifier():
 	return cycle_identifiers().next
 
 
+
+
 class DNSClient(object):
-	DNSFactory = DNSPacketFactory
-	tcp_factory = staticmethod(connect)
+	extended = False
 
-	next_wid = next_identifier()
-
-	def __init__(self, configuration, resolv=None, port=53):
+	def __init__(self, w_id, dns_factory, configuration, servers, port=53):
+		self.w_id = w_id
+		self.dns_factory = dns_factory
 		self.configuration = configuration
-		self.dns_factory = self.DNSFactory(configuration.dns.definitions)
-		config = self.parseConfig(resolv)
-		self.servers = config['nameserver']
+		self.servers = servers
 		self.port = port
-		self.extended = False
+
 		self.next_identifier = next_identifier()
-		self.w_id = self.next_wid()
+		self.socket = self.startConnecting()
+
+	def startConnecting (self):
+		return None
 
 	@property
 	def server(self):
 		return random.choice(self.servers)
-
-	def parseConfig(self, filename):
-		"""Take our configuration from a resolv file"""
-
-		try:
-			result = {'nameserver': []}
-
-			with open(filename) as fd:
-				for line in (line.strip() for line in fd):
-					if line.startswith('#'):
-						continue
-
-					option, value = (line.split(None, 1) + [''])[:2]
-					if option == 'nameserver':
-						result['nameserver'].extend(value.split())
-		except (TypeError, IOError):
-			result = None
-
-		return result
 
 	def resolveHost(self, hostname, qtype=None):
 		"""Retrieve an A or AAAA entry for the requested hostname"""
@@ -89,8 +72,11 @@ class DNSClient(object):
 		# Read the response from the wire
 		response_s = self.readResponse()
 
-		if not response_s:
+		if response_s is None:
 			return None
+
+		if not response_s:
+			return None, None, None, True, None, None, None
 
 		# and convert it into something we can play with
 		response = self.dns_factory.normalizeResponse(response_s, extended=self.extended)
@@ -124,62 +110,53 @@ class DNSClient(object):
 
 		return response.identifier, response.qhost, value, response.isComplete(), newidentifier, newhost, newcomplete
 
-	def shouldClose(self):
-		raise NotImplementedError
-
 	def close (self):
-		pass
+		self.socket.close()
 
 
 
 class UDPClient(DNSClient):
-	def __init__(self, configuration, resolv, port):
-		self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+	extended = False
 
-		# read configuration
-		DNSClient.__init__(self, configuration, resolv, port)
-
-
-	def shouldClose(self):
-		return False
+	def startConnecting (self):
+		return socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 
 
 class TCPClient(DNSClient):
-	def __init__(self, configuration, resolv, port):
-		# read configuration
-		DNSClient.__init__(self, configuration, resolv, port)
-		self.extended = True
-
-		self.socket = self.startConnecting()
-		self.next_identifier = next_identifier()
-
+	extended = True
+	tcp_factory = staticmethod(connect)
+	
+	def __init__(self, w_id, dns_factory, configuration, servers):
+		DNSClient.__init__(self, w_id, dns_factory, configuration, servers)
 		self.reader = None
 		self.writer = None
 
-	def startConnecting(self):
+	def startConnecting (self):
 		sock = self.tcp_factory(self.server, self.port)
 		return sock
 
-	def _read(self, sock):
+	def _read (self, sock):
 		data = ''
+
 		while True:
 			try:
 				buffer_s = sock.recv(65535)
 				if buffer_s:
 					data += buffer_s
 
-			except socket.error, e:
-				yield ''
-				continue
+				yield data
 
-			yield data
+			except socket.error, e:
+				if e.errno in errno_block:
+					yield ''
+					continue
 
 			if not buffer_s:
 				break
 
 		yield None
 
-	def _write(self, sock, data):
+	def _write (self, sock, data):
 		while data:
 			try:
 				while data:
@@ -195,10 +172,10 @@ class TCPClient(DNSClient):
 					break
 		yield False
 
-	def readResponse(self):
+	def readResponse (self):
 		return self.reader.next()
 
-	def continueSending(self):
+	def continueSending (self):
 		if self.writer:
 			res = self.writer.next()
 		else:
@@ -206,7 +183,7 @@ class TCPClient(DNSClient):
 
 		return res
 
-	def resolveHost(self, hostname, qtype=None):
+	def resolveHost (self, hostname, qtype=None):
 		"""Retrieve an A or AAAA entry for the requested hostname"""
 
 		if qtype is None:
@@ -228,9 +205,6 @@ class TCPClient(DNSClient):
 		# let the manager know whether or not we have sent the entire query
 		return identifier, res is False
 
-	def shouldClose(self):
-		return True
-
 	def close(self):
 		self.socket.close()
 		if self.reader:
@@ -239,9 +213,50 @@ class TCPClient(DNSClient):
 		if self.writer:
 			self.writer.close()
 
-class DNSResolver(object):
-	def createUDPClient(self,configuration,resolv,port=53):
-		return UDPClient(configuration,resolv,port)
 
-	def createTCPClient(self,configuration,resolv,port=53):
-		return TCPClient(configuration,resolv,port)
+
+
+
+
+class DNSResolver (object):
+	DNSFactory = DNSPacketFactory
+	UDPClientFactory = UDPClient
+	TCPClientFactory = TCPClient
+
+	def __init__ (self, configuration):
+		self.next_identifier = next_identifier()
+		self.configuration = configuration
+		self.dns_factory = self.DNSFactory(configuration.dns.definitions)
+
+		config = self.parseConfig(configuration.dns.resolver)
+		self.servers = config['nameserver']
+
+	def createUDPClient (self):
+		return self.UDPClientFactory(0, self.dns_factory, self.configuration, self.servers)
+
+	def createTCPClient (self):
+		identifier = self.next_identifier()
+		while identifier == 0:
+			identifier = self.next_identifier()
+
+		return self.TCPClientFactory(identifier, self.dns_factory, self.configuration, self.servers)
+
+	def parseConfig(self, filename):
+		"""Take our configuration from a resolv file"""
+
+		try:
+			result = {'nameserver': []}
+
+			with open(filename) as fd:
+				for line in (line.strip() for line in fd):
+					if line.startswith('#'):
+						continue
+
+					option, value = (line.split(None, 1) + [''])[:2]
+					if option == 'nameserver':
+						result['nameserver'].extend(value.split())
+		except (TypeError, IOError):
+			result = None
+
+		return result
+

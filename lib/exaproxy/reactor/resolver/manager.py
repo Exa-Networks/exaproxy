@@ -6,16 +6,16 @@ from exaproxy.network.functions import isip
 
 
 class ResolverManager (object):
-	resolver_factory = DNSResolver()
+	resolverFactory = DNSResolver
 
 	def __init__ (self, poller, configuration):
 		self.poller = poller
-		self.configuration = configuration # needed when creating new resolver instances
-		self.resolv = configuration.dns.resolver
-		self.timeout = configuration.dns.timeout
+		self.configuration = configuration
+
+		self.resolver_factory = self.resolverFactory(configuration)
 
 		# The actual work is done in the worker
-		self.worker = self.resolver_factory.createUDPClient(configuration, self.resolv)
+		self.worker = self.resolver_factory.createUDPClient()
 
 		# All currently active clients (one UDP and many TCP)
 		self.workers = {}
@@ -76,7 +76,7 @@ class ResolverManager (object):
 		
 
 	def cleanup(self):
-		cutoff = time.time() - self.timeout
+		cutoff = time.time() - self.configuration.dns.timeout
 		count = 0
 
 		for timestamp, client_id, sock in self.active:
@@ -171,7 +171,7 @@ class ResolverManager (object):
 		hostname = self.extractHostname(command, decision)
 
 		if hostname:
-			worker = self.resolver_factory.createTCPClient(self.configuration, self.resolv)
+			worker = self.resolver_factory.createTCPClient()
 			self.workers[worker.socket] = worker
 
 			identifier, all_sent = worker.resolveHost(hostname)
@@ -201,6 +201,9 @@ class ResolverManager (object):
 				identifier, forhost, ip, completed, newidentifier, newhost, newcomplete = result
 				data = self.resolving.pop((worker.w_id, identifier), None)
 
+				if worker is self.worker:
+					completed = False
+
 			else:
 				# unable to parse response
 				data = None
@@ -208,7 +211,6 @@ class ResolverManager (object):
 			if data:
 				client_id, original, hostname, command, decision = data
 				self.clients.pop(client_id, None)
-
 
 				# check to see if we received an incomplete response
 				if not completed:
@@ -253,7 +255,7 @@ class ResolverManager (object):
 			else:
 				response = None
 
-			if response:
+			if response or result is None:
 				if worker is not self.worker:
 					self.poller.removeReadSocket('read_resolver', sock)
 					self.poller.removeWriteSocket('write_resolver', sock)
