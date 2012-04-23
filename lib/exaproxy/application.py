@@ -7,7 +7,6 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 import sys
-from exaproxy.leak import objgraph
 
 def version_warning ():
 	sys.stdout.write('\n')
@@ -60,6 +59,7 @@ def help ():
 
 def __exit(memory,code):
 	if memory:
+		from exaproxy.leak import objgraph
 		print "memory utilisation"
 		print
 		print objgraph.show_most_common_types(limit=20)
@@ -83,9 +83,6 @@ if __name__ == '__main__':
 
 	from exaproxy.configuration import ConfigurationError,load,ini,env,default
 
-	debug = False
-	pdb = False
-	memory = False
 	next = ''
 	arguments = {
 		'configuration' : '',
@@ -128,19 +125,19 @@ if __name__ == '__main__':
 			env(True)
 			sys.exit(0)
 		if arg in ['-d','--debug']:
-			debug = True
+			configuration.debug.log = True
 		if arg in ['-p','--pdb']:
-			pdb = True
-			# The following may fail on old version of python
+			# The following may fail on old version of python (but is required for debug.py)
 			os.environ['PDB'] = 'true'
+			configuration.debug.pdb = True
 		if arg in ['-m','--memory']:
-			memory = True
+			configuration.debug.memory = True
 
 	from exaproxy.supervisor import Supervisor
 
 	if not configuration.profile.enable:
-		Supervisor(debug,pdb).run()
-		__exit(memory,0)
+		Supervisor(configuration).run()
+		__exit(configuration.debug.memory,0)
 
 	try:
 		import cProfile as profile
@@ -149,7 +146,7 @@ if __name__ == '__main__':
 
 	if not configuration.profile.destination or configuration.profile.destination == 'stdout':
 		profile.run('Supervisor().run()')
-		__exit(memory,0)
+		__exit(configuration.debug.memory,0)
 
 	notice = ''
 	if os.path.isdir(configuration.profile.destination):
@@ -165,4 +162,4 @@ if __name__ == '__main__':
 		log.debug(notice)
 		log.debug("-"*len(notice))
 		main()
-	__exit(memory,0)
+	__exit(configuration.debug.memory,0)

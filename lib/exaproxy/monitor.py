@@ -13,9 +13,8 @@ class _Container (object):
 class Monitor (object):
 	nb_recorded = 60
 
-	def __init__(self,supervisor,pdb):
+	def __init__(self,supervisor):
 		self._supervisor = supervisor
-		self.pdb = pdb
 		self._container = _Container(supervisor)
 		self.history = []
 
@@ -46,7 +45,9 @@ class Monitor (object):
 		reactor = self._supervisor.reactor
 
 		return {
-			'exaproxy.global.debugging' : str(bool(self.pdb)),
+			'exaproxy.debug.log' : str(bool(conf.debug.log)),
+			'exaproxy.debug.pdb' : str(bool(conf.debug.pdb)),
+			'exaproxy.debug.memory' : str(conf.debug.memory),
 			'exaproxy.daemon.deamonize' : str(conf.daemon.daemonize),
 			'exaproxy.daemon.identifier' : str(conf.daemon.identifier),
 			'exaproxy.daemon.pidfile' : str(conf.daemon.pidfile),
@@ -106,7 +107,7 @@ class Monitor (object):
 		manager = self._supervisor.manager
 		reactor = self._supervisor.reactor
 
-		r = {
+		return {
 			'running.pid.saved' : str(self._supervisor.pid._saved_pid),
 			'running.processes.forked' : str(len(manager.worker)),
 			'running.processes.min' : manager.low,
@@ -114,7 +115,6 @@ class Monitor (object):
 			'running.proxy.clients.number': len(client.byname),
 			'running.proxy.download.opening': len(content.opening),
 			'running.proxy.download.established': len(content.established),
-			'running.proxy.download.workers' : 0,
 			'running.proxy.download.clients' : len(content.byclientid),
 			'running.exiting' : bool(not reactor.running or self._supervisor._refork),
 			'running.transfer.request' : client.total_sent,
@@ -122,12 +122,6 @@ class Monitor (object):
 			'running.load.loops' : reactor.nb_loops,
 			'running.load.events' : reactor.nb_events,
 		}
-		
-		# we are debugin
-		if True:
-			from exaproxy.leak import objgraph
-			r['running.proxy.download.workers'] = len(objgraph.by_type('Content'))
-		return r
 
 	def record (self):
 		self.history.append(self.statistics())

@@ -266,10 +266,17 @@ defaults = {
 		'enable'      : (value.boolean,value.lower,'false', 'enable profiling'),
 		'destination' : (value.syslog,value.quote,'stdout', 'save profiling to file (instead of to the screen on exit)'),
 	},
+	# Here for internal use
 	'proxy' : {
 		'name'    : (value.nop,value.nop,'ExaProxy', 'name'),
 		'version' : (value.nop,value.nop,version,    'version'),
-	}
+	},
+	# Here for internal use
+	'debug' : {
+		'memory' : (value.boolean,value.lower,'false','command line option --memory'),
+		'pdb'    : (value.boolean,value.lower,'false','command line option --pdb'),
+		'log'    : (value.boolean,value.lower,'false','command line option --debug'),
+	},
 }
 
 import ConfigParser
@@ -342,7 +349,7 @@ def load (conf=None):
 
 def default ():
 	for section in sorted(defaults):
-		if section == 'proxy':
+		if section in ('proxy','debug'):
 			continue
 		for option in sorted(defaults[section]):
 			values = defaults[section][option]
@@ -351,7 +358,7 @@ def default ():
 
 def ini (diff=False):
 	for section in sorted(__configuration):
-		if section == 'proxy':
+		if section in ('proxy','debug'):
 			continue
 		header = '\n[exaproxy.%s]' % section
 		for k in sorted(__configuration[section]):
@@ -366,7 +373,7 @@ def ini (diff=False):
 def env (diff=False):
 	print
 	for section,values in __configuration.items():
-		if section == 'proxy':
+		if section in ('proxy','debug'):
 			continue
 		for k,v in values.items():
 			if diff and defaults[section][k][0](defaults[section][k][2]) == v:

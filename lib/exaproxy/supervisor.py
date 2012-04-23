@@ -31,18 +31,13 @@ from exaproxy.util.log import LogManager
 
 import time
 
-if False:
-	from exaproxy.leak import objgraph
-else:
-	objgraph = None
-
 class Supervisor(object):
 	alarm_time = 1
 	# import os
 	# clear = [hex(ord(c)) for c in os.popen('clear').read()]
 	# clear = ''.join([chr(int(c,16)) for c in ['0x1b', '0x5b', '0x48', '0x1b', '0x5b', '0x32', '0x4a']])
 
-	def __init__ (self,debug,pdb):
+	def __init__ (self,configuration):
 		configuration = load()
 		self.configuration = configuration
 
@@ -52,7 +47,7 @@ class Supervisor(object):
 		self.log_writer = LogWriter(configuration.log.enable, configuration.log.destination, configuration.log, level=configuration.log.level)
 		self.usage_writer = LogWriter(configuration.usage.enable, configuration.usage.destination, configuration.usage, port=configuration.usage.port, level=configuration.usage.level)
 
-		if debug:
+		if configuration.debug.log:
 			self.log_writer.toggleDebug()
 			self.usage_writer.toggleDebug()
 
@@ -79,7 +74,7 @@ class Supervisor(object):
 		self.poller.setupWrite('write_download')      # Established connections we have buffered data to send to
 		self.poller.setupWrite('opening_download')    # Opening connections
 
-		self.monitor = Monitor(self,pdb)
+		self.monitor = Monitor(self)
 		self.page = Page(self.monitor)
 		self.manager = RedirectorManager(
 			self.configuration,
@@ -203,9 +198,7 @@ class Supervisor(object):
 			except KeyboardInterrupt:
 				self.log.info('^C received')
 				self._shutdown = True
-				objgraph = None
 			except OSError,e:
-				objgraph = None
 				# XXX: we need to stop listening and re-fork ourselves
 				if e.errno == 24: #Too many open files
 					self.log.critical('Too many opened files, shutting down')
@@ -215,19 +208,19 @@ class Supervisor(object):
 					raise
 
 			finally:
-				try:
-					global objgraph
-					if objgraph:
-						count += 1
-						if count >= 30:
-							print "*"*10, time.strftime('%d-%m-%Y %H:%M:%S')
-							print objgraph.show_most_common_types(limit=20)
-							print "*"*10
-							print
-				except KeyboardInterrupt:
-					self.log.info('^C received')
-					self._shutdown = True
-					objgraph = None
+				pass
+#				try:
+#					from exaproxy.leak import objgraph
+#					if objgraph:
+#						count += 1
+#						if count >= 30:
+#							print "*"*10, time.strftime('%d-%m-%Y %H:%M:%S')
+#							print objgraph.show_most_common_types(limit=20)
+#							print "*"*10
+#							print
+#				except KeyboardInterrupt:
+#					self.log.info('^C received')
+#					self._shutdown = True
 
 	def initialise (self):
 		self.daemon.daemonise()
