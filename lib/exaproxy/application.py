@@ -7,7 +7,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
 import sys
-from leak import objgraph
+from exaproxy.leak import objgraph
 
 def version_warning ():
 	sys.stdout.write('\n')
