@@ -84,11 +84,12 @@ class ResolverManager (object):
 				break
 
 			count += 1
-			identifier = self.clients.pop(client_id, None)
+			cli_data = self.clients.pop(client_id, None)
 			worker = self.workers.get(sock)
 
-			if identifier is not None:
-				data = self.resolving.pop(identifier, None)
+			if cli_data is not None:
+				w_id, identifier, active_time  = cli_data
+				data = self.resolving.pop((w_id, identifier), None)
 				if not data:
 					data = self.sending.pop(sock, None)
 
@@ -158,9 +159,11 @@ class ResolverManager (object):
 			else:
 				identifier, _ = self.worker.resolveHost(hostname)
 				response = None
+				active_time = time.time()
+
 				self.resolving[(self.worker.w_id, identifier)] = client_id, hostname, hostname, command, decision
-				self.clients[client_id] = (self.worker.w_id, identifier)
-				self.active.append((time.time(), client_id, self.worker.socket))
+				self.clients[client_id] = (self.worker.w_id, identifier, active_time)
+				self.active.append((active_time, client_id, self.worker.socket))
 		else:
 			identifier = None
 			response = None
@@ -175,9 +178,10 @@ class ResolverManager (object):
 			self.workers[worker.socket] = worker
 
 			identifier, all_sent = worker.resolveHost(hostname)
+			active_time = time.time()
 			self.resolving[(worker.w_id, identifier)] = client_id, hostname, hostname, command, decision
-			self.clients[client_id] = (worker.w_id, identifier)
-			self.active.append((time.time(), client_id, self.worker.socket))
+			self.clients[client_id] = (worker.w_id, identifier, active_time)
+			self.active.append((active_time, client_id, self.worker.socket))
 
 			if all_sent:
 				self.poller.addReadSocket('read_resolver', worker.socket)
@@ -210,7 +214,12 @@ class ResolverManager (object):
 
 			if data:
 				client_id, original, hostname, command, decision = data
-				self.clients.pop(client_id, None)
+				clidata = self.clients.pop(client_id, None)
+
+				if clidata is not None:
+					key = clidata[2], client_id, worker.socket
+					if key in self.active:
+						self.active.remove(key)
 
 				# check to see if we received an incomplete response
 				if not completed:
@@ -220,8 +229,11 @@ class ResolverManager (object):
 
 				# check to see if the worker started a new request
 				if newidentifier:
+					active_time = time.time()
 					self.resolving[(worker.w_id, newidentifier)] = client_id, original, newhost, command, decision
-					self.clients[client_id] = (worker.w_id, newidentifier)
+					self.clients[client_id] = (worker.w_id, newidentifier, active_time)
+					self.active.append((active_time, client_id, worker.socket))
+
 					response = None
 
 					if completed and newcomplete:
@@ -236,9 +248,10 @@ class ResolverManager (object):
 
 				# maybe we read the wrong response?
 				elif forhost != hostname:
+					active_time = time.time()
 					self.resolving[(worker.w_id, identifier)] = client_id, original, hostname, command, decision
-					self.clients[client_id] = (worker.w_id, identifier)
-					self.active.append((time.time(), client_id, worker.socket))
+					self.clients[client_id] = (worker.w_id, identifier, active_time)
+					self.active.append((active_time, client_id, worker.socket))
 					response = None
 
 				# success
@@ -274,7 +287,7 @@ class ResolverManager (object):
 		if data:
 			client_id, original, hostname, command, decision = data
 			worker = self.workers[sock]
-			w_id, identifier = self.clients[client_id]
+			w_id, identifier, active_time = self.clients[client_id]
 
 			res = worker.continueSending()
 
