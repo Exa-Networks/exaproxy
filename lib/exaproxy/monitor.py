@@ -106,7 +106,7 @@ class Monitor (object):
 		manager = self._supervisor.manager
 		reactor = self._supervisor.reactor
 
-		return {
+		r = {
 			'running.pid.saved' : str(self._supervisor.pid._saved_pid),
 			'running.processes.forked' : str(len(manager.worker)),
 			'running.processes.min' : manager.low,
@@ -114,13 +114,20 @@ class Monitor (object):
 			'running.proxy.clients.number': len(client.byname),
 			'running.proxy.download.opening': len(content.opening),
 			'running.proxy.download.established': len(content.established),
-			'running.proxy.download' : len(content.byclientid),
+			'running.proxy.download.workers' : 0,
+			'running.proxy.download.clients' : len(content.byclientid),
 			'running.exiting' : bool(not reactor.running or self._supervisor._refork),
 			'running.transfer.request' : client.total_sent,
 			'running.transfer.download' : content.total_sent,
 			'running.load.loops' : reactor.nb_loops,
 			'running.load.events' : reactor.nb_events,
 		}
+		
+		# we are debugin
+		if True:
+			from exaproxy.leak import objgraph
+			r['running.proxy.download.workers'] = len(objgraph.by_type('Content'))
+		return r
 
 	def record (self):
 		self.history.append(self.statistics())

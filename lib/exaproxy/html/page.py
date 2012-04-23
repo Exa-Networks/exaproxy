@@ -115,7 +115,8 @@ class Page (object):
 				'running.proxy.clients.number',
 				'running.proxy.download.opening',
 				'running.proxy.download.established',
-				'running.proxy.download',
+				'running.proxy.download.clients',
+				'running.proxy.download.workers',
 				]
 		)
 
