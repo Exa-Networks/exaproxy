@@ -196,6 +196,13 @@ class TCPClient(DNSClient):
 		identifier = self.next_identifier()
 		request_s = self.dns_factory.createRequestString(identifier, qtype, hostname, extended=True)
 
+		# Explicitly close subroutines
+		if self.writer:
+			self.writer.close()
+
+		if self.reader:
+			self.reader.close()
+
 		self.writer = self._write(self.socket, request_s)
 		self.reader = self._read(self.socket)
 
