@@ -29,7 +29,6 @@ class Client (object):
 		# start the _read coroutine
 		self.reader.next()
 
-
 	def _read(self, sock, read_size=64*1024):
 		"""Coroutine managing data read from the client"""
 		r_buffer = ''
@@ -229,5 +228,4 @@ class Client (object):
 			pass
 
 		self.writer.close()
-		if self.reader:
-			self.reader.close()
+		self.reader.close()
