@@ -59,7 +59,7 @@ class Request (object):
 				self.host = host
 				self.port = '80'
 		else:
-			self.path = ''
+			self.path = '/'
 			if ':' in uri:
 				self.host,port = uri.split(':',1)
 				self.port = self._checkport(port)
