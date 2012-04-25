@@ -273,6 +273,8 @@ class Logger(Syslog):
 		self.destination = ('127.0.0.1', port)
 
 		self.tosyslog = (port == 514)
+		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+
 		Syslog.__init__(self, active, level)
 
 
@@ -284,10 +286,7 @@ class Logger(Syslog):
 				levelname = self._named_level.get(loglevel, 'unknown')
 				message = '\0'.join((self.name, levelname, text))
 
-			s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-			r = s.sendto(message, self.destination)
-			s.close()
-			return r
+			return self.sock.sendto(message, self.destination)
 
 	def debug (self, message):
 		self.log(message, syslog.LOG_DEBUG)
