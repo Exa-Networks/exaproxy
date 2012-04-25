@@ -24,7 +24,7 @@ def dns_string(s):
 	ptr = None
 	remaining = len(s)
 
-	while True:
+	while s:
 		length = u8(s[0])
 		remaining -= length + 1
 
@@ -41,6 +41,9 @@ def dns_string(s):
 
 		parts.append(s[1:1+length])
 		s = s[1+length:]
+	else:
+		parts = []
+		ptr = None
 
 	return '.'.join(parts) if parts is not None else None, ptr
 
