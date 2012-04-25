@@ -98,6 +98,7 @@ class Supervisor(object):
 		self._increase_spawn_limit = False
 		self._refork = True
 		self._timer = False
+		self._pdb = False
 
 		signal.signal(signal.SIGTERM, self.sigterm)
 		signal.signal(signal.SIGHUP, self.sighup)
@@ -110,7 +111,10 @@ class Supervisor(object):
 
 	def sigterm (self,signum, frame):
 		self.signal_log.info('SIG TERM received, shutdown request')
-		self._shutdown = True
+		if os.environ.get('PDB',False):
+			self._pdb = True
+		else:
+			self._shutdown = True
 
 	def sighup (self,signum, frame):
 		self.signal_log.info('SIG HUP received, reload request')
@@ -180,6 +184,11 @@ class Supervisor(object):
 					self._decrease_spawn_limit = False
 					if self.manager.high >1: self.manager.high -= 1
 					self.manager.low = min(self.manager.high,self.manager.low)
+
+				if self._pdb:
+					self._pdb = False
+					import pdb
+					pdb.set_trace()
 
 				# check for IO change with select
 				self.reactor.running = True

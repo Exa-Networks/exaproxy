@@ -28,7 +28,7 @@ def help ():
 	sys.stdout.write(' -di, --diff-ini  : display non-default configurations values using the ini format\n')
 	sys.stdout.write(' -de, --diff-env  : display non-default configurations values using the env format\n')
 	sys.stdout.write('  -d, --debug     : shortcut to turn on all subsystems debugging to LOG_DEBUG\n')
-	sys.stdout.write('  -p, --pdb       : on logging of serious errors start the python debugger\n')
+	sys.stdout.write('  -p, --pdb       : start the python debugger on serious logging and on SIGTERM\n')
 	sys.stdout.write('  -m, --memory    : display memory usage information on exit\n')
 
 	sys.stdout.write('\n')
