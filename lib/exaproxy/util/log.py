@@ -22,13 +22,13 @@ class LogManager:
 		self.poller = poller
 
 	def addWorker(self, worker):
-		self.workers[worker.socket] = worker
-		self.poller.addReadSocket('read_log', worker.socket)
+		self.workers[worker.sock] = worker
+		self.poller.addReadSocket('read_log', worker.sock)
 
 	def removeWorker(self, socket):
 		worker = self.workers.pop(socket, None)
 		if worker:
-			self.poller.removeReadSocket('read_log', worker.socket)
+			self.poller.removeReadSocket('read_log', worker.sock)
 
 	def logItems(self, socket):
 		worker = self.workers.get(socket, None)
@@ -109,11 +109,12 @@ class LogWriter(Syslog):
 
 	def __init__ (self, active, destination, configuration, port=8888, level=syslog.LOG_WARNING):
 		if port is not None:
-			self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-			self.socket.bind(('127.0.0.1', port))
-			self.socket.setblocking(0)
+			self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+			self.sock.bind(('127.0.0.1', port))
+			self.sock.setblocking(0)
 		else:
-			self.socket = None
+			self.sock = None
+
 		self.configuration = configuration
 		self.active_names = {}
 		self.level = level
@@ -217,7 +218,7 @@ class LogWriter(Syslog):
 	def writeItems (self):
 		try:
 			for _ in xrange(self.max_log_items):
-				message, peer = self.socket.recvfrom(65535)
+				message, peer = self.sock.recvfrom(65535)
 				self.logMessage(message)
 		except socket.error, e:
 			pass
