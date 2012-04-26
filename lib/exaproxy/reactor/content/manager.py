@@ -340,7 +340,7 @@ class ContentManager(object):
 						# watch for the socket's send buffer becoming less than full
 						self.poller.addWriteSocket('write_download', downloader.sock)
 					else:
-						buffer_change = False
+						buffer_change = True
 
 				elif downloader.sock in self.buffered:
 					self.buffered.remove(downloader.sock)
