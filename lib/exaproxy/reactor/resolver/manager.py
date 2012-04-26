@@ -205,8 +205,6 @@ class ResolverManager (object):
 				identifier, forhost, ip, completed, newidentifier, newhost, newcomplete = result
 				data = self.resolving.pop((worker.w_id, identifier), None)
 
-				if worker is self.worker:
-					completed = False
 
 			else:
 				# unable to parse response
@@ -216,10 +214,11 @@ class ResolverManager (object):
 				client_id, original, hostname, command, decision = data
 				clidata = self.clients.pop(client_id, None)
 
-				if clidata is not None:
-					key = clidata[2], client_id, worker.socket
-					if key in self.active:
-						self.active.remove(key)
+				if completed:
+					if clidata is not None:
+						key = clidata[2], client_id, worker.socket
+						if key in self.active:
+							self.active.remove(key)
 
 				# check to see if we received an incomplete response
 				if not completed:
@@ -229,10 +228,11 @@ class ResolverManager (object):
 
 				# check to see if the worker started a new request
 				if newidentifier:
-					active_time = time.time()
-					self.resolving[(worker.w_id, newidentifier)] = client_id, original, newhost, command, decision
-					self.clients[client_id] = (worker.w_id, newidentifier, active_time)
-					self.active.append((active_time, client_id, worker.socket))
+					if completed:
+						active_time = time.time()
+						self.resolving[(worker.w_id, newidentifier)] = client_id, original, newhost, command, decision
+						self.clients[client_id] = (worker.w_id, newidentifier, active_time)
+						self.active.append((active_time, client_id, worker.socket))
 
 					response = None
 
