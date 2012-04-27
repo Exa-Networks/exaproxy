@@ -81,7 +81,7 @@ class HTTP (object):
 		self.path = path if path is not None else self.path
 
 		if path is not None:
-			Request(self.request.method + ' ' + path + ' HTTP/' + self.request.version).parse()
+			self.request = Request(self.request.method + ' ' + path + ' HTTP/' + self.request.version).parse()
 
 		if host is not None:
 			if host.count(':') > 1:
