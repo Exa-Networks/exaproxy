@@ -29,7 +29,7 @@ class ContentManager(object):
 		self.poller = poller
 		self.log = Logger('download', configuration.log.download)
 
-		self.location = location
+		self.location = os.path.realpath(os.path.normpath(location))
 		self.page = page
 		self._header = {}
 
@@ -45,7 +45,7 @@ class ContentManager(object):
 			try:
 				stat = os.stat(filename)
 			except IOError:
-				content = 'close', http(501, 'unable to stat file: %s' % str(filename))
+				content = 'close', http(501, 'local file is inaccessible %s' % str(filename))
 			else:
 				if filename in self._header :
 					cache_time, header = self._header[filename]
@@ -58,8 +58,8 @@ class ContentManager(object):
 
 				content = 'file', (header, filename)
 		else:
-			self.log.debug('no file exists for %s: %s' % (str(name), str(filename)))
-			content = 'close', http(501, 'no file exists for %s: %s' % (str(name), str(filename)))
+			self.log.debug('local file is missing for %s: %s' % (str(name), str(filename)))
+			content = 'close', http(501, 'could not serve missing file %s' % str(filename))
 
 		return content
 
@@ -75,11 +75,11 @@ class ContentManager(object):
 
 				content = 'close', http(code, body)
 			except IOError:
-				self.log.debug('no file exists for %s: %s' % (str(reason), str(filename)))
-				content = 'close', http(501, 'no file exists for %s' % str(reason))
+				self.log.debug('local file is missing for %s: %s' % (str(reason), str(filename)))
+				content = 'close', http(501, 'could not serve missing file  %s' % str(reason))
 		else:
-			self.log.debug('no file exists for %s: %s' % (str(reason), str(filename)))
-			content = 'close', http(501, 'no file exists for %s' % str(reason))
+			self.log.debug('local file is missing for %s: %s' % (str(reason), str(filename)))
+			content = 'close', http(501, 'could not serve missing file  %s' % str(reason))
 
 		return content
 
