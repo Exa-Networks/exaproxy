@@ -246,7 +246,9 @@ class LogWriter(Syslog):
 		self._syslog.info(message)
 
 	def log_notice (self, message):
-		self._syslog.notice(message)
+		# logging does not have notice !
+		#self._syslog.notice(message)
+		self._syslog.warning(message)
 
 	def log_warning (self, message):
 		self._syslog.warning(message)
@@ -258,10 +260,14 @@ class LogWriter(Syslog):
 		self._syslog.critical(message)
 
 	def log_alert (self, message):
-		self._syslog.alert(message)
+		# logging does not have alert !
+		#self._syslog.alert(message)
+		self._syslog.critical(message)
 
 	def log_emergency (self, message):
-		self._syslog.emergency(message)
+		# logging does not have emmergency !
+		#self._syslog.emergency(message)
+		self._syslog.critical(message)
 
 
 
