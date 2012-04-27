@@ -299,7 +299,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			return ('REWRITE', data), Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message))
 
 		if classification == 'file':
-			return ('FILE', data), Respond.rewrite(client_id, '250', data, comment, message)
+			return ('FILE', data), Respond.rewrite(client_id, '200', data, comment, message)
 
 		if classification == 'redirect':
 			return ('REDIRECT', data), Respond.redirect(client_id, data)

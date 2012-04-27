@@ -221,7 +221,7 @@ class RedirectorManager (object):
 		return client_id, command, decision
 
 	def showInternalError(self):
-		return 'file', '\0'.join(('250', 'internal_error.html'))
+		return 'file', '\0'.join(('200', 'internal_error.html'))
 
 	def requestStats(self):
 		for wid, worker in self.worker.iteritems():
