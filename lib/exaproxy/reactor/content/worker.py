@@ -47,9 +47,9 @@ class Content (object):
 		"""Read data that we have already received from the remote server"""
 
 		try:
-			data = self.sock.recv(buflen)
-			if not data:
-				data = None
+			# without this the exception can barf with data not defined on error
+			data = ''
+			data = self.sock.recv(buflen) or None
 		except socket.error, e:
 			if e.args[0] in errno_block:
 				self.log.info('interrupted when trying to read, will retry' % len(data))
