@@ -331,6 +331,9 @@ Encapsulated: req-hdr=0, null-body=%d
 		if classification == 'file':
 			return ('FILE', data), Respond.rewrite(client_id, '200', data, comment, message)
 
+		if classification == 'http':
+			return ('LOCAL', ''), Respond.http(client_id, data)
+
 		return ('PERMIT', message.host), Respond.connect(client_id, message.host, message.port, message)
 
 
