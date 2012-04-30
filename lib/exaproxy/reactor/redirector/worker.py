@@ -240,6 +240,9 @@ Encapsulated: req-hdr=0, null-body=%d
 				h.port = request.port
 				return h,'permit',None,comment
 
+		if headers.startswith('HTTP/') and (headers.split() + [''])[1].isdigit():
+			return message, 'http', headers, comment
+
 		h = HTTP(self.configuration,headers,message.client)
 		if not h.parse():
 			if tainted is False:
@@ -324,6 +327,9 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		if classification == 'intercept':
 			return ('INTERCEPT', data), Respond.connect(client_id, data, message.port, message)
+
+		if classification == 'file':
+			return ('FILE', data), Respond.rewrite(client_id, '200', data, comment, message)
 
 		return ('PERMIT', message.host), Respond.connect(client_id, message.host, message.port, message)
 
