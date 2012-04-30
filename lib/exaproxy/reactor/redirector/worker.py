@@ -219,6 +219,9 @@ Encapsulated: req-hdr=0, null-body=%d
 				return message, 'requeue', None, None
 			return message, 'file', 'internal_error.html', ''
 
+		if headers.startswith('HTTP/') and (headers.split() + [''])[1].isdigit():
+			return message, 'http', headers, comment
+
 		# QUICK and DIRTY, let do a intercept using the CONNECT syntax
 		if headers.startswith('CONNECT'):
 			_ = headers.replace('\r\n','\n').split('\n\n',1)
@@ -239,9 +242,6 @@ Encapsulated: req-hdr=0, null-body=%d
 				h.host = request.host
 				h.port = request.port
 				return h,'permit',None,comment
-
-		if headers.startswith('HTTP/') and (headers.split() + [''])[1].isdigit():
-			return message, 'http', headers, comment
 
 		h = HTTP(self.configuration,headers,message.client)
 		if not h.parse():
