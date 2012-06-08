@@ -122,6 +122,16 @@ class DNSResponseType(DNSBaseType):
 		info = self.getResponse()
 		return self.extract(question, qtype, info)
 
+	def getRelated (self):
+		for response in self.responses:
+			if response.querytype == 'CNAME':
+				related = response.response
+				break
+		else:
+			related = None
+
+		return related
+
 	def isComplete(self):
 		return self.complete
 

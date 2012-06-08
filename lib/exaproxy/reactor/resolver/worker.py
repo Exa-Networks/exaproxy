@@ -86,7 +86,14 @@ class DNSClient(object):
 
 		# Or the IPv4 address
 		if value is None:
-			if response.qtype == 'A' and self.configuration.tcp6.out:
+			related = response.getRelated()
+
+			if response.qtype == 'A' and related is not None:
+				newidentifier, newcomplete = self.resolveHost(related)
+				newhost = related
+				value = None
+
+			elif response.qtype == 'A' and self.configuration.tcp6.out:
 				value = response.getValue('AAAA')
 
 				if value is None:
