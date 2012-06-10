@@ -306,15 +306,12 @@ def _configuration (conf):
 		_conf_paths.append(os.path.normpath(os.path.join(location,'etc','exaproxy','exaproxy.conf')))
 	_conf_paths.append(os.path.normpath(os.path.join('/','etc','exaproxy','exaproxy.conf')))
 
-	ini_files = [path for path in _conf_paths if os.path.exists(path)]
-	if not ini_files:
-		raise ConfigurationError('could not find exaproxy.conf file')
-	ini_file = ini_files[0]
-
-	ini = ConfigParser.ConfigParser()
-	ini.read(ini_file)
-
 	configuration = Store()
+	ini = ConfigParser.ConfigParser()
+
+	ini_files = [path for path in _conf_paths if os.path.exists(path)]
+	if ini_files:
+		ini.read(ini_files[0])
 
 	for section in defaults:
 		default = defaults[section]
