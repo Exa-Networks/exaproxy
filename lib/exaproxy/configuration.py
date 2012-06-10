@@ -321,10 +321,18 @@ def _configuration (conf):
 			try:
 				proxy_section = 'exaproxy.%s' % section
 				env_name = '%s.%s' % (proxy_section,option)
-				conf = value.unquote(os.environ.get(env_name,'')) \
-				    or value.unquote(os.environ.get(env_name.replace('.','_'),'')) \
-				    or value.unquote(ini.get(proxy_section,option,nonedict)) \
-				    or default[option][2]
+				rep_name = env_name.replace('.','_')
+				
+				if env_name in os.environ:
+					conf = os.environ.get(env_name)
+				elif rep_name in os.environ:
+					conf = os.environ.get(rep_name)
+				else:
+					# raise and set the default
+					conf = value.unquote(ini.get(proxy_section,option,nonedict))
+					# name without an = or : in the configuration and no value
+					if conf == None:
+						conf = default[option][2]
 			except (ConfigParser.NoSectionError,ConfigParser.NoOptionError):
 				conf = default[option][2]
 			try:
