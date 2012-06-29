@@ -112,7 +112,7 @@ class DNSTypeCodec:
 		return DNSResourceType(name, question, decoded, ttl)
 
 	def encodeResource(self, resource, data_s=''):
-		value, encoder = self.byvalue.get(resource.querytype, (None, None))
+		value, encoder = self.byname.get(resource.querytype, (None, None))
 		if value is not None:
 			encoded = encoder(resource.response, data_s)
 		else:
