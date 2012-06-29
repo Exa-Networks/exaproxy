@@ -213,7 +213,7 @@ class DNSCodec:
 		return response
 
 	def encodeResponse(self, response):
-		header_s = struct.pack('>HHHHHH', response.identifier, response.flags, response.query_len, response.response_len, response.authority_len, response.additional_len)
+		header_s = struct.pack('>HHHHHH', response.identifier, 1<<15, response.query_len, response.response_len, response.authority_len, response.additional_len)
 
 		for q in response.queries:
 			dnstype, question = self.resource_factory.encodeQuery(q)
@@ -225,6 +225,7 @@ class DNSCodec:
 			dnstype, question, decoded, ttl = self.resource_factory.encodeResource(r)
 			name = convert.string_to_dns(question)
 
-			header_s += name + struct.pack('>HHIHs', dnstype, r.dnsclass, ttl, len(decoded), decoded)
+			new_header_s = name + struct.pack('>HHIH', dnstype, r.dnsclass, ttl, len(decoded)) + decoded
+			header_s += new_header_s
 
 		return header_s
