@@ -87,7 +87,7 @@ class DNSClient(object):
 		# If we didn't get the IP address then check to see if
 		# we can find it by following the CNAMEs in the response
 		if value is None:
-			value = response.getChainedValue()
+			qtype, value = response.getChainedValue()
 
 		# Or the IPv4 address
 		if value is None:
