@@ -147,7 +147,20 @@ class DNSResponseType(DNSBaseType):
 					qtype = query.querytype
 
 		info = self.getResponse()
-		return self.extract(question, qtype, info)
+		return qtype, self.extract(question, qtype, info)
+
+	def getChainedValue(self):
+		cname = None
+
+		if self.queries:
+			qtype = 'CNAME'
+			question = self.queries[0].question
+
+			while question is not None and qtype == 'CNAME':
+				cname = question
+				qtype, question = self.getValue(question, qtype)
+
+		return self.getValue(cname)
 
 	def getRelated (self):
 		for response in self.responses:

@@ -82,7 +82,12 @@ class DNSClient(object):
 		response = self.dns_factory.normalizeResponse(response_s, extended=self.extended)
 
 		# Try to get the IP address we asked for
-		value = response.getValue()
+		qtype, value = response.getValue()
+
+		# If we didn't get the IP address then check to see if
+		# we can find it by following the CNAMEs in the response
+		if value is None:
+			value = response.getChainedValue()
 
 		# Or the IPv4 address
 		if value is None:
@@ -94,14 +99,14 @@ class DNSClient(object):
 				value = None
 
 			elif response.qtype == 'A' and self.configuration.tcp6.out:
-				value = response.getValue('AAAA')
+				qtype, value = response.getValue(qtype='AAAA')
 
 				if value is None:
 					newidentifier, newcomplete = self.resolveHost(response.qhost, qtype='AAAA')
 					newhost = response.qhost
 
 			elif response.qtype == 'AAAA':
-				cname = response.getValue('CNAME')
+				qtype, cname = response.getValue(qtype='CNAME')
 
 				if cname is not None:
 					newidentifier, newcomplete = self.resolveHost(cname)
