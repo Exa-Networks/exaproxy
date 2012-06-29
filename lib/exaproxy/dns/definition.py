@@ -81,6 +81,33 @@ class DNSResponseType(DNSBaseType):
 			self.qtype = None
 			self.qhost = None
 
+	@property
+	def query_len (self):
+		return len(self.queries)
+
+	@property
+	def response_len (self):
+		return len(self.responses)
+
+	@property
+	def authority_len (self):
+		return len(self.authorities)
+
+	@property
+	def additional_len (self):
+		return len(self.additionals)
+
+	@property
+	def resources (self):
+		for resource in self.responses:
+			yield resource
+
+		for resource in self.authorities:
+			yield resource
+
+		for resource in self.additionals:
+			yield resource
+
 	def getResponse(self):
 		info = {}
 
