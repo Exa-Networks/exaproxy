@@ -54,7 +54,7 @@ class DNSRequestType(DNSBaseType):
 	def __str__(self):
 		query_s = "\n\t ".join(str(q) for q in self.queries)
 
-		return """DNS RESPONSE %(id)s
+		return """DNS REQUEST %(id)s
 QUERIES: %(queries)s""" % {'id':self.identifier, 'queries':query_s}
 
 
