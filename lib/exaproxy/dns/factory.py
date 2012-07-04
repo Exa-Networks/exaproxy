@@ -51,6 +51,6 @@ class DNSPacketFactory:
 			response_s = response_s[2:]
 
 			if length != len(response_s):
-				request_s = ''
+				response_s = ''
 
 		return self.codec.decodeResponse(response_s)
