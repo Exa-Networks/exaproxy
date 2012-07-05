@@ -28,8 +28,8 @@ def dns_string(s):
 		length = u8(s[0])
 		remaining -= length + 1
 
-		if (length >> 6) == 3:
-			ptr = u8(s[1])
+		if length >= 0xc0:
+			ptr = ((length - 0xc0)<<8) + u8(s[1])
 			break
 
 		if length == 0:
