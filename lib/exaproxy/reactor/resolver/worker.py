@@ -75,11 +75,16 @@ class DNSClient(object):
 		if response_s is None:
 			return None
 
-		if not response_s:
+		# and convert it into something we can play with
+		completed, response = self.dns_factory.normalizeResponse(response_s, extended=self.extended)
+
+		# we might not have been sent all of the response yet
+		if not completed:
 			return None, None, None, True, None, None, None
 
-		# and convert it into something we can play with
-		response = self.dns_factory.normalizeResponse(response_s, extended=self.extended)
+		# check that we were able to properly parse the response
+		if not response:
+			return None
 
 		# Try to get the IP address we asked for
 		qtype, value = response.getValue()

@@ -26,7 +26,12 @@ class DNSPacketFactory:
 			if length != len(request_s):
 				request_s = ''
 
-		return self.codec.decodeRequest(request_s) if request_s else None
+		if request_s:
+			res = True, self.codec.decodeRequest(request_s)
+		else:
+			res = False, None
+
+		return res
 
 	def createRequestString(self, identifier, request_type, request_name, extended=False):
 		request = self.request_factory(identifier)
@@ -53,4 +58,9 @@ class DNSPacketFactory:
 			if length != len(response_s):
 				response_s = ''
 
-		return self.codec.decodeResponse(response_s) if response_s else None
+		if response_s:
+			res = True, self.codec.decodeResponse(response_s)
+		else:
+			res = False, None
+
+		return res
