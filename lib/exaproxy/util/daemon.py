@@ -96,3 +96,20 @@ class Daemon (object):
 			fork_exit()
 			os.setsid()
 			fork_exit()
+			self.silence()
+
+	def silence (self):
+		maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
+		if (maxfd == resource.RLIM_INFINITY):
+			maxfd = MAXFD
+
+		for fd in range(0, maxfd):
+			try:
+				os.close(fd)
+			except OSError:
+				pass
+
+		os.open("/dev/null", os.O_RDWR)
+		os.dup2(0, 1)
+		os.dup2(0, 2)
+
