@@ -73,6 +73,10 @@ def dns_to_string(s, packet_s):
 			parts = None
 			break
 
+		if sum(map(len, parts)) > 500:
+			parts = None
+			break
+
 	return '.'.join(parts) if parts is not None else None
 
 def string_to_dns(s, packet_s=None):
