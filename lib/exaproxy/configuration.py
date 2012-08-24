@@ -214,7 +214,8 @@ defaults = {
 		'transparent'     : (value.boolean,value.lower,'false', 'do not insert Via headers'),
 		'forward'         : (value.lowunquote,value.quote,'',   'read client address from this header (normally x-forwarded-for)'),
 		'allow-connect'   : (value.boolean,value.lower,'true',  'allow client to use CONNECT and https connections'),
-		'extensions'      : (value.methods,value.list,'',       'allow new HTTP method (space separated)')
+		'extensions'      : (value.methods,value.list,'',       'allow new HTTP method (space separated)'),
+		'proxied'         : (value.boolean,value.lower,'false', 'request is encapsulated with proxy protocol'),
 	},
 	'web' : {
 		'enable'  : (value.boolean,value.lower,'true',             'enable the built-in webserver'),

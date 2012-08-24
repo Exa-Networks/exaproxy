@@ -20,6 +20,7 @@ import time
 from exaproxy.http.message import HTTP
 from exaproxy.http.request import Request
 from exaproxy.http.response import http
+from exaproxy.http.proxy import ProxyProtocol
 
 from exaproxy.util.log import Logger
 from exaproxy.util.log import UsageLogger
@@ -70,12 +71,15 @@ class Respond (object):
 
 class Redirector (Thread):
 	# TODO : if the program is a function, fork and run :)
+	unproxy = ProxyProtocol().parseRequest
 
 	def __init__ (self, configuration, name, request_box, program):
 		self.configuration = configuration
 		self.enabled = configuration.redirector.enable
 		self.protocol = configuration.redirector.protocol
+		self.proxied = configuration.http.proxied
 		self._transparent = configuration.http.transparent
+
 		self.log = Logger('worker ' + str(name), configuration.log.worker)
 		self.usage = UsageLogger('usage', configuration.log.worker, port=configuration.usage.port)
 
@@ -361,13 +365,25 @@ Encapsulated: req-hdr=0, null-body=%d
 				self.log.alert('Received invalid message: %s' % data)
 				continue
 
+			if self.proxied:
+				proxy_ip, header = self.unproxy(header)
+				if header is None:
+					self.log.alert('Invalid proxy data: %s' % data)
+					continue
+
+				# ignore protocols we do not recognise
+				if proxy_ip is not None:
+					client_ip = proxy_ip
+			else:
+				client_ip = peer
+
 			if self.enabled:
 				if not self.process or self.process.poll() is not None:
 					if self.running:
 						self.log.error('forked process died !')
 					self.running = False
 					if source != 'nop':
-						self.respond(Respond.requeue(client_id, peer, header, source))
+						self.respond(Respond.requeue(client_id, client_ip, header, source))
 					break
 
 			stats_timestamp = self.stats_timestamp
@@ -387,7 +403,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			if source == 'nop':
 				continue
 
-			message = HTTP(self.configuration,header,peer)
+			message = HTTP(self.configuration,header,client_ip)
 			if not message.parse():
 				self.respond(Respond.http(client_id, http('400', 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header)))
 				continue
@@ -402,13 +418,13 @@ Encapsulated: req-hdr=0, null-body=%d
 			if method in ('GET', 'PUT', 'POST','HEAD','DELETE','PATCH'):
 				if not self.enabled:
 					self.respond(Respond.download(client_id, message.host, message.port, message.content_length, self.transparent(message)))
-					self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
+					self.usage.logRequest(client_id, client_ip, method, message.url, 'PERMIT', message.host)
 					continue
 
-				(operation, destination), response = self.request(client_id, *(self.classify (message,header,tainted) + (peer, header, source)))
+				(operation, destination), response = self.request(client_id, *(self.classify (message,header,tainted) + (client_ip, header, source)))
 				self.respond(response)
 				if operation is not None:
-					self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
+					self.usage.logRequest(client_id, client_ip, method, message.url, operation, destination)
 				continue
 
 
@@ -420,13 +436,13 @@ Encapsulated: req-hdr=0, null-body=%d
 
 				# we do allow connect
 				if self.configuration.http.allow_connect:
-					(operation, destination), response = self.connect(client_id, *(self.classify(message,header,tainted)+(peer,header,source)))
+					(operation, destination), response = self.connect(client_id, *(self.classify(message,header,tainted)+(client_ip,header,source)))
 					self.respond(response)
 					if operation is not None:
-						self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
+						self.usage.logRequest(client_id, client_ip, method, message.url, operation, destination)
 				else:
 					self.respond(Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n')))
-					self.usage.logRequest(client_id, peer, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
+					self.usage.logRequest(client_id, client_ip, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
 				continue
 
 			if method in ('OPTIONS','TRACE'):
@@ -434,27 +450,27 @@ Encapsulated: req-hdr=0, null-body=%d
 					max_forwards = message.headers.get('max-forwards','Max-Forwards: -1')[-1].split(':')[-1].strip()
 					if not max_forwards.isdigit():
 						self.respond(Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n')))
-						self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
+						self.usage.logRequest(client_id, client_ip, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
 						continue
 					max_forward = int(max_forwards)
 					if max_forward < 0 :
 						self.respond(Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n')))
-						self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
+						self.usage.logRequest(client_id, client_ip, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
 						continue
 					if max_forward == 0:
 						if method == 'OPTIONS':
 							self.respond(Respond.http(client_id, http('200', '')))
-							self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', 'OPTIONS')
+							self.usage.logRequest(client_id, client_ip, method, message.url, 'PERMIT', 'OPTIONS')
 							continue
 						if method == 'TRACE':
 							self.respond(Respond.http(client_id, http('200', header)))
-							self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', 'TRACE')
+							self.usage.logRequest(client_id, client_ip, method, message.url, 'PERMIT', 'TRACE')
 							continue
 						raise RuntimeError('should never reach here')
 					message.headers.set('max-forwards','Max-Forwards: %d' % (max_forward-1))
 				# Carefull, in the case of OPTIONS message.host is NOT message.headerhost
 				self.respond(Respond.download(client_id, message.headerhost, message.port, message.content_length, self.transparent(message)))
-				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.headerhost)
+				self.usage.logRequest(client_id, client_ip, method, message.url, 'PERMIT', message.headerhost)
 				continue
 
 			# WEBDAV
@@ -462,16 +478,16 @@ Encapsulated: req-hdr=0, null-body=%d
 			  'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE', 
 			  'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
 				self.respond(Respond.download(client_id, message.headerhost, message.port, message.content_length, self.transparent(message)))
-				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', method)
+				self.usage.logRequest(client_id, client_ip, method, message.url, 'PERMIT', method)
 				continue
 
 			if message.request in self.configuration.http.extensions:
 				self.respond(Respond.download(client_id, message.headerhost, message.port, message.content_length, self.transparent(message)))
-				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.request)
+				self.usage.logRequest(client_id, client_ip, method, message.url, 'PERMIT', message.request)
 				continue
 
 			self.respond(Respond.http(client_id, http('405', ''))) # METHOD NOT ALLOWED
-			self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
+			self.usage.logRequest(client_id, client_ip, method, message.url, 'DENY', method)
 			continue
 
 		self.respond(Respond.hangup(self.wid))
