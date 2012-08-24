@@ -95,6 +95,11 @@ class Client (object):
 		yield None
 		
 
+	def setPeer (self, peer):
+		"""Set the claimed ip address for this client.
+		Does not effect the ip address we try sending data to."""
+		self.peer = peer
+
 	def readData(self):
 		name, peer = self.name, self.peer
 		res = self.reader.send(0)

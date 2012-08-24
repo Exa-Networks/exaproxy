@@ -9,7 +9,11 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 from exaproxy.util.log import Logger
 from .worker import Client
 
+from exaproxy.http.proxy import ProxyProtocol
+
 class ClientManager (object):
+	unproxy = ProxyProtocol().parseRequest
+
 	def __init__(self, poller, configuration):
 		self.total_sent = 0L
 		self.norequest = {}
@@ -19,6 +23,7 @@ class ClientManager (object):
 		self._nextid = 0
 		self.poller = poller
 		self.log = Logger('client', configuration.log.client)
+		self.proxied = configuration.http.proxied
 
 	def __contains__(self, item):
 		return item in self.byname
@@ -58,6 +63,14 @@ class ClientManager (object):
 		else:
 			self.log.error('trying to read headers from a client that does not exist %s' % sock)
 			name, peer, request, content, source = None, None, None, None, None
+
+		if request and self.proxied is True:
+			client_ip, client_request = self.unproxy(request)
+
+			if client_ip and client_request:
+				peer = client_ip
+				request = client_request
+				client.setPeer(client_ip)
 
 		return name, peer, request, content, source
 
