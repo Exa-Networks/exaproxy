@@ -43,8 +43,8 @@ def configuration (etc):
 
 setup(name='exaproxy',
 	version=version,
-	description='filtering proxy',
-	long_description="ExaProxy was developed to be a transparent proxy, and can be used without client side configuration. Thanks to its url rewriting features, compatible with SQUID rewriters, it can as well be used as reverse proxy where complex URL rewriting are required.",
+	description='non-caching http/https proxy',
+	long_description="ExaProxy was developed to be a transparent forward proxy. Thanks to its url rewriting features, compatible with SQUID rewriters, it can as well be used as powerful reverse proxy where complex URL rewriting are required.",
 	author='Thomas Mangin, David Farrar',
 	author_email='thomas.mangin@exa-networks.co.uk, david.farrar@exa-networks.co.uk',
 	url='http://code.google.com/p/exaproxy/',
