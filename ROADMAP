@@ -6,6 +6,7 @@ Reliablity:
  - Be more verbose for reactor exception trapped
  - if a remote end / client does not respect connection-close, use time to kill it anyway
  - make sure we notice when a worker exit
+ - look at tox: http://tox.testrun.org/latest/
 
 RFC Compliance
  - Add a VIA header to the answer from the server (not done to save CPU)
@@ -20,6 +21,7 @@ DOS Protection
  - limit GET size as a option value (8192 default)
 
 Performance
+ - replace the crap UDP message passing for log with an mmap interface
  - look at python buffer API
  - look at python Array.Array API
  - make sure we do not use string concatenation (perf fixed in 2.7 ?)
