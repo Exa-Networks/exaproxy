@@ -30,6 +30,7 @@ Cleanup
  - Better tracking of DNS expiration
  - Order configuation
  - Log HTTP requests
+ - The way we perform sysloging (messy due to the threads)
 
 Feature
  - More monitoring
