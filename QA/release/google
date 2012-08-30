@@ -87,6 +87,8 @@ cd -
 cd $destination
 echo removing html folder
 rm -rf html
+echo removing QA folder
+rm -rf QA
 cd -
 
 # Making tarball
