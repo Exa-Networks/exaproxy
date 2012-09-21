@@ -5,6 +5,8 @@ Version explained:
 
 Version 1.0.1 - 0th of Month 2012
  * Fix: can run from any folder, will correctly find the configuration files
+   reported by: Henry Castiel
+ * Fix: will look for configuration file in /usr (installation location on archlinux)
 
 Version 1.0.0 - 29th of August 2012
  * Initial release

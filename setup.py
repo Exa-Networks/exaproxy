@@ -36,10 +36,17 @@ def packages (lib):
 def configuration (etc):
 	etcs = []
 	for l,d,fs in os.walk(etc):
-		if not d:
-			for f in fs:
-				etcs.append(os.path.join(l,f))
+		e = []
+		for f in fs:
+			e.append(os.path.join(l,f))
+		etcs.append((l,e))
 	return etcs
+
+def files ():
+	r = []
+	r.append(('/usr/lib/systemd/system','etc/systemd'))
+	r.extend(configuration('etc/exaproxy'))
+	return r
 
 setup(name='exaproxy',
 	version=version,
@@ -54,10 +61,7 @@ setup(name='exaproxy',
 	packages=packages('lib'),
 	scripts=['sbin/exaproxy',],
 	download_url='http://exaproxy.googlecode.com/files/exaproxy-%s.tgz' % version,
-	data_files=[
-		('etc/exaproxy',configuration('etc/exaproxy')),
-		('usr/lib/systemd/system',configuration('etc/systemd')),
-	],
+	data_files=files(),
 	classifiers=[
 		'Development Status :: 4 - Beta',
 		'Environment :: Console',
