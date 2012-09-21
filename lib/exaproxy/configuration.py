@@ -66,6 +66,7 @@ class value (object):
 			os.path.normpath(os.path.join(os.path.join(os.sep,root,path))),
 			os.path.normpath(os.path.expanduser(value.unquote(path))),
 			os.path.normpath(os.path.join('/',path)),
+			os.path.normpath(os.path.join('/','usr',path)),
 		]
 		return paths
 
@@ -314,6 +315,7 @@ def _configuration (conf):
 	if location:
 		_conf_paths.append(os.path.normpath(os.path.join(location,'etc','exaproxy','exaproxy.conf')))
 	_conf_paths.append(os.path.normpath(os.path.join('/','etc','exaproxy','exaproxy.conf')))
+	_conf_paths.append(os.path.normpath(os.path.join('/','usr','etc','exaproxy','exaproxy.conf')))
 
 	configuration = Store()
 	ini = ConfigParser.ConfigParser()
