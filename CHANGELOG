@@ -8,6 +8,7 @@ Version 1.0.1 - 0th of Month 2012
    reported by: Henry Castiel
  * Fix: will look for configuration file in /usr (installation location on archlinux)
  * Fix: systemd support on Linux
+ * Fix: verbose exaproxy script
 
 Version 1.0.0 - 29th of August 2012
  * Initial release
