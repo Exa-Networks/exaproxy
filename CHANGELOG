@@ -3,5 +3,8 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
-Version 1.0.0 - --th of Febuary 2012
+Version 1.0.1 - 0th of Month 2012
+ * Fix: can run from any folder, will correctly find the configuration files
+
+Version 1.0.0 - 29th of August 2012
  * Initial release

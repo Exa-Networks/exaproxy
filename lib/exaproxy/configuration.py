@@ -53,6 +53,23 @@ class value (object):
 	location = os.path.normpath(sys.argv[0]) if sys.argv[0].startswith('/') else os.path.normpath(os.path.join(os.getcwd(),sys.argv[0]))
 
 	@staticmethod
+	def root (path):
+		roots = value.location.split(os.sep)
+		location = []
+		for index in range(len(roots)-1,-1,-1):
+			if roots[index] == 'lib':
+				if index: 
+					location = roots[:index]
+				break
+		root = os.path.join(*location)
+		paths = [
+			os.path.normpath(os.path.join(os.path.join(os.sep,root,path))),
+			os.path.normpath(os.path.expanduser(value.unquote(path))),
+			os.path.normpath(os.path.join('/',path)),
+		]
+		return paths
+
+	@staticmethod
 	def integer (_):
 		return int(_)
 
@@ -100,12 +117,7 @@ class value (object):
 
 	@staticmethod
 	def folder(path):
-		path = os.path.expanduser(value.unquote(path))
-		paths = [
-			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),path)),
-			os.path.normpath(os.path.join('/','etc','exaproxy','exaproxy.conf',path)),
-			os.path.normpath(path)
-		]
+		paths = value.root(path)
 		options = [path for path in paths if os.path.exists(path)]
 		if not options: raise TypeError('%s does not exists' % path)
 		first = options[0]
@@ -132,12 +144,8 @@ class value (object):
 
 	@staticmethod
 	def resolver(path):
-		paths = [
-			os.path.normpath(path),
-			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),path)),
-			os.path.normpath(os.path.join(os.path.join(os.sep,*os.path.join(value.location.split(os.sep)[:-3])),'etc','exaproxy','dns','resolv.conf')),
-			os.path.normpath(os.path.join('/','etc','exaproxy','resolv.conf',path)),
-		]
+		paths = value.root('etc/exaproxy/dns/resolv.conf')
+		paths.append(os.path.normpath(os.path.join('/','etc','resolv.conf')))
 		for resolver in paths:
 			if os.path.exists(resolver):
 				with open(resolver) as r:
@@ -238,7 +246,7 @@ defaults = {
 #		'force-ttl'    : (value.boolean,value.lower,'true',                   'do not use DNS ttl but the ttl value in this configuration'),
 		'ttl'          : (value.integer,value.nop,'120',                      'amount of time (in seconds) we will cache dns results for'),
 		'expire'       : (value.integer,value.nop,'200',                      'maximum number of cached dns entries we will expire during each cleanup'),
-		'definitions'  : (value.unquote,value.path,'etc/exaproxy/dns/types',  'location of file defining dns query types'),
+		'definitions'  : (value.folder,value.path,'etc/exaproxy/dns/types',   'location of file defining dns query types'),
 	},
 	'log' : {
 		'enable'        : (value.boolean,value.lower,'true',               'enable traffic logging'),
