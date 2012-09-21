@@ -44,7 +44,8 @@ def configuration (etc):
 
 def files ():
 	r = []
-	r.append(('/usr/lib/systemd/system','etc/systemd'))
+	if 'linux' in sys.platform:
+		r.append(('/usr/lib/systemd/system',['etc/systemd/exaproxy.service',]))
 	r.extend(configuration('etc/exaproxy'))
 	return r
 

@@ -1,0 +1,11 @@
+[Unit]
+Description=ExaProxy
+After=network.target
+
+[Service]
+Environment=exaproxy.daemon.daemonize=false
+Environment=exaproxy.log.destination=stdout
+ExecStart=/usr/bin/exaproxy
+
+[Install]
+WantedBy=multi-user.target
