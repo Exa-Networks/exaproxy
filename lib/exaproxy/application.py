@@ -23,8 +23,8 @@ def help ():
 	sys.stdout.write('\n')
 	sys.stdout.write('  -h, --help      : this help\n')
 	sys.stdout.write('  -c, --conf-file : configuration file to use (ini format)\n')
-	sys.stdout.write('  -i, --ini       : display the configuration using the ini format\n')
-	sys.stdout.write('  -e, --env       : display the configuration using the env format\n')
+	sys.stdout.write('  -i, -fi, --ini  : display the configuration using the ini format\n')
+	sys.stdout.write('  -e, -fe, --env  : display the configuration using the env format\n')
 	sys.stdout.write(' -di, --diff-ini  : display non-default configurations values using the ini format\n')
 	sys.stdout.write(' -de, --diff-env  : display non-default configurations values using the env format\n')
 	sys.stdout.write('  -d, --debug     : shortcut to turn on all subsystems debugging to LOG_DEBUG\n')
@@ -121,10 +121,10 @@ if __name__ == '__main__':
 		if arg in ['-h','--help']:
 			help()
 			sys.exit(0)
-		if arg in ['-i','--ini']:
+		if arg in ['-i','-fi','--ini']:
 			ini()
 			sys.exit(0)
-		if arg in ['-e','--env']:
+		if arg in ['-e','-fe','--env']:
 			env()
 			sys.exit(0)
 		if arg in ['-di','--diff-ini']:
