@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+
+import httplib
+
+while True:
+	connection = httplib.HTTPConnection("www.google.com")
+	connection.set_tunnel('127.0.0.1',3128, headers=None)
+	connection.request("GET","/index.html")
+	response = connection.getresponse()
+	print response.status, response.reason
+	page = response.read()
+	print page
+	connection.close()
+
+"""
+#!/bin/sh
+(
+	echo "GET / HTTP/1.1"; 
+	echo "Host: www.google.com" ; 
+	echo "X-Forwarded-For: 127.0.0.1"; 
+	echo "Connection: close";
+	echo; 
+sleep 100) | telnet 127.0.0.1 3128
+"""
