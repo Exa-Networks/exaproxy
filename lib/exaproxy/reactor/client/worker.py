@@ -170,10 +170,6 @@ class Client (object):
 					else:
 						sent = 0
 
-					if len(w_buffer) > 65000:
-						print "AHA! Client send buffer is %d bytes" % len(w_buffer)
-						print "NEW data is %d bytes" % len(data or '')
-
 					buffered = bool(w_buffer) or finished
 					data = yield buffered, had_buffer, sent
 

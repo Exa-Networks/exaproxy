@@ -73,9 +73,6 @@ class Content (object):
 			self.w_buffer = w_buffer[sent:]
 			res = bool(self.w_buffer)
 
-			if len(self.w_buffer) > 65000:
-				print 'AHA! Downloader send buffer is %d bytes' % len(self.w_buffer)
-
 		except socket.error, e:
 			sent = 0
 			self.w_buffer = w_buffer
