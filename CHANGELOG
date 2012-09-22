@@ -9,6 +9,7 @@ Version 1.0.1 - 0th of Month 2012
  * Fix: will look for configuration file in /usr (installation location on archlinux)
  * Fix: systemd support on Linux
  * Fix: verbose exaproxy script
+ * Fix: a potential crash that could occur when a client closes a buffered connection that is scheduled to be closed by the server
 
 Version 1.0.0 - 29th of August 2012
  * Initial release
