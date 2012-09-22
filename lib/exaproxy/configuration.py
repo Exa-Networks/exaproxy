@@ -15,8 +15,6 @@ import sys
 import syslog
 import pwd
 
-from .util.version import version
-
 class ConfigurationError (Exception):
 	pass
 
@@ -279,7 +277,7 @@ defaults = {
 	# Here for internal use
 	'proxy' : {
 		'name'    : (value.nop,value.nop,'ExaProxy', 'name'),
-		'version' : (value.nop,value.nop,version,    'version'),
+		'version' : (value.nop,value.nop,'unknown',  'version'),
 	},
 	# Here for internal use
 	'debug' : {

@@ -57,6 +57,9 @@ def help ():
 			sys.stdout.write(' - %s\n' % line)
 	sys.stdout.write('\n')
 
+def version (version):
+	print 'exaproxy %s' % version
+
 def __exit(memory,code):
 	if memory:
 		from exaproxy.leak import objgraph
@@ -86,6 +89,7 @@ if __name__ == '__main__':
 	next = ''
 	arguments = {
 		'configuration' : '',
+		'release' : '',
 	}
 
 	for arg in sys.argv[1:]:
@@ -95,12 +99,17 @@ if __name__ == '__main__':
 			continue
 		if arg in ['-c','--conf-file']:
 			next = 'configuration'
+		if arg in ['--release','-r']:
+			next = 'release'
 
 	try:
 		configuration = load(arguments['configuration'])
 	except ConfigurationError,e:
 		print >> sys.stderr, 'configuration issue,', str(e)
 		sys.exit(1)
+
+	if arguments['release']:
+		configuration.proxy.version = arguments['release']
 
 	from exaproxy.util.log import Logger
 	log = Logger('supervisor', configuration.log.supervisor)
@@ -123,6 +132,9 @@ if __name__ == '__main__':
 			sys.exit(0)
 		if arg in ['-de','--diff-env']:
 			env(True)
+			sys.exit(0)
+		if arg in ['-v','--version']:
+			version(configuration.proxy.version)
 			sys.exit(0)
 		if arg in ['-d','--debug']:
 			configuration.debug.log = True

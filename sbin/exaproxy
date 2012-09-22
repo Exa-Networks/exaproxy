@@ -1,5 +1,7 @@
 #!/bin/sh
 
+VERSION="1.0.1"
+
 dirname=`dirname $0`
 
 case $dirname in
@@ -13,7 +15,7 @@ case $dirname in
 	;;
 esac
 
-export PYTHONPATH=$path/lib:/usr/share/exaproxy/lib/1.0.0
+export PYTHONPATH=$path/lib:/usr/share/exaproxy/lib/$VERSION
 export ETC=$path/etc/exaproxy
 
 if [ "$INTERPRETER" != "" ]
@@ -65,4 +67,4 @@ fi
 APPLICATIONS=`$INTERPRETER -c "import sys,os; print ' '.join(os.path.join(_,'exaproxy','application.py') for _ in sys.path if os.path.isfile('/'.join((_,'exaproxy/application.py'))))"`
 APPLICATION=`echo $APPLICATIONS | awk '{ print $1; }'`
 
-exec $INTERPRETER -m exaproxy.util.debug $APPLICATION $*
+exec $INTERPRETER -m exaproxy.util.debug $APPLICATION --release $VERSION $*
