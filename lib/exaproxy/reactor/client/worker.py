@@ -176,6 +176,7 @@ class Client (object):
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
+				yield None
 				break
 
 			except socket.error, e:
