@@ -27,6 +27,8 @@ Performance
  - make sure we do not use string concatenation (perf fixed in 2.7 ?)
  - look at Regex for header parsing performance
  - why pypy takes more CPU than cPython in some cases
+ - use shared memory for the passing of log information between the children thread and the core one
+
 
 Cleanup
  - Better tracking of DNS expiration
@@ -37,5 +39,6 @@ Cleanup
 Feature
  - More monitoring
  - easy to parse text version of the monitoring
- - support http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt
+ - offer an option for happy Eyeballs (RFC 6555) when it comes to IPv6 (http://tools.ietf.org/html/rfc6555)
+ - fetch the SSL X.509 certificate from IPs to extract its hostname and pass it to the thread when using CONNECT
 
