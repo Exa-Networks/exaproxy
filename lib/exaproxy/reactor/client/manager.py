@@ -39,7 +39,7 @@ class ClientManager (object):
 		self.norequest[sock] = client, source
 		self.byname[name] = client
 
-		# watch for request data becoming available to read
+		# watch for the opening request
 		self.poller.addReadSocket('opening_client', client.sock)
 
 		self.log.info('new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
@@ -55,7 +55,7 @@ class ClientManager (object):
 				# headers can be read only once
 				self.norequest.pop(sock, (None, None))
 
-				# we don't care about new requests from the client
+				# we have now read the client's opening request
 				self.poller.removeReadSocket('opening_client', client.sock)
 
 			elif request is None:
