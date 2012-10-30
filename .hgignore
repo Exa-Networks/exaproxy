@@ -1,4 +1,3 @@
-✿ cat .hgignore 
 syntax: glob
 *~
 *pyc
