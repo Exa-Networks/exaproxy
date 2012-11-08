@@ -8,7 +8,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 # http://code.google.com/speed/articles/web-metrics.html
 
-from exaproxy.util.log import Logger
+from exaproxy.util.log.logger import Logger
 
 
 class Reactor(object):
@@ -65,7 +65,7 @@ class Reactor(object):
 					self.client.newConnection(s, peer, 'web')
 
 
-			# incoming new requests from clients
+			# incoming opening requests from clients
 			for client in events.get('opening_client',[]):
 				client_id, peer, request, data, source = self.client.readRequest(client)
 				if request:
@@ -225,8 +225,7 @@ class Reactor(object):
 #				if not self.content.retryDownload(client_id, decision):
 #					break
 
-			for logger in events.get('read_log', []):
-				self.logger.logItems(logger)
+			self.logger.writeMessages()
 
 
 

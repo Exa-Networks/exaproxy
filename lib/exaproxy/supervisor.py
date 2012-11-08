@@ -25,9 +25,8 @@ from .monitor import Monitor
 from .reactor import Reactor
 
 from .configuration import load
-from exaproxy.util.log import Logger
-from exaproxy.util.log import LogWriter
-from exaproxy.util.log import LogManager
+from exaproxy.util.log.logger import Logger
+from exaproxy.util.log.writer import SysLogWriter
 
 import time
 
@@ -44,8 +43,11 @@ class Supervisor(object):
 		# Only here so the introspection code can find them
 		self.log = Logger('supervisor', configuration.log.supervisor)
 		self.signal_log = Logger('signal', configuration.log.signal)
-		self.log_writer = LogWriter(configuration.log.enable, configuration.log.destination, configuration.log, level=configuration.log.level)
-		self.usage_writer = LogWriter(configuration.usage.enable, configuration.usage.destination, configuration.usage, port=configuration.usage.port, level=configuration.usage.level)
+		self.log_writer = SysLogWriter(configuration.log.destination, configuration.log.enable, level=configuration.log.level)
+		self.usage_writer = SysLogWriter(configuration.usage.destination, configuration.usage.enable, level=configuration.usage.level)
+
+		self.log_writer.setIdentifier(configuration.daemon.identifier)
+		#self.usage_writer.setIdentifier(configuration.daemon.identifier)
 
 		if configuration.debug.log:
 			self.log_writer.toggleDebug()
@@ -63,7 +65,6 @@ class Supervisor(object):
 		self.poller.setupRead('read_web')             # Listening webserver sockets
 		self.poller.setupRead('read_workers')         # Pipes carrying responses from the child processes
 		self.poller.setupRead('read_resolver')        # Sockets currently listening for DNS responses
-		self.poller.setupRead('read_log')             # Sockets currently listening for message to log
 
 		self.poller.setupRead('read_client')          # Active clients
 		self.poller.setupRead('opening_client')       # Clients we have not yet read a request from
@@ -86,10 +87,7 @@ class Supervisor(object):
 		self.proxy = Server(self.poller,'read_proxy')
 		self.web = Server(self.poller,'read_web')
 
-		self.logger = LogManager(self.poller)
-		self.logger.addWorker(self.log_writer)
-		self.logger.addWorker(self.usage_writer)
-		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.manager, self.content, self.client, self.resolver, self.logger, self.poller)
+		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.manager, self.content, self.client, self.resolver, self.log_writer, self.poller)
 
 		self._shutdown = False
 		self._reload = False

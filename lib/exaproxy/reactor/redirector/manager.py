@@ -11,7 +11,7 @@ from Queue import Queue
 
 from .worker import Redirector
 
-from exaproxy.util.log import Logger
+from exaproxy.util.log.logger import Logger
 # Do we really need to call join() on the thread as we are stoppin on our own ?
 
 class RedirectorManager (object):

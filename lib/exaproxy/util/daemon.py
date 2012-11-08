@@ -13,7 +13,7 @@ import errno
 import socket
 import resource
 
-from .log import Logger
+from .log.logger import Logger
 
 def signed (value):
 	if value == sys.maxint:

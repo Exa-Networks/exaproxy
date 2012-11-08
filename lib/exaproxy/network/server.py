@@ -12,7 +12,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 from .functions import listen
 import socket
 
-from exaproxy.util.log import Logger
+from exaproxy.util.log.logger import Logger
 from exaproxy.configuration import load
 
 configuration = load()

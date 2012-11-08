@@ -8,7 +8,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 import os
 
-from exaproxy.util.log import Logger
+from exaproxy.util.log.logger import Logger
 from exaproxy.http.response import http, file_header
 from .worker import Content
 

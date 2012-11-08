@@ -17,7 +17,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 import os
 import errno
 
-from .log import Logger
+from .log.logger import Logger
 
 class PID (object):
 	def __init__ (self, configuration):

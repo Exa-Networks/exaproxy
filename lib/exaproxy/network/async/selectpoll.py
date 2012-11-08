@@ -14,7 +14,7 @@ import socket
 from exaproxy.network.errno_list import errno_block, errno_fatal
 from interface import IPoller
 
-from exaproxy.util.log import Logger
+from exaproxy.util.log.logger import Logger
 from exaproxy.configuration import load
 
 configuration = load()

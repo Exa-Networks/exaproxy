@@ -8,7 +8,7 @@ Copyright (c) 2012 Exa Networks. All rights reserved.
 
 import traceback
 
-from exaproxy.util.log import Logger
+from exaproxy.util.log.logger import Logger
 from exaproxy.network.functions import isip
 
 from .request import Request

@@ -21,8 +21,8 @@ from exaproxy.http.message import HTTP
 from exaproxy.http.request import Request
 from exaproxy.http.response import http
 
-from exaproxy.util.log import Logger
-from exaproxy.util.log import UsageLogger
+from exaproxy.util.log.logger import Logger
+from exaproxy.util.log.logger import UsageLogger
 
 
 
@@ -77,7 +77,7 @@ class Redirector (Thread):
 		self.protocol = configuration.redirector.protocol
 		self._transparent = configuration.http.transparent
 		self.log = Logger('worker ' + str(name), configuration.log.worker)
-		self.usage = UsageLogger('usage', configuration.log.worker, port=configuration.usage.port)
+		self.usage = UsageLogger('usage', configuration.log.worker)
 
 		self.universal = True if self.protocol == 'url' else False
 		self.icap = self.protocol[len('icap://'):].split('/')[0] if self.protocol.startswith('icap://') else ''

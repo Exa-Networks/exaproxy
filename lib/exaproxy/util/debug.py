@@ -11,9 +11,9 @@ import sys
 
 import traceback
 
-from exaproxy.util.log import LogWriter
+from exaproxy.util.log.writer import DebugLogWriter
 
-writer = LogWriter(True, 'print', None, port=None)
+writer = DebugLogWriter()
 
 def bug_report (type, value, trace):
 	print >> sys.stderr, ''

@@ -1,6 +1,6 @@
 import select
 
-from exaproxy.util.log import Logger
+from exaproxy.util.log.logger import Logger
 from exaproxy.configuration import load
 
 configuration = load()

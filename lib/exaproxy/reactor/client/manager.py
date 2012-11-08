@@ -6,7 +6,7 @@ Created by David Farrar  on 2011-11-30.
 Copyright (c) 2011 Exa Networks. All rights reserved.
 """
 
-from exaproxy.util.log import Logger
+from exaproxy.util.log.logger import Logger
 from .worker import Client
 
 from exaproxy.http.proxy import ProxyProtocol

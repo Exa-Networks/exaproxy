@@ -111,9 +111,8 @@ if __name__ == '__main__':
 	if arguments['release']:
 		configuration.proxy.version = arguments['release']
 
-	from exaproxy.util.log import Logger
+	from exaproxy.util.log.logger import Logger
 	log = Logger('supervisor', configuration.log.supervisor)
-	log.setIdentifier(configuration.daemon.identifier)
 
 	for arg in sys.argv[1:]:
 		if arg in ['--',]:
