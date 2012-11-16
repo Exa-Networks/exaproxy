@@ -34,7 +34,7 @@ class Daemon (object):
 				soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 				self.log.error('could not increase file descriptor limit : %s' % str(e))
 				self.log.error('the current limit is %d' % signed(soft))
-				self.log.error('the maxium possible limit is %d' % signed(hard))
+				self.log.error('the maximum possible limit is %d' % signed(hard))
 
 	def drop_privileges (self):
 		"""returns true if we are left with insecure privileges"""
