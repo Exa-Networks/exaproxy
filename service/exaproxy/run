@@ -2,12 +2,15 @@
 
 dirname=`dirname $0`
 
-if [[ $dirname == /* ]]; then
+case $dirname in
+/*)
         path=$dirname/../..
-else
+        ;;
+*)
         cd `pwd`/$dirname/../.. > /dev/null
         path=`pwd`
         cd - > /dev/null
-fi
+        ;;
+esac
 
-exec nice --4 env PYTHONPATH=$path/lib $path/sbin/exaproxy 2>&1
+exec env PYTHONPATH=$path/lib $path/sbin/exaproxy 2>&1
