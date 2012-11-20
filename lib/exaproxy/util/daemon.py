@@ -28,13 +28,21 @@ class Daemon (object):
 		#mask = os.umask(0137)
 		if configuration.daemon.filemax:
 			try:
+				soft_limit,hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+				wanted_limit = min(configuration.daemon.filemax, hard_limit if hard_limit > 0 else 0)
+
 				# default on mac are (256,-1)
-				resource.setrlimit(resource.RLIMIT_NOFILE, (configuration.daemon.filemax, -1))
+				resource.setrlimit(resource.RLIMIT_NOFILE, (wanted_limit, hard_limit))
+
 			except (resource.error,ValueError),e:
-				soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 				self.log.error('could not increase file descriptor limit : %s' % str(e))
-				self.log.error('the current limit is %d' % signed(soft))
-				self.log.error('the maximum possible limit is %d' % signed(hard))
+
+		soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+		self.log.error('the current file descriptor limit is %d' % signed(soft))
+		self.log.error('the maximum possible file descriptor limit is %d' % signed(hard))
+		self.log.error('the requested file descriptor limit was %d' % signed(configuration.daemon.filemax))
+
+		self.file_limit = soft
 
 	def drop_privileges (self):
 		"""returns true if we are left with insecure privileges"""
@@ -57,10 +65,10 @@ class Daemon (object):
 
 		# not sure you can change your gid if you do not have a pid of zero
 		try:
-			if not uid:
-				os.setuid(nuid)
 			if not gid:
 				os.setgid(ngid)
+			if not uid:
+				os.setuid(nuid)
 			return False
 		except OSError:
 			return True
