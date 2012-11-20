@@ -142,8 +142,8 @@ class Supervisor(object):
 
 	def run (self):
 		if self.daemon.drop_privileges():
-			self.log.warning('Could not drop privileges to \'%s\' refusing to run as root' % self.daemon.user)
-			self.log.warning('Set the environmemnt value USER to change the unprivileged user')
+			self.log.stdout('Could not drop privileges to \'%s\'. Refusing to run as root' % self.daemon.user)
+			self.log.stdout('Set the environment value USER to change the unprivileged user')
 			return
 
 		ok = self.initialise()

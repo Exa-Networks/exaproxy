@@ -31,6 +31,9 @@ class Logger:
 
 		return res
 
+	def stdout (self, message):
+		print message
+
 	def debug (self, message):
 		self.log(message, syslog.LOG_DEBUG)
 
