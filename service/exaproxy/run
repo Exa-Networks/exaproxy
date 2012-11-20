@@ -1,2 +1,13 @@
 #!/bin/sh
-exec nice --4 env PYTHONPATH=lib sbin/exaproxy 2>&1
+
+dirname=`dirname $0`
+
+if [[ $dirname == /* ]]; then
+        path=$dirname/../..
+else
+        cd `pwd`/$dirname/../.. > /dev/null
+        path=`pwd`
+        cd - > /dev/null
+fi
+
+exec nice --4 env PYTHONPATH=$path/lib $path/sbin/exaproxy 2>&1
