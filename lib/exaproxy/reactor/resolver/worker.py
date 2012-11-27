@@ -276,7 +276,7 @@ class DNSResolver (object):
 					if line.startswith('#'):
 						continue
 
-					option, value = (line.split(None, 1) + [''])[:2]
+					option, value = (line.split(None, 1) + ['', ''])[:2]
 					if option == 'nameserver':
 						result['nameserver'].extend(value.split())
 		except (TypeError, IOError):
