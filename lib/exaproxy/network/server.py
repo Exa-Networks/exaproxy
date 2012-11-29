@@ -21,10 +21,12 @@ log = Logger('server', configuration.log.server)
 class Server(object):
 	_listen = staticmethod(listen)
 
-	def __init__(self, poller, read_name):
+	def __init__(self, poller, read_name, max_clients):
 		self.socks = {}
 		self.poller = poller
 		self.read_name = read_name
+		self.max_clients = max_clients
+		self.client_count = 0
 
 	def listen(self, ip, port, timeout, backlog):
 		s = self._listen(ip, port,timeout,backlog)
@@ -32,7 +34,8 @@ class Server(object):
 			self.socks[s] = True
 
 			# register the socket with the poller
-			self.poller.addReadSocket(self.read_name, s)
+			if self.client_count < self.max_clients:
+				self.poller.addReadSocket(self.read_name, s)
 
 		return s
 
@@ -47,6 +50,21 @@ class Server(object):
 			# It doesn't really matter if accept fails temporarily. We will
 			# try again next loop
 			log.debug('failure on accept %s' % str(e))
+
+		else:
+			self.client_count += 1
+		finally:
+			if self.client_count >= self.max_clients:
+				for listening_sock in self.socks:
+					self.poller.removeReadSocket(self.read_name, listening_sock)
+
+	def notifyClose (self, client):
+		paused = self.client_count >= self.max_clients
+		self.client_count -= 1
+
+		if paused and self.client_count < self.max_clients:
+			for listening_sock in self.socks:
+				self.poller.addReadSocket(self.read_name, listening_sock)
 
 	def stop(self):
 		for sock in self.socks:

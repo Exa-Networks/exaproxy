@@ -8,7 +8,7 @@ from exaproxy.network.functions import isip
 class ResolverManager (object):
 	resolverFactory = DNSResolver
 
-	def __init__ (self, poller, configuration):
+	def __init__ (self, poller, configuration, max_workers):
 		self.poller = poller
 		self.configuration = configuration
 
@@ -36,6 +36,11 @@ class ResolverManager (object):
 
 		self.cache = {}
 		self.cached = []
+
+		self.max_workers = max_workers
+		self.worker_count = len(self.workers) # the UDP client
+
+		self.waiting = []
 
 	def cacheDestination (self, hostname, ip):
 		if hostname not in self.cache:
@@ -170,7 +175,30 @@ class ResolverManager (object):
 
 		return identifier, response
 
-	def startResolvingTCP(self, client_id, command, decision):
+	def beginResolvingTCP (self, client_id, command, decision):
+		if self.worker_count < self.max_workers:
+			identifier = self.newTCPResolver(client_id, command, decision)
+			self.worker_count += 1
+		else:
+			self.waiting.append((client_id, command, decision))
+			identifier = None
+
+		return identifier
+
+	def notifyClose (self):
+		paused = self.worker_count >= self.max_workers
+		self.worker_count -= 1
+
+		if paused and self.worker_count < self.max_workers:
+			for _ in range(self.worker_count, self.max_workers):
+				if self.waiting:
+					data, self.waiting = self.waiting[0], self.waiting[1:]
+					client_id, command, decision = data
+
+					identifier = self.newTCPResolver(client_id, command, decision)
+					self.worker_count += 1
+
+	def newTCPResolver (self, client_id, command, decision):
 		hostname = self.extractHostname(command, decision)
 
 		if hostname:
@@ -205,7 +233,6 @@ class ResolverManager (object):
 				identifier, forhost, ip, completed, newidentifier, newhost, newcomplete = result
 				data = self.resolving.pop((worker.w_id, identifier), None)
 
-
 			else:
 				# unable to parse response
 				data = None
@@ -222,7 +249,7 @@ class ResolverManager (object):
 
 				# check to see if we received an incomplete response
 				if not completed:
-					newidentifier = self.startResolvingTCP(client_id, command, decision)
+					newidentifier = self.beginResolvingTCP(client_id, command, decision)
 					newhost = hostname
 					response = None
 
@@ -274,6 +301,7 @@ class ResolverManager (object):
 					self.poller.removeWriteSocket('write_resolver', sock)
 					worker.close()
 					self.workers.pop(sock)
+					self.notifyClose()
 
 		else:
 			response = None

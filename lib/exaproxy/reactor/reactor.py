@@ -72,6 +72,8 @@ class Reactor(object):
 					# we have a new request - decide what to do with it
 					self.decider.request(client_id, peer, request, source)
 
+				elif request is None:
+					self.proxy.notifyClose(client)
 
 
 			# incoming data from clients
@@ -92,6 +94,7 @@ class Reactor(object):
 							self.client.uncorkUploadByName(client_id)
 
 				elif data is None:
+					self.proxy.notifyClose(client)
 					self.content.endClientDownload(client_id)
 
 

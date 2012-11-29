@@ -61,6 +61,11 @@ class Supervisor(object):
 		self.daemon = Daemon(self.configuration)
 		self.poller = Poller(self.configuration.daemon)
 
+		# We want to ensure that we will not try to open too many files at once
+		max_admin_clients = 10
+		max_resolver_clients = 10
+		max_proxy_clients = (self.daemon.file_limit - max_admin_clients - max_resolver_clients)/2
+
 		self.poller.setupRead('read_proxy')           # Listening proxy sockets
 		self.poller.setupRead('read_web')             # Listening webserver sockets
 		self.poller.setupRead('read_workers')         # Pipes carrying responses from the child processes
@@ -83,9 +88,9 @@ class Supervisor(object):
 		)
 		self.content = ContentManager(self.poller, self.configuration.web.html, self.page, configuration)
 		self.client = ClientManager(self.poller, configuration)
-		self.resolver = ResolverManager(self.poller, self.configuration)
-		self.proxy = Server(self.poller,'read_proxy')
-		self.web = Server(self.poller,'read_web')
+		self.resolver = ResolverManager(self.poller, self.configuration, max_resolver_clients)
+		self.proxy = Server(self.poller,'read_proxy', max_proxy_clients)
+		self.web = Server(self.poller,'read_web', max_admin_clients)
 
 		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.manager, self.content, self.client, self.resolver, self.log_writer, self.poller)
 
