@@ -44,41 +44,31 @@ class ResolverManager (object):
 
 	def cacheDestination (self, hostname, ip):
 		if hostname not in self.cache:
-			if ip is not None:
-				self.cache[hostname] = ip
-				self.cached.append((time.time(), hostname))
+			expire_time = time.time() + self.configuration.dns.ttl
+			expire_time = expire_time - expire_time % self.configuration.dns.resolution
+			latest_time, latest_hosts = self.cached[-1] if self.cached else (-1, None)
+
+			if expire_time > latest_time:
+				hosts = []
+				self.cached.append((expire_time, hosts))
+			else:
+				hosts = latest_hosts
+
+			self.cache[hostname] = ip
+			hosts.append(hostname)
 
 	def expireCache (self):
-		if not self.cached:
-			return
+		# expire only one set of cache entries at a time
+		if self.cached:
+			current_time = time.time()
+			expire_time, hosts = self.cached[0]
 
-		count = len(self.cached)
+			if current_time >= expire_time:
+				(expire_time, hosts), self.cached = self.cached[0], self.cached[1:]
 
+				for hostname in hosts:
+					self.cache.pop(hostname, None)
 
-		stop = min(count, self.configuration.dns.expire)
-		position = stop - 1
-
-		cutoff = time.time() - self.configuration.dns.ttl
-
-		while position > 10:
-			timestamp, hostname = self.cached[position]
-			if timestamp > cutoff:
-				break
-
-			position = int(position/1.3)
-		else:
-			position = 0
-
-		for timestamp, hostname in self.cached[position:stop]:
-			if timestamp > cutoff:
-				break
-
-			position += 1
-			self.cache.pop(hostname, None)
-
-		if position:
-			self.cached = self.cached[position:]
-		
 
 	def cleanup(self):
 		cutoff = time.time() - self.configuration.dns.timeout
