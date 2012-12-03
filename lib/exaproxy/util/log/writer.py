@@ -54,13 +54,13 @@ class LogWriter:
 		return self.gidentifier[0]
 
 	def toggleDebug (self):
-		if self.oldconfig is not None:
-			(active, level) = self.oldconfig
-			self.oldconfig = None
+		if self.backup is not None:
+			(active, level) = self.backup
+			self.backup = None
 			self.active = active
 			self.level = level
 		else:
-			self.oldconfig = (self.active, self.level)
+			self.backup = (self.active, self.level)
 			self.active = True
 			self.level = self.debug_level
 
@@ -92,6 +92,7 @@ class DebugLogWriter(LogWriter):
 
 class SysLogWriter(LogWriter):
 	def __init__ (self, destination, active=True, level=syslog.LOG_WARNING):
+		self.backup = None
 		self.pid = os.getpid()
 		self.active = active
 		self.level = level
