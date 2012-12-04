@@ -26,7 +26,7 @@ class HTTP (object):
 		self.log = Logger('header', configuration.log.header)
 
 	def parse (self):
-		self.log.info('parsing %s' % str(self.raw))
+		self.log.info('parsing %s' % str(self.raw).replace('\r','\\r').replace('\n','\\n'))
 
 		try:
 			first, remaining = self.raw.split('\n',1)
@@ -72,7 +72,7 @@ class HTTP (object):
 		except Exception, e:
 			self.log.error('could not parse header %s %s' % (type(e),str(e)))
 			for line in traceback.format_exc().split('\n'):
-				self.log.info(line)
+				self.log.warning(line)
 			return None
 		return self
 
