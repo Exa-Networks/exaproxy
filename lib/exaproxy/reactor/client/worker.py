@@ -13,8 +13,7 @@ from exaproxy.network.errno_list import errno_block
 
 
 class Client (object):
-	eor = '\r\n\r\n'
-	eorn = '\n\n'
+	eor = ['\r\n\r\n', '\n\n']
 
 	def __init__(self, name, sock, peer, logger):
 		self.name = name
@@ -29,58 +28,106 @@ class Client (object):
 		# start the _read coroutine
 		self.reader.next()
 
-	def _read(self, sock, read_size=64*1024):
-		"""Coroutine managing data read from the client"""
+	def checkRequest (self, r_buffer):
+		# XXX: max buffer size
+		for eor in self.eor:
+			if eor in r_buffer:
+				request, r_buffer = r_buffer.split(eor, 1)
+				request = request + eor
+				break
+		else:
+			request, r_buffer = '', r_buffer
+
+		return request, r_buffer
+
+	def checkChunkSize (self, r_buffer, eol):
+		# XXX: check for lines that are too long
+		chunked = True
+		size = 0
+
+		while r_buffer:
+			if eol in r_buffer:
+				size_s, r_buffer = r_buffer.split(eol, 1)
+			else:
+				size_s = None
+
+			if size_s is not None:
+				if size_s.isdigit():
+					chunk_size = int(size_s)
+					size += chunk_size + len(size_s) + (2 * len(eol))
+
+					if chunk_size == 0:
+						chunked = False
+						break
+				else:
+					size = None
+					break
+
+			elif not r_buffer.rstrip(eol).isdigit():
+				size = None
+				break
+
+		return chunked, size
+
+
+	def _read (self, sock, read_size=64*1024):
+		"""Coroutine managing data read from the client""" 
+		eol = '\r\n' # XXX: extrapolate from eor
 		r_buffer = ''
 		request = ''
-		r_size = yield ''
 		remaining = 0
+		r_size, _ = yield ''
+		chunked = False
 
 		while True:
 			try:
 				while True:
-					data = sock.recv(r_size or read_size)
-					if not data:   # read failed - abort
-						break
+					if request:
+						# we may have buffered data that was sent along with the request
+						# so the coroutine will be asked for data even if there is nothing
+						# to read in the socket buffer
+						request = ''
+					else:
+						data = sock.recv(r_size or read_size)
+						if data:
+							r_buffer += data
+						else:          # read failed so we abort
+							break
 
 					if remaining > 0:
-						length = min(len(data), remaining)
-						r_size = yield '', data[:length]
-						
-						remaining = remaining - length
-						if remaining:
+						length = min(len(r_buffer), remaining)
+						related, r_buffer = r_buffer[:length], r_buffer[length:]
+
+						r_size, extra_size = yield '', related, False
+						remaining = max(remaining - length + extra_size, 0)
+
+					elif remaining < 0:
+						related, r_buffer = r_buffer, ''
+						r_size, _ = yield '', related, False
+
+					if remaining != 0:
+						continue # we expect that the client will write more data
+
+					if chunked:
+						# sum of the sizes of all chunks in our buffer
+						chunked, chunk_size = self.checkChunkSize(r_buffer, eol)
+						if chunk_size is not None:
+							remaining = chunk_size
 							continue
 						else:
-							data = data[length:]
-
-					elif remaining == -1:
-						r_size = yield '', data
-						continue
-
-					r_buffer += data
-
-					for eor in (self.eor, self.eorn):
-						if eor in r_buffer:       # we have a complete request
-							request, r_buffer = r_buffer.split(eor, 1)
-							remaining = yield request + eor, ''  # yield to manager.readRequest
-							length = min(len(r_buffer), remaining)
-
-							if remaining > 0:
-								r_size = yield '', r_buffer[:length]  # yield to manager.startData
-								r_buffer = r_buffer[length:]
-
-								remaining = remaining - length
-								if not remaining:    # further data is part of a new request
-									request = ''
-
-							elif remaining == -1:
-								r_size = yield '', r_buffer
-								r_buffer = ''
-							
+							# we thought we had the start of a new chunk - abort
 							break
-					else:
-						r_size = yield '', ''                  # nothing seen yet
-						continue
+
+					# check to see if we have read an entire request
+					request, r_buffer = self.checkRequest(r_buffer)
+
+					r_size, remaining = yield request, '', True # yield to manager.readRequest
+					if request and remaining == 'chunked':
+						chunked = True
+						remaining = 0
+
+					elif not request:
+						remaining = 0
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
@@ -88,7 +135,7 @@ class Client (object):
 
 			except socket.error, e:
 				if e.args[0] in errno_block:
-					yield '', ''
+					yield '', '', None
 				else:
 					break
 
@@ -102,23 +149,27 @@ class Client (object):
 
 	def readData(self):
 		name, peer = self.name, self.peer
-		res = self.reader.send(0)
+		res = self.reader.send((0,0))
 
 		if res is not None:
-			request, content = res
+			request, content, new_request = res
 		else:
-			request, content = None, None
+			request, content, new_request = None, None, None
+
+		#if new_request is False:
+		#	raise RuntimeError, 'BAD! We should have a new request'
+		#	request, content = None, None
 
 		return name, peer, request, content
 
 	def readRelated(self, remaining):
 		name, peer = self.name, self.peer
-		res = self.reader.send(remaining)
+		res = self.reader.send((0,remaining))
 
 		if res is not None:
-			request, content = res
+			request, content, new_request = res
 		else:
-			request, content = None, None
+			request, content, new_request = None, None, None
 
 		return name, peer, request, content
 

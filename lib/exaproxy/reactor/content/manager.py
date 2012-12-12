@@ -117,7 +117,7 @@ class ContentManager(object):
 
 				if downloader is not None:
 					content = ('stream', '')
-					length = int(length)
+					length = int(length) if length.isdigit() else length
 				else:
 					content = self.getLocalContent('400', 'noconnect.html')
 					length = 0
