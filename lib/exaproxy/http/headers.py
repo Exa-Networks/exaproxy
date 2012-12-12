@@ -22,10 +22,9 @@ class Headers (object):
 		return self._data.get(key,default)
 
 	def set (self,key,value):
-		if key in self._order:
-			self._data[key].append(value)
-			return self
-		self._order.append(key)
+		if key not in self._order:
+			self._order.append(key)
+
 		self._data[key] = [value]
 		return self
 
@@ -37,7 +36,12 @@ class Headers (object):
 			self._data[key] = [value]
 
 	def extend (self,key,value):
-		self._data[key][-1] += value
+		if key in self._order:
+			self._data[key].append(value)
+			return self
+		self._order.append(key)
+		self._data[key] = [value]
+		return self
 
 	def pop (self, key, default=None):
 		if key in self._data:
@@ -61,7 +65,7 @@ class Headers (object):
 				if line[0].isspace():
 					# ValueError if key is not already there
 					# IndexError the list is empty
-					self.set(key,line)
+					self.extend(key,line)
 					continue
 
 				# KeyError if split does not return two elements

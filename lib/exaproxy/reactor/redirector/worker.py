@@ -154,7 +154,7 @@ class Redirector (Thread):
 		# NOTE: To be RFC compliant we need to add a Via field http://tools.ietf.org/html/rfc2616#section-14.45 on the reply too
 		# NOTE: At the moment we only add it from the client to the server (which is what really matters)
 		if not self._transparent:
-			headers.set('via','Via: %s %s' % (message.request.version, self._proxy))
+			headers.extend('via','Via: %s %s' % (message.request.version, self._proxy))
 			headers.pop('proxy-authenticate')
 
 		return message
