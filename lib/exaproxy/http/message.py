@@ -18,6 +18,8 @@ class HostMismatch(Exception):
 	pass
 
 class HTTP (object):
+	http_versions = ('1.0', '1.1')
+
 	def __init__(self,configuration,headers,remote_ip):
 		self.raw = headers
 		self.client = remote_ip
@@ -109,7 +111,12 @@ class HTTP (object):
 
 
 	def __str__ (self):
-		return str(self.request) + self.separator + str(self.headers) + self.separator + self.separator
+		if self.request.version in self.http_versions:
+			res = str(self.request) + self.separator + str(self.headers) + self.separator + self.separator
+		else:
+			res = self.raw
+
+		return res
 
 
 #if __name__ == '__main__':
