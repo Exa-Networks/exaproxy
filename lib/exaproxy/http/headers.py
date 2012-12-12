@@ -61,12 +61,13 @@ class Headers (object):
 				if line[0].isspace():
 					# ValueError if key is not already there
 					# IndexError the list is empty
-					self.extend(key,line.lstrip())
+					self.set(key,line)
 					continue
 
 				# KeyError if split does not return two elements
 				key, value = line.split(':', 1)
-				self.set(key.strip().lower(),line)
+				key = key.strip().lower()
+				self.set(key,line)
 		except (KeyError,TypeError,IndexError):
 			raise ValueError('Malformed headers (line : %s) headers %s' % (line,lines.replace('\n','\\n').replace('\r','\\r')))
 
