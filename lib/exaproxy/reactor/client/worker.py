@@ -52,8 +52,8 @@ class Client (object):
 				size_s = None
 
 			if size_s is not None:
-				if size_s.isdigit():
-					chunk_size = int(size_s)
+				if size_s and not size_s.strip('0123456789abcdef'):
+					chunk_size = int(size_s, 16)
 					size += chunk_size + len(size_s) + (2 * len(eol))
 
 					if chunk_size == 0:
@@ -63,7 +63,11 @@ class Client (object):
 					size = None
 					break
 
-			elif not r_buffer.rstrip(eol).isdigit():
+			elif len(r_buffer) > max_len:
+				size = None
+				break
+
+			elif r_buffer.rstrip(eol).strip('0123456789abcdef'):
 				size = None
 				break
 
