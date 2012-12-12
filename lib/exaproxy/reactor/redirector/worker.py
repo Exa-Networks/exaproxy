@@ -155,6 +155,8 @@ class Redirector (Thread):
 		# NOTE: At the moment we only add it from the client to the server (which is what really matters)
 		if not self._transparent:
 			headers.set('via','Via: %s %s' % (message.request.version, self._proxy))
+			headers.pop('proxy-authenticate')
+
 		return message
 
 	def _classify_icap (self, message, headers, tainted):
