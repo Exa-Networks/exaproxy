@@ -41,9 +41,11 @@ class Client (object):
 		return request, r_buffer
 
 	def checkChunkSize (self, r_buffer, eol):
-		# XXX: check for lines that are too long
 		chunked = True
 		size = 0
+
+		# make sure our buffer does not become massive
+		max_len = len('ffff') + (2 * len(eol))
 
 		while r_buffer:
 			if eol in r_buffer:
