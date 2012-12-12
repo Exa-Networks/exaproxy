@@ -11,7 +11,14 @@ class Request (object):
 		self.raw = request
 		method, self.uri, version = request.split()
 		self.method = method.upper()
-		self.version = version.split('/')[-1]
+
+		version = version.split('/')[-1]
+		if '.' in version:
+			major, minor = version.split('.', 1)
+			if major.isdigit() and minor.isdigit():
+				version = str(int(major)) + '.' + str(int(minor))
+
+		self.version = version
 
 	def parse (self):
 		# protocol
