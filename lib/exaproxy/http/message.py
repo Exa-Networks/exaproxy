@@ -72,6 +72,15 @@ class HTTP (object):
 			self.url = self.host + ((':%s' % self.port) if self.port != '80' else '') + self.request.path
 			self.url_noport = self.host + self.request.path
 
+			connection = self.headers.get('connection', [':'])[0].split(':',1)[1].strip()
+
+			if connection.lower() == 'upgrade':
+				upgrade = self.headers.get('upgrade', [':'])[0].split(':',1)[1].strip()
+			else:
+				upgrade = ''
+
+			self.upgrade = upgrade
+
 		except KeyboardInterrupt:
 			raise
 		except Exception, e:

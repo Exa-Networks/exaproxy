@@ -109,7 +109,7 @@ class ContentManager(object):
 		try:
 			if command == 'download':
 				try:
-					host, port, length, request = args.split('\0', 3)
+					host, port, upgrade, length, request = args.split('\0', 4)
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 
@@ -117,7 +117,10 @@ class ContentManager(object):
 
 				if downloader is not None:
 					content = ('stream', '')
-					length = int(length) if length.isdigit() else length
+					if upgrade in ('', 'http/1.0', 'http/1.1'):
+						length = int(length) if length.isdigit() else length
+					else:
+						length = -1
 				else:
 					content = self.getLocalContent('400', 'noconnect.html')
 					length = 0
