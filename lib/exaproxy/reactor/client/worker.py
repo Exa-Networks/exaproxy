@@ -11,6 +11,8 @@ import errno
 
 from exaproxy.network.errno_list import errno_block
 
+def ishex(s):
+	return bool(s) and not bool(s.strip('0123456789abcdefABCDEF'))
 
 class Client (object):
 	eor = ['\r\n\r\n', '\n\n']
@@ -54,7 +56,7 @@ class Client (object):
 				size_s = None
 
 			if size_s is not None:
-				if size_s and not size_s.strip('0123456789abcdef'):
+				if ishex(size_s):
 					chunk_size = int(size_s, 16)
 					size += chunk_size + len(size_s) + (2 * len(eol))
 
@@ -69,7 +71,7 @@ class Client (object):
 				size = None
 				break
 
-			elif r_buffer.rstrip(eol).strip('0123456789abcdef'):
+			elif not ishex(r_buffer.rstrip(eol)):
 				size = None
 				break
 
