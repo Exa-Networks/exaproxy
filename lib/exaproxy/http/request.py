@@ -13,7 +13,7 @@ class Request (object):
 		self.method = method.upper()
 
 		version = version.split('/')[-1]
-		if version not in ('1.0', '1.1') and '.' in version:
+		if version not in ('1.1', '1.0') and '.' in version:
 			major, minor = version.split('.', 1)
 			if major.isdigit() and minor.isdigit():
 				version = str(int(major)) + '.' + str(int(minor))
