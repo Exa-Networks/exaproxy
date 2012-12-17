@@ -71,7 +71,7 @@ class Headers (object):
 				# KeyError if split does not return two elements
 				key, value = line.split(':', 1)
 				key = key.strip().lower()
-				self.set(key,line)
+				self.extend(key,line)
 		except (KeyError,TypeError,IndexError):
 			raise ValueError('Malformed headers (line : %s) headers %s' % (line,lines.replace('\n','\\n').replace('\r','\\r')))
 
