@@ -91,13 +91,13 @@ class DebugLogWriter(LogWriter):
 
 
 class SysLogWriter(LogWriter):
-	def __init__ (self, destination, active=True, level=syslog.LOG_WARNING):
+	def __init__ (self, name, destination, active=True, level=syslog.LOG_WARNING):
 		self.backup = None
 		self.pid = os.getpid()
 		self.active = active
 		self.level = level
 
-		_syslog = logging.getLogger()
+		_syslog = logging.getLogger(name)
 		_handler = self.getHandler(destination)
 		_syslog.addHandler(_handler)
 		_syslog.setLevel(level)

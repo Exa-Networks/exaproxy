@@ -43,8 +43,8 @@ class Supervisor(object):
 		# Only here so the introspection code can find them
 		self.log = Logger('supervisor', configuration.log.supervisor)
 		self.signal_log = Logger('signal', configuration.log.signal)
-		self.log_writer = SysLogWriter(configuration.log.destination, configuration.log.enable, level=configuration.log.level)
-		self.usage_writer = SysLogWriter(configuration.usage.destination, configuration.usage.enable, level=configuration.usage.level)
+		self.log_writer = SysLogWriter('log', configuration.log.destination, configuration.log.enable, level=configuration.log.level)
+		self.usage_writer = SysLogWriter('usage', configuration.usage.destination, configuration.usage.enable, level=configuration.usage.level)
 
 		self.log_writer.setIdentifier(configuration.daemon.identifier)
 		#self.usage_writer.setIdentifier(configuration.daemon.identifier)
