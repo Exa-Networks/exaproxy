@@ -160,6 +160,13 @@ class Client (object):
 	
 						continue
 
+
+					# ignore empty lines before the request
+					# do not perform this mondification in checkRequest since that method
+					# is also used at the end of chunked data, where we do not want to ignore
+					# empty lines
+					r_buffer = r_buffer.lstrip('\r\n')
+
 					# check to see if we have read an entire request
 					request, r_buffer = self.checkRequest(r_buffer)
 
