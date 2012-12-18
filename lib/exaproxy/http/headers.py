@@ -76,8 +76,8 @@ class Headers (object):
 			raise ValueError('Malformed headers (line : %s) headers %s' % (line,lines.replace('\n','\\n').replace('\r','\\r')))
 
 		try:
-			# follow rules about not forwarding connection header as set in section s14.10
 			if not transparent:
+				# follow rules about not forwarding connection header as set in section s14.10
 				connection = self.get('connection',None)
 				close = False
 				if connection:
@@ -92,6 +92,8 @@ class Headers (object):
 						self.replace('connection','Connection: close')
 					else:
 						self.pop('connection')
+				# remove keep-alive header
+				self.pop('keep-alive')
 		except (KeyError,TypeError,IndexError):
 			raise ValueError('Can not remove connection tokens from headers')
 
