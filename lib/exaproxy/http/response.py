@@ -61,7 +61,7 @@ _HTTP_NAMES = {
 }
 
 
-def file_header(code, size, message):
+def file_header(code, size, name):
 	date = time.strftime('%c %Z')
 
 	return '\r\n'.join([
