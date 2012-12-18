@@ -140,12 +140,13 @@ class Client (object):
 
 						if chunk_size is not None:
 							remaining = chunk_size
-							if not chunked:
+							if chunked:
+								continue
+							else:
 								# do not yield until we get to the end of the extra headers
 								remaining = 0
 								extra_headers = True
 
-							continue
 						else:
 							# we thought we had the start of a new chunk - abort
 							break
