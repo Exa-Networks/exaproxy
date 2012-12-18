@@ -1,10 +1,10 @@
 # encoding: utf-8
-"""
+'''
 http.py
 
 Created by Thomas Mangin on 2011-12-02.
 Copyright (c) 2011 Exa Networks. All rights reserved.
-"""
+'''
 
 import sys
 import time
@@ -64,31 +64,31 @@ _HTTP_NAMES = {
 def file_header(code, size, message):
 	date = time.strftime('%c %Z')
 
-	return """HTTP/1.1 %s %s
-Date: %s
-Server: exaproxy/%s (%s)
-Content-Length: %d
-Connection: close
-Content-Type: text/html
-Cache-Control: no-store
-Pragma: no-cache
-
-""" % (str(code), _HTTP_NAMES.get(code,'-'),date, str(version), str(sys.platform), size)
-
-
-
+	return '\r\n'.join([
+		'HTTP/1.1 %s %s' % (str(code), _HTTP_NAMES.get(code,'-')),
+		'Date: %s' % date,
+		'Server: exaproxy/%s (%s)' % (str(version), str(sys.platform)),
+		'Content-Length: %d' % size,
+		'Connection: close',
+		'Content-Type: text/html',
+		'Cache-Control: no-store',
+		'Pragma: no-cache',
+		''
+	])
 
 def http (code,message):
 	encoding = 'html' if '</html>' in message else 'plain'
 	date = time.strftime('%c %Z')
-	return """\
-HTTP/1.1 %s %s
-Date: %s
-Server: exaproxy/%s (%s)
-Content-Length: %d
-Content-Type: text/%s
-Cache-Control: no-store
-Pragma: no-cache
 
-%s""" % (str(code),_HTTP_NAMES.get(code,'-'),date,str(version),sys.platform,len(message),encoding,message)
+	return '\r\n'.join([
+		'HTTP/1.1 %s %s' % (str(code), _HTTP_NAMES.get(code,'-')),
+		'Date: %s' % date,
+		'Server: exaproxy/%s (%s)' % (str(version), str(sys.platform)),
+		'Content-Length: %d' % len(message),
+		'Content-Type: text/%s' % encoding,
+		'Cache-Control: no-store',
+		'Pragma: no-cache',
+		'',
+		message
+	])
 
