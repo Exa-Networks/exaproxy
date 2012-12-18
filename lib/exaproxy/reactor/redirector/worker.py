@@ -235,7 +235,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				if not request:
 					return message, 'file', 'internal_error.html', ''
 				h = HTTP(self.configuration,headers,message.client)
-				if not h.parse():
+				if not h.parse(self._transparent):
 					if tainted is False:
 						return None, 'requeue', None, None
 					return message, 'file', 'internal_error.html', ''
@@ -246,7 +246,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				return h,'permit',None,comment
 
 		h = HTTP(self.configuration,headers,message.client)
-		if not h.parse():
+		if not h.parse(self._transparent):
 			if tainted is False:
 				return None, 'requeue', None, None
 			return message, 'file', 'internal_error.html', comment
@@ -390,7 +390,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				continue
 
 			message = HTTP(self.configuration,header,peer)
-			if not message.parse():
+			if not message.parse(self._transparent):
 				self.respond(Respond.http(client_id, http('400', 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header)))
 				continue
 

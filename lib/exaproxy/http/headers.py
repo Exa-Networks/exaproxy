@@ -51,7 +51,7 @@ class Headers (object):
 		else:
 			return default
 
-	def parse (self, lines):
+	def parse (self, transparent, lines):
 		if lines and lines[0].isspace():
 			raise ValueError('Malformed headers, headers starts with a white space')
 
@@ -74,6 +74,27 @@ class Headers (object):
 				self.extend(key,line)
 		except (KeyError,TypeError,IndexError):
 			raise ValueError('Malformed headers (line : %s) headers %s' % (line,lines.replace('\n','\\n').replace('\r','\\r')))
+
+		try:
+			# follow rules about not forwarding connection header as set in section s14.10
+			if not transparent:
+				connection = self.get('connection',None)
+				close = False
+				if connection:
+					for line in connection:
+						key, value = line.split(':', 1)
+						key = key.strip().lower()
+						value = value.strip().lower()
+						if value == 'close':
+							close = True
+						self.pop(value)
+					if close:
+						self.replace('connection','Connection: close')
+					else:
+						self.pop('connection')
+		except (KeyError,TypeError,IndexError):
+			raise ValueError('Can not remove connection tokens from headers')
+
 
 		# we got a line starting with a :
 		if '' in self._data:

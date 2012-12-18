@@ -27,7 +27,7 @@ class HTTP (object):
 		self.forward = configuration.http.forward
 		self.log = Logger('header', configuration.log.header)
 
-	def parse (self):
+	def parse (self,transparent):
 		self.log.info('parsing %s' % str(self.raw).replace('\r','\\r').replace('\n','\\n'))
 
 		try:
@@ -38,7 +38,7 @@ class HTTP (object):
 				self.separator = '\n'
 
 			self.request = Request(first.rstrip('\r')).parse()
-			self.headers = Headers(self.separator).parse(remaining)
+			self.headers = Headers(self.separator).parse(transparent,remaining)
 
 			headerhost = self.headers.get('host',[':'])[0].split(':',1)[1].strip()
 			self.headerhost = self.extractHost(headerhost)
