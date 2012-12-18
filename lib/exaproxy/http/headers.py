@@ -94,7 +94,8 @@ class Headers (object):
 					else:
 						self.pop('connection')
 				# remove keep-alive header
-				self.pop('keep-alive')
+				if self.http_version == '1.0':
+					self.pop('keep-alive')
 				# remove upgrade header if we are not using websocket (as RFC requires)
 				if self.http_version in ('1.1','1.0'):
 					self.pop('upgrade')
