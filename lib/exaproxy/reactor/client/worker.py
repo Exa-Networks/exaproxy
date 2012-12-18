@@ -48,10 +48,16 @@ class Client (object):
 
 		# make sure our buffer does not become massive
 		max_len = len('ffff') + (2 * len(eol))
+		sc = ';'
 
 		while r_buffer:
-			if eol in r_buffer:
+			if sc in r_buffer:
+				size_s, r_buffer = r_buffer.split(sc, 1)
+				eol = sc
+
+			elif eol in r_buffer:
 				size_s, r_buffer = r_buffer.split(eol, 1)
+
 			else:
 				size_s = None
 
@@ -60,6 +66,11 @@ class Client (object):
 					chunk_size = int(size_s, 16)
 
 					if chunk_size > 0:
+						# semi colon can follow only the end of chunked data
+						if eol == sc:
+							size = None
+							break
+
 						size += chunk_size + len(size_s) + (2 * len(eol))
 					else:
 						size += chunk_size + len(eol)
