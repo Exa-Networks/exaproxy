@@ -99,30 +99,45 @@ class Headers (object):
 
 		try:
 			if not transparent:
+
 				# follow rules about not forwarding connection header as set in section s14.10
-				connection = self.get('connection',None)
-				close = False
-				if connection:
-					for line in connection:
-						key, value = line.split(':', 1)
-						key = key.strip().lower()
+				if self.http_version in ('1.1','1.0'):
+					upgrades = self.get('upgrade',[])
+					for upgrade in upgrades[:]:
+						key, value = upgrade.split(':', 1)
 						value = value.strip().lower()
+						if value != 'websocket':
+							upgrades.remove(upgrade)
+							self.pop(value.lower())
+					# we modified the list in data directly
+					if not upgrades:
+						self.pop('upgrade')
+
+					connections = self.get('connection',[])
+					for connection in connections[:]:
+						key, value = connection.split(':', 1)
+						value = value.strip().lower()
+						# we keep connection: close
 						if value == 'close':
-							close = True
-						self.pop(value)
-					if close:
-						self.replace('connection','Connection: close')
-					else:
+							continue
+						# we have a websocket in upgrade
+						if value == 'upgrade' and upgrades:
+							continue
+						# otherwise we remove the unknown upgrade
+						connections.remove(connection)
+					# we modified the list in data directly
+					if not connections:
 						self.pop('connection')
-				# remove keep-alive header
+
+				# remove keep-alive header for http/1.0
 				if self.http_version == '1.0':
 					self.pop('keep-alive')
-				# remove upgrade header if we are not using websocket (as RFC requires)
-				if self.http_version in ('1.1','1.0'):
-					self.pop('upgrade')
+
+				# this proxy can not honour expect, so we are returning a 417 through the use of an exception
 				expect = self.get('expect',None)
 				if expect:
 					raise ExpectationFailed()
+
 		except (KeyError,TypeError,IndexError):
 			raise ValueError('Can not remove connection tokens from headers')
 
