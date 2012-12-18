@@ -38,7 +38,7 @@ class HTTP (object):
 				self.separator = '\n'
 
 			self.request = Request(first.rstrip('\r')).parse()
-			self.headers = Headers(self.separator).parse(transparent,remaining)
+			self.headers = Headers(self.request.version,self.separator).parse(transparent,remaining)
 
 			headerhost = self.headers.get('host',[':'])[0].split(':',1)[1].strip()
 			self.headerhost = self.extractHost(headerhost)

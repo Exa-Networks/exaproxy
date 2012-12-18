@@ -13,9 +13,10 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 
 
 class Headers (object):
-	def __init__ (self,separator):
+	def __init__ (self,http_version,separator):
 		self._order = []
 		self._data = {}
+		self.http_version = http_version
 		self.separator = separator
 
 	def get (self,key,default):
@@ -94,6 +95,9 @@ class Headers (object):
 						self.pop('connection')
 				# remove keep-alive header
 				self.pop('keep-alive')
+				# remove upgrade header if we are not using websocket (as RFC requires)
+				if self.http_version in ('1.1','1.0'):
+					self.pop('upgrade')
 		except (KeyError,TypeError,IndexError):
 			raise ValueError('Can not remove connection tokens from headers')
 
