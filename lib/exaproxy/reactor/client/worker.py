@@ -11,8 +11,11 @@ import errno
 
 from exaproxy.network.errno_list import errno_block
 
-def ishex(s):
+def ishex (s):
 	return bool(s) and not bool(s.strip('0123456789abcdefABCDEF'))
+
+def count_quotes (data):
+	return data.count('"') - data.count('\\"')
 
 class Client (object):
 	eor = ['\r\n\r\n', '\n\n']
@@ -30,17 +33,25 @@ class Client (object):
 		# start the _read coroutine
 		self.reader.next()
 
-	def checkRequest (self, r_buffer):
+	def checkRequest (self, r_buffer, seek=0):
 		# XXX: max buffer size
+
+		buff = ''
 		for eor in self.eor:
-			if eor in r_buffer:
-				request, r_buffer = r_buffer.split(eor, 1)
-				request = request + eor
-				break
+			pos = r_buffer[seek:].find(eor)
+			buff = r_buffer[:seek+pos] if pos >=0 else ''
+
+			if buff:
+				if not count_quotes(buff) % 2:
+					request, r_buffer = buff + eor, r_buffer[seek+pos+len(eor):]
+					break
+				else:
+					seek += pos + len(eor)
+
 		else:
 			request, r_buffer = '', r_buffer
 
-		return request, r_buffer
+		return request, r_buffer, seek
 
 	def checkChunkSize (self, r_buffer):
 		chunked = True
@@ -101,6 +112,7 @@ class Client (object):
 		r_buffer = ''
 		request = ''
 		remaining = 0
+		seek = 0
 		r_size, _ = yield ''
 		chunked = False
 		extra_headers = False
@@ -152,12 +164,13 @@ class Client (object):
 							break
 
 					if extra_headers:
-						related, r_buffer = self.checkRequest(r_buffer)
+						related, r_buffer, seek = self.checkRequest(r_buffer)
 						r_size, extra_size = yield '', related, False
 
 						if related:
 							remaining = max(extra_size, 0)
 							extra_headers = False
+							seek = 0
 	
 						continue
 
@@ -169,7 +182,9 @@ class Client (object):
 					r_buffer = r_buffer.lstrip('\r\n')
 
 					# check to see if we have read an entire request
-					request, r_buffer = self.checkRequest(r_buffer)
+					request, r_buffer, seek = self.checkRequest(r_buffer, seek)
+					if request:
+						seek = 0
 
 					r_size, remaining = yield request, '', True # yield to manager.readRequest
 					if request and remaining == 'chunked':

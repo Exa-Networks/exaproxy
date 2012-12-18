@@ -54,16 +54,31 @@ class Headers (object):
 		else:
 			return default
 
+	def count_quotes (self, line):
+		return line.count('"') - line.count('\\"')
+
 	def parse (self, transparent, lines):
 		if lines and lines[0].isspace():
 			raise ValueError('Malformed headers, headers starts with a white space')
 
-		try:
-			key = ''
+		key = ''
+		quoted = False
 
+		try:
 			for line in lines.split('\n'):
 				line = line.strip('\r')
+
+				if quoted:
+					self.extend(key, line)
+					if self.count_quotes(line) % 2:
+						quoted = False
+
+					continue
+				
 				if not line: break
+
+				if self.count_quotes(line) % 2:
+					quoted = True
 
 				if line[0].isspace():
 					# ValueError if key is not already there
@@ -75,8 +90,12 @@ class Headers (object):
 				key, value = line.split(':', 1)
 				key = key.strip().lower()
 				self.extend(key,line)
+
 		except (KeyError,TypeError,IndexError):
 			raise ValueError('Malformed headers (line : %s) headers %s' % (line,lines.replace('\n','\\n').replace('\r','\\r')))
+
+		if quoted:
+			raise ValueError, 'End of headers reached while in quoted content'
 
 		try:
 			if not transparent:
