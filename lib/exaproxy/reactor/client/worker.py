@@ -58,9 +58,11 @@ class Client (object):
 			if size_s is not None:
 				if ishex(size_s):
 					chunk_size = int(size_s, 16)
-					size += chunk_size + len(size_s) + (2 * len(eol))
 
-					if chunk_size == 0:
+					if chunk_size > 0:
+						size += chunk_size + len(size_s) + (2 * len(eol))
+					else:
+						size += chunk_size + len(eol)
 						chunked = False
 						break
 				else:
@@ -86,6 +88,7 @@ class Client (object):
 		remaining = 0
 		r_size, _ = yield ''
 		chunked = False
+		extra_headers = False
 
 		while True:
 			try:
@@ -119,12 +122,28 @@ class Client (object):
 					if chunked:
 						# sum of the sizes of all chunks in our buffer
 						chunked, chunk_size = self.checkChunkSize(r_buffer, eol)
+
 						if chunk_size is not None:
 							remaining = chunk_size
+							if not chunked:
+								# do not yield until we get to the end of the extra headers
+								remaining = 0
+								extra_headers = True
+
 							continue
 						else:
 							# we thought we had the start of a new chunk - abort
 							break
+
+					if extra_headers:
+						related, r_buffer = self.checkRequest(r_buffer)
+						r_size, extra_size = yield '', related, False
+
+						if related:
+							remaining = max(extra_size, 0)
+							extra_headers = False
+	
+						continue
 
 					# check to see if we have read an entire request
 					request, r_buffer = self.checkRequest(r_buffer)
