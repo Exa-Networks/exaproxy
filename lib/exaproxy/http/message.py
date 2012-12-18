@@ -12,7 +12,7 @@ from exaproxy.util.log.logger import Logger
 from exaproxy.network.functions import isip
 
 from .request import Request
-from .headers import Headers
+from .headers import Headers,ExpectationFailed
 
 class HostMismatch(Exception):
 	pass
@@ -26,6 +26,7 @@ class HTTP (object):
 		self.proxy_name = "X-Proxy-Version: %s version %s" % (configuration.proxy.name, configuration.proxy.version)
 		self.forward = configuration.http.forward
 		self.log = Logger('header', configuration.log.header)
+		self.response = 0
 
 	def parse (self,transparent):
 		self.log.info('parsing %s' % str(self.raw).replace('\r','\\r').replace('\n','\\n'))
@@ -83,6 +84,9 @@ class HTTP (object):
 
 		except KeyboardInterrupt:
 			raise
+		except ExpectationFailed,e:
+			self.response = 417
+			return self
 		except Exception, e:
 			self.log.error('could not parse header %s %s' % (type(e),str(e)))
 			for line in traceback.format_exc().split('\n'):

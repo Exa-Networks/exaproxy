@@ -11,6 +11,8 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 #reg=re.compile('(\w+)[:=] ?"?([^" ,]+)"?')
 #dict(reg.findall(headers))
 
+class ExpectationFailed (Exception):
+	pass
 
 class Headers (object):
 	def __init__ (self,http_version,separator):
@@ -99,6 +101,9 @@ class Headers (object):
 				# remove upgrade header if we are not using websocket (as RFC requires)
 				if self.http_version in ('1.1','1.0'):
 					self.pop('upgrade')
+				expect = self.get('expect',None)
+				if expect:
+					raise ExpectationFailed()
 		except (KeyError,TypeError,IndexError):
 			raise ValueError('Can not remove connection tokens from headers')
 

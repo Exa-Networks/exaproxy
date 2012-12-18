@@ -393,6 +393,9 @@ Encapsulated: req-hdr=0, null-body=%d
 			if not message.parse(self._transparent):
 				self.respond(Respond.http(client_id, http('400', 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header)))
 				continue
+			if message.response:
+				self.respond(Respond.http(client_id, http(str(message.response), '')))
+				continue
 
 			method = message.request.method
 
