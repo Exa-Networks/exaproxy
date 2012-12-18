@@ -42,9 +42,14 @@ class Client (object):
 
 		return request, r_buffer
 
-	def checkChunkSize (self, r_buffer, eol):
+	def checkChunkSize (self, r_buffer):
 		chunked = True
 		size = 0
+
+		if '\r' in r_buffer:
+			eol = '\r\n'
+		else:
+			eol = '\n'
 
 		# make sure our buffer does not become massive
 		max_len = len('ffff') + (2 * len(eol))
@@ -93,7 +98,6 @@ class Client (object):
 
 	def _read (self, sock, read_size=64*1024):
 		"""Coroutine managing data read from the client""" 
-		eol = '\r\n' # XXX: extrapolate from eor
 		r_buffer = ''
 		request = ''
 		remaining = 0
@@ -132,7 +136,7 @@ class Client (object):
 
 					if chunked:
 						# sum of the sizes of all chunks in our buffer
-						chunked, chunk_size = self.checkChunkSize(r_buffer, eol)
+						chunked, chunk_size = self.checkChunkSize(r_buffer)
 
 						if chunk_size is not None:
 							remaining = chunk_size
