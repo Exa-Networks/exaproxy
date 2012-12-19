@@ -101,12 +101,12 @@ class Headers (object):
 			if not transparent:
 
 				# follow rules about not forwarding connection header as set in section s14.10
-				if self.http_version in ('1.1','1.0'):
+				if self.http_version == '1.1':
 					upgrades = self.get('upgrade',[])
 					for upgrade in upgrades[:]:
 						key, value = upgrade.split(':', 1)
 						value = value.strip().lower()
-						if value != 'websocket':
+						if not (value == 'websocket' or value.startswith('tls/')):
 							upgrades.remove(upgrade)
 							self.pop(value.lower())
 					# we modified the list in data directly
