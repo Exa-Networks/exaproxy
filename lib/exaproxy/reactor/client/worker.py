@@ -88,6 +88,7 @@ class Client (object):
 							break
 
 						size += chunk_size + len(size_s) + (2 * len(eol))
+						r_buffer = r_buffer[chunk_size + len(eol):]
 					else:
 						size += chunk_size + len(eol)
 						chunked = False
