@@ -3,11 +3,12 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
-Version 1.0.2 - 14th December 2012
+Version 1.0.2 - 31th December 2012
  * Support chunked encoding of data uploaded by the client.
  * Update to DNS response caching
  * Overhall to internal logging client
- * 
+ * Many corner case fixes thanks to co-advisor ( http://coad.measurement-factory.com/ )
+   not all the issues where fixed, see https://code.google.com/p/exaproxy/wiki/RFC )
 
 Version 1.0.1 - 22nd of September 2012
  * Fix: can run from any folder, will correctly find the configuration files
