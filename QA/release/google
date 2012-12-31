@@ -38,6 +38,7 @@ do
 	echo copying $f
 	cp -r $f $destination/
 done
+cp .hgtags $destination/
 
 # Removing all the non-commited files (normally test configurations)
 
@@ -69,8 +70,10 @@ echo removing dot files
 cd $destination
 for f in `find . -name ".?*"`;
 do
-	echo removing $f
-	rm -f $f
+	if [[ $f != ./.hgtags ]]; then
+		echo removing $f
+		rm -f $f
+	fi
 done
 cd -
 
