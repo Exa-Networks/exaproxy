@@ -10,6 +10,7 @@ Version 1.0.2 - 31th December 2012
  * support for unknown HTTP versions
  * improvement to DNS caching (much better, stronger, harder/simpler expiry of cached entry)
  * much better internal logging (the previous code was an embarrassment really)
+ * supports haproxy "PROXY protocol"
  * Many corner case fixes thanks to co-advisor ( http://coad.measurement-factory.com/ )
    not all the issues where fixed, see https://code.google.com/p/exaproxy/wiki/RFC ) still fixed among others:
    - not forwarding keepalive
