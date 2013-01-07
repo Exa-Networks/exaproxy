@@ -73,12 +73,15 @@ class Reactor(object):
 					self.decider.request(client_id, peer, request, source)
 
 				elif request is None:
-					self.proxy.notifyClose(client)
+					if source == 'proxy':
+						self.proxy.notifyClose(client)
+					elif source == 'web':
+						self.web.notifyClose(client)
 
 
 			# incoming data from clients
 			for client in events.get('read_client',[]):
-				client_id, peer, request, data = self.client.readDataBySocket(client)
+				client_id, peer, request, data, source = self.client.readDataBySocket(client)
 				if request:
 					# we have a new request - decide what to do with it
 					self.decider.request(client_id, peer, request, 'proxy')
@@ -94,8 +97,11 @@ class Reactor(object):
 							self.client.uncorkUploadByName(client_id)
 
 				elif data is None:
-					self.proxy.notifyClose(client)
 					self.content.endClientDownload(client_id)
+					if source == 'proxy':
+						self.proxy.notifyClose(client)
+					elif source == 'web':
+						self.web.notifyClose(client)
 
 
 			# incoming data - web pages
@@ -159,7 +165,7 @@ class Reactor(object):
 
 				# Signal to the client that we'll be streaming data to it or
 				# give it the location of the local content to return.
-				data = self.client.startData(client_id, response, length)
+				data, source = self.client.startData(client_id, response, length)
 
 				# Check for any data beyond the initial headers that we may already
 				# have read and cached
@@ -174,6 +180,10 @@ class Reactor(object):
 
 				elif data is None:
 					self.content.endClientDownload(client_id)
+					if source == 'proxy':
+						self.proxy.notifyClose(client)
+					elif source == 'web':
+						self.web.notifyClose(client)
 
 
 			# clients we can write buffered data to

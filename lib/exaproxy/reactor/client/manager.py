@@ -37,7 +37,7 @@ class ClientManager (object):
 		client = Client(name, sock, peer, self.log)
 
 		self.norequest[sock] = client, source
-		self.byname[name] = client
+		self.byname[name] = client, source
 
 		# watch for the opening request
 		self.poller.addReadSocket('opening_client', client.sock)
@@ -76,7 +76,7 @@ class ClientManager (object):
 
 
 	def readDataBySocket(self, sock):
-		client = self.bysock.get(sock, None)
+		client, source = self.bysock.get(sock, (None, None))
 		if client:
 			name, peer, request, content = client.readData()
 			if request:
@@ -94,11 +94,11 @@ class ClientManager (object):
 			name, peer, request, content = None, None, None, None
 
 
-		return name, peer, request, content
+		return name, peer, request, content, source
 
 
 	def readDataByName(self, name):
-		client = self.byname.get(name, None)
+		client, source = self.byname.get(name, (None, None))
 		if client:
 			name, peer, request, content = client.readData()
 			if request:
@@ -119,7 +119,7 @@ class ClientManager (object):
 		return name, peer, request, content
 
 	def sendDataBySocket(self, sock, data):
-		client = self.bysock.get(sock, None)
+		client, source = self.bysock.get(sock, (None, None))
 		if client:
 			name = client.name
 			res = client.writeData(data)
@@ -164,7 +164,7 @@ class ClientManager (object):
 		return result, buffer_change, name
 
 	def sendDataByName(self, name, data):
-		client = self.byname.get(name, None)
+		client, source = self.byname.get(name, (None, None))
 		if client:
 			res = client.writeData(data)
 
@@ -210,7 +210,7 @@ class ClientManager (object):
 
 
 	def startData(self, name, data, remaining):
-		client = self.byname.get(name, None)
+		client, source = self.byname.get(name, (None, None))
 		if client:
 			try:
 				command, d = data
@@ -221,7 +221,7 @@ class ClientManager (object):
 			else:
 				if client.sock not in self.bysock:
 					# Start checking for content sent by the client
-					self.bysock[client.sock] = client
+					self.bysock[client.sock] = client, source
 
 					# watch for the client sending new data
 					self.poller.addReadSocket('read_client', client.sock)
@@ -281,25 +281,25 @@ class ClientManager (object):
 		else:
 			content = None
 
-		return content
+		return content, source
 
 
 	def corkUploadByName(self, name):
-		client = self.byname.get(name, None)
+		client, source = self.byname.get(name, (None, None))
 		if client:
 			self.poller.corkReadSocket('read_client', client.sock)
 
 	def uncorkUploadByName(self, name):
-		client = self.byname.get(name, None)
+		client, source = self.byname.get(name, (None, None))
 		if client:
 			if client.sock in self.bysock:
 				self.poller.uncorkReadSocket('read_client', client.sock)
 
 	def cleanup(self, sock, name):
 		self.log.debug('cleanup for socket %s' % sock)
-		client = self.bysock.get(sock, None)
+		client, source = self.bysock.get(sock, (None,None))
 		client, source = (client,None) if client else self.norequest.get(sock, (None,None))
-		client = client or self.byname.get(name, None)
+		client, source = (client,None) or self.byname.get(name, (None,None))
 
 		self.bysock.pop(sock, None)
 		self.norequest.pop(sock, (None,None))
@@ -316,7 +316,7 @@ class ClientManager (object):
 			self.buffered.remove(sock)
 
 	def stop(self):
-		for client in self.bysock.itervalues():
+		for client, source in self.bysock.itervalues():
 			client.shutdown()
 
 		for client, source in self.norequest.itervalues():
