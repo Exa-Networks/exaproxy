@@ -3,6 +3,9 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
+Version 1.0.3 - --th of ------ January 2013
+ * Fix: tracking of filedescriptors
+
 Version 1.0.2 - 31th December 2012
  * Support chunked encoding of data uploaded by the client.
  * websocket and TLS support (Upgrade header support)
