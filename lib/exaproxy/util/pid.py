@@ -3,7 +3,7 @@
 pid.py
 
 Created by Thomas Mangin on 2011-11-29.
-Copyright (c) 2011 Exa Networks. All rights reserved.
+Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
 # encoding: utf-8
@@ -11,7 +11,7 @@ Copyright (c) 2011 Exa Networks. All rights reserved.
 daemon.py
 
 Created by Thomas Mangin on 2011-11-29.
-Copyright (c) 2011 Exa Networks. All rights reserved.
+Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
 import os

@@ -3,7 +3,7 @@
 poller.py
 
 Created by David Farrar on 2012-01-31.
-Copyright (c) 2011 Exa Networks. All rights reserved.
+Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
 class IPoller:

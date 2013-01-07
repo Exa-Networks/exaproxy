@@ -3,7 +3,7 @@
 http.py
 
 Created by Thomas Mangin on 2011-12-02.
-Copyright (c) 2011 Exa Networks. All rights reserved.
+Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
 #	destination = re.compile("(GET|POST|PUT|HEAD|DELETE|OPTIONS|TRACE|CONNECT)\s+(http://[^/]*|)(/?[^ \r]*)\s+(HTTP/.*\r?\nHost\s*:\s*)([^\r]*)(|\r?\n)", re.IGNORECASE)

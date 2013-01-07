@@ -3,7 +3,7 @@
 images.py
 
 Created by Thomas Mangin on 2012-02-18.
-Copyright (c) 2012 Exa Networks. All rights reserved.
+Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 """
 
 # print open('logo.png','r').read().encode('base64')

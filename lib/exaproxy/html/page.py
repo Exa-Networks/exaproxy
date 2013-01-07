@@ -3,7 +3,7 @@
 page.py
 
 Created by Thomas Mangin on 2012-02-08.
-Copyright (c) 2012 Exa Networks. All rights reserved.
+Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 """
 
 import cgi

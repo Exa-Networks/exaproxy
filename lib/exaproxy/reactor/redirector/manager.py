@@ -3,7 +3,7 @@
 manager.py
 
 Created by Thomas Mangin on 2011-11-30.
-Copyright (c) 2011 Exa Networks. All rights reserved.
+Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
 import time
