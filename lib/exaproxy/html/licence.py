@@ -6,13 +6,17 @@ Created by Thomas Mangin on 2012-02-25.
 Copyright (c) 2012 Exa Networks. All rights reserved.
 """
 
+from datetime import datetime
+
+year = datetime.now().year
+
 licence = """\
 <pre style="margin-left:40px;">
 ExaProxy
 
-Copyright (c) 2011-2011, Exa Networks Limited
-Copyright (c) 2011-2011, Thomas Mangin
-Copyright (c) 2011-2011, David Farrar
+Copyright (c) 2011-%d, Exa Networks Limited
+Copyright (c) 2011-%d, Thomas Mangin
+Copyright (c) 2011-%d, David Farrar
 
 All rights reserved.
 
@@ -36,4 +40,4 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </pre>
-"""
+""" % (year,year,year)
