@@ -281,7 +281,7 @@ class ClientManager (object):
 		else:
 			content = None
 
-		return content, source
+		return client, content, source
 
 
 	def corkUploadByName(self, name):

@@ -165,7 +165,7 @@ class Reactor(object):
 
 				# Signal to the client that we'll be streaming data to it or
 				# give it the location of the local content to return.
-				data, source = self.client.startData(client_id, response, length)
+				client, data, source = self.client.startData(client_id, response, length)
 
 				# Check for any data beyond the initial headers that we may already
 				# have read and cached
