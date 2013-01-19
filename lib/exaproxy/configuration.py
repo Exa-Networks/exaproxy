@@ -347,8 +347,8 @@ def _configuration (conf):
 				conf = default[option][2]
 			try:
 				configuration.setdefault(section,Store())[option] = convert(conf)
-			except TypeError:
-				raise ConfigurationError('invalid value for %s.%s : %s' % (section,option,conf))
+			except TypeError,error:
+				raise ConfigurationError('invalid value for %s.%s : %s (%s)' % (section,option,conf,str(error)))
 
 	return configuration
 
