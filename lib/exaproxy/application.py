@@ -6,6 +6,7 @@ Created by Thomas Mangin on 2011-11-29.
 Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
+import os
 import sys
 
 def version_warning ():
@@ -74,7 +75,7 @@ def __exit(memory,code):
 		objgraph.show_backrefs([obj], max_depth=10)
 	sys.exit(code)
 
-if __name__ == '__main__':
+def main ():
 	main = int(sys.version[0])
 	secondary = int(sys.version[2])
 
@@ -110,6 +111,8 @@ if __name__ == '__main__':
 
 	if arguments['release']:
 		configuration.proxy.version = arguments['release']
+	else:
+		configuration.proxy.version = os.environ['release']
 
 	from exaproxy.util.log.logger import Logger
 	log = Logger('supervisor', configuration.log.supervisor)
@@ -174,3 +177,7 @@ if __name__ == '__main__':
 		log.debug("-"*len(notice))
 		main()
 	__exit(configuration.debug.memory,0)
+
+if __name__ == '__main__':
+	main()
+

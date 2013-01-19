@@ -4,10 +4,12 @@ Version explained:
  bug   : increase on bug fixes
 
 
-Version 1.0.4 - 
+Version 1.0.4 - 19th of January 2013
  * Copyright: update all copyrights to 2013
+ * Fix: distutils installation (use the right python interpreter - closes issue 6)
+ * Fix: an issue on disconnect
 
-Version 1.0.3 - --th of ------ January 2013
+Version 1.0.3 - 7th of January 2013
  * Fix: tracking of filedescriptors
 
 Version 1.0.2 - 31th December 2012

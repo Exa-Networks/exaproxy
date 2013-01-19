@@ -15,8 +15,7 @@ case $dirname in
 	;;
 esac
 
-export PYTHONPATH=$path/lib:/usr/share/exaproxy/lib/$VERSION
-export ETC=$path/etc/exaproxy
+export PYTHONPATH=$path/lib
 
 if [ "$INTERPRETER" != "" ]
 then
@@ -57,11 +56,6 @@ then
   INTERPRETER=$PYTHON
 else
   INTERPRETER=python
-fi
-
-if [ -d "$path/etc/content" ]
-then
-	export CONTENT=$path/etc/content
 fi
 
 APPLICATIONS=`$INTERPRETER -c "import sys,os; print ' '.join(os.path.join(_,'exaproxy','application.py') for _ in sys.path if os.path.isfile('/'.join((_,'exaproxy/application.py'))))"`

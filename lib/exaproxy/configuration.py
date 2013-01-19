@@ -55,7 +55,7 @@ class value (object):
 		roots = value.location.split(os.sep)
 		location = []
 		for index in range(len(roots)-1,-1,-1):
-			if roots[index] == 'lib':
+			if roots[index] in ('lib','bin'):
 				if index: 
 					location = roots[:index]
 				break
@@ -303,9 +303,9 @@ class Store (dict):
 
 def _configuration (conf):
 	location = os.path.join(os.sep,*os.path.join(value.location.split(os.sep)))
-	while location:
+	while location and location != '/':
 		location, directory = os.path.split(location)
-		if directory == 'lib':
+		if directory in ('lib','bin'):
 			break
 
 	_conf_paths = []
