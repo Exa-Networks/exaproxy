@@ -9,6 +9,8 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 import os
 import sys
 
+from exaproxy.configuration import default
+
 def version_warning ():
 	sys.stdout.write('\n')
 	sys.stdout.write('************ WARNING *** WARNING *** WARNING *** WARNING *********\n')
