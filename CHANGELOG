@@ -3,6 +3,8 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
+Version 1.0.5 - 9th of Febuary 2013
+ * Fix: -h was broken
 
 Version 1.0.4 - 19th of January 2013
  * Copyright: update all copyrights to 2013
