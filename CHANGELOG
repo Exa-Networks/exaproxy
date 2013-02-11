@@ -3,6 +3,10 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
+Version 1.0.6 - ..th of Febuary 2013
+ * Fix: Need to track client disconnections when we are the one who decides to close the connection
+ * Fix: Display on stderr when can not start the program
+
 Version 1.0.5 - 9th of Febuary 2013
  * Fix: -h was broken
 
