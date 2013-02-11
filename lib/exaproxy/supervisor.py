@@ -255,19 +255,22 @@ class Supervisor(object):
 			s = self.proxy.listen(tcp4.host,tcp4.port, tcp4.timeout, tcp4.backlog)
 			ok = bool(s)
 			if not s:
-				self.log.error('Unable to listen on %s:%s' % (tcp4.host,tcp4.port))
+				print >> sys.stderr, 'IPv4 proxy, unable to listen on %s:%s' % (tcp4.host,tcp4.port)
+				self.log.error('IPv4 proxy, unable to listen on %s:%s' % (tcp4.host,tcp4.port))
 
 		if ok and tcp6.listen:
 			s = self.proxy.listen(tcp6.host,tcp6.port, tcp6.timeout, tcp6.backlog)
 			ok = bool(s)
 			if not s:
-				self.log.error('Unable to listen on %s:%s' % (tcp6.host,tcp6.port))
+				print >> sys.stderr, 'IPv6 proxy, unable to listen on %s:%s' % (tcp6.host,tcp6.port)
+				self.log.error('IPv6 proxy, unable to listen on %s:%s' % (tcp6.host,tcp6.port))
 
 
 		if ok and self.configuration.web.enable:
 			s = self.web.listen(self.configuration.web.host,self.configuration.web.port, 10, 10)
 			if not s:
-				self.log.error('Unable to listen on %s:%s' % (self.configuration.web.host, self.configuration.web.port))
+				print >> sys.stderr, 'internal web server, unable to listen on %s:%s' % (self.configuration.web.host, self.configuration.web.port)
+				self.log.error('internal web server, unable to listen on %s:%s' % (self.configuration.web.host, self.configuration.web.port))
 				ok = False
 
 		return ok
