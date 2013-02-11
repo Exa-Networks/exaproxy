@@ -114,9 +114,12 @@ class Reactor(object):
 				# check to see if the client went away
 				if status is None:
 					if page_data is not None:
-						# should we use the fetcher (socket) as an index here rather than the client id?
-						# should we just wait for the next loop when we'll be notified of the client disconnect?
+						# The client disconnected? Close our connection to the remote webserver.
+						# We'll be notified of the client disconnect so don't count it here
 						self.content.endClientDownload(client_id)
+					else:
+						# We just closed our connection to the client and need to count the disconnect.
+						self.proxy.notifyClose(client_id)
 
 				elif buffer_change:
 					# status should be true here - we don't read from the server when buffering
