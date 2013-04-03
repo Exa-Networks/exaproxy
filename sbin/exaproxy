@@ -61,4 +61,7 @@ fi
 APPLICATIONS=`$INTERPRETER -c "import sys,os; print ' '.join(os.path.join(_,'exaproxy','application.py') for _ in sys.path if os.path.isfile('/'.join((_,'exaproxy/application.py'))))"`
 APPLICATION=`echo $APPLICATIONS | awk '{ print $1; }'`
 
+# 3x (2^16) = 196608 (should be enough for everyone as otherwise we will run of TCP port for outgoing connections anyway)
+ulimit -n 196608 > /dev/null 2> /dev/null
+
 exec $INTERPRETER -m exaproxy.util.debug $APPLICATION --release $VERSION $*

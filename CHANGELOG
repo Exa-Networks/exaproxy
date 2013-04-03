@@ -6,6 +6,7 @@ Version explained:
 Version 1.0.6 - 3rd of March 2013
  * Fix: Need to track client disconnections when we are the one who decides to close the connection
  * Fix: Display on stderr when can not start the program
+ * Improvement: clearer message when descriptor limit can not be changed
 
 Version 1.0.5 - 9th of Febuary 2013
  * Fix: -h was broken

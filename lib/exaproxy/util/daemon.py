@@ -38,9 +38,8 @@ class Daemon (object):
 				self.log.error('could not increase file descriptor limit : %s' % str(e))
 
 		soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
-		self.log.error('the current file descriptor limit is %d' % signed(soft))
-		self.log.error('the maximum possible file descriptor limit is %d' % signed(hard))
-		self.log.error('the requested file descriptor limit was %d' % signed(configuration.daemon.filemax))
+		if soft != wanted_limit:
+			self.log.error('could not increase file descriptor limit to %d, limit is %d' % (wanted_limit,signed(soft)))
 
 		self.file_limit = soft
 
