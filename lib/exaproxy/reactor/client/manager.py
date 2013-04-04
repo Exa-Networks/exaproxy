@@ -42,7 +42,7 @@ class ClientManager (object):
 		# watch for the opening request
 		self.poller.addReadSocket('opening_client', client.sock)
 
-		self.log.info('new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
+		#self.log.info('new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
 		return peer
 
 	def readRequest(self, sock):
@@ -161,7 +161,7 @@ class ClientManager (object):
 			buffer_change = None
 			name = None
 
-		return result, buffer_change, name
+		return result, buffer_change, name, source
 
 	def sendDataByName(self, name, data):
 		client, source = self.byname.get(name, (None, None))

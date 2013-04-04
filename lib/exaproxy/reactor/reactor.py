@@ -191,7 +191,14 @@ class Reactor(object):
 
 			# clients we can write buffered data to
 			for client in events.get('write_client',[]):
-				status, buffer_change, name = self.client.sendDataBySocket(client, '')
+				status, buffer_change, name, source = self.client.sendDataBySocket(client, '')
+
+				if status is None:
+					self.content.endClientDownload(name)
+					if source == 'proxy':
+						self.proxy.notifyClose(client)
+					elif source == 'web':
+						self.web.notifyClose(client)
 
 				if buffer_change:
 					# status should be False - we're here because we flushed buffered data
