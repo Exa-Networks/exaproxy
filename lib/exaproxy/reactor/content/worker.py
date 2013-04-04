@@ -52,7 +52,7 @@ class Content (object):
 			data = self.sock.recv(buflen) or None
 		except socket.error, e:
 			if e.args[0] in errno_block:
-				self.log.info('interrupted when trying to read, will retry' % len(data))
+				self.log.info('interrupted when trying to read, will retry: got %s bytes' % len(data))
 				self.log.info('reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 				data = ''
 			else:
