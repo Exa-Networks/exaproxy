@@ -3,6 +3,9 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
+Version 1.0.7 - 4th of March 2013
+ * Fix: a critical bug when counting file descriptor usage
+
 Version 1.0.6 - 3rd of March 2013
  * Fix: Need to track client disconnections when we are the one who decides to close the connection
  * Fix: Display on stderr when can not start the program
