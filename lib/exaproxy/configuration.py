@@ -293,10 +293,13 @@ import ConfigParser
 class Store (dict):
 	def __getitem__ (self,key):
 		return dict.__getitem__(self,key.replace('_','-'))
+
 	def __setitem__ (self,key,value):
 		return dict.__setitem__(self,key.replace('_','-'),value)
+
 	def __getattr__ (self,key):
 		return dict.__getitem__(self,key.replace('_','-'))
+
 	def __setattr__ (self,key,value):
 		return dict.__setitem__(self,key.replace('_','-'),value)
 

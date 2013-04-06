@@ -46,4 +46,3 @@ Engineer Extraordinaire
 <b style="padding: 20px 20px 20px 20px;">/* Other contributors */</b>
 <br>
 """ % (thomas,david)
-

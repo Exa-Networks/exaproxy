@@ -249,6 +249,3 @@ class Reactor(object):
 #					break
 
 			self.logger.writeMessages()
-
-
-

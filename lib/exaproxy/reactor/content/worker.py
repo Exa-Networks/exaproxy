@@ -98,4 +98,3 @@ class Content (object):
 			self.sock.close()
 		except socket.error:
 			pass
-

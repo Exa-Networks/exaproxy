@@ -188,4 +188,3 @@ class Menu (object):
 
 	def about (self,page):
 		return self._html_about % page
-

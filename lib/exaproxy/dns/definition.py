@@ -186,5 +186,3 @@ QUERIES: %(queries)s
 RESPONSES: %(response)s
 AUTHORITIES: %(authorities)s
 ADDITIONAL: %(additional)s""" % {'id':self.identifier, 'queries':query_s, 'authorities':authority_s, 'additional':additional_s, 'response':response_s}
-
-

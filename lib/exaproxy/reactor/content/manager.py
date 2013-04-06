@@ -446,4 +446,3 @@ class ContentManager(object):
 		self.poller.clearWrite('opening_download')
 
 		return True
-

@@ -85,4 +85,3 @@ class Request (object):
 			return self.method + ' ' + self.path + ' HTTP/' + self.version
 
 		return self.raw
-

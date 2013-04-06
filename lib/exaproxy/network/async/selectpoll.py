@@ -171,4 +171,3 @@ class SelectPoller (IPoller):
 			if polled: all_socks[name] = polled
 
 		return all_socks
-

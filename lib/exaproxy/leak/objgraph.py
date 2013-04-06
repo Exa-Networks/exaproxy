@@ -456,6 +456,7 @@ def show_chain(*chains, **kw):
 
     def in_chains(x, ids=set(map(id, itertools.chain(*chains)))):
         return id(x) in ids
+
     max_depth = max(map(len, chains)) - 1
     if backrefs:
         show_backrefs([chain[-1] for chain in chains], max_depth=max_depth,

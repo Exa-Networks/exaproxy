@@ -82,5 +82,3 @@ def dns_to_string(s, packet_s):
 def string_to_dns(s, packet_s=None):
 	parts = (s.rstrip('.') + '.').split('.')
 	return ''.join('%c%s' % (len(p), p) for p in parts)
-
-

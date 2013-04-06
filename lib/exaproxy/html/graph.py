@@ -81,4 +81,3 @@ def graph (monitor,title,reload_time,_keys,cumulative=False,split=False):
 		})
 
 	return (_chart_header % reload_time) + '\n'.join(data)
-
