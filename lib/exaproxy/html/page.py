@@ -96,14 +96,14 @@ class Page (object):
 		introduction = "<div style='padding: 10px 10px 10px 10px; font-weight:bold;'>ExaProxy Configuration</div><br/>\n"
 		line = []
 		for k,v in sorted(self.monitor.configuration().items()):
-			line.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (k,cgi.escape(v)))
+			line.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (k,cgi.escape(str(v))))
 		return introduction + _listing % ('\n'.join(line))
 
 	def _statistics (self):
 		introduction = "<div style='padding: 10px 10px 10px 10px; font-weight:bold;'>ExaProxy Statistics</div><br/>\n"
 		line = []
 		for k,v in sorted(self.monitor.statistics().items()):
-			line.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (k,cgi.escape(str(v))))
+			line.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (k,cgi.escape(str(str(v)))))
 		return introduction + _listing % ('\n'.join(line))
 
 	def _connections (self):
@@ -193,8 +193,11 @@ class Page (object):
 		self.email_sent, message = mail.send(args)
 		return message
 
-	def _json (self):
+	def _json_running (self):
 		return json.dumps(self.monitor.history[-1],sort_keys=True,indent=2,separators=(',', ': '))
+
+	def _json_configuration (self):
+		return json.dumps(self.monitor.configuration(),sort_keys=True,indent=2,separators=(',', ': '))
 
 	def html (self,path):
 		if len(path) > 5000:
@@ -213,15 +216,23 @@ class Page (object):
 		elif not path.endswith('.html'):
 			if path == '/humans.txt':
 				return humans.txt
-			if path == '/json':
-				return self._json()
-			return menu.root('<center><b>invalid extension</b></center>')
+			if not path.startswith('/json'):
+				return menu.root('<center><b>invalid extension</b></center>')
+			sections = path[1:].split('/') + ['']
+		else:
+			sections = path[1:-5].split('/') + ['']
 
-		sections = path[1:-5].split('/') + ['']
 		if not sections[0]:
 			return menu.root(index)
 		section = sections[0]
 		subsection = sections[1]
+
+		if section == 'json':
+			if subsection == 'running':
+				return self._json_running()
+			if subsection == 'configuration':
+				return self._json_configuration()
+			return '{ "errror" : "invalid url", "valid-paths": [ "/json/running", "/json/configuration" ] }'
 
 		if section == 'index':
 			return menu.root(index)
