@@ -87,7 +87,7 @@ def main ():
 	if main == 2 and secondary == 4:
 		version_warning()
 
-	from exaproxy.configuration import ConfigurationError,load,ini,env,default
+	from exaproxy.configuration import ConfigurationError,load,ini,env
 
 	next = ''
 	arguments = {

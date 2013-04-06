@@ -28,7 +28,7 @@ class DNSHeader:
 		self.cd = (flags >> 4) & 1         # checking disabled     (bool)      # 00000000 00010000
 		self.rcode = flags & 1             # return code                       # 00000000 00001111
 
-		self.query_len = convert.u16(packet_s[4:6])                # no. of queries   
+		self.query_len = convert.u16(packet_s[4:6])                # no. of queries
 		self.response_len = convert.u16(packet_s[6:8])             # no. of answer RRs
 		self.authority_len = convert.u16(packet_s[8:10])           # no. of authority RRs
 		self.additional_len = convert.u16(packet_s[10:12])         # no. of additional RRs
@@ -200,7 +200,7 @@ class DNSCodec:
 	def decodeResponse(self, response_s):
 		header, data = self._decodeHeader(response_s)
 
-		if header.qr == 1: # response
+		if header.qr == 1:  # response
 			queries, data, names, offset = self._decodeQueries(data, header.query_len, response_s)
 			responses, data, names, offset = self._decodeResources(data, header.response_len, response_s, names, offset)
 			authorities, data, names, offset = self._decodeResources(data, header.authority_len, response_s, names, offset)

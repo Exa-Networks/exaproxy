@@ -135,7 +135,7 @@ class ContentManager(object):
 
 				if downloader is not None:
 					content = ('stream', '')
-					length = -1 # the client can send as much data as it wants
+					length = -1  # the client can send as much data as it wants
 				else:
 					content = self.getLocalContent('400', 'noconnect.html')
 					length = 0
@@ -234,7 +234,7 @@ class ContentManager(object):
 				self.poller.removeWriteSocket('write_download', downloader.sock)
 			else:
 				buffer_change = False
-				
+
 		elif client_id in self.byclientid:
 			buffered = None
 			buffer_change = None

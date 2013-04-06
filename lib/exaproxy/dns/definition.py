@@ -33,8 +33,8 @@ class DNSBaseType:
 
 
 class DNSRequestType(DNSBaseType):
-	QR = 0     # Query
-	OPCODE = 0 # Query
+	QR = 0      # Query
+	OPCODE = 0  # Query
 
 	resource_factory = dnstype.DNSTypeFactory()
 
@@ -45,7 +45,7 @@ class DNSRequestType(DNSBaseType):
 	def __init__(self, identifier, queries=[]):
 		self.identifier = identifier
 		self.queries = queries or []
-		self.flags = 256 # recursion desired
+		self.flags = 256  # recursion desired
 
 	def addQuestion(self, querytype, question):
 		q = self.resource_factory.createQuery(querytype, question)

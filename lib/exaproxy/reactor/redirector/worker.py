@@ -464,7 +464,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 			# WEBDAV
 			if method in (
-			  'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE', 
+			  'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE',
 			  'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
 				self.respond(Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message)))
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', method)

@@ -142,7 +142,7 @@ class HTTP (object):
 #			x_forwarded_for = True
 #		http = Http()
 #	conf = Conf()
-#		
+#
 #	r = """\
 #GET http://thomas.mangin.com/ HTTP/1.1
 #Host: thomas.mangin.com

@@ -47,7 +47,7 @@ class Request (object):
 					self.port = self._checkport(port[1:])
 				else:
 					self.port = '80'
-	
+
 				return self
 			else:
 				self.port = self._checkport(remaining)

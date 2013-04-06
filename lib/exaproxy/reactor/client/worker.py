@@ -109,7 +109,7 @@ class Client (object):
 
 
 	def _read (self, sock, read_size=64*1024):
-		"""Coroutine managing data read from the client""" 
+		"""Coroutine managing data read from the client"""
 		r_buffer = ''
 		request = ''
 		remaining = 0
@@ -145,7 +145,7 @@ class Client (object):
 						r_size, _ = yield '', related, False
 
 					if remaining != 0:
-						continue # we expect that the client will write more data
+						continue  # we expect that the client will write more data
 
 					if chunked:
 						# sum of the sizes of all chunks in our buffer
@@ -172,7 +172,7 @@ class Client (object):
 							remaining = max(extra_size, 0)
 							extra_headers = False
 							seek = 0
-	
+
 						continue
 
 
@@ -187,7 +187,7 @@ class Client (object):
 					if request:
 						seek = 0
 
-					r_size, remaining = yield request, '', True # yield to manager.readRequest
+					r_size, remaining = yield request, '', True  # yield to manager.readRequest
 					if request and remaining == 'chunked':
 						chunked = True
 						remaining = 0
@@ -206,7 +206,7 @@ class Client (object):
 					break
 
 		yield None
-		
+
 
 	def setPeer (self, peer):
 		"""Set the claimed ip address for this client.
@@ -241,7 +241,7 @@ class Client (object):
 
 	def _write(self, sock):
 		"""Coroutine managing data sent to the client"""
-		
+
 		w_buffer = ''
 		filename = yield None
 
@@ -304,8 +304,8 @@ class Client (object):
 				else:
 					self.log.critical('unexpected error writing on socket')
 					self.log.critical('reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
-					yield None # stop the client connection
-					break # and don't come back
+					yield None  # stop the client connection
+					break  # and don't come back
 
 		yield None
 
@@ -331,7 +331,7 @@ class Client (object):
 			header, filename = data
 			res = self.writer.send(filename)  # use local file
 			self.writer.send(header)      # write the response headers before the file
-			
+
 			self.writer.send(None)        # close the connection once the buffer is empty
 		else:
 			res = None

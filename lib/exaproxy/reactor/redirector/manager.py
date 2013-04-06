@@ -66,7 +66,7 @@ class RedirectorManager (object):
 		worker = self.worker[wid]
 		self.worker.pop(wid)
 		self.closing[wid] = worker
-		worker.stop() # will cause the worker to stop when it can
+		worker.stop()  # will cause the worker to stop when it can
 
 	def start (self):
 		"""spawn our minimum number of workers"""
@@ -165,7 +165,7 @@ class RedirectorManager (object):
 				else:
 					response = None
 
-		except ValueError: # I/O operation on closed file
+		except ValueError:  # I/O operation on closed file
 			worker = self.worker.get(box, None)
 			if worker is not None:
 				worker.destroyProcess()

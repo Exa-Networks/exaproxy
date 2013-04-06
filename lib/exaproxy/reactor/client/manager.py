@@ -82,11 +82,11 @@ class ClientManager (object):
 			if request:
 				# Parsing of the new request will be handled asynchronously. Ensure that
 				# we do not read anything from the client until a request has been sent
-				# to the remote webserver. 
+				# to the remote webserver.
 				# Since we just read a request, we know that the cork is not currently
 				# set and so there's no risk of it being erroneously removed.
 				self.poller.corkReadSocket('read_client', sock)
-				
+
 			elif request is None:
 				self.cleanup(sock, client.name)
 		else:
@@ -104,7 +104,7 @@ class ClientManager (object):
 			if request:
 				# Parsing of the new request will be handled asynchronously. Ensure that
 				# we do not read anything from the client until a request has been sent
-				# to the remote webserver. 
+				# to the remote webserver.
 				# Since we just read a request, we know that the cork is not currently
 				# set and so there's no risk of it being erroneously removed.
 				self.poller.corkReadSocket('read_client', client.sock)
@@ -309,7 +309,7 @@ class ClientManager (object):
 			self.poller.removeWriteSocket('write_client', client.sock)
 			self.poller.removeReadSocket('read_client', client.sock)
 			self.poller.removeReadSocket('opening_client', client.sock)
-	
+
 			client.shutdown()
 
 		if sock in self.buffered:

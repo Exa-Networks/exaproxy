@@ -56,7 +56,7 @@ class value (object):
 		location = []
 		for index in range(len(roots)-1,-1,-1):
 			if roots[index] in ('lib','bin'):
-				if index: 
+				if index:
 					location = roots[:index]
 				break
 		root = os.path.join(*location)
@@ -78,11 +78,11 @@ class value (object):
 
 	@staticmethod
 	def unquote (_):
-		 return _.strip().strip('\'"')
+		return _.strip().strip('\'"')
 
 	@staticmethod
 	def quote (_):
-		 return "'%s'" % str(_)
+		return "'%s'" % str(_)
 
 	@staticmethod
 	def nop (_):
@@ -332,7 +332,7 @@ def _configuration (conf):
 				proxy_section = 'exaproxy.%s' % section
 				env_name = '%s.%s' % (proxy_section,option)
 				rep_name = env_name.replace('.','_')
-				
+
 				if env_name in os.environ:
 					conf = os.environ.get(env_name)
 				elif rep_name in os.environ:

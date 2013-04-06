@@ -46,7 +46,7 @@ class EPoller (IPoller):
 					self.errors[sock] = name
 				else:
 					print "NOTE: trying to poll closed socket again (addReadSocket)"
-					
+
 			else:
 				fdtosock[fileno] = sock
 		else:

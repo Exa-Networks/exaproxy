@@ -9,8 +9,8 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 import sys
 import time
 
-from exaproxy.html.images import logo
-from exaproxy.html.img import png
+#from exaproxy.html.images import logo
+#from exaproxy.html.img import png
 
 from exaproxy.configuration import load
 version = load().proxy.version

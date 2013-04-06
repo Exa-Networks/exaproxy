@@ -74,13 +74,13 @@ class DNSTypeCodec:
 					value = int(value)
 
 					if name in self.byname:
-						raise ValueError, 'Configuration file defines record of type %s more than once' % name
+						raise ValueError('Configuration file defines record of type %s more than once' % name)
 
 					if value in self.byvalue:
-						raise ValueError, 'Configuration file defines record with value %s more than once' % value
+						raise ValueError('Configuration file defines record with value %s more than once' % value)
 
 					if querytype not in conversion:
-						raise ValueError, 'Configuration file uses undefined type: %s' % querytype
+						raise ValueError('Configuration file uses undefined type: %s' % querytype)
 
 					encoder, decoder = conversion[querytype]
 
@@ -88,11 +88,11 @@ class DNSTypeCodec:
 					self.byvalue[value] = name, decoder
 
 		except (IndexError, ValueError):
-			raise RuntimeError, 'Corrupt DNS type definition'
+			raise RuntimeError('Corrupt DNS type definition')
 		except TypeError:
-			raise RuntimeError, 'Corrupt DNS type definition'
+			raise RuntimeError('Corrupt DNS type definition')
 		except IOError:
-			raise RuntimeError, 'Cannot read DNS type definition file: %s' % filename
+			raise RuntimeError('Cannot read DNS type definition file: %s' % filename)
 
 	def decodeQuery(self, value, question, data_s=''):
 		name, decoder = self.byvalue.get(value, (None, None))

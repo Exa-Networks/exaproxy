@@ -12,7 +12,6 @@ import json
 from .menu import Menu
 from .graph import graph
 from .mail import mail
-from .img import png
 from .index import index
 from .licence import licence
 from .humans import humans
@@ -51,8 +50,8 @@ menu = Menu(options,options_information,options_performance,options_about)
 
 _listing = """\
 <style type="text/css">
-	.object { 
-		width: 800px; margin-left: 20px; 
+	.object {
+		width: 800px; margin-left: 20px;
 	}
 	.object a {
 		display: inline-block; width: 150px; text-align: left; font: 10pt Arial;

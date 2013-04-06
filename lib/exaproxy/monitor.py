@@ -38,11 +38,11 @@ class Monitor (object):
 
 	def configuration (self):
 		conf = self._supervisor.configuration
-		content = self._supervisor.content
-		client = self._supervisor.client
-		log = self._supervisor.log
-		manager = self._supervisor.manager
-		reactor = self._supervisor.reactor
+		#content = self._supervisor.content
+		#client = self._supervisor.client
+		#log = self._supervisor.log
+		#manager = self._supervisor.manager
+		#reactor = self._supervisor.reactor
 
 		return {
 			'exaproxy.debug.log' : str(bool(conf.debug.log)),
@@ -100,10 +100,10 @@ class Monitor (object):
 		}
 
 	def statistics (self):
-		conf = self._supervisor.configuration
+		#conf = self._supervisor.configuration
 		content = self._supervisor.content
 		client = self._supervisor.client
-		log = self._supervisor.log
+		#log = self._supervisor.log
 		manager = self._supervisor.manager
 		reactor = self._supervisor.reactor
 

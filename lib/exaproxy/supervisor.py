@@ -28,8 +28,6 @@ from .configuration import load
 from exaproxy.util.log.logger import Logger
 from exaproxy.util.log.writer import SysLogWriter
 
-import time
-
 class Supervisor(object):
 	alarm_time = 1
 	# import os
@@ -159,7 +157,7 @@ class Supervisor(object):
 
 		signal.alarm(self.alarm_time)
 
-		count = 30
+		# count = 30
 		while True:
 			try:
 				if self._toggle_debug:

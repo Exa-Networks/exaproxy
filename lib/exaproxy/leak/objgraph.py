@@ -224,7 +224,7 @@ def get_leaking_objects(objects=None):
         # this then is our set of objects without referrers
         return [i for i in objects if id(i) in ids]
     finally:
-        objects = i = j = None # clear cyclic references to frame
+        objects = i = j = None  # clear cyclic references to frame
 
 
 def by_type(typename, objects=None):
@@ -452,7 +452,8 @@ def show_chain(*chains, **kw):
 
     """
     backrefs = kw.pop('backrefs', True)
-    chains = [chain for chain in chains if chain] # remove empty ones
+    chains = [chain for chain in chains if chain]  # remove empty ones
+
     def in_chains(x, ids=set(map(id, itertools.chain(*chains)))):
         return id(x) in ids
     max_depth = max(map(len, chains)) - 1
@@ -477,8 +478,8 @@ def find_chain(obj, predicate, edge_func, max_depth=20, extra_ignore=()):
     ignore.add(id(depth))
     ignore.add(id(parent))
     ignore.add(id(ignore))
-    ignore.add(id(sys._getframe()))  # this function
-    ignore.add(id(sys._getframe(1))) # find_chain/find_backref_chain, most likely
+    ignore.add(id(sys._getframe()))   # this function
+    ignore.add(id(sys._getframe(1)))  # find_chain/find_backref_chain, most likely
     gc.collect()
     while queue:
         target = queue.pop(0)
@@ -499,7 +500,7 @@ def find_chain(obj, predicate, edge_func, max_depth=20, extra_ignore=()):
                     depth[id(source)] = tdepth + 1
                     parent[id(source)] = target
                     queue.append(source)
-    return [obj] # not found
+    return [obj]  # not found
 
 
 def show_graph(objs, edge_func, swap_source_target,
@@ -529,8 +530,8 @@ def show_graph(objs, edge_func, swap_source_target,
     ignore.add(id(queue))
     ignore.add(id(depth))
     ignore.add(id(ignore))
-    ignore.add(id(sys._getframe()))  # this function
-    ignore.add(id(sys._getframe(1))) # show_refs/show_backrefs, most likely
+    ignore.add(id(sys._getframe()))   # this function
+    ignore.add(id(sys._getframe(1)))  # show_refs/show_backrefs, most likely
     for obj in objs:
         f.write('  %s[fontcolor=red];\n' % (obj_node_id(obj)))
         depth[id(obj)] = 0
