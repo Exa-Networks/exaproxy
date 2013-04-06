@@ -161,7 +161,7 @@ class Redirector (Thread):
 
 	def _classify_icap (self, message, headers, tainted):
 		if not self.process:
-			self.log.error('No more process to evaluate')
+			self.log.error('No more process to classify the HTTP request received')
 			return message, 'file', 'internal_error.html'
 
 		line = """\
