@@ -7,6 +7,7 @@ Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 """
 
 import cgi
+import json
 
 from .menu import Menu
 from .graph import graph
@@ -193,6 +194,9 @@ class Page (object):
 		self.email_sent, message = mail.send(args)
 		return message
 
+	def _json (self):
+		return json.dumps(self.monitor.history[-1],sort_keys=True,indent=2,separators=(',', ': '))
+
 	def html (self,path):
 		if len(path) > 5000:
 			return menu.root('<center><b>path is too long</b></center>')
@@ -205,12 +209,14 @@ class Page (object):
 		else:
 			args = ''
 
-		if not path.endswith('.html'):
-			if path != '/humans.txt':
-				return menu.root('<center><b>invalid extension</b></center>')
-			return humans.txt
 		if not path.startswith('/'):
 			return menu.root('<center><b>invalid url</b></center>')
+		elif not path.endswith('.html'):
+			if path == '/humans.txt':
+				return humans.txt
+			if path == '/json':
+				return self._json()
+			return menu.root('<center><b>invalid extension</b></center>')
 
 		sections = path[1:-5].split('/') + ['']
 		if not sections[0]:

@@ -121,6 +121,7 @@ class Monitor (object):
 			'running.transfer.download' : content.total_sent,
 			'running.load.loops' : reactor.nb_loops,
 			'running.load.events' : reactor.nb_events,
+			'running.queue.size' : manager.queue.qsize(),
 		}
 
 	def record (self):
