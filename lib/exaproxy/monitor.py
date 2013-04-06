@@ -108,7 +108,7 @@ class Monitor (object):
 		reactor = self._supervisor.reactor
 
 		return {
-			'running.pid.saved' : str(self._supervisor.pid._saved_pid),
+			'running.pid.saved' : bool(self._supervisor.pid._saved_pid),
 			'running.processes.forked' : str(len(manager.worker)),
 			'running.processes.min' : manager.low,
 			'running.processes.max' : manager.high,
