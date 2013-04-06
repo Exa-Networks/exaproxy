@@ -161,7 +161,7 @@ class Redirector (Thread):
 
 	def _classify_icap (self, message, headers, tainted):
 		if not self.process:
-			self.log.error('No more process to evaluate: %s' % str(squid))
+			self.log.error('No more process to evaluate')
 			return message, 'file', 'internal_error.html'
 
 		line = """\

@@ -106,7 +106,7 @@ class HTTP (object):
 				host = '['+host+']'
 
 			if self.port != 80:
-				host = host + ':' + str(port)
+				host = host + ':' + str(self.port)
 
 			self.header.replace('host','Host: ' + host)
 
