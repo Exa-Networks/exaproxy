@@ -10,6 +10,7 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 
 import select
 import socket
+import errno
 
 from exaproxy.network.errno_list import errno_block, errno_fatal
 from interface import IPoller
