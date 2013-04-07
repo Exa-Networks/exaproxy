@@ -29,7 +29,7 @@ class HTTP (object):
 		self.response = 0
 
 	def parse (self,transparent):
-		self.log.info('parsing %s' % str(self.raw).replace('\r','\\r').replace('\n','\\n'))
+		#self.log.info('parsing %s' % str(self.raw).replace('\r','\\r').replace('\n','\\n'))
 
 		try:
 			first, remaining = self.raw.split('\n',1)
@@ -63,8 +63,8 @@ class HTTP (object):
 				client = self.headers.get(self.forward, ':%s' % self.client)[0].split(':', 1)[1].split(',')[-1].strip()
 				if isip(client):
 					self.client = client
-				else:
-					self.log.info('Invalid address in Client identifier header: %s' % client)
+				#else:
+				#	self.log.info('Invalid address in Client identifier header: %s' % client)
 
 			encoding = self.headers.get('transfer-encoding', [':'])[0].split(':', 1)[1].strip()
 			content_length = int(self.headers.get('content-length', [':0'])[0].split(':',1)[1].strip())
