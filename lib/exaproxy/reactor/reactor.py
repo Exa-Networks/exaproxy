@@ -68,11 +68,12 @@ class Reactor(object):
 			# incoming opening requests from clients
 			for client in events.get('opening_client',[]):
 				client_id, peer, request, data, source = self.client.readRequest(client)
+
 				if request:
 					# we have a new request - decide what to do with it
 					self.decider.request(client_id, peer, request, source)
 
-				elif request is None:
+				elif request is None and client_id is not None:
 					if source == 'proxy':
 						self.proxy.notifyClose(client)
 					elif source == 'web':
@@ -96,7 +97,7 @@ class Reactor(object):
 						else:
 							self.client.uncorkUploadByName(client_id)
 
-				elif data is None:
+				elif data is None and client_id is not None:
 					self.content.endClientDownload(client_id)
 					if source == 'proxy':
 						self.proxy.notifyClose(client)
@@ -104,22 +105,42 @@ class Reactor(object):
 						self.web.notifyClose(client)
 
 
+			# clients we can write buffered data to
+			for client in events.get('write_client',[]):
+				status, buffer_change, name, source = self.client.sendDataBySocket(client, '')
+
+				if status is None and name is not None:
+					self.content.endClientDownload(name)
+					if source == 'proxy':
+						self.proxy.notifyClose(client)
+					elif source == 'web':
+						self.web.notifyClose(client)
+
+				if buffer_change:
+					# status should be False - we're here because we flushed buffered data
+					if not status:    # No buffer
+						self.content.uncorkClientDownload(name)
+
+					else:         # Buffering
+						self.content.corkClientDownload(name)
+
+
 			# incoming data - web pages
 			for fetcher in events.get('read_download',[]):
 				client_id, page_data = self.content.readData(fetcher)
 
 				# send received data to the client that requested it
-				status, buffer_change = self.client.sendDataByName(client_id, page_data)
+				status, buffer_change, client = self.client.sendDataByName(client_id, page_data)
 
 				# check to see if the client went away
-				if status is None:
+				if status is None and client is not None:
+					# We just closed our connection to the client and need to count the disconnect.
+					self.proxy.notifyClose(client_id)
+
 					if page_data is not None:
 						# The client disconnected? Close our connection to the remote webserver.
 						# We'll be notified of the client disconnect so don't count it here
 						self.content.endClientDownload(client_id)
-					else:
-						# We just closed our connection to the client and need to count the disconnect.
-						self.proxy.notifyClose(client_id)
 
 				elif buffer_change:
 					# status should be true here - we don't read from the server when buffering
@@ -181,32 +202,13 @@ class Reactor(object):
 						else:
 							self.client.uncorkUploadByName(client_id)
 
-				elif data is None:
+				elif data is None and client is not None:
 					self.content.endClientDownload(client_id)
 					if source == 'proxy':
 						self.proxy.notifyClose(client)
 					elif source == 'web':
 						self.web.notifyClose(client)
 
-
-			# clients we can write buffered data to
-			for client in events.get('write_client',[]):
-				status, buffer_change, name, source = self.client.sendDataBySocket(client, '')
-
-				if status is None:
-					self.content.endClientDownload(name)
-					if source == 'proxy':
-						self.proxy.notifyClose(client)
-					elif source == 'web':
-						self.web.notifyClose(client)
-
-				if buffer_change:
-					# status should be False - we're here because we flushed buffered data
-					if not status:    # No buffer
-						self.content.uncorkClientDownload(name)
-
-					else:         # Buffering
-						self.content.corkClientDownload(name)
 
 			# remote servers we can write buffered data to
 			for download in events.get('write_download',[]):
@@ -226,8 +228,15 @@ class Reactor(object):
 
 				if client_id in self.client:
 					if response:
-						status, buffer_change = self.client.sendDataByName(client_id, response)
-						if buffer_change:
+						status, buffer_change, client = self.client.sendDataByName(client_id, response)
+						if status is None and client is not None:
+							# We just closed our connection to the client and need to count the disconnect.
+							self.proxy.notifyClose(client_id)
+
+							if page_data is not None:
+								self.content.endClientDownload(client_id)
+
+						elif buffer_change:
 							# status should be True if we're here
 							if status:
 								self.content.corkClientDownload(client_id)

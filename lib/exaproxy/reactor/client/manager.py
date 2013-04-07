@@ -169,9 +169,8 @@ class ClientManager (object):
 			res = client.writeData(data)
 
 			if res is None:
-				# close the client connection only if sendDataBySocket is not due to be called
-				if client.sock not in self.buffered:
-					self.cleanup(client.sock, name)
+				# we cannot write to the client so clean it up
+				self.cleanup(client.sock, name)
 
 				buffered, had_buffer, sent = None, None, 0
 				#self.total_sent += sent
@@ -206,7 +205,7 @@ class ClientManager (object):
 			result = None
 			buffer_change = None
 
-		return result, buffer_change
+		return result, buffer_change, client
 
 
 	def startData(self, name, data, remaining):
@@ -259,9 +258,8 @@ class ClientManager (object):
 					content = None
 
 			else:
-				# close the client connection only if sendDataBySocket is not due to be called
-				if client.sock not in self.buffered:
-					self.cleanup(client.sock, name)
+				# we cannot write to the client so clean it up
+				self.cleanup(client.sock, name)
 
 				buffered, had_buffer = None, None
 				content = None
@@ -311,6 +309,8 @@ class ClientManager (object):
 			self.poller.removeReadSocket('opening_client', client.sock)
 
 			client.shutdown()
+		else:
+			self.log.error('COULD NOT CLEAN UP SOCKET %s' % sock)
 
 		if sock in self.buffered:
 			self.buffered.remove(sock)
