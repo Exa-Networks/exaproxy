@@ -6,6 +6,8 @@ Version explained:
 Version 1.1.0 - th of March 2013
  * Fix: many pep8
  * Fix: missing import, use of undeclared variables
+ * Improvement: better web interface menu
+ * Improvement: internal values are available using json
 
 Version 1.0.7 - 4th of March 2013
  * Fix: a critical bug when counting file descriptor usage
