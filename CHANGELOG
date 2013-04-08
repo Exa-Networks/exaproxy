@@ -3,7 +3,8 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
-Version 1.1.0 - th of March 2013
+Version 1.0.8 - 8th of April 2013
+ * Fix: a critical bug when counting file descriptor usage
  * Fix: many pep8
  * Fix: missing import, use of undeclared variables
  * Improvement: better web interface menu
