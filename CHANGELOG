@@ -3,6 +3,9 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
+Version 1.0.9 - th of 2013
+ * Fix: make sure the program always have data to display in the web interface
+
 Version 1.0.8 - 8th of April 2013
  * Fix: a critical bug when counting file descriptor usage
  * Fix: many pep8
