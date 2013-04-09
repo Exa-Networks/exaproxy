@@ -214,7 +214,7 @@ class Supervisor(object):
 				self._shutdown = True
 			except OSError,e:
 				# XXX: we need to stop listening and re-fork ourselves
-				if e.errno == 24: #Too many open files
+				if e.errno == 24:  # Too many open files
 					self.log.critical('Too many opened files, shutting down')
 					self._shutfown = True
 				else:
@@ -283,8 +283,8 @@ class Supervisor(object):
 			self.proxy.stop()  # accept no new proxy connections
 			self.manager.stop()  # shut down redirector children
 			os.kill(os.getpid(),signal.SIGALRM)
-			self.content.stop() # stop downloading data
-			self.client.stop() # close client connections
+			self.content.stop()  # stop downloading data
+			self.client.stop()  # close client connections
 			self.pid.remove()
 		except KeyboardInterrupt:
 			self.log.info('^C received while shutting down. Exiting immediately because you insisted.')

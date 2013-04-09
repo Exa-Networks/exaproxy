@@ -44,8 +44,8 @@ class RedirectorManager (object):
 		worker = Redirector(self.configuration,wid,self.queue,self.program)
 		self.poller.addReadSocket('read_workers', worker.response_box_read)
 		self.worker[wid] = worker
-		self.log.debug("added a worker")
-		self.log.debug("we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
+		self.log.info("added a worker")
+		self.log.info("we have %d workers. defined range is ( %d / %d )" % (len(self.worker),self.low,self.high))
 		self.worker[wid].start()
 
 	def spawn (self,number=1):
@@ -62,7 +62,7 @@ class RedirectorManager (object):
 		self.spawn(number)
 
 	def reap (self,wid):
-		self.log.debug('we are killing worker %s' % wid)
+		self.log.info('we are killing worker %s' % wid)
 		worker = self.worker[wid]
 		self.worker.pop(wid)
 		self.closing[wid] = worker
@@ -113,7 +113,7 @@ class RedirectorManager (object):
 		if size < num_workers:
 			if size <= self.low:
 				return
-			self.log.debug("we have too many workers, killing the oldest")
+			self.log.info("we have too many workers, killing the oldest")
 			# if we have to kill one, at least stop the one who had the most chance to memory leak :)
 			worker = self._oldest()
 			if worker:
