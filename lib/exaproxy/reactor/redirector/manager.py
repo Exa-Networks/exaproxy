@@ -109,6 +109,12 @@ class RedirectorManager (object):
 		size = self.nbq
 		num_workers = len(self.worker)
 
+		# bad we are bleeding workers !
+		if num_workers < self.low:
+			self.log.info("we lost some workers, respawing")
+			self.spawn(self.low-num_workers)
+			return
+
 		# we are now overprovisioned
 		if size < num_workers:
 			if size <= self.low:
@@ -120,13 +126,9 @@ class RedirectorManager (object):
 				self.reap(worker.wid)
 		# we need more workers
 		else:
-			# bad we are bleeding workers !
-			if num_workers < self.low:
-				self.log.info("we lost some workers, respawing")
-				self.respawn()
 			# nothing we can do we have reach our limit
 			if num_workers >= self.high:
-				self.log.warning("we need more workers by we reach our ceiling ! help !")
+				self.log.warning("we need more workers but we reached our ceiling ! help ! %d request are queued" % size)
 				return
 			# try to figure a good number to add ..
 			# no less than one, no more than to reach self.high, lower between self.low and a quarter of the allowed growth
