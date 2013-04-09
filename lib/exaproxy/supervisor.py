@@ -111,6 +111,8 @@ class Supervisor(object):
 		signal.signal(signal.SIGTRAP, self.sigtrap)
 		signal.signal(signal.SIGABRT, self.sigabrt)
 
+		# make sure we always have data in history, here as record() requires self to be partially initialised to run
+		self.monitor.record()
 
 	def sigterm (self,signum, frame):
 		self.signal_log.info('SIG TERM received, shutdown request')

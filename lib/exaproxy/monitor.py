@@ -17,7 +17,6 @@ class Monitor (object):
 		self._supervisor = supervisor
 		self._container = _Container(supervisor)
 		self.history = []
-		self.record()  # make sure we always have data in history
 
 	def introspection (self,objects):
 		obj = self._container
