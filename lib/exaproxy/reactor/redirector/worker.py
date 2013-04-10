@@ -111,11 +111,16 @@ class Redirector (Thread):
 	def _createProcess (self):
 		if not self.enabled:
 			return
+
+		def preexec():  # Don't forward signals.
+			os.setpgrp()
+
 		try:
 			process = subprocess.Popen([self.program,],
 				stdin=subprocess.PIPE,
 				stdout=subprocess.PIPE,
 				universal_newlines=self.universal,
+				preexec_fn = preexec,
 			)
 			self.log.debug('spawn process %s' % self.program)
 		except KeyboardInterrupt:
@@ -345,14 +350,14 @@ Encapsulated: req-hdr=0, null-body=%d
 			try:
 				# The timeout is really caused by the SIGALARM sent on the main thread every second
 				# BUT ONLY IF the timeout is present in this call
-				data = self.request_box.get(2)
+				data = self.request_box.get(timeout=2)
 			except Empty:
 				if self.enabled:
 					if not self.process or self.process.poll() is not None:
 						if self.running:
-							self.log.error('forked process died !')
+							self.log.error('stopping the worker as the forked process exited !')
 						self.running = False
-						continue
+				continue
 			except ValueError:
 				self.log.error('Problem reading from request_box')
 				continue
@@ -366,7 +371,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			if self.enabled:
 				if not self.process or self.process.poll() is not None:
 					if self.running:
-						self.log.error('forked process died !')
+						self.log.error('cleanly stopping the worker, as the forked process died on us !')
 					self.running = False
 					if source != 'nop':
 						self.respond(Respond.requeue(client_id, peer, header, source))
