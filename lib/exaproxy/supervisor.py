@@ -174,7 +174,7 @@ class Supervisor(object):
 			try:
 				if self._toggle_debug:
 					self._toggle_debug = False
-					self.log_writer.toggle()
+					self.log_writer.toggleDebug()
 
 				if self._shutdown:
 					self._shutdown = False
