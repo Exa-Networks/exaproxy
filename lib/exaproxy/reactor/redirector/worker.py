@@ -227,7 +227,7 @@ Encapsulated: req-hdr=0, null-body=%d
 		# QUICK and DIRTY, let do a intercept using the CONNECT syntax
 		if headers.startswith('CONNECT'):
 			_ = headers.replace('\r\n','\n').split('\n\n',1)
-			if _[1]: # is not an empty string
+			if _[1]:  # is not an empty string
 				connect = _[0]
 				headers = _[1]
 				request = Request(connect.split('\n')[0]).parse()
@@ -255,7 +255,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 	def _classify_url (self, message, headers, tainted):
 		if not self.process:
-			self.log.error('No more process to evaluate: %s' % str(squid))
+			self.log.error('No more process to evaluate message')
 			return message, 'file', 'internal_error.html', ''
 
 		try:
@@ -372,6 +372,14 @@ Encapsulated: req-hdr=0, null-body=%d
 						self.respond(Respond.requeue(client_id, peer, header, source))
 					break
 
+			if not self.running:
+				if source != 'nop':
+					self.log.warning('Consumed a message before we knew we should stop.')
+
+			if source == 'nop':
+				continue  # /break
+
+			# This code does nothing ATM, as self.stats_timestamp is always null
 			stats_timestamp = self.stats_timestamp
 			if stats_timestamp:
 				# Is this actually atomic as I am guessing?
@@ -475,7 +483,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.request)
 				continue
 
-			self.respond(Respond.http(client_id, http('405', ''))) # METHOD NOT ALLOWED
+			self.respond(Respond.http(client_id, http('405', '')))  # METHOD NOT ALLOWED
 			self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
 			continue
 

@@ -135,7 +135,7 @@ class Supervisor(object):
 
 	def sigusr2 (self,signum, frame):
 		self.signal_log.info('SIG USR2 received, increase worker number')
-		self._increase_spawn_limit = True
+		self._increase_spawn_limit += 1
 
 	def sigabrt (self,signum, frame):
 		self.signal_log.info('SIG INFO received, refork request')
