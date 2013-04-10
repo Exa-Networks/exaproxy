@@ -66,7 +66,7 @@ class RedirectorManager (object):
 		self.closing.add(wid)
 		worker.stop()  # will cause the worker to stop when it can
 
-	def reduce (self):
+	def decrease (self):
 		if self.low < len(self.worker):
 			worker = self._oldest()
 			if worker:

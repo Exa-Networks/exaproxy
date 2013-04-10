@@ -194,7 +194,7 @@ class Supervisor(object):
 					self.manager.high = max(1,self.manager.high-number)
 					self.manager.low = min(self.manager.high,self.manager.low)
 					for _ in range(number):
-						self.manager.reduce()
+						self.manager.decrease()
 
 				if self._pdb:
 					self._pdb = False
