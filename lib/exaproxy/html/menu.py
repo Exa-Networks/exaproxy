@@ -163,6 +163,7 @@ _menu = """\
 			<li><a href="/performance/transfered.html">transfered</a></li>
 			<li><a href="/performance/loops.html">loops</a></li>
 			<li><a href="/performance/events.html">events</a></li>
+			<li><a href="/performance/queue.html">queue</a></li>
 		</ul>
 	</li>
 	<li><a href="/performance.html">about</a>

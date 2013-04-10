@@ -38,6 +38,7 @@ options_performance = [
 	('/performance/transfered.html',  'Transfered'),
 	('/performance/loops.html',       'Loops'),
 	('/performance/events.html',      'Events'),
+	('/performance/queue.html',       'Queue'),
 ]
 
 options_about = [
@@ -187,6 +188,17 @@ class Page (object):
 			True,
 		)
 
+	def _queue (self):
+		return graph(
+			self.monitor,
+			'Proxy Bytes Sent / seconds',
+			20000,
+			[
+				'running.queue.size',
+			],
+			True,
+		)
+
 	def _email (self,args):
 		if self.email_sent:
 			return '<center><b>You can only send one email per time ExaProxy is started</b></center>'
@@ -261,6 +273,8 @@ class Page (object):
 				return menu.performance(self._loops())
 			if subsection == 'events':
 				return menu.performance(self._events())
+			if subsection == 'queue':
+				return menu.performance(self._queue())
 			return menu.performance(index)
 
 		if section == 'about':
