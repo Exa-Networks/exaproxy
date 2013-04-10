@@ -28,6 +28,8 @@ class Reactor(object):
 		self.log = Logger('supervisor', configuration.log.supervisor)
 
 	def run(self):
+		self.running = True
+
 		poller = self.poller
 
 #		count = 0

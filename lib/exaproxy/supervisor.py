@@ -112,7 +112,6 @@ class Supervisor(object):
 		self._decrease_spawn_limit = 0
 		self._increase_spawn_limit = 0
 		self._refork = True
-		self._timer = False
 		self._pdb = False
 
 		signal.signal(signal.SIGTERM, self.sigterm)
@@ -155,7 +154,6 @@ class Supervisor(object):
 
 	def sigalrm (self,signum, frame):
 		self.signal_log.debug('SIG ALRM received, timed actions')
-		self._timer = True
 		self.reactor.running = False
 		signal.alarm(self.alarm_time)
 
@@ -214,18 +212,15 @@ class Supervisor(object):
 					pdb.set_trace()
 
 				# check for IO change with select
-				self.reactor.running = True
 				self.reactor.run()
 
 				# Quit on problems which can not be fixed (like running out of file descriptor)
 				#self._shutdown = not self.reactor.running
 
-				if self._timer:
-					self._timer = False
-					# save our monitoring stats
-					self.monitor.record()
-					# make sure we have enough workers
-					self.manager.provision()
+				# save our monitoring stats
+				self.monitor.record()
+				# make sure we have enough workers
+				self.manager.provision()
 
 			except KeyboardInterrupt:
 				self.log.info('^C received')
