@@ -212,13 +212,9 @@ class RedirectorManager (object):
 
 			if worker:
 				self.poller.removeReadSocket('read_workers', worker.response_box_read)
-			else:
-				worker = self.worker.pop(wid, None)
-
-			if worker:
+				self.closing.remove(wid)
 				worker.shutdown()
 				worker.join()
-				self.closing.remove(wid)
 
 		elif command == 'stats':
 			wid, timestamp, stats = decision
