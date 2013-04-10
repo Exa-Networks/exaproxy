@@ -9,6 +9,7 @@ Version 1.0.9 - th of 2013
  * Fix: bug with SIGTRAP
  * Fix: prevent harmful options with select reactor
  * Improvement: changed the worker thread queue to be non blocking
+ * Improvement: change exaproxy.redirector.minimum and exaproxy.redirector.maximum using the web interface
 
 Version 1.0.8 - 8th of April 2013
  * Fix: a critical bug when counting file descriptor usage

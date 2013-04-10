@@ -93,7 +93,7 @@ class Supervisor(object):
 		self.poller.setupWrite('opening_download')    # Opening connections
 
 		self.monitor = Monitor(self)
-		self.page = Page(self.monitor)
+		self.page = Page(self)
 		self.manager = RedirectorManager(
 			self.configuration,
 			self.poller,

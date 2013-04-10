@@ -116,7 +116,6 @@ class Monitor (object):
 			'running.proxy.download.opening': len(content.opening),
 			'running.proxy.download.established': len(content.established),
 			'running.proxy.download.clients' : len(content.byclientid),
-			'running.exiting' : bool(not reactor.running or self._supervisor._refork),
 			'running.transfer.request' : client.total_sent,
 			'running.transfer.download' : content.total_sent,
 			'running.load.loops' : reactor.nb_loops,

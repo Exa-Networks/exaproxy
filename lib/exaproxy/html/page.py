@@ -77,8 +77,9 @@ _listing = """\
 
 class Page (object):
 
-	def __init__(self,monitor):
-		self.monitor = monitor
+	def __init__(self,supervisor):
+		self.supervisor = supervisor
+		self.monitor = supervisor.monitor
 		self.email_sent = False
 
 	def _introspection (self,objects):
@@ -196,6 +197,20 @@ class Page (object):
 			True,
 		)
 
+	def _update (self):
+		form = '<form action="/update/commit" method="get">%s: <input type="text" name="%s" value="%s"><input type="submit" value="Submit"></form>'
+
+		change = {
+			'exaproxy.redirector.minimum' : self.supervisor.manager.low,
+			'exaproxy.redirector.maximum' : self.supervisor.manager.high,
+		}
+
+		forms = []
+		for name in ('exaproxy.redirector.minimum', 'exaproxy.redirector.maximum'):
+			value = change[name]
+			forms.append(form % (name,name,value))
+		return '<pre style="margin-left:40px;">\n' + '\n'.join(forms)
+
 	def _email (self,args):
 		if self.email_sent:
 			return '<center><b>You can only send one email per time ExaProxy is started</b></center>'
@@ -225,11 +240,11 @@ class Page (object):
 		elif not path.endswith('.html'):
 			if path == '/humans.txt':
 				return humans.txt
-			if not path.startswith('/json'):
-				return menu('<center><b>invalid extension</b></center>')
-			sections = path[1:].split('/') + ['']
+			if path not in ('/json','/json/running','/json/configuration','/update/commit'):
+				return menu('<center><b>invalid url</b></center>')
+			sections = path[1:].split('/',1) + ['']
 		else:
-			sections = path[1:-5].split('/') + ['']
+			sections = path[1:-5].split('/',1) + ['']
 
 		if not sections[0]:
 			return menu(index)
@@ -273,6 +288,31 @@ class Page (object):
 			if subsection == 'queue':
 				return menu(self._queue())
 			return menu(index)
+
+		if section == 'update':
+			if subsection == 'commit':
+				if '=' in args:
+					key,value = args.split('=',1)
+
+					if key == 'exaproxy.redirector.minimum':
+						if value.isdigit():  # this prevents negative values
+							setting = int(value)
+							if setting > self.supervisor.manager.high:
+								return menu(self._update() + '<div style="color: red; padding-top: 3em;">value is higher than exaproxy.redirector.maximum</div>')
+							self.supervisor.manager.low = setting
+							return menu(self._update() + '<div style="color: green; padding-top: 3em;">changed successfully</div>')
+
+					if key == 'exaproxy.redirector.maximum':
+						if value.isdigit():
+							setting = int(value)
+							if setting < self.supervisor.manager.low:
+								return menu(self._update() + '<div style="color: red; padding-top: 3em;">value is lower than exaproxy.redirector.minimum</div>')
+							self.supervisor.manager.high = setting
+							return menu(self._update() + '<div style="color: green; padding-top: 3em;">changed successfully</div>')
+
+					return menu(self._update() + '<div style="color: red; padding-top: 3em;">invalid request</div>')
+
+			return menu(self._update())
 
 		if section == 'about':
 			if subsection == 'email':
