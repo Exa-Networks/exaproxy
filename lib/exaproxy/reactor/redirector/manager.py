@@ -212,7 +212,8 @@ class RedirectorManager (object):
 
 			if worker:
 				self.poller.removeReadSocket('read_workers', worker.response_box_read)
-				self.closing.remove(wid)
+				if wid in self.closing:
+					self.closing.remove(wid)
 				worker.shutdown()
 				worker.join()
 
