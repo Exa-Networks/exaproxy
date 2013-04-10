@@ -42,6 +42,18 @@ class Supervisor(object):
 		self.log = Logger('supervisor', configuration.log.supervisor)
 		self.log.error('Starting exaproxy version %s' % configuration.proxy.version)
 
+		if configuration.daemon.reactor == 'epoll' and not sys.platform.startswith('linux'):
+			print >> sys.stderr
+			print >> sys.stderr, 'warning: exaproxy.daemon.reactor can only be epoll on Linux, changing the reactor to select'
+			configuration.daemon.reactor = 'select'
+
+		if configuration.daemon.reactor == 'select' and configuration.daemon.filemax + configuration.redirector.maximum > 1000:
+			print >> sys.stderr
+			print >> sys.stderr, 'error: Please change exaproxy.daemon.filemax to something lower than %d' % configuration.daemon.filemax
+			print >> sys.stderr, 'error: Otherwise it is likely that under load, the program will crash.'
+			print >> sys.stderr, 'error: (OS limit is 1024 and exaproxy requires some filedescriptors internally too.)'
+			sys.exit(1)
+
 		self.signal_log = Logger('signal', configuration.log.signal)
 		self.log_writer = SysLogWriter('log', configuration.log.destination, configuration.log.enable, level=configuration.log.level)
 		self.usage_writer = SysLogWriter('usage', configuration.usage.destination, configuration.usage.enable, level=configuration.usage.level)
