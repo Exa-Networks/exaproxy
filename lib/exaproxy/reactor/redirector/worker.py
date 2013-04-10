@@ -372,12 +372,11 @@ Encapsulated: req-hdr=0, null-body=%d
 						self.respond(Respond.requeue(client_id, peer, header, source))
 					break
 
-			if not self.running:
-				if source != 'nop':
-					self.log.warning('Consumed a message before we knew we should stop.')
-
 			if source == 'nop':
 				continue  # /break
+
+			if not self.running:
+				self.log.warning('Consumed a message before we knew we should stop.')
 
 			# This code does nothing ATM, as self.stats_timestamp is always null
 			stats_timestamp = self.stats_timestamp
@@ -390,12 +389,6 @@ Encapsulated: req-hdr=0, null-body=%d
 				# we still have work to do after this so don't continue
 				stats = self._stats()
 				self.respond(Respond.stats(self.wid, stats))
-
-			if not self.running:
-				self.log.debug('Consumed a message before we knew we should stop. Handling it before hangup')
-
-			if source == 'nop':
-				continue
 
 			message = HTTP(self.configuration,header,peer)
 			if not message.parse(self._transparent):

@@ -97,8 +97,8 @@ class Supervisor(object):
 		self._shutdown = False
 		self._reload = False
 		self._toggle_debug = False
-		self._decrease_spawn_limit = False
-		self._increase_spawn_limit = False
+		self._decrease_spawn_limit = 0
+		self._increase_spawn_limit = 0
 		self._refork = True
 		self._timer = False
 		self._pdb = False
@@ -131,7 +131,7 @@ class Supervisor(object):
 
 	def sigusr1 (self,signum, frame):
 		self.signal_log.info('SIG USR1 received, decrease worker number')
-		self._decrease_spawn_limit = True
+		self._decrease_spawn_limit += 1
 
 	def sigusr2 (self,signum, frame):
 		self.signal_log.info('SIG USR2 received, increase worker number')
@@ -181,14 +181,20 @@ class Supervisor(object):
 					# just handle current open connection
 
 				if self._increase_spawn_limit:
-					self._increase_spawn_limit = False
-					if self.manager.low == self.manager.high: self.manager.high += 1
-					self.manager.low = min(self.manager.high,self.manager.low+1)
+					number = self._increase_spawn_limit
+					self._increase_spawn_limit = 0
+					self.manager.low += number
+					self.manager.high = max(self.manager.low,self.manager.high)
+					for _ in range(number):
+						self.manager.increase()
 
 				if self._decrease_spawn_limit:
-					self._decrease_spawn_limit = False
-					if self.manager.high >1: self.manager.high -= 1
+					number = self._decrease_spawn_limit
+					self._decrease_spawn_limit = 0
+					self.manager.high = max(1,self.manager.high-number)
 					self.manager.low = min(self.manager.high,self.manager.low)
+					for _ in range(number):
+						self.manager.reduce()
 
 				if self._pdb:
 					self._pdb = False

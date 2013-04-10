@@ -22,12 +22,11 @@ class RedirectorManager (object):
 		self.high = configuration.redirector.maximum      # maximum numbe of workers at all time
 		self.program = configuration.redirector.program   # what program speaks the squid redirector API
 
-		self.nbq = 0                      # number of request waiting to be filtered
 		self.nextid = 1                   # incremental number to make the name of the next worker
 		self.queue = Queue()              # queue with HTTP headers to process
 		self.poller = poller              # poller interface that checks for events on sockets
 		self.worker = {}                  # our workers threads
-		self.closing = {}                 # workers that are currently closing and must be joined with when they are ready
+		self.closing = set()              # workers that are currently closing
 		self.running = True               # we are running
 
 		self.log = Logger('manager', configuration.log.manager)
@@ -64,9 +63,18 @@ class RedirectorManager (object):
 	def reap (self,wid):
 		self.log.info('we are killing worker %s' % wid)
 		worker = self.worker[wid]
-		self.worker.pop(wid)
-		self.closing[wid] = worker
+		self.closing.add(wid)
 		worker.stop()  # will cause the worker to stop when it can
+
+	def reduce (self):
+		if self.low < len(self.worker):
+			worker = self._oldest()
+			if worker:
+				self.reap(worker.wid)
+
+	def increase (self):
+		if len(self.worker) < self.high:
+			self.spawn()
 
 	def start (self):
 		"""spawn our minimum number of workers"""
@@ -76,7 +84,7 @@ class RedirectorManager (object):
 	def stop (self):
 		"""tell all our worker to stop reading the queue and stop"""
 		self.running = False
-		threads = self.worker.values() + self.closing.values()
+		threads = self.worker.values()
 		if len(self.worker):
 			self.log.info("stopping %d workers." % len(self.worker))
 			for wid in set(self.worker):
@@ -88,7 +96,6 @@ class RedirectorManager (object):
 				thread.join()
 
 		self.worker = {}
-		self.closing = {}
 
 	def _oldest (self):
 		"""find the oldest worker"""
@@ -96,7 +103,7 @@ class RedirectorManager (object):
 		past = time.time()
 		for wid in set(self.worker):
 			creation = self.worker[wid].creation
-			if creation < past:
+			if creation < past and wid not in self.closing:
 				past = creation
 				oldest = self.worker[wid]
 		return oldest
@@ -106,7 +113,7 @@ class RedirectorManager (object):
 		if not self.running:
 			return
 
-		size = self.nbq
+		size = self.queue.qsize()
 		num_workers = len(self.worker)
 
 		# bad we are bleeding workers !
@@ -119,7 +126,7 @@ class RedirectorManager (object):
 		if size < num_workers:
 			if size <= self.low:
 				return
-			self.log.info("we have too many workers, killing the oldest")
+			self.log.info("we have too many workers, stopping the oldest")
 			# if we have to kill one, at least stop the one who had the most chance to memory leak :)
 			worker = self._oldest()
 			if worker:
@@ -128,7 +135,7 @@ class RedirectorManager (object):
 		else:
 			# nothing we can do we have reach our limit
 			if num_workers >= self.high:
-				self.log.warning("we need more workers but we reached our ceiling ! help ! %d request are queued" % size)
+				self.log.warning("help ! we need more workers but we reached our ceiling ! %d request are queued for %d processes" % (size,num_workers))
 				return
 			# try to figure a good number to add ..
 			# no less than one, no more than to reach self.high, lower between self.low and a quarter of the allowed growth
@@ -137,12 +144,10 @@ class RedirectorManager (object):
 			self.spawn(nb_to_add)
 
 	def request(self, client_id, peer, request, source):
-		self.nbq += 1
 		return self.queue.put((client_id,peer,request,source,False))
 
 	def getDecision(self, box):
 		# NOTE: reads may block if we send badly formatted data
-		self.nbq -=1
 		try:
 			r_buffer = box.read(3)
 			while r_buffer.isdigit():
@@ -208,11 +213,12 @@ class RedirectorManager (object):
 			if worker:
 				self.poller.removeReadSocket('read_workers', worker.response_box_read)
 			else:
-				worker = self.closing.pop(wid, None)
+				worker = self.worker.pop(wid, None)
 
 			if worker:
 				worker.shutdown()
 				worker.join()
+				self.closing.remove(wid)
 
 		elif command == 'stats':
 			wid, timestamp, stats = decision
