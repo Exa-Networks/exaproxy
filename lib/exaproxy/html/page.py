@@ -17,36 +17,33 @@ from .licence import licence
 from .humans import humans
 
 
-options = [
-	('/index.html',        'Home',),
-	('/information.html',  'Information'),
-	('/performance.html',  'Performance'),
-	('/about.html',        'About'),
-]
+options = (
+	('/index.html', 'Home', (
+	)),
+	('/information.html', 'Information', (
+		('/information/introspection/supervisor.html', 'Introspection'),
+		('/information/configuration.html', 'Configuration'),
+		('/information/statistics.html', 'Statistics'),
+	)),
+	('/performance.html', 'Performance', (
+		('/performance/processes.html', 'Processes'),
+		('/performance/connections.html', 'Connections'),
+		('/performance/clients.html', 'Clients'),
+		('/performance/servers.html', 'Servers'),
+		('/performance/transfered.html', 'Transfered'),
+		('/performance/loops.html', 'Loops'),
+		('/performance/events.html', 'Events'),
+		('/performance/queue.html', 'Queue'),
+	)),
+	('/update.html', 'Update', (
+	)),
+	('/about.html', 'About', (
+		('/about/email.html', 'Email'),
+		('/about/licence.html', 'Licence'),
+	)),
+)
 
-options_information = [
-	('/information/introspection/supervisor.html',    'Introspection'),
-	('/information/configuration.html', 'Configuration'),
-	('/information/statistics.html',    'Statistics'),
-]
-
-options_performance = [
-	('/performance/processes.html',   'Processes'),
-	('/performance/connections.html', 'Connections'),
-	('/performance/clients.html',     'Clients'),
-	('/performance/servers.html',     'Servers'),
-	('/performance/transfered.html',  'Transfered'),
-	('/performance/loops.html',       'Loops'),
-	('/performance/events.html',      'Events'),
-	('/performance/queue.html',       'Queue'),
-]
-
-options_about = [
-	('/about/email.html',        'Email'),
-	('/about/licence.html',      'Licence'),
-]
-
-menu = Menu(options,options_information,options_performance,options_about)
+menu = Menu(options)
 
 
 _listing = """\
@@ -213,7 +210,7 @@ class Page (object):
 
 	def html (self,path):
 		if len(path) > 5000:
-			return menu.root('<center><b>path is too long</b></center>')
+			return menu('<center><b>path is too long</b></center>')
 
 		if path == '/':
 			path = '/index.html'
@@ -224,18 +221,18 @@ class Page (object):
 			args = ''
 
 		if not path.startswith('/'):
-			return menu.root('<center><b>invalid url</b></center>')
+			return menu('<center><b>invalid url</b></center>')
 		elif not path.endswith('.html'):
 			if path == '/humans.txt':
 				return humans.txt
 			if not path.startswith('/json'):
-				return menu.root('<center><b>invalid extension</b></center>')
+				return menu('<center><b>invalid extension</b></center>')
 			sections = path[1:].split('/') + ['']
 		else:
 			sections = path[1:-5].split('/') + ['']
 
 		if not sections[0]:
-			return menu.root(index)
+			return menu(index)
 		section = sections[0]
 		subsection = sections[1]
 
@@ -247,45 +244,45 @@ class Page (object):
 			return '{ "errror" : "invalid url", "valid-paths": [ "/json/running", "/json/configuration" ] }'
 
 		if section == 'index':
-			return menu.root(index)
+			return menu(index)
 
 		if section == 'information':
 			if subsection == 'introspection':
-				return menu.information(self._introspection(sections[2:-1]))
+				return menu(self._introspection(sections[2:-1]))
 			if subsection == 'configuration':
-				return menu.information(self._configuration())
+				return menu(self._configuration())
 			if subsection == 'statistics':
-				return menu.information(self._statistics())
-			return menu.information(index)
+				return menu(self._statistics())
+			return menu(index)
 
 		if section == 'performance':
 			if subsection == 'processes':
-				return menu.performance(self._processes())
+				return menu(self._processes())
 			if subsection == 'connections':
-				return menu.performance(self._connections())
+				return menu(self._connections())
 			if subsection == 'servers':
-				return menu.performance(self._sent())
+				return menu(self._sent())
 			if subsection == 'clients':
-				return menu.performance(self._received())
+				return menu(self._received())
 			if subsection == 'transfered':
-				return menu.performance(self._transfer())
+				return menu(self._transfer())
 			if subsection == 'loops':
-				return menu.performance(self._loops())
+				return menu(self._loops())
 			if subsection == 'events':
-				return menu.performance(self._events())
+				return menu(self._events())
 			if subsection == 'queue':
-				return menu.performance(self._queue())
-			return menu.performance(index)
+				return menu(self._queue())
+			return menu(index)
 
 		if section == 'about':
 			if subsection == 'email':
 				if args:
-					return menu.about(self._email(args))
-				return menu.about(mail.form)
+					return menu(self._email(args))
+				return menu(mail.form)
 			if subsection == 'licence':
-				return menu.about(licence)
-			return menu.about('')
+				return menu(licence)
+			return menu('')
 
 		if section == 'humans':
-			return menu.root(humans.html)
-		return menu.root('')
+			return menu(humans.html)
+		return menu('')

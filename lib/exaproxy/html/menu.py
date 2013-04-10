@@ -144,57 +144,32 @@ _menu = """\
 	droplinemenu.buildmenu("mydroplinemenu");
 </script>
 
-<div id="mydroplinemenu" class="droplinebar">
-<ul>
-	<li><a href="/index.html">home</a></li>
-	<li><a href="/information.html">information</a>
-		<ul>
-			<li><a href="/information/introspection/supervisor.html">introspection</a></li>
-			<li><a href="/information/configuration.html">configuration</a></li>
-			<li><a href="/information/statistics.html">statistics</a></li>
-		</ul>
-	</li>
-	<li><a href="/performance.html">performance</a>
-		<ul>
-			<li><a href="/performance/processes.html">processes</a></li>
-			<li><a href="/performance/connections.html">connections</a></li>
-			<li><a href="/performance/clients.html">clients</a></li>
-			<li><a href="/performance/servers.html">servers</a></li>
-			<li><a href="/performance/transfered.html">transfered</a></li>
-			<li><a href="/performance/loops.html">loops</a></li>
-			<li><a href="/performance/events.html">events</a></li>
-			<li><a href="/performance/queue.html">queue</a></li>
-		</ul>
-	</li>
-	<li><a href="/performance.html">about</a>
-		<ul>
-			<li><a href="/about/email.html">about</a></li>
-			<li><a href="/about/licence.html">licence</a></li>
-		</ul>
-	</li>
-</ul>
-</div>
+*menu*
 """
 
 _title = 'ExaProxy Monitoring'
 _image = '<a href="http://www.exa-networks.co.uk/" target="exa-networks">%s</a>' % png(logo)
 
 
-class Menu (object):
-	def __init__ (self,options,options_information,options_performance,options_about):
-		self._html_root = html(_title,'','#9999FF',_image,_menu,'*string*').replace('%','%%').replace('*string*','%s')
-		self._html_information = html(_title,'','#9999FF',_image,_menu,'*string*').replace('%','%%').replace('*string*','%s')
-		self._html_performance = html(_title,'','#9999FF',_image,_menu,'*string*').replace('%','%%').replace('*string*','%s')
-		self._html_about = html(_title,'','#9999FF',_image,_menu,'*string*').replace('%','%%').replace('*string*','%s')
+def Menu (options):
+	menu = '<div id="mydroplinemenu" class="droplinebar">\n<ul>\n'
 
-	def root (self,page):
-		return self._html_root % page
+	for url, name, section in options:
+		menu += '\t<li><a href="%s">%s</a>\n' % (url,name)
 
-	def performance (self,page):
-		return self._html_performance % page
+		if section:
+			menu += '\t\t<ul>\n'
+			for url, name in section:
+				menu += '\t\t\t<li><a href="%s">%s</a></li>\n' % (url,name)
+			menu += '\t\t</ul>\n'
 
-	def information (self,page):
-		return self._html_information % page
+		menu += '\t</li>\n'
 
-	def about (self,page):
-		return self._html_about % page
+	menu += '</ul>\n</div>\n'
+
+	_html = html(_title,'','#9999FF',_image,_menu,'*string*').replace('%','%%').replace('*string*','%s').replace('*menu*',menu)
+
+	def _lambda (page):
+		return _html % page
+
+	return _lambda
