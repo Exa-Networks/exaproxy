@@ -22,7 +22,6 @@ class Logger:
 	def log (self, text, loglevel):
 		if self.active is True and loglevel <= self.loglevel:
 			self.mailbox.addMessage((self.name, loglevel, time.localtime(), text))
-
 			res = True
 		else:
 			res = None

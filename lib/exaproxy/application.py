@@ -54,6 +54,13 @@ def help ():
 	sys.stdout.write(' - 4 : exported value from the shell using underscore separated notation\n')
 	sys.stdout.write(' - 5 : the value in the ini configuration file\n')
 	sys.stdout.write('\n')
+	sys.stdout.write('The following UNIX signal are acted on :\n')
+	sys.stdout.write(' - SIGUSR1  : decrease the maximum number of processes\n')
+	sys.stdout.write(' - SIGUSR2  : increase the mininum number of processes\n')
+	sys.stdout.write(' - SIGTRAP  : toggle debgging\n')
+	sys.stdout.write(' - SIGHUP   : reload the configuration (not implemented yet)\n')
+	sys.stdout.write(' - SIGABORT : refork proccesses (not implemented yet)\n')
+	sys.stdout.write('\n')
 	sys.stdout.write('Valid configuration options are :\n')
 	sys.stdout.write('\n')
 	for line in default():
