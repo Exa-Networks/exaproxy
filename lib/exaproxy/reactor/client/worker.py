@@ -105,6 +105,10 @@ class Client (object):
 				size = None
 				break
 
+			else:
+				size = 0
+				break
+
 		return chunked, size
 
 
