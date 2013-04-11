@@ -119,8 +119,8 @@ class Supervisor(object):
 		signal.signal(signal.SIGALRM, self.sigalrm)
 		signal.signal(signal.SIGUSR1, self.sigusr1)
 		signal.signal(signal.SIGUSR2, self.sigusr2)
-		signal.signal(signal.SIGTRAP, self.sigtrap)
-		signal.signal(signal.SIGABRT, self.sigabrt)
+		#signal.signal(signal.SIGTRAP, self.sigtrap)
+		#signal.signal(signal.SIGABRT, self.sigabrt)
 
 		# make sure we always have data in history, here as record() requires self to be partially initialised to run
 		self.monitor.record()
