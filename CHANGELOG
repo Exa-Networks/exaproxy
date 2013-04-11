@@ -8,6 +8,7 @@ Version 1.0.9 - th of 2013
  * Fix: dynamically adding/removing processes using SIGUSR1/SIGUSR2 now works
  * Fix: bug with SIGTRAP
  * Fix: prevent harmful options with select reactor
+ * Fix: logging values are different between logging and syslog, was causing issues
  * Improvement: changed the worker thread queue to be non blocking
  * Improvement: change exaproxy.redirector.minimum and exaproxy.redirector.maximum using the web interface
 
