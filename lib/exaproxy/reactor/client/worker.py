@@ -298,12 +298,12 @@ class Client (object):
 
 			except socket.error, e:
 				if e.args[0] in errno_block:
-					#self.log.info('interrupted when trying to sent %d bytes, will retry' % len(data))
-					#self.log.info('reason: errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
+					self.log.info('interrupted when trying to sent %d bytes, will retry' % len(data))
+					self.log.info('reason: errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 					data = yield bool(w_buffer) or finished, had_buffer, 0
 				else:
-					self.log.critical('unexpected error writing on socket')
-					self.log.critical('reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
+					#self.log.critical('unexpected error writing on socket')
+					#self.log.critical('reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
 					yield None  # stop the client connection
 					break  # and don't come back
 
