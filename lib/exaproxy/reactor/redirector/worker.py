@@ -210,20 +210,33 @@ Encapsulated: req-hdr=0, null-body=%d
 				if length < 0:
 					return message, 'file', 'internal_error.html', ''
 				headers = self.process.stdout.read(length)
-			except ValueError:
-				for line in traceback.format_exc().split('\n'):
-					self.log.info(line)
+			except (ValueError,IndexError):
+				# IndexError can be raised with split()
+				# ValueError can be raised when converting to int and other bits
+				self.log.info('problem detected, the redirector program not send valid data')
+				self.log.info('returning to the client our internal error page even if we are not to blame.')
+				self.log.info('stopping this thread as we can not assume the processus will behave from now on.')
+				# for line in traceback.format_exc().split('\n'):
+				# 	self.log.info(line)
+				self.stop()
 				return message, 'file', 'internal_error.html', ''
 			except Exception:
-				for line in traceback.format_exc().split('\n'):
-					self.log.info(line)
+				self.log.info('problem detected, the redirector program not send valid data')
+				self.log.info('returning to the client our internal error page even if we are not to blame.')
+				self.log.info('stopping this thread as we can not assume the processus will behave from now on.')
+				# for line in traceback.format_exc().split('\n'):
+				# 	self.log.info(line)
+				self.stop()
 				return message, 'file', 'internal_error.html', ''
 		except IOError:
 			self.log.error('IO/Error when sending to process')
 			for line in traceback.format_exc().split('\n'):
 				self.log.info(line)
 			if tainted is False:
+				self.log.info('retrying ...')
 				return message, 'requeue', None, None
+			self.log.info('stopping this thread as we can not assume the processus will behave from now on.')
+			self.stop()
 			return message, 'file', 'internal_error.html', ''
 
 		if headers.startswith('HTTP/') and (headers.split() + [''])[1].isdigit():
