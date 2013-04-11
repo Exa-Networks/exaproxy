@@ -111,7 +111,7 @@ class Supervisor(object):
 		self._toggle_debug = False
 		self._decrease_spawn_limit = 0
 		self._increase_spawn_limit = 0
-		self._refork = True
+		self._refork = False
 		self._pdb = False
 
 		signal.signal(signal.SIGTERM, self.sigterm)
