@@ -53,6 +53,6 @@ Just browse the etc/exaproxy/redirector folder for many examples of what can be 
 * send requests to https://www.google.com to https://www.wolframalpha.com/ - just for fun :)
 
 This programs does not have any dependences on any third party libraries.
-Development is done on python 2.7, the code was made compatible with python 2.4.
+Development is done on python 2.7
 
 The documentation is at http://code.google.com/p/exaproxy/w/list
