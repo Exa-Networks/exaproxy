@@ -12,32 +12,26 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 
 import os
 import sys
-import syslog
+import logging
 import pwd
 
 class ConfigurationError (Exception):
 	pass
 
 _syslog_name_value = {
-	'LOG_EMERG'    : syslog.LOG_EMERG,
-	'LOG_ALERT'    : syslog.LOG_ALERT,
-	'LOG_CRIT'     : syslog.LOG_CRIT,
-	'LOG_ERR'      : syslog.LOG_ERR,
-	'LOG_WARNING'  : syslog.LOG_WARNING,
-	'LOG_NOTICE'   : syslog.LOG_NOTICE,
-	'LOG_INFO'     : syslog.LOG_INFO,
-	'LOG_DEBUG'    : syslog.LOG_DEBUG,
+	'CRITICAL'     : logging.CRITICAL,
+	'ERROR'        : logging.ERROR,
+	'WARNING'      : logging.WARNING,
+	'INFO'         : logging.INFO,
+	'DEBUG'        : logging.DEBUG,
 }
 
 _syslog_value_name = {
-	syslog.LOG_EMERG    : 'LOG_EMERG',
-	syslog.LOG_ALERT    : 'LOG_ALERT',
-	syslog.LOG_CRIT     : 'LOG_CRIT',
-	syslog.LOG_ERR      : 'LOG_ERR',
-	syslog.LOG_WARNING  : 'LOG_WARNING',
-	syslog.LOG_NOTICE   : 'LOG_NOTICE',
-	syslog.LOG_INFO     : 'LOG_INFO',
-	syslog.LOG_DEBUG    : 'LOG_DEBUG',
+	logging.CRITICAL   : 'CRITICAL',
+	logging.ERROR      : 'ERROR',
+	logging.WARNING    : 'WARNING',
+	logging.INFO       : 'INFO',
+	logging.DEBUG      : 'DEBUG',
 }
 
 
@@ -250,7 +244,7 @@ defaults = {
 	},
 	'log' : {
 		'enable'        : (value.boolean,value.lower,'true',               'enable traffic logging'),
-		'level'         : (value.syslog_value,value.syslog_name,'LOG_ERR', 'log message with at least the priority SYSLOG.<level>'),
+		'level'         : (value.syslog_value,value.syslog_name,'ERROR', 'log message with at least the priority logging.<level>'),
 		'destination'   : (value.unquote,value.quote,'stdout',             'where syslog should log'),
 		'signal'        : (value.boolean,value.lower,'true',               'log messages from the signal subsystem'),
 		'configuration' : (value.boolean,value.lower,'true',               'log messages from the configuration subsystem'),
@@ -266,7 +260,7 @@ defaults = {
 	},
 	'usage' : {
 		'enable'        : (value.boolean,value.lower,'false',              'enable traffic logging'),
-		'level'         : (value.syslog_value,value.syslog_name,'LOG_ERR', 'log message with at least the priority SYSLOG.<level>'),
+		'level'         : (value.syslog_value,value.syslog_name,'ERROR', 'log message with at least the priority SYSLOG.<level>'),
 		'destination'   : (value.syslog,value.quote,'stdout',              'where syslog should log'),
 		'port'          : (value.integer,value.nop,'8889',                 'port the usage logger listens on'),
 		'usage'         : (value.boolean,value.lower,'true',               'log messages from the usage subsystem'),

@@ -7,20 +7,20 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
 import time
-import syslog
+import logging
 
 from .message import message_store
 
 class Logger:
 	mailbox = message_store
 
-	def __init__ (self, name, active=True, loglevel=syslog.LOG_DEBUG):
+	def __init__ (self, name, active=True, loglevel=logging.DEBUG):
 		self.name = str(name)
 		self.active = active
 		self.loglevel = loglevel
 
 	def log (self, text, loglevel):
-		if self.active is True and loglevel <= self.loglevel:
+		if self.active is True and loglevel >= self.loglevel:
 			self.mailbox.addMessage((self.name, loglevel, time.localtime(), text))
 			res = True
 		else:
@@ -32,28 +32,28 @@ class Logger:
 		print message
 
 	def debug (self, message):
-		self.log(message, syslog.LOG_DEBUG)
+		self.log(message, logging.DEBUG)
 
 	def info (self, message):
-		self.log(message, syslog.LOG_INFO)
+		self.log(message, logging.INFO)
 
 	def notice (self, message):
-		self.log(message, syslog.LOG_NOTICE)
+		self.log(message, logging.INFO)
 
 	def warning (self, message):
-		self.log(message, syslog.LOG_WARNING)
+		self.log(message, logging.WARNING)
 
 	def error (self, message):
-		self.log(message, syslog.LOG_ERR)
+		self.log(message, logging.ERROR)
 
 	def critical (self, message):
-		self.log(message, syslog.LOG_CRIT)
+		self.log(message, logging.CRITICAL)
 
 	def alert (self, message):
-		self.log(message, syslog.LOG_ALERT)
+		self.log(message, logging.WARNING)
 
 	def emergency (self, message):
-		self.log(message, syslog.LOG_EMERG)
+		self.log(message, logging.CRITICAL)
 
 
 class UsageLogger (Logger):
@@ -65,7 +65,7 @@ class UsageLogger (Logger):
 				now, client_id, client_ip, command, url, status, destination
 			)
 
-			res = self.log(line, syslog.LOG_NOTICE)
+			res = self.log(line, logging.INFO)
 		else:
 			res = None
 

@@ -9,7 +9,6 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 import os
 import sys
 import time
-import syslog
 import logging
 import logging.handlers
 
@@ -21,18 +20,17 @@ class LogWriter:
 	gidentifier = ['ExaProxy']
 	history = History()
 	mailbox = message_store
-	debug_level = syslog.LOG_DEBUG
+	debug_level = logging.DEBUG
 
 	levels = {
-		syslog.LOG_DEBUG : 'debug', syslog.LOG_INFO : 'info',
-		syslog.LOG_NOTICE : 'notice', syslog.LOG_WARNING : 'warning',
-		syslog.LOG_ERR : 'error', syslog.LOG_CRIT : 'critical',
-		syslog.LOG_ALERT : 'alert', syslog.LOG_EMERG : 'emergency',
+		logging.DEBUG : 'debug', logging.INFO : 'info',
+		logging.WARNING : 'warning', logging.ERROR : 'error',
+		logging.CRITICAL : 'critical',
 	}
 
 	def writeMessages (self):
 		messages = self.mailbox.readMessages()
-		messages = self.active and ((n,l,t,m) for (n,l,t,m) in messages if l <= self.level) or []
+		messages = self.active and ((n,l,t,m) for (n,l,t,m) in messages if l >= self.level) or []
 
 		for name, level, timestamp, message in messages:
 			text = self.formatMessage(name, level, timestamp, message)
@@ -69,7 +67,7 @@ class LogWriter:
 
 
 class DebugLogWriter(LogWriter):
-	def __init__ (self, active=True, fd=sys.stdout, level=syslog.LOG_WARNING):
+	def __init__ (self, active=True, fd=sys.stdout, level=logging.WARNING):
 		self.pid = os.getpid()
 		self.active = active
 		self.level = level
@@ -91,7 +89,7 @@ class DebugLogWriter(LogWriter):
 
 
 class SysLogWriter(LogWriter):
-	def __init__ (self, name, destination, active=True, level=syslog.LOG_WARNING):
+	def __init__ (self, name, destination, active=True, level=logging.WARNING):
 		self.backup = None
 		self.pid = os.getpid()
 		self.active = active
