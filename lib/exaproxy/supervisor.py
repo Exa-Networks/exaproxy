@@ -27,6 +27,7 @@ from .reactor import Reactor
 from .configuration import load
 from exaproxy.util.log.logger import Logger
 from exaproxy.util.log.writer import SysLogWriter
+from exaproxy.util.log.writer import UsageWriter
 
 class Supervisor(object):
 	alarm_time = 1
@@ -56,7 +57,7 @@ class Supervisor(object):
 
 		self.signal_log = Logger('signal', configuration.log.signal)
 		self.log_writer = SysLogWriter('log', configuration.log.destination, configuration.log.enable, level=configuration.log.level)
-		self.usage_writer = SysLogWriter('usage', configuration.usage.destination, configuration.usage.enable)
+		self.usage_writer = UsageWriter('usage', configuration.usage.destination, configuration.usage.enable)
 
 		self.log_writer.setIdentifier(configuration.daemon.identifier)
 		#self.usage_writer.setIdentifier(configuration.daemon.identifier)
@@ -104,7 +105,7 @@ class Supervisor(object):
 		self.proxy = Server(self.poller,'read_proxy', max_proxy_clients)
 		self.web = Server(self.poller,'read_web', max_admin_clients)
 
-		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.manager, self.content, self.client, self.resolver, self.log_writer, self.poller)
+		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.manager, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
 
 		self._shutdown = False
 		self._reload = False

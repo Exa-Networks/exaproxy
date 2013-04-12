@@ -10,6 +10,7 @@ import time
 import logging
 
 from .message import message_store
+from .message import usage_store
 
 class Logger:
 	mailbox = message_store
@@ -57,6 +58,8 @@ class Logger:
 
 
 class UsageLogger (Logger):
+	mailbox = usage_store
+
 	def logRequest (self, client_id, client_ip, command, url, status, destination):
 		if self.active:
 			now = time.time()

@@ -1,5 +1,6 @@
 class MessageStore:
-	def __init__ (self):
+	def __init__ (self, name):
+		self.name = name
 		self.queue = []
 
 	def addMessage (self, message):
@@ -10,4 +11,5 @@ class MessageStore:
 		return messages
 
 
-message_store = MessageStore()
+message_store = MessageStore('messages')
+usage_store = MessageStore('usage')

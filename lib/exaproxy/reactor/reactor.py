@@ -12,7 +12,7 @@ from exaproxy.util.log.logger import Logger
 
 
 class Reactor(object):
-	def __init__(self, configuration, web, proxy, decider, content, client, resolver, logger, poller):
+	def __init__(self, configuration, web, proxy, decider, content, client, resolver, logger, usage, poller):
 		self.web = web            # Manage listening web sockets
 		self.proxy = proxy        # Manage listening proxy sockets
 		self.decider = decider    # Task manager for handling child decider processes
@@ -21,6 +21,7 @@ class Reactor(object):
 		self.resolver = resolver  # The DNS query manager
 		self.poller = poller      # Interface to the poller
 		self.logger = logger      # Log writing interfaces
+		self.usage = usage        # Request logging
 		self.running = True       # Until we stop we run :)
 		self.nb_events = 0L       # Number of events received
 		self.nb_loops = 0L        # Number of loop iteration
@@ -152,6 +153,7 @@ class Reactor(object):
 					else:            # No buffer
 						self.content.uncorkClientDownload(client_id)
 
+
 			# decisions made by the child processes
 			for worker in events.get('read_workers',[]):
 				client_id, command, decision = self.decider.getDecision(worker)
@@ -222,6 +224,7 @@ class Reactor(object):
 					else:
 						self.client.uncorkUploadByName(client_id)
 
+
 			# fully connected connections to remote web servers
 			for fetcher in events.get('opening_download',[]):
 				client_id, response, buffer_change = self.content.startDownload(fetcher)
@@ -247,6 +250,7 @@ class Reactor(object):
 								self.content.uncorkClientDownload(client_id)
 
 
+
 			# DNS servers we still have data to write to (should be TCP only)
 			for resolver in events.get('write_resolver', []):
 				self.resolver.continueSending(resolver)
@@ -259,4 +263,6 @@ class Reactor(object):
 #				if not self.content.retryDownload(client_id, decision):
 #					break
 
+
 			self.logger.writeMessages()
+			self.usage.writeMessages()

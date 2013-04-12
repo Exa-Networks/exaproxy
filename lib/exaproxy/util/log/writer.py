@@ -14,12 +14,13 @@ import logging.handlers
 
 from .history import History
 from .message import message_store
+from .message import usage_store
 
 
 class LogWriter:
 	gidentifier = ['ExaProxy']
 	history = History()
-	mailbox = message_store
+	mailbox = None
 	debug_level = logging.DEBUG
 
 	levels = {
@@ -29,9 +30,8 @@ class LogWriter:
 	}
 
 	def writeMessages (self):
-		messages = self.mailbox.readMessages()
+		messages = self.mailbox.readMessages() if self.mailbox is not None else []
 		messages = self.active and ((n,l,t,m) for (n,l,t,m) in messages if l >= self.level) or []
-
 		for name, level, timestamp, message in messages:
 			text = self.formatMessage(name, level, timestamp, message)
 			self.history.record(level, text, timestamp)
@@ -67,6 +67,8 @@ class LogWriter:
 
 
 class DebugLogWriter(LogWriter):
+	mailbox = message_store
+
 	def __init__ (self, active=True, fd=sys.stdout, level=logging.WARNING):
 		self.pid = os.getpid()
 		self.active = active
@@ -89,7 +91,9 @@ class DebugLogWriter(LogWriter):
 
 
 class SysLogWriter(LogWriter):
-	def __init__ (self, name, destination, active=True, level=logging.WARNING):
+	mailbox = message_store
+
+	def __init__ (self, name, destination, active=True, level=logging.INFO):
 		self.backup = None
 		self.pid = os.getpid()
 		self.active = active
@@ -139,3 +143,7 @@ class SysLogWriter(LogWriter):
 			handler = logging.handlers.RotatingFileHandler(destination, maxBytes=5*1024*1024, backupCount=5)
 
 		return handler
+
+
+class UsageWriter(SysLogWriter):
+	mailbox = usage_store
