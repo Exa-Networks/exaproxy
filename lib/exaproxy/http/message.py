@@ -23,7 +23,7 @@ class HTTP (object):
 	def __init__(self,configuration,headers,remote_ip):
 		self.raw = headers
 		self.client = remote_ip
-		self.proxy_name = "X-Proxy-Version: %s version %s" % (configuration.proxy.name, configuration.proxy.version)
+		self.proxy_name = "X-Proxy-Version: ExaProxy version %s" % configuration.proxy.version
 		self.forward = configuration.http.forward
 		self.log = Logger('header', configuration.log.header)
 		self.response = 0
