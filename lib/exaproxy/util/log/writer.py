@@ -46,7 +46,8 @@ class LogWriter:
 		pass
 
 	def setIdentifier (self, identifier):
-		self.gidentifier = [identifier]
+		self.gidentifier.pop(0)
+		self.gidentifier.append(identifier)
 
 	def getIdentifier (self):
 		return self.gidentifier[0]

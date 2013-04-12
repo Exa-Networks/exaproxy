@@ -61,7 +61,6 @@ class Monitor (object):
 			'exaproxy.dns.expire' : conf.dns.expire,
 			'exaproxy.daemon.user' : conf.daemon.user,
 			'exaproxy.daemon.reactor' : conf.daemon.reactor,
-			'exaproxy.global.version' : '%s %s' % (conf.proxy.name,conf.proxy.version),
 			'exaproxy.log.level.daemon' : conf.log.daemon,
 			'exaproxy.log.level.supervisor' : conf.log.supervisor,
 			'exaproxy.log.level.signal' : conf.log.signal,
