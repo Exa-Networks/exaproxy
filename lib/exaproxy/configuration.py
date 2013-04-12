@@ -266,10 +266,8 @@ defaults = {
 		'enable'      : (value.boolean,value.lower,'false', 'enable profiling'),
 		'destination' : (value.unquote,value.quote,'stdout', 'save profiling to file (instead of to the screen on exit)'),
 	},
-	# Here for internal use
 	'proxy' : {
-		'name'    : (value.nop,value.nop,'ExaProxy', 'name'),
-		'version' : (value.nop,value.nop,'unknown',  'version'),
+		'version' : (value.nop,value.nop,'unknown',  'ExaProxy\'s version'),
 	},
 	# Here for internal use
 	'debug' : {
@@ -359,8 +357,6 @@ def load (conf=None):
 
 def default ():
 	for section in sorted(defaults):
-		if section in ('proxy','debug'):
-			continue
 		for option in sorted(defaults[section]):
 			values = defaults[section][option]
 			default = "'%s'" % values[2] if values[1] in (value.list,value.path,value.quote,value.unquote) else values[2]
