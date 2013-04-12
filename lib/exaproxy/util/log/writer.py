@@ -125,7 +125,14 @@ class SysLogWriter(LogWriter):
 			handler = logging.handlers.SysLogHandler(address)
 
 		elif destination.lower().startswith('host:'):
-			address = destination[5:].strip(), 514
+			if ':' in destination[5:]:
+				_host,_port = destination.strip().split(':',1)
+				host = _host.rstrip()
+				_port = _port.strip()
+				if _port.isdigit():
+					address = host, int(_port)
+			else:
+				address = destination[5:].strip(), 514
 			handler = logging.handlers.SysLogHandler(address)
 
 		else:

@@ -152,14 +152,14 @@ class value (object):
 		if not os.access(first, os.X_OK): raise TypeError('%s is not an executable' % first)
 		return first
 
-	@staticmethod
-	def syslog (path):
-		path = value.unquote(path)
-		if path in ('stdout','stderr'):
-			return path
-		if path.startswith('host:'):
-			return path
-		return path
+	# @staticmethod
+	# def syslog (path):
+	# 	path = value.unquote(path)
+	# 	if path in ('stdout','stderr'):
+	# 		return path
+	# 	if path.startswith('host:'):
+	# 		return path
+	# 	return path
 
 	@staticmethod
 	def redirector (name):
@@ -260,14 +260,11 @@ defaults = {
 	},
 	'usage' : {
 		'enable'        : (value.boolean,value.lower,'false',              'enable traffic logging'),
-		'level'         : (value.syslog_value,value.syslog_name,'ERROR', 'log message with at least the priority SYSLOG.<level>'),
-		'destination'   : (value.syslog,value.quote,'stdout',              'where syslog should log'),
-		'port'          : (value.integer,value.nop,'8889',                 'port the usage logger listens on'),
-		'usage'         : (value.boolean,value.lower,'true',               'log messages from the usage subsystem'),
+		'destination'   : (value.unquote,value.quote,'stdout',              'where syslog should log'),
 	},
 	'profile' : {
 		'enable'      : (value.boolean,value.lower,'false', 'enable profiling'),
-		'destination' : (value.syslog,value.quote,'stdout', 'save profiling to file (instead of to the screen on exit)'),
+		'destination' : (value.unquote,value.quote,'stdout', 'save profiling to file (instead of to the screen on exit)'),
 	},
 	# Here for internal use
 	'proxy' : {
@@ -366,7 +363,7 @@ def default ():
 			continue
 		for option in sorted(defaults[section]):
 			values = defaults[section][option]
-			default = "'%s'" % values[2] if values[1] in (value.list,value.path,value.quote,value.syslog) else values[2]
+			default = "'%s'" % values[2] if values[1] in (value.list,value.path,value.quote,value.unquote) else values[2]
 			yield 'exaproxy.%s.%s %s: %s. default (%s)' % (section,option,' '*(20-len(section)-len(option)),values[3],default)
 
 def ini (diff=False):

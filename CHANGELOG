@@ -12,6 +12,7 @@ Version 1.0.9 - th of 2013
  * Fix: a forever loop on chunk decoding
  * Improvement: changed the worker thread queue to be non blocking
  * Improvement: change exaproxy.redirector.minimum and exaproxy.redirector.maximum using the web interface
+ * Improvement: allow the usage of port for syslog usage record
 
 Version 1.0.8 - 8th of April 2013
  * Fix: a critical bug when counting file descriptor usage
