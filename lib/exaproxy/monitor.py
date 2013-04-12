@@ -94,6 +94,8 @@ class Monitor (object):
 			'exaproxy.redirector.minimum' : conf.redirector.minimum,
 			'exaproxy.redirector.maximum' : conf.redirector.maximum,
 #			'exaproxy.redirector.timeout' : conf.redirector.timeout,
+			'exaproxy.usage.destination' : conf.usage.destination,
+			'exaproxy.usage.enable' : conf.usage.enable,
 			'exaproxy.web.enable' : conf.web.enable,
 			'exaproxy.web.host' : '127.0.0.1',
 			'exaproxy.web.port' : conf.web.port,
