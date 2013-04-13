@@ -94,6 +94,8 @@ class DebugLogWriter(LogWriter):
 class SysLogWriter(LogWriter):
 	mailbox = message_store
 
+	# changing the default level from level=logging.INFO to anything less verbose
+	# is likely to break UDP sysloging which sends its message a INFO level
 	def __init__ (self, name, destination, active=True, level=logging.INFO):
 		self.backup = None
 		self.pid = os.getpid()
