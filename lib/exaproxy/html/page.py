@@ -242,9 +242,9 @@ class Page (object):
 				return humans.txt
 			if path not in ('/json','/json/running','/json/configuration','/update/commit'):
 				return menu('<center><b>invalid url</b></center>')
-			sections = path[1:].split('/',1) + ['']
+			sections = path[1:].split('/') + ['']
 		else:
-			sections = path[1:-5].split('/',1) + ['']
+			sections = path[1:-5].split('/') + ['']
 
 		if not sections[0]:
 			return menu(index)
