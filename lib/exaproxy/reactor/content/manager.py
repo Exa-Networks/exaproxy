@@ -45,6 +45,7 @@ class ContentManager(object):
 			try:
 				stat = os.stat(filename)
 			except IOError:
+				# XXX: we are always returning an HTTP/1.1 response
 				content = 'close', http(501, 'local file is inaccessible %s' % str(filename))
 			else:
 				if filename in self._header :
@@ -59,6 +60,7 @@ class ContentManager(object):
 				content = 'file', (header, filename)
 		else:
 			self.log.debug('local file is missing for %s: %s' % (str(name), str(filename)))
+			# XXX: we are always returning an HTTP/1.1 response
 			content = 'close', http(501, 'could not serve missing file %s' % str(filename))
 
 		return content
@@ -73,12 +75,15 @@ class ContentManager(object):
 				with open(filename) as fd:
 					body = fd.read() % data
 
+				# XXX: we are always returning an HTTP/1.1 response
 				content = 'close', http(code, body)
 			except IOError:
 				self.log.debug('local file is missing for %s: %s' % (str(reason), str(filename)))
+				# XXX: we are always returning an HTTP/1.1 response
 				content = 'close', http(501, 'could not serve missing file  %s' % str(reason))
 		else:
 			self.log.debug('local file is missing for %s: %s' % (str(reason), str(filename)))
+				# XXX: we are always returning an HTTP/1.1 response
 			content = 'close', http(501, 'could not serve missing file  %s' % str(reason))
 
 		return content
@@ -187,6 +192,7 @@ class ContentManager(object):
 				downloader = None
 				newdownloader = False
 				request = ''
+				# XXX: we are always returning an HTTP/1.1 response
 				content = ('close', http('200', self.page.html(path)))
 				length = 0
 

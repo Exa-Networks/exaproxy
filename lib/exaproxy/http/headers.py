@@ -14,6 +14,9 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 class ExpectationFailed (Exception):
 	pass
 
+class InvalidRequest (Exception):
+	pass
+
 class Headers (object):
 	def __init__ (self,http_version,separator):
 		self._order = []
@@ -58,8 +61,9 @@ class Headers (object):
 		return line.count('"') - line.count('\\"')
 
 	def parse (self, transparent, lines):
-		if lines and lines[0].isspace():
-			raise ValueError('Malformed headers, headers starts with a white space')
+		# HTTP/1.0 can send not headers, and we must not error
+		if lines.strip() and lines[0].isspace():
+			raise InvalidRequest('Malformed headers, headers starts with a white space')
 
 		key = ''
 		quoted = False
@@ -72,9 +76,8 @@ class Headers (object):
 					self.extend(key, line)
 					if self.count_quotes(line) % 2:
 						quoted = False
-
 					continue
-				
+
 				if not line: break
 
 				if self.count_quotes(line) % 2:
@@ -92,14 +95,13 @@ class Headers (object):
 				self.extend(key,line)
 
 		except (KeyError,TypeError,IndexError):
-			raise ValueError('Malformed headers (line : %s) headers %s' % (line,lines.replace('\n','\\n').replace('\r','\\r')))
+			raise InvalidRequest('Malformed headers (line : %s) headers %s' % (line,lines.replace('\n','\\n').replace('\r','\\r')))
 
 		if quoted:
-			raise ValueError, 'End of headers reached while in quoted content'
+			raise InvalidRequest('End of headers reached while in quoted content')
 
-		try:
-			if not transparent:
-
+		if not transparent:
+			try:
 				# follow rules about not forwarding connection header as set in section s14.10
 				if self.http_version == '1.1':
 					upgrades = self.get('upgrade',[])
@@ -138,17 +140,15 @@ class Headers (object):
 				if expect:
 					raise ExpectationFailed()
 
-		except (KeyError,TypeError,IndexError):
-			raise ValueError('Can not remove connection tokens from headers')
+			except (KeyError,TypeError,IndexError):
+				raise InvalidRequest('Can not remove connection tokens from headers')
 
 
 		# we got a line starting with a :
 		if '' in self._data:
-			raise ValueError ('Malformed headers, line starts with colon (:)')
-		
+			raise InvalidRequest('Malformed headers, line starts with colon (:)')
+
 		return self
 
 	def __str__ (self):
 		return self.separator.join([self.separator.join(self._data[key]) for key in self._order])
-
-

@@ -76,12 +76,12 @@ def file_header(code, size, name):
 		''
 	])
 
-def http (code,message):
+def http (code,message, version='1.1'):
 	encoding = 'html' if '</html>' in message else 'plain'
 	date = time.strftime('%c %Z')
 
 	return '\r\n'.join([
-		'HTTP/1.1 %s %s' % (str(code), _HTTP_NAMES.get(code,'-')),
+		'HTTP/%s %s %s' % (version, str(code), _HTTP_NAMES.get(code,'-')),
 		'Date: %s' % date,
 		'Server: exaproxy/%s (%s)' % (str(version), str(sys.platform)),
 		'Content-Length: %d' % len(message),

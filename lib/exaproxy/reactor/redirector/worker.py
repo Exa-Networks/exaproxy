@@ -334,7 +334,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			return (None, None), Respond.requeue(client_id, peer, header, source)
 
 		if classification == 'http':
-			return ('LOCAL', ''), Respond.http(client_id, data)
+			return ('LOCAL', ''), Respond.http(client_id, data,message.request.version)
 
 		return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message))
 
@@ -352,7 +352,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			return ('FILE', data), Respond.rewrite(client_id, '200', data, comment, message)
 
 		if classification == 'http':
-			return ('LOCAL', ''), Respond.http(client_id, data)
+			return ('LOCAL', ''), Respond.http(client_id, data,message.request.version)
 
 		return ('PERMIT', message.host), Respond.connect(client_id, message.host, message.port, message)
 
@@ -410,16 +410,20 @@ Encapsulated: req-hdr=0, null-body=%d
 
 			message = HTTP(self.configuration,header,peer)
 			if not message.parse(self._transparent):
-				self.respond(Respond.http(client_id, http('400', 'This request does not conform to HTTP/1.1 specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header)))
+				try:
+					version = message.request.version
+				except AttributeError:
+					version = '1.0'
+				self.respond(Respond.http(client_id, http('400', 'This request does not conform to HTTP specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header,version)))
 				continue
 			if message.response:
-				self.respond(Respond.http(client_id, http(str(message.response), '')))
+				self.respond(Respond.http(client_id, http(str(message.response), '',message.request.version)))
 				continue
 
 			method = message.request.method
 
 			if source == 'web':
-				self.respond(Respond.monitor(client_id, message.request.path))
+				self.respond(Respond.monitor(client_id, message.request.path,message.request.version))
 				continue
 
 			# classify and return the filtered page
@@ -449,6 +453,7 @@ Encapsulated: req-hdr=0, null-body=%d
 					if operation is not None:
 						self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
 				else:
+					# XXX: we are always returning an HTTP/1.1 response
 					self.respond(Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n')))
 					self.usage.logRequest(client_id, peer, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
 				continue
@@ -457,20 +462,24 @@ Encapsulated: req-hdr=0, null-body=%d
 				if message.headers.get('max-forwards',''):
 					max_forwards = message.headers.get('max-forwards','Max-Forwards: -1')[-1].split(':')[-1].strip()
 					if not max_forwards.isdigit():
+						# XXX: we are always returning an HTTP/1.1 response
 						self.respond(Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n')))
 						self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
 						continue
 					max_forward = int(max_forwards)
 					if max_forward < 0 :
+						# XXX: we are always returning an HTTP/1.1 response
 						self.respond(Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n')))
 						self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
 						continue
 					if max_forward == 0:
 						if method == 'OPTIONS':
+							# XXX: we are always returning an HTTP/1.1 response
 							self.respond(Respond.http(client_id, http('200', '')))
 							self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', 'OPTIONS')
 							continue
 						if method == 'TRACE':
+							# XXX: we are always returning an HTTP/1.1 response
 							self.respond(Respond.http(client_id, http('200', header)))
 							self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', 'TRACE')
 							continue
@@ -494,6 +503,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.request)
 				continue
 
+			# XXX: we are always returning an HTTP/1.1 response
 			self.respond(Respond.http(client_id, http('405', '')))  # METHOD NOT ALLOWED
 			self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
 			continue

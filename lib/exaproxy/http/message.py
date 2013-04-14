@@ -12,7 +12,7 @@ from exaproxy.util.log.logger import Logger
 from exaproxy.network.functions import isip
 
 from .request import Request
-from .headers import Headers,ExpectationFailed
+from .headers import Headers,ExpectationFailed,InvalidRequest
 
 class HostMismatch(Exception):
 	pass
@@ -41,8 +41,7 @@ class HTTP (object):
 			self.request = Request(first.rstrip('\r')).parse()
 			self.headers = Headers(self.request.version,self.separator).parse(transparent,remaining)
 
-			headerhost = self.headers.get('host',[':'])[0].split(':',1)[1].strip()
-			self.headerhost = self.extractHost(headerhost)
+			self.headerhost = self.extractHost()
 
 			if self.request.host and self.request.host != '*':
 				self.host = self.request.host
@@ -50,6 +49,9 @@ class HTTP (object):
 				# can raise KeyError, but host is a required header
 				self.host = self.headerhost
 			self.port = self.request.port
+
+			if not self.host:
+				raise InvalidRequest('Can not forward the rquest, we have not host information')
 
 			# That does not let us use ICAP and connect to redirect things :p
 			#if self.headerhost:
@@ -87,6 +89,10 @@ class HTTP (object):
 		except ExpectationFailed,e:
 			self.response = 417
 			return self
+		except InvalidRequest,e:
+			self.log.warning('invalida request, we could not parse the headers : %s' % str(e))
+			self.response = 400
+			return self
 		except Exception, e:
 			self.log.error('could not parse header %s %s' % (type(e),str(e)))
 			for line in traceback.format_exc().split('\n'):
@@ -111,7 +117,9 @@ class HTTP (object):
 			self.header.replace('host','Host: ' + host)
 
 
-	def extractHost(self, hoststring):
+	def extractHost(self):
+		hoststring = self.headers.get('host',[':'])[0].split(':',1)[1].strip()
+
 		if ':' in hoststring:
 			# check to see if we have an IPv6 address
 			if hoststring.startswith('[') and ']' in hoststring:
