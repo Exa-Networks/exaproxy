@@ -51,7 +51,7 @@ class HTTP (object):
 			self.port = self.request.port
 
 			if not self.host:
-				raise InvalidRequest('Can not forward the rquest, we have not host information')
+				raise InvalidRequest('can not forward the request, we have not host information')
 
 			# That does not let us use ICAP and connect to redirect things :p
 			#if self.headerhost:

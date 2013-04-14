@@ -63,7 +63,7 @@ class Headers (object):
 	def parse (self, transparent, lines):
 		# HTTP/1.0 can validly send no headers, and we must not error
 		if lines.strip() and lines[0].isspace():
-			raise InvalidRequest('Malformed headers, headers starts with a white space')
+			raise InvalidRequest('malformed headers, headers starts with a white space')
 
 		key = ''
 		quoted = False
@@ -95,10 +95,10 @@ class Headers (object):
 				self.extend(key,line)
 
 		except (KeyError,TypeError,IndexError):
-			raise InvalidRequest('Malformed headers (line : %s) headers %s' % (line,lines.replace('\r','\\r').replace('\n','\\n')))
+			raise InvalidRequest('malformed headers (line : %s) headers %s' % (line,lines.replace('\r','\\r').replace('\n','\\n')))
 
 		if quoted:
-			raise InvalidRequest('End of headers reached while in quoted content')
+			raise InvalidRequest('end of headers reached while in quoted content')
 
 		if not transparent:
 			try:
@@ -141,12 +141,12 @@ class Headers (object):
 					raise ExpectationFailed()
 
 			except (KeyError,TypeError,IndexError):
-				raise InvalidRequest('Can not remove connection tokens from headers')
+				raise InvalidRequest('can not remove connection tokens from headers')
 
 
 		# we got a line starting with a :
 		if '' in self._data:
-			raise InvalidRequest('Malformed headers, line starts with colon (:)')
+			raise InvalidRequest('malformed headers, line starts with colon (:)')
 
 		return self
 
