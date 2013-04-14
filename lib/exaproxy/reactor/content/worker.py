@@ -37,7 +37,7 @@ class Content (object):
 		Don't send anything yet if the client sent a CONNECT - instead,
 		we respond with our own HTTP header indicating that we connected"""
 
-		self.log.info('download socket is now open for client %s %s' % (self.client_id, self.sock))
+		self.log.debug('download socket is now open for client %s %s' % (self.client_id, self.sock))
 
 		res,sent = self.writeData('')
 		response='HTTP/1.1 200 Connection Established\r\n\r\n' if self.method == 'connect' else ''
