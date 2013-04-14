@@ -423,7 +423,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			method = message.request.method
 
 			if source == 'web':
-				self.respond(Respond.monitor(client_id, message.request.path,message.request.version))
+				self.respond(Respond.monitor(client_id, message.request.path))
 				continue
 
 			# classify and return the filtered page
