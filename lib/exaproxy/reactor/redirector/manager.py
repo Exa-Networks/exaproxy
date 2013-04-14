@@ -131,7 +131,7 @@ class RedirectorManager (object):
 			# try to figure a good number to add ..
 			# no less than one, no more than to reach self.high, lower between self.low and a quarter of the allowed growth
 			nb_to_add = int(min(max(1,min(self.low,(self.high-self.low)/4)),self.high-num_workers))
-			self.log.warning("we are low on workers, adding a few (%d)" % nb_to_add)
+			self.log.warning("we are low on workers adding a few (%d), the queue has %d unhandled url" % (nb_to_add,size))
 			self.spawn(nb_to_add)
 
 	def deprovision (self):
@@ -140,12 +140,11 @@ class RedirectorManager (object):
 			return
 
 		size = self.queue.qsize()
+		num_workers = len(self.worker)
 
 		# we are now overprovisioned
-		if size < 2:
-			if size <= self.low:
-				return
-			self.log.info("we have too many workers, stopping the oldest")
+		if size < 2 and num_workers > self.low:
+			self.log.info("we have too many workers (%d), stopping the oldest" % num_workers)
 			# if we have to kill one, at least stop the one who had the most chance to memory leak :)
 			worker = self._oldest()
 			if worker:
