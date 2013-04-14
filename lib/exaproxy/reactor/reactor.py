@@ -238,7 +238,7 @@ class Reactor(object):
 							# We just closed our connection to the client and need to count the disconnect.
 							self.proxy.notifyClose(client_id)
 
-							if page_data is not None:
+							if response is not None:
 								self.content.endClientDownload(client_id)
 
 						elif buffer_change:
