@@ -61,7 +61,7 @@ class Headers (object):
 		return line.count('"') - line.count('\\"')
 
 	def parse (self, transparent, lines):
-		# HTTP/1.0 can send not headers, and we must not error
+		# HTTP/1.0 can validly send no headers, and we must not error
 		if lines.strip() and lines[0].isspace():
 			raise InvalidRequest('Malformed headers, headers starts with a white space')
 
