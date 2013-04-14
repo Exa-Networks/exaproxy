@@ -69,7 +69,7 @@ class Content (object):
 
 		try:
 			sent = self.sock.send(w_buffer)
-			self.log.info('sent %s of %s bytes of data : %s' % (sent, len(data), self.sock))
+			self.log.debug('sent %s of %s bytes of data. %s bytes were unbuffered : %s' % (sent, len(w_buffer), len(data), self.sock))
 			self.w_buffer = w_buffer[sent:]
 			res = bool(self.w_buffer)
 
