@@ -29,7 +29,7 @@ class HTTP (object):
 		self.response = 0
 
 	def parse (self,transparent):
-		#self.log.info('parsing %s' % str(self.raw).replace('\r','\\r').replace('\n','\\n\n'))
+		self.log.debug('parsing header [[%s]]' % str(self.raw).replace('\r','\\r').replace('\n','\\n\n'))
 
 		try:
 			first, remaining = self.raw.split('\n',1)
@@ -90,7 +90,7 @@ class HTTP (object):
 			self.response = 417
 			return self
 		except InvalidRequest,e:
-			self.log.warning('invalida request, we could not parse the headers : %s' % str(e))
+			self.log.warning('invalid request received, %s' % str(e))
 			self.response = 400
 			return self
 		except Exception, e:
