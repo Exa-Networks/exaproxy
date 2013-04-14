@@ -16,6 +16,8 @@ from .index import index
 from .licence import licence
 from .humans import humans
 
+from exaproxy.util.log.writer import RecordedLog
+
 
 options = (
 	('/index.html', 'Home', (
@@ -24,6 +26,7 @@ options = (
 		('/information/introspection/supervisor.html', 'Introspection'),
 		('/information/configuration.html', 'Configuration'),
 		('/information/statistics.html', 'Statistics'),
+		('/information/logs.html', 'Logs'),
 	)),
 	('/performance.html', 'Performance', (
 		('/performance/processes.html', 'Processes'),
@@ -211,6 +214,10 @@ class Page (object):
 			forms.append(form % (name,name,value))
 		return '<pre style="margin-left:40px;">\n' + '\n'.join(forms)
 
+	def _logs (self):
+		logs = RecordedLog().history.snapshot()
+		return '<div style="padding: 10px 10px 10px 10px; font-weight:bold;">'+'<br/>\n'.join(log for _,log,__ in logs) + '</div>'
+
 	def _email (self,args):
 		if self.email_sent:
 			return '<center><b>You can only send one email per time ExaProxy is started</b></center>'
@@ -268,6 +275,8 @@ class Page (object):
 				return menu(self._configuration())
 			if subsection == 'statistics':
 				return menu(self._statistics())
+			if subsection == 'logs':
+				return menu(self._logs())
 			return menu(index)
 
 		if section == 'performance':

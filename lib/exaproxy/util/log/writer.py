@@ -16,10 +16,12 @@ from .history import History
 from .message import message_store
 from .message import usage_store
 
-
-class LogWriter:
-	gidentifier = ['ExaProxy']
+class RecordedLog (object):
 	history = History()
+
+
+class LogWriter (RecordedLog):
+	gidentifier = ['ExaProxy']
 	mailbox = None
 	debug_level = logging.DEBUG
 
@@ -62,9 +64,6 @@ class LogWriter:
 			self.backup = (self.active, self.level)
 			self.active = True
 			self.level = self.debug_level
-
-	def getHistory (self):
-		return self.history.snapshot()
 
 
 class DebugLogWriter(LogWriter):
