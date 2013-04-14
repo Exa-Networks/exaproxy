@@ -6,6 +6,8 @@ Created by Thomas Mangin on 2012-02-05.
 Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 """
 
+from collections import deque
+
 class _Container (object):
 	def __init__ (self,supervisor):
 		self.supervisor = supervisor
@@ -16,7 +18,7 @@ class Monitor (object):
 	def __init__(self,supervisor):
 		self._supervisor = supervisor
 		self._container = _Container(supervisor)
-		self.history = []
+		self.history = deque()
 
 	def introspection (self,objects):
 		obj = self._container
@@ -127,4 +129,5 @@ class Monitor (object):
 
 	def record (self):
 		self.history.append(self.statistics())
-		self.history = self.history[-self.nb_recorded:]
+		if len(self.history) > self.nb_recorded:
+			self.history.popleft()

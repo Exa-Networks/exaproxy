@@ -12,7 +12,7 @@ import time
 import logging
 import logging.handlers
 
-from .history import History
+from .history import History,Level
 from .message import message_store
 from .message import usage_store
 
@@ -23,20 +23,13 @@ class RecordedLog (object):
 class LogWriter (RecordedLog):
 	gidentifier = ['ExaProxy']
 	mailbox = None
-	debug_level = logging.DEBUG
-
-	levels = {
-		logging.DEBUG : 'debug', logging.INFO : 'info',
-		logging.WARNING : 'warning', logging.ERROR : 'error',
-		logging.CRITICAL : 'critical',
-	}
+	debug_level = Level.value.DEBUG
 
 	def writeMessages (self):
 		messages = self.mailbox.readMessages() if self.mailbox is not None else []
 		messages = self.active and ((n,l,t,m) for (n,l,t,m) in messages if l >= self.level) or []
 		for name, level, timestamp, message in messages:
 			text = self.formatMessage(name, level, timestamp, message)
-			self.history.record(level, text, timestamp)
 			self.writeMessage(level, text)
 
 		self.finishWriting()
@@ -69,7 +62,7 @@ class LogWriter (RecordedLog):
 class DebugLogWriter(LogWriter):
 	mailbox = message_store
 
-	def __init__ (self, active=True, fd=sys.stdout, level=logging.WARNING):
+	def __init__ (self, active=True, fd=sys.stdout, level=Level.value.WARNING):
 		self.pid = os.getpid()
 		self.active = active
 		self.level = level
@@ -77,7 +70,7 @@ class DebugLogWriter(LogWriter):
 
 	def formatMessage (self, name, level, timestamp, message):
 		identifier = self.getIdentifier()
-		loglevel = self.levels.get(level, 'UNKNOWN')
+		loglevel = Level.name(level)
 		date_string = time.strftime('%a, %d %b %Y %H:%M:%S',timestamp)
 		template = '%s %s %-6d %-10s %-13s %%s' % (date_string, identifier, self.pid, loglevel, name)
 
@@ -95,7 +88,7 @@ class SysLogWriter(LogWriter):
 
 	# changing the default level from level=logging.INFO to anything less verbose
 	# is likely to break UDP sysloging which sends its message a INFO level
-	def __init__ (self, name, destination, active=True, level=logging.INFO):
+	def __init__ (self, name, destination, active=True, level=Level.value.INFO):
 		self.backup = None
 		self.pid = os.getpid()
 		self.active = active

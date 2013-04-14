@@ -11,7 +11,7 @@ import sys
 
 import traceback
 
-from exaproxy.util.log.writer import RecordedLog
+from exaproxy.util.log.history import History
 
 
 def bug_report (type, value, trace):
@@ -31,7 +31,8 @@ def bug_report (type, value, trace):
 	print >> sys.stderr, '-- Logging History'
 	print >> sys.stderr, ''
 	print >> sys.stderr, ''
-	print >> sys.stderr, RecordedLog().history.snapshot()
+	for line in History().formated():
+		print >> sys.stderr, line
 	print >> sys.stderr, ''
 	print >> sys.stderr, ''
 	print >> sys.stderr, '-- Traceback'

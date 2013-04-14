@@ -16,7 +16,7 @@ from .index import index
 from .licence import licence
 from .humans import humans
 
-from exaproxy.util.log.writer import RecordedLog
+from exaproxy.util.log.history import History
 
 
 options = (
@@ -215,8 +215,7 @@ class Page (object):
 		return '<pre style="margin-left:40px;">\n' + '\n'.join(forms)
 
 	def _logs (self):
-		logs = RecordedLog().history.snapshot()
-		return '<div style="padding: 10px 10px 10px 10px; font-weight:bold;">'+'<br/>\n'.join(log for _,log,__ in logs) + '</div>'
+		return '<div style="padding: 10px 10px 10px 10px; font-weight:bold;">'+'<br/>\n'.join(History().formated()) + '</div>'
 
 	def _email (self,args):
 		if self.email_sent:

@@ -11,9 +11,12 @@ import logging
 
 from .message import message_store
 from .message import usage_store
+from .history import History
+
 
 class Logger:
 	mailbox = message_store
+	history = History()
 
 	def __init__ (self, name, active=True, loglevel=logging.DEBUG):
 		self.name = str(name)
@@ -21,8 +24,11 @@ class Logger:
 		self.loglevel = loglevel
 
 	def log (self, text, loglevel):
+		now = time.localtime()
+		self.history.record(now, self.name, loglevel, text)
+
 		if self.active is True and loglevel >= self.loglevel:
-			self.mailbox.addMessage((self.name, loglevel, time.localtime(), text))
+			self.mailbox.addMessage((self.name, loglevel, now, text))
 			res = True
 		else:
 			res = None
