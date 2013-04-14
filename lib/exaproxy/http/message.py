@@ -29,7 +29,7 @@ class HTTP (object):
 		self.response = 0
 
 	def parse (self,transparent):
-		#self.log.info('parsing %s' % str(self.raw).replace('\r','\\r').replace('\n','\\n'))
+		#self.log.info('parsing %s' % str(self.raw).replace('\r','\\r').replace('\n','\\n\n'))
 
 		try:
 			first, remaining = self.raw.split('\n',1)

@@ -95,7 +95,7 @@ class Headers (object):
 				self.extend(key,line)
 
 		except (KeyError,TypeError,IndexError):
-			raise InvalidRequest('Malformed headers (line : %s) headers %s' % (line,lines.replace('\n','\\n').replace('\r','\\r')))
+			raise InvalidRequest('Malformed headers (line : %s) headers %s' % (line,lines.replace('\r','\\r').replace('\n','\\n')))
 
 		if quoted:
 			raise InvalidRequest('End of headers reached while in quoted content')
