@@ -30,7 +30,10 @@ from exaproxy.util.log.writer import SysLogWriter
 from exaproxy.util.log.writer import UsageWriter
 
 class Supervisor(object):
-	alarm_time = 1
+	alarm_time = 1           # how often we record history data
+	increase_frequency = 5   # muliple of alarm_time for when we add workers
+	decrease_frequency = 60  # muliple of alarm_time for when we remove workers
+
 	# import os
 	# clear = [hex(ord(c)) for c in os.popen('clear').read()]
 	# clear = ''.join([chr(int(c,16)) for c in ['0x1b', '0x5b', '0x48', '0x1b', '0x5b', '0x32', '0x4a']])
@@ -170,8 +173,13 @@ class Supervisor(object):
 
 		signal.alarm(self.alarm_time)
 
-		# count = 30
+		count_increase = 0
+		count_decrease = 0
+
 		while True:
+			count_increase = (count_increase + 1) % self.increase_frequency
+			count_decrease = (count_decrease + 1) % self.decrease_frequency
+
 			try:
 				if self._toggle_debug:
 					self._toggle_debug = False
@@ -221,7 +229,11 @@ class Supervisor(object):
 				# save our monitoring stats
 				self.monitor.record()
 				# make sure we have enough workers
-				self.manager.provision()
+				if count_increase == 0:
+					self.manager.provision()
+				# and every so often remove useless workers
+				if count_decrease == 0:
+					self.manager.deprovision()
 
 			except KeyboardInterrupt:
 				self.log.info('^C received')

@@ -113,26 +113,17 @@ class RedirectorManager (object):
 		if not self.running:
 			return
 
-		size = self.queue.qsize()
 		num_workers = len(self.worker)
 
 		# bad we are bleeding workers !
 		if num_workers < self.low:
-			self.log.info("we lost some workers, respawing")
+			self.log.info("we lost some workers, respawing %d new workers" % (self.low-num_workers))
 			self.spawn(self.low-num_workers)
-			return
 
-		# we are now overprovisioned
-		if size < num_workers:
-			if size <= self.low:
-				return
-			self.log.info("we have too many workers, stopping the oldest")
-			# if we have to kill one, at least stop the one who had the most chance to memory leak :)
-			worker = self._oldest()
-			if worker:
-				self.reap(worker.wid)
+		size = self.queue.qsize()
+
 		# we need more workers
-		else:
+		if size >= 2:
 			# nothing we can do we have reach our limit
 			if num_workers >= self.high:
 				self.log.warning("help ! we need more workers but we reached our ceiling ! %d request are queued for %d processes" % (size,num_workers))
@@ -142,6 +133,23 @@ class RedirectorManager (object):
 			nb_to_add = int(min(max(1,min(self.low,(self.high-self.low)/4)),self.high-num_workers))
 			self.log.warning("we are low on workers, adding a few (%d)" % nb_to_add)
 			self.spawn(nb_to_add)
+
+	def deprovision (self):
+		"""manage our workers to make sure we have enough to consume the queue"""
+		if not self.running:
+			return
+
+		size = self.queue.qsize()
+
+		# we are now overprovisioned
+		if size < 2:
+			if size <= self.low:
+				return
+			self.log.info("we have too many workers, stopping the oldest")
+			# if we have to kill one, at least stop the one who had the most chance to memory leak :)
+			worker = self._oldest()
+			if worker:
+				self.reap(worker.wid)
 
 	def request(self, client_id, peer, request, source):
 		return self.queue.put((client_id,peer,request,source,False))
