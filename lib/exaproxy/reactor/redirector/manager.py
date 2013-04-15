@@ -123,7 +123,7 @@ class RedirectorManager (object):
 		size = self.queue.qsize()
 
 		# we need more workers
-		if size >= 2:
+		if size >= num_workers:
 			# nothing we can do we have reach our limit
 			if num_workers >= self.high:
 				self.log.warning("help ! we need more workers but we reached our ceiling ! %d request are queued for %d processes" % (size,num_workers))
