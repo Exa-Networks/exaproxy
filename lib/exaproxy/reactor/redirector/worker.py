@@ -354,6 +354,7 @@ Encapsulated: req-hdr=0, null-body=%d
 		if classification == 'http':
 			return ('LOCAL', ''), Respond.http(client_id, data,message.request.version)
 
+		self.log.error('no classification, going default open [%s]' % str(classification))
 		return ('PERMIT', message.host), Respond.connect(client_id, message.host, message.port, message)
 
 

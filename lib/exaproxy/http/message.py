@@ -17,6 +17,9 @@ from .headers import Headers,ExpectationFailed,InvalidRequest
 class HostMismatch(Exception):
 	pass
 
+class _version (object):
+	version = 'invalid'
+
 class HTTP (object):
 	http_versions = ('1.0', '1.1')
 
@@ -27,6 +30,8 @@ class HTTP (object):
 		self.forward = configuration.http.forward
 		self.log = Logger('header', configuration.log.header)
 		self.response = 0
+		# XXX: ugly ugly remove me
+		self.request = _version()
 
 	def parse (self,transparent):
 		self.log.debug('parsing header [[%s]]' % str(self.raw).replace('\r','\\r').replace('\n','\\n\n'))
