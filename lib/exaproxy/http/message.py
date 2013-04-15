@@ -92,16 +92,17 @@ class HTTP (object):
 		except ValueError,e:
 			# ValueError is sent when we can not split the request
 			self.log.warning('invalid request received, %s' % str(e))
-			self.log.warning('[[%s]]' % self.raw)
+			self.log.warning('[[%s]]' % self.raw.replace('\r','\\r').replace('\n','\\n\n'))
 			self.response = 400
 			return self
 		except InvalidRequest,e:
 			self.log.warning('invalid request received, %s' % str(e))
+			self.log.debug('[[%s]]' % self.raw.replace('\r','\\r').replace('\n','\\n\n'))
 			self.response = 400
 			return self
 		except Exception, e:
 			self.log.error('could not parse header %s %s' % (type(e),str(e)))
-			self.log.error('[[%s]]' % self.raw)
+			self.log.error('[[%s]]' % self.raw.replace('\r','\\r').replace('\n','\\n\n'))
 			for line in traceback.format_exc().split('\n'):
 				self.log.warning(line)
 			return None
