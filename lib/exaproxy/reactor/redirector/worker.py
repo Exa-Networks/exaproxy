@@ -254,8 +254,6 @@ Encapsulated: req-hdr=0, null-body=%d
 					return message, 'file', 'internal_error.html', ''
 				h = HTTP(self.configuration,headers,message.client)
 				if not h.parse(self._transparent):
-					if tainted is False:
-						return None, 'requeue', None, None
 					return message, 'file', 'internal_error.html', ''
 
 				# The trick to not have to extend ICAP
@@ -263,10 +261,9 @@ Encapsulated: req-hdr=0, null-body=%d
 				h.port = request.port
 				return h,'permit',None,comment
 
+		# Parsing the request from the ICAP server
 		h = HTTP(self.configuration,headers,message.client)
 		if not h.parse(self._transparent):
-			if tainted is False:
-				return None, 'requeue', None, None
 			return message, 'file', 'internal_error.html', comment
 
 		return h, 'permit', None, comment
@@ -339,6 +336,9 @@ Encapsulated: req-hdr=0, null-body=%d
 		return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message))
 
 	def connect (self,client_id, message, classification, data, comment, peer, header, source):
+		if classification == 'permit':
+			return ('PERMIT', message.host), Respond.connect(client_id, message.host, message.port, message)
+
 		if classification == 'requeue':
 			return (None, None), Respond.requeue(client_id, peer, header, source)
 

@@ -17,9 +17,6 @@ from .headers import Headers,ExpectationFailed,InvalidRequest
 class HostMismatch(Exception):
 	pass
 
-class _version (object):
-	version = 'invalid'
-
 class HTTP (object):
 	http_versions = ('1.0', '1.1')
 
@@ -31,7 +28,8 @@ class HTTP (object):
 		self.log = Logger('header', configuration.log.header)
 		self.response = 0
 		# XXX: ugly ugly remove me
-		self.request = _version()
+		self.request = None
+		self.headers = None
 
 	def parse (self,transparent):
 		self.log.debug('parsing header [[%s]]' % str(self.raw).replace('\r','\\r').replace('\n','\\n\n'))
@@ -93,18 +91,18 @@ class HTTP (object):
 			raise
 		except ExpectationFailed,e:
 			self.response = 417
-			return self
+			return None
 		except ValueError,e:
 			# ValueError is sent when we can not split the request
 			self.log.warning('invalid request received, %s' % str(e))
 			self.log.warning('[[%s]]' % self.raw.replace('\r','\\r').replace('\n','\\n\n'))
 			self.response = 400
-			return self
+			return None
 		except InvalidRequest,e:
 			self.log.warning('invalid request received, %s' % str(e))
 			self.log.debug('[[%s]]' % self.raw.replace('\r','\\r').replace('\n','\\n\n'))
 			self.response = 400
-			return self
+			return None
 		except Exception, e:
 			self.log.error('could not parse header %s %s' % (type(e),str(e)))
 			self.log.error('[[%s]]' % self.raw.replace('\r','\\r').replace('\n','\\n\n'))
