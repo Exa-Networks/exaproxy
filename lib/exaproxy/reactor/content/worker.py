@@ -78,7 +78,7 @@ class Content (object):
 			self.w_buffer = w_buffer
 
 			if e.args[0] in errno_block:
-				self.log.error('Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
+				#self.log.error('Write failed as it would have blocked. Why were we woken up? Error %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 				res = bool(self.w_buffer)
 			elif e.args[0] in errno_unavailable:
 				res = None
