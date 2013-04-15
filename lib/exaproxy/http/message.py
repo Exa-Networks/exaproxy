@@ -91,10 +91,12 @@ class HTTP (object):
 			return self
 		except InvalidRequest,e:
 			self.log.warning('invalid request received, %s' % str(e))
+			self.log.warning('[[%s]]' % self.raw)
 			self.response = 400
 			return self
 		except Exception, e:
 			self.log.error('could not parse header %s %s' % (type(e),str(e)))
+			self.log.error('[[%s]]' % self.raw)
 			for line in traceback.format_exc().split('\n'):
 				self.log.warning(line)
 			return None
