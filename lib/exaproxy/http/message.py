@@ -26,7 +26,8 @@ class HTTP (object):
 		self.proxy_name = "X-Proxy-Version: ExaProxy version %s" % configuration.proxy.version
 		self.forward = configuration.http.forward
 		self.log = Logger('header', configuration.log.header)
-		self.response = 0
+		self.reply_code = 0
+		self.reply_string = ''
 		# XXX: ugly ugly remove me
 		self.request = None
 		self.headers = None
@@ -90,18 +91,18 @@ class HTTP (object):
 		except KeyboardInterrupt:
 			raise
 		except ExpectationFailed,e:
-			self.response = 417
+			self.reply_code = 417
 			return None
 		except ValueError,e:
 			# ValueError is sent when we can not split the request
 			self.log.warning('invalid request received, %s' % str(e))
 			self.log.warning('[[%s]]' % self.raw.replace('\r','\\r').replace('\n','\\n\n'))
-			self.response = 400
+			self.reply_code = 400
 			return None
 		except InvalidRequest,e:
 			self.log.warning('invalid request received, %s' % str(e))
 			self.log.debug('[[%s]]' % self.raw.replace('\r','\\r').replace('\n','\\n\n'))
-			self.response = 400
+			self.reply_code = 400
 			return None
 		except Exception, e:
 			self.log.error('could not parse header %s %s' % (type(e),str(e)))

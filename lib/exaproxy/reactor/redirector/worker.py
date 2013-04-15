@@ -253,7 +253,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				if not request:
 					return message, 'file', 'internal_error.html', ''
 				h = HTTP(self.configuration,headers,message.client)
-				if not h.parse(self._transparent):
+				if not h.parse(self._transparent) or h.reply_code:
 					return message, 'file', 'internal_error.html', ''
 
 				# The trick to not have to extend ICAP
@@ -263,7 +263,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		# Parsing the request from the ICAP server
 		h = HTTP(self.configuration,headers,message.client)
-		if not h.parse(self._transparent):
+		if not h.parse(self._transparent) or h.reply_code:
 			return message, 'file', 'internal_error.html', comment
 
 		return h, 'permit', None, comment
@@ -417,8 +417,8 @@ Encapsulated: req-hdr=0, null-body=%d
 					version = '1.0'
 				self.respond(Respond.http(client_id, http('400', 'This request does not conform to HTTP specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header,version)))
 				continue
-			if message.response:
-				self.respond(Respond.http(client_id, http(str(message.response), '',message.request.version)))
+			if message.reply_code:
+				self.respond(Respond.http(client_id, http(str(message.reply_code), self.reply_string, message.request.version)))
 				continue
 
 			method = message.request.method
