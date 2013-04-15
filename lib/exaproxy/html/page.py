@@ -114,10 +114,9 @@ class Page (object):
 			'Proxy Connections',
 			20000,
 			[
-				'running.proxy.clients.number',
-				'running.proxy.download.opening',
-				'running.proxy.download.established',
-				'running.proxy.download.clients',
+				'running.proxy.clients.established',
+				'running.proxy.servers.opening',
+				'running.proxy.servers.established',
 				]
 		)
 
