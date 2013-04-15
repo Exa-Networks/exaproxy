@@ -242,7 +242,7 @@ class Supervisor(object):
 				# XXX: we need to stop listening and re-fork ourselves
 				if e.errno == 24:  # Too many open files
 					self.log.critical('Too many opened files, shutting down')
-					self._shutfown = True
+					self._shutdown = True
 				else:
 					# Not sure we can get here, let the user know by raising
 					raise
