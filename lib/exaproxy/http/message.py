@@ -89,10 +89,14 @@ class HTTP (object):
 		except ExpectationFailed,e:
 			self.response = 417
 			return self
-		except (InvalidRequest,ValueError),e:
+		except ValueError,e:
 			# ValueError is sent when we can not split the request
 			self.log.warning('invalid request received, %s' % str(e))
 			self.log.warning('[[%s]]' % self.raw)
+			self.response = 400
+			return self
+		except InvalidRequest,e:
+			self.log.warning('invalid request received, %s' % str(e))
 			self.response = 400
 			return self
 		except Exception, e:
