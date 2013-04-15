@@ -331,7 +331,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			return (None, None), Respond.requeue(client_id, peer, header, source)
 
 		if classification == 'http':
-			return ('LOCAL', ''), Respond.http(client_id, data,message.request.version)
+			return ('LOCAL', ''), Respond.http(client_id, data)
 
 		return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message))
 
