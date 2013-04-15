@@ -14,6 +14,7 @@ RFC Compliance
  - need to reply 417 when 100-continue is used (Section 8.2.3)
  - do not forward 100 response due to Expect:100 if client is HTTP/1.0 (Section 8.2.3)
  - the Expect mechanism is hop-by-hop: that is, an HTTP/1.1 proxy MUST return a 417 (Expectation Failed) status if it receives a request with an expectation that it cannot meet. However, the Expect request-header itself is end-to-end; it MUST be forwarded if the request is forwarded.
+ - pass the REQUEST HTTP version all the way to the HTTP page generated in response
 
 DOS Protection
  - limit GET size as a option value (8192 default)
@@ -25,6 +26,8 @@ Performance
  - make sure we do not use string concatenation (perhaps not necessary with python 2.7 ?)
  - investigate regex for header parsing performance
  - investigate why pypy takes more CPU than cPython in some cases
+ - splice incoming data directly to a client socket if we have no buffered data for the client
+   ( and make the buffer information accessible to the connection manager )
 
 Cleanup
  - order configuation
