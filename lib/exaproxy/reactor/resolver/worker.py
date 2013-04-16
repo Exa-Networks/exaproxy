@@ -52,9 +52,11 @@ class DNSClient(object):
 
 		# and send it over the wire
 		try:
-			self.socket.sendto(request_s, (self.server, self.port))
+			if request_s:
+				self.socket.sendto(request_s, (self.server, self.port))
 		except IOError, e:
 			pass
+
 		return identifier, True
 
 	def readResponse (self):
@@ -213,18 +215,21 @@ class TCPClient(DNSClient):
 		identifier = self.next_identifier()
 		request_s = self.dns_factory.createRequestString(identifier, qtype, hostname, extended=True)
 
-		# Explicitly close subroutines
-		if self.writer:
-			self.writer.close()
+		if request_s:
+			# Explicitly close subroutines
+			if self.writer:
+				self.writer.close()
 
-		if self.reader:
-			self.reader.close()
+			if self.reader:
+				self.reader.close()
 
-		self.writer = self._write(self.socket, request_s)
-		self.reader = self._read(self.socket)
+			self.writer = self._write(self.socket, request_s)
+			self.reader = self._read(self.socket)
 
-		# and start sending it over the wire
-		res = self.writer.next()
+			# and start sending it over the wire
+			res = self.writer.next()
+		else:
+			res = False
 
 		# let the manager know whether or not we have sent the entire query
 		return identifier, res is False
