@@ -199,6 +199,10 @@ class Client (object):
 					elif not request:
 						remaining = 0
 
+					elif remaining == 0:
+						r_size, remaining = yield '', r_buffer, True  # yield to manager.readRequest
+						r_buffer = ''
+
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
 				break
