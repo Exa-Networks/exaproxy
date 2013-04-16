@@ -33,7 +33,7 @@ class HTTP (object):
 		self.headers = None
 
 	def parse (self,transparent):
-		self.log.debug('parsing header [[%s]]' % str(self.raw).replace('\r','\\r').replace('\n','\\n\n'))
+		self.log.debug('parsing header [[%s]]' % str(self.raw).replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n'))
 
 		try:
 			first, remaining = self.raw.split('\n',1)
@@ -96,17 +96,17 @@ class HTTP (object):
 		except ValueError,e:
 			# ValueError is sent when we can not split the request
 			self.log.warning('invalid request received, %s' % str(e))
-			self.log.warning('[[%s]]' % self.raw.replace('\r','\\r').replace('\n','\\n\n'))
+			self.log.warning('[[%s]]' % self.raw.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n'))
 			self.reply_code = 400
 			return None
 		except InvalidRequest,e:
 			self.log.warning('invalid request received, %s' % str(e))
-			self.log.debug('[[%s]]' % self.raw.replace('\r','\\r').replace('\n','\\n\n'))
+			self.log.debug('[[%s]]' % self.raw.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n'))
 			self.reply_code = 400
 			return None
 		except Exception, e:
 			self.log.error('could not parse header %s %s' % (type(e),str(e)))
-			self.log.error('[[%s]]' % self.raw.replace('\r','\\r').replace('\n','\\n\n'))
+			self.log.error('[[%s]]' % self.raw.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n'))
 			for line in traceback.format_exc().split('\n'):
 				self.log.warning(line)
 			return None
