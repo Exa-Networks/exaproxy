@@ -80,5 +80,10 @@ def dns_to_string(s, packet_s):
 	return '.'.join(parts) if parts is not None else None
 
 def string_to_dns(s, packet_s=None):
-	parts = (s.rstrip('.') + '.').split('.')
-	return ''.join('%c%s' % (len(p), p) for p in parts)
+	try:
+		parts = (s.rstrip('.') + '.').split('.')
+		res = ''.join('%c%s' % (len(p), p) for p in parts)
+	except OverflowError:
+		res = None
+
+	return res

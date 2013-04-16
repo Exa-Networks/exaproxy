@@ -110,6 +110,9 @@ class ResolverManager (object):
 		else:
 			res = False
 
+		if res is True:
+			
+
 		return res
 
 	def extractHostname(self, command, decision):
@@ -152,13 +155,20 @@ class ResolverManager (object):
 					response = client_id, 'rewrite', newdecision
 
 			else:
-				identifier, _ = self.worker.resolveHost(hostname)
-				response = None
-				active_time = time.time()
+				jumbo = max(len(p) for p in hostname.split('.')) > 255
+				if jumbo:
+					identifier = None
+					newdecision = '\0'.join(('503', 'dns.html', 'http', '', '', hostname, 'peer'))
+					response = client_id, 'rewrite', newdecision
 
-				self.resolving[(self.worker.w_id, identifier)] = client_id, hostname, hostname, command, decision
-				self.clients[client_id] = (self.worker.w_id, identifier, active_time)
-				self.active.append((active_time, client_id, self.worker.socket))
+				else:
+					identifier, _ = self.worker.resolveHost(hostname)
+					response = None
+					active_time = time.time()
+
+					self.resolving[(self.worker.w_id, identifier)] = client_id, hostname, hostname, command, decision
+					self.clients[client_id] = (self.worker.w_id, identifier, active_time)
+					self.active.append((active_time, client_id, self.worker.socket))
 		else:
 			identifier = None
 			response = None

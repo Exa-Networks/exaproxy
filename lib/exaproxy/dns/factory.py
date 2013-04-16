@@ -12,8 +12,12 @@ class DNSPacketFactory:
 		self.codec = DNSCodec(definitions)
 
 	def serializeRequest(self, request, extended=False):
-		encoded = self.codec.encodeRequest(request)
-		if extended:
+		try:
+			encoded = self.codec.encodeRequest(request)
+		except OverflowError:
+			encoded = None
+
+		if encoded is not None and extended:
 			encoded = struct.pack('>H', len(encoded)) + encoded
 
 		return encoded
@@ -37,8 +41,12 @@ class DNSPacketFactory:
 		request = self.request_factory(identifier)
 		request.addQuestion(request_type, request_name)
 
-		encoded = self.codec.encodeRequest(request)
-		if extended:
+		try:
+			encoded = self.codec.encodeRequest(request)
+		except OverflowError:
+			encoded = None
+
+		if encoded is not None and extended:
 			encoded = struct.pack('>H', len(encoded)) + encoded
 
 		return encoded
