@@ -110,9 +110,6 @@ class ResolverManager (object):
 		else:
 			res = False
 
-		if res is True:
-			
-
 		return res
 
 	def extractHostname(self, command, decision):
