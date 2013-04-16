@@ -98,17 +98,21 @@ class HTTP (object):
 			self.log.warning('invalid request received, %s' % str(e))
 			self.log.warning('[[%s]]' % self.raw.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n'))
 			self.reply_code = 400
+			self.reply_string = 'problem parsing the request'
 			return None
 		except InvalidRequest,e:
 			self.log.warning('invalid request received, %s' % str(e))
 			self.log.debug('[[%s]]' % self.raw.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n'))
 			self.reply_code = 400
+			self.reply_string = str(e)
 			return None
 		except Exception, e:
 			self.log.error('could not parse header %s %s' % (type(e),str(e)))
 			self.log.error('[[%s]]' % self.raw.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n'))
 			for line in traceback.format_exc().split('\n'):
 				self.log.warning(line)
+			self.reply_code = 400
+			self.reply_string = 'problem parsing the request'
 			return None
 		return self
 

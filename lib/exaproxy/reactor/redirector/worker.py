@@ -416,7 +416,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				except AttributeError:
 					version = '1.0'
 				if message.reply_string:
-					self.respond(Respond.http(client_id, http(str(message.reply_code), '%s<br/>\n<!--\n\n<![CDATA[%s]]>\n\n-->\n<br/>\n%s' % (message.reply_string,header.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n')),version)))
+					self.respond(Respond.http(client_id, http(str(message.reply_code), '%s<br/>\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % (message.reply_string,header.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n')),version)))
 				else:
 					self.respond(Respond.http(client_id, http(str(message.reply_code),'',version)))
 				continue
