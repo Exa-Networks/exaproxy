@@ -415,7 +415,10 @@ Encapsulated: req-hdr=0, null-body=%d
 					version = message.request.version
 				except AttributeError:
 					version = '1.0'
-				self.respond(Respond.http(client_id, http('400', 'This request does not conform to HTTP specifications\n\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % header.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n'),version)))
+				if message.reply_string:
+					self.respond(Respond.http(client_id, http(str(message.reply_code), '%s<br/>\n<!--\n\n<![CDATA[%s]]>\n\n-->\n<br/>\n%s' % (message.reply_string,header.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n')),version)))
+				else:
+					self.respond(Respond.http(client_id, http(str(message.reply_code),'',version)))
 				continue
 			if message.reply_code:
 				self.respond(Respond.http(client_id, http(str(message.reply_code), self.reply_string, message.request.version)))
