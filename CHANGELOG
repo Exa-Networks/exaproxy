@@ -4,6 +4,7 @@ Version explained:
  bug   : increase on bug fixes
 
 Version 1.0.9 - th of 2013
+ * Many bug fixes including (but not exclusively)
  * Fix: make sure the program always have data to display in the web interface
  * Fix: dynamically adding/removing processes using SIGUSR1/SIGUSR2 now works
  * Fix: bug with SIGTRAP
@@ -19,6 +20,7 @@ Version 1.0.9 - th of 2013
  * Improvement: change exaproxy.redirector.minimum and exaproxy.redirector.maximum using the web interface
  * Improvement: allow the usage of port for syslog usage record
  * Improvement: better management of the worker creation and deletion
+ * Improvement: do not perform DNS lookup if the hostname does not have a . (search in the URL bar)
 
 Version 1.0.8 - 8th of April 2013
  * Fix: a critical bug when counting file descriptor usage

@@ -28,7 +28,6 @@ Performance
  - investigate why pypy takes more CPU than cPython in some cases
  - splice incoming data directly to a client socket if we have no buffered data for the client
    ( and make the buffer information accessible to the connection manager )
- - do not perform DNS lookup if the hostname does not have a . (search in the URL bar)
 
 Cleanup
  - order configuation
