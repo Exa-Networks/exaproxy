@@ -166,10 +166,6 @@ class Reactor(object):
 							cid, command, decision = response
 							decisions.append((client_id, command, decision))
 
-						# this can not be resolved (no dot in hostname)
-						elif identifier == 'not-found':
-							command, decision = self.decider.showNotFound()
-							decisions.append((client_id, command, decision))
 						# something went wrong
 						elif identifier is None:
 							command, decision = self.decider.showInternalError()

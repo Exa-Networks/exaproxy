@@ -153,8 +153,9 @@ class ResolverManager (object):
 					response = client_id, 'rewrite', newdecision
 			# do not try to resolve domains which are not FQDN
 			elif self.configuration.dns.fqdn and '.' not in hostname:
-				identifier = 'not-found'
-				response = None
+				identifier = None
+				newdecision = '\0'.join(('200', 'dns.html', 'http', '', '', hostname, 'peer'))
+				response = client_id, 'rewrite', newdecision
 			# each DNS part (between the dots) must be under 256 chars
 			elif max(len(p) for p in hostname.split('.')) > 255:
 				identifier = None
