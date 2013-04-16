@@ -237,9 +237,10 @@ defaults = {
 		'resolver'     : (value.resolver,value.path,'/etc/resolv.conf',       'resolver file'),
 		'timeout'      : (value.integer,value.nop,'10',                       'how long to wait for DNS replies'),
 #		'force-ttl'    : (value.boolean,value.lower,'true',                   'do not use DNS ttl but the ttl value in this configuration'),
-		'resolution'   : (value.integer,value.nop,'3',                       'group dns cache results '),
-		'ttl'          : (value.integer,value.nop,'30',                      'amount of time (in seconds) we will cache dns results for - should be a multiple of dns.resolution'),
+		'resolution'   : (value.integer,value.nop,'3',                        'group dns cache results '),
+		'ttl'          : (value.integer,value.nop,'30',                       'amount of time (in seconds) we will cache dns results for - should be a multiple of dns.resolution'),
 		'expire'       : (value.integer,value.nop,'200',                      'maximum number of cached dns entries we will expire during each cleanup'),
+		'fqdn'         : (value.boolean,value.lower,'true',                   'only resolve FQDN (hostnames must have a dot'),
 		'definitions'  : (value.folder,value.path,'etc/exaproxy/dns/types',   'location of file defining dns query types'),
 	},
 	'log' : {

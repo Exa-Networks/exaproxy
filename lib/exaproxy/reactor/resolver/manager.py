@@ -151,6 +151,10 @@ class ResolverManager (object):
 					newdecision = '\0'.join(('503', 'dns.html', 'http', '', '', hostname, 'peer'))
 					response = client_id, 'rewrite', newdecision
 
+			elif self.configuration.dns.fqdn and '.' not in hostname:
+				identifier = 'not-found'
+				response = None
+
 			else:
 				identifier, _ = self.worker.resolveHost(hostname)
 				response = None

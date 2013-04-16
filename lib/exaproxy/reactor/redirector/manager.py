@@ -237,6 +237,9 @@ class RedirectorManager (object):
 	def showInternalError(self):
 		return 'file', '\0'.join(('200', 'internal_error.html'))
 
+	def showNotFound(self):
+		return 'file', '\0'.join(('200', 'nodns.html'))
+
 	def requestStats(self):
 		for wid, worker in self.worker.iteritems():
 			worker.requestStats()

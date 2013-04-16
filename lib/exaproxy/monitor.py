@@ -56,6 +56,7 @@ class Monitor (object):
 			'exaproxy.daemon.sleep' : conf.daemon.speed,
 			'exaproxy.profile.enable' : conf.profile.enable,
 			'exaproxy.profile.destination' : conf.profile.destination,
+			'exaproxy.dns.fqdn' : conf.dns.fqdn,
 			'exaproxy.dns.resolver' : conf.dns.resolver,
 			'exaproxy.dns.timeout' : conf.dns.timeout,
 #			'exaproxy.dns.force-ttl' : conf.dns.force_ttl,

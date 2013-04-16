@@ -162,14 +162,18 @@ class Reactor(object):
 				if client_id in self.client:
 					if self.resolver.resolves(command, decision):
 						identifier, response = self.resolver.startResolving(client_id, command, decision)
-
 						if response:
 							cid, command, decision = response
 							decisions.append((client_id, command, decision))
 
+						# this can not be resolved (no dot in hostname)
+						elif identifier == 'not-found':
+							command, decision = self.decider.showNotFound()
+							decisions.append((client_id, command, decision))
 						# something went wrong
 						elif identifier is None:
-							commmand, decision = self.decider.showInternalError()
+							command, decision = self.decider.showInternalError()
+							decisions.append((client_id, command, decision))
 					else:
 						decisions.append((client_id, command, decision))
 
