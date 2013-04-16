@@ -30,10 +30,8 @@ Performance
    ( and make the buffer information accessible to the connection manager )
 
 Cleanup
- - order configuation
- - log HTTP requests
- - the way we perform sysloging (messy due to the threads)
  - refactor the communication over pipe to have the serialisation/deserialisation in one place
+ - use some structure when passing message for readability
 
 Feature
  - offer an option for happy Eyeballs (RFC 6555) when it comes to IPv6 (http://tools.ietf.org/html/rfc6555)
