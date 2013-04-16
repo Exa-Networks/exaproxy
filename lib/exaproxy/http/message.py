@@ -101,7 +101,7 @@ class HTTP (object):
 			self.reply_string = 'problem parsing the request'
 			return None
 		except InvalidRequest,e:
-			self.log.warning('invalid request received, %s' % str(e))
+			self.log.debug('invalid request received, %s' % str(e))
 			self.log.debug('[[%s]]' % self.raw.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n'))
 			self.reply_code = 400
 			self.reply_string = str(e)
