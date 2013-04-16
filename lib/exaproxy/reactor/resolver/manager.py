@@ -139,6 +139,7 @@ class ResolverManager (object):
 		hostname = self.extractHostname(command, decision)
 
 		if hostname:
+			# Resolution is already in our cache
 			if hostname in self.cache:
 				identifier = None
 				ip = self.cache[hostname]
@@ -150,26 +151,24 @@ class ResolverManager (object):
 				else:
 					newdecision = '\0'.join(('503', 'dns.html', 'http', '', '', hostname, 'peer'))
 					response = client_id, 'rewrite', newdecision
-
+			# do not try to resolve domains which are not FQDN
 			elif self.configuration.dns.fqdn and '.' not in hostname:
 				identifier = 'not-found'
 				response = None
-
+			# each DNS part (between the dots) must be under 256 chars
+			elif max(len(p) for p in hostname.split('.')) > 255:
+				identifier = None
+				newdecision = '\0'.join(('503', 'dns.html', 'http', '', '', hostname, 'peer'))
+				response = client_id, 'rewrite', newdecision
+			# Lookup that DNS name
 			else:
-				jumbo = max(len(p) for p in hostname.split('.')) > 255
-				if jumbo:
-					identifier = None
-					newdecision = '\0'.join(('503', 'dns.html', 'http', '', '', hostname, 'peer'))
-					response = client_id, 'rewrite', newdecision
+				identifier, _ = self.worker.resolveHost(hostname)
+				response = None
+				active_time = time.time()
 
-				else:
-					identifier, _ = self.worker.resolveHost(hostname)
-					response = None
-					active_time = time.time()
-
-					self.resolving[(self.worker.w_id, identifier)] = client_id, hostname, hostname, command, decision
-					self.clients[client_id] = (self.worker.w_id, identifier, active_time)
-					self.active.append((active_time, client_id, self.worker.socket))
+				self.resolving[(self.worker.w_id, identifier)] = client_id, hostname, hostname, command, decision
+				self.clients[client_id] = (self.worker.w_id, identifier, active_time)
+				self.active.append((active_time, client_id, self.worker.socket))
 		else:
 			identifier = None
 			response = None
