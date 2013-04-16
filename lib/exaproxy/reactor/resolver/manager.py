@@ -23,13 +23,13 @@ class ResolverManager (object):
 		self.poller.addReadSocket('read_resolver', self.worker.socket)
 
 		# Track the clients currently expecting results
-		self.clients = {}         #   client_id : identifier
+		self.clients = {}  # client_id : identifier
 
 		# Key should be the hostname rather than the request ID?
-		self.resolving = {}       #   identifier, worker_id : 
+		self.resolving = {}  # identifier, worker_id :
 
 		# TCP workers that have not yet sent a complete request
-		self.sending = {}         #   sock :
+		self.sending = {}  # sock :
 
 		# track the current queries and when they were started
 		self.active = []
@@ -38,7 +38,7 @@ class ResolverManager (object):
 		self.cached = []
 
 		self.max_workers = max_workers
-		self.worker_count = len(self.workers) # the UDP client
+		self.worker_count = len(self.workers)  # the UDP client
 
 		self.waiting = []
 
