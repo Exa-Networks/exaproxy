@@ -236,6 +236,7 @@ defaults = {
 	'dns' : {
 		'resolver'     : (value.resolver,value.path,'/etc/resolv.conf',       'resolver file'),
 		'timeout'      : (value.integer,value.nop,'10',                       'how long to wait for DNS replies'),
+		'retries'      : (value.integer,value.nop,'3',                        'how many times to retry sending requests'),
 #		'force-ttl'    : (value.boolean,value.lower,'true',                   'do not use DNS ttl but the ttl value in this configuration'),
 		'resolution'   : (value.integer,value.nop,'3',                        'group dns cache results '),
 		'ttl'          : (value.integer,value.nop,'30',                       'amount of time (in seconds) we will cache dns results for - should be a multiple of dns.resolution'),
@@ -258,6 +259,7 @@ defaults = {
 		'download'      : (value.boolean,value.lower,'true',               'log messages from the download subsystem'),
 		'http'          : (value.boolean,value.lower,'true',               'log messages from the http subsystem'),
 		'header'        : (value.boolean,value.lower,'true',               'log messages from the header subsystem'),
+		'resolver'      : (value.boolean,value.lower,'true',               'log messages from the dns subsystem'),
 	},
 	'usage' : {
 		'enable'        : (value.boolean,value.lower,'false',              'enable traffic logging'),

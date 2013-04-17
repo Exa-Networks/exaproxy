@@ -2,8 +2,7 @@ import time
 
 from .worker import DNSResolver
 from exaproxy.network.functions import isip
-
-
+from exaproxy.util.log.logger import Logger
 
 class ResolverManager (object):
 	resolverFactory = DNSResolver
@@ -42,6 +41,8 @@ class ResolverManager (object):
 
 		self.waiting = []
 
+		self.log = Logger('resolver', configuration.log.resolver)
+
 	def cacheDestination (self, hostname, ip):
 		if hostname not in self.cache:
 			expire_time = time.time() + self.configuration.dns.ttl
@@ -71,7 +72,7 @@ class ResolverManager (object):
 
 
 	def cleanup(self):
-		cutoff = time.time() - self.configuration.dns.timeout
+		cutoff = time.time() - min(self.configuration.dns.timeout/self.configuration.dns.retries, 1)
 		count = 0
 
 		for timestamp, client_id, sock in self.active:
@@ -81,15 +82,24 @@ class ResolverManager (object):
 			count += 1
 			cli_data = self.clients.pop(client_id, None)
 			worker = self.workers.get(sock)
+			tcpudp = 'udp' if worker is self.worker else 'tcp'
 
 			if cli_data is not None:
-				w_id, identifier, active_time  = cli_data
+				w_id, identifier, active_time, resolve_count = cli_data
 				data = self.resolving.pop((w_id, identifier), None)
 				if not data:
 					data = self.sending.pop(sock, None)
 
 				if data:
 					client_id, original, hostname, command, decision = data
+					self.log.error('timeout when requesting address for %s using the %s client - attempt %s' % (hostname, tcpudp, resolve_count))
+
+					if resolve_count < self.configuration.dns.retries:
+						self.log.info('going to retransmit request for %s - attempt %s of %s' % (hostname, resolve_count+1, self.configuration.dns.retries))
+						self.startResolving(client_id, command, decision, resolve_count+1)
+						continue
+
+					self.log.error('given up trying to resolve %s after %s attempts' % (hostname, self.configuration.dns.retries))
 					yield client_id, 'rewrite', '\0'.join(('503', 'dns.html', '', '', '', hostname, 'peer'))
 
 			if worker is not None:
@@ -135,7 +145,7 @@ class ResolverManager (object):
 
 		return newdecision
 
-	def startResolving(self, client_id, command, decision):
+	def startResolving(self, client_id, command, decision, resolve_count=1):
 		hostname = self.extractHostname(command, decision)
 
 		if hostname:
@@ -159,6 +169,7 @@ class ResolverManager (object):
 			# each DNS part (between the dots) must be under 256 chars
 			elif max(len(p) for p in hostname.split('.')) > 255:
 				identifier = None
+				self.log.info('jumbo hostname: %s' % hostname)
 				newdecision = '\0'.join(('503', 'dns.html', 'http', '', '', hostname, 'peer'))
 				response = client_id, 'rewrite', newdecision
 			# Lookup that DNS name
@@ -168,7 +179,7 @@ class ResolverManager (object):
 				active_time = time.time()
 
 				self.resolving[(self.worker.w_id, identifier)] = client_id, hostname, hostname, command, decision
-				self.clients[client_id] = (self.worker.w_id, identifier, active_time)
+				self.clients[client_id] = (self.worker.w_id, identifier, active_time, resolve_count)
 				self.active.append((active_time, client_id, self.worker.socket))
 		else:
 			identifier = None
@@ -176,12 +187,12 @@ class ResolverManager (object):
 
 		return identifier, response
 
-	def beginResolvingTCP (self, client_id, command, decision):
+	def beginResolvingTCP (self, client_id, command, decision, resolve_count):
 		if self.worker_count < self.max_workers:
-			identifier = self.newTCPResolver(client_id, command, decision)
+			identifier = self.newTCPResolver(client_id, command, decision, resolve_count)
 			self.worker_count += 1
 		else:
-			self.waiting.append((client_id, command, decision))
+			self.waiting.append((client_id, command, decision, resolve_count))
 			identifier = None
 
 		return identifier
@@ -194,12 +205,12 @@ class ResolverManager (object):
 			for _ in range(self.worker_count, self.max_workers):
 				if self.waiting:
 					data, self.waiting = self.waiting[0], self.waiting[1:]
-					client_id, command, decision = data
+					client_id, command, decision, resolve_count = data
 
-					identifier = self.newTCPResolver(client_id, command, decision)
+					identifier = self.newTCPResolver(client_id, command, decision, resolve_count)
 					self.worker_count += 1
 
-	def newTCPResolver (self, client_id, command, decision):
+	def newTCPResolver (self, client_id, command, decision, resolve_count):
 		hostname = self.extractHostname(command, decision)
 
 		if hostname:
@@ -209,7 +220,7 @@ class ResolverManager (object):
 			identifier, all_sent = worker.resolveHost(hostname)
 			active_time = time.time()
 			self.resolving[(worker.w_id, identifier)] = client_id, hostname, hostname, command, decision
-			self.clients[client_id] = (worker.w_id, identifier, active_time)
+			self.clients[client_id] = (worker.w_id, identifier, active_time, resolve_count)
 			self.active.append((active_time, client_id, self.worker.socket))
 
 			if all_sent:
@@ -234,8 +245,12 @@ class ResolverManager (object):
 				identifier, forhost, ip, completed, newidentifier, newhost, newcomplete = result
 				data = self.resolving.pop((worker.w_id, identifier), None)
 
+				if not data:
+					self.log.info('ignoring response for %s (%s) with identifier %s' % (forhost, ip, identifier))
+
 			else:
 				# unable to parse response
+				self.log.error('unable to parse response')
 				data = None
 
 			if data:
@@ -259,7 +274,7 @@ class ResolverManager (object):
 					if completed:
 						active_time = time.time()
 						self.resolving[(worker.w_id, newidentifier)] = client_id, original, newhost, command, decision
-						self.clients[client_id] = (worker.w_id, newidentifier, active_time)
+						self.clients[client_id] = (worker.w_id, newidentifier, active_time, 1)
 						self.active.append((active_time, client_id, worker.socket))
 
 					response = None
@@ -278,7 +293,7 @@ class ResolverManager (object):
 				elif forhost != hostname:
 					active_time = time.time()
 					self.resolving[(worker.w_id, identifier)] = client_id, original, hostname, command, decision
-					self.clients[client_id] = (worker.w_id, identifier, active_time)
+					self.clients[client_id] = (worker.w_id, identifier, active_time, 1)
 					self.active.append((active_time, client_id, worker.socket))
 					response = None
 
@@ -316,7 +331,7 @@ class ResolverManager (object):
 		if data:
 			client_id, original, hostname, command, decision = data
 			worker = self.workers[sock]
-			w_id, identifier, active_time = self.clients[client_id]
+			w_id, identifier, active_time, resolve_count = self.clients[client_id]
 
 			res = worker.continueSending()
 
