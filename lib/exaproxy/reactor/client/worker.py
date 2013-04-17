@@ -35,81 +35,64 @@ class Client (object):
 
 	def checkRequest (self, r_buffer, seek=0):
 		# XXX: max buffer size
-
-		buff = ''
 		for eor in self.eor:
 			pos = r_buffer[seek:].find(eor)
-			buff = r_buffer[:seek+pos] if pos >=0 else ''
+			if pos == -1: continue
 
-			if buff:
-				if not count_quotes(buff) % 2:
-					request, r_buffer = buff + eor, r_buffer[seek+pos+len(eor):]
-					break
-				else:
-					seek += pos + len(eor)
+			buff = r_buffer[:seek+pos]
+			if not buff: continue
 
-		else:
-			request, r_buffer = '', r_buffer
+			if not count_quotes(buff) % 2:  # we have matching pairs
+				return buff + eor, r_buffer[seek+pos+len(eor):], seek
 
-		return request, r_buffer, seek
+			seek += pos + len(eor)
+
+		return '', r_buffer, seek
+
 
 	def checkChunkSize (self, r_buffer):
-		chunked = True
-		size = 0
+		# return a tuple : bool, length
+		# * the bool is : is there more chunk to come
+		# * the len contains the size of the chunk(s) extracted
+		#   a size of None means that we could not decode the data
 
-		if '\r' in r_buffer:
-			eol = '\r\n'
-		else:
-			eol = '\n'
-
-		# make sure our buffer does not become massive
-		max_len = len('ffff') + (2 * len(eol))
-		sc = ';'
+		total_len = 0
 
 		while r_buffer:
-			if sc in r_buffer:
-				size_s, r_buffer = r_buffer.split(sc, 1)
-				eol = sc
+			if not '\n' in r_buffer:
+				return True,total_len or None
 
-			elif eol in r_buffer:
-				size_s, r_buffer = r_buffer.split(eol, 1)
+			header,r_buffer = r_buffer.split('\n', 1)
+			len_header = len(header) + 1
 
+			if header.endswith('\r'):
+				header = header[:-1]
+				len_eol = 2
 			else:
-				size_s = None
+				len_eol = 1
 
-			if size_s is not None:
-				if ishex(size_s):
-					chunk_size = int(size_s, 16)
+			if ';' in header:
+				header = header.split(';',1)[0]
 
-					if chunk_size > 0:
-						# semi colon can follow only the end of chunked data
-						if eol == sc:
-							size = None
-							break
+			if not ishex(header):
+				# XXX: huston the data is invalid - we should cause a read abortion
+				return True,None
 
-						size += chunk_size + len(size_s) + (2 * len(eol))
-						r_buffer = r_buffer[chunk_size + len(eol):]
-					else:
-						size += chunk_size + len(eol)
-						chunked = False
-						break
-				else:
-					size = None
-					break
+			len_chunk = int(header, 16)
 
-			elif len(r_buffer) > max_len:
-				size = None
-				break
+			if len_chunk > 0xFFFF:
+				# XXX: huston we have a problem - we should cause a read abortion
+				return True,None
 
-			elif not ishex(r_buffer.rstrip(eol)):
-				size = None
-				break
-
+			if len_chunk == 0:
+				total_len += len_header + len_eol
+				return False, total_len
 			else:
-				size = 0
-				break
+				total = len_header + len_chunk + len_eol
+				total_len += total
+				r_buffer = r_buffer[total:]
 
-		return chunked, size
+		return True,total_len or None
 
 
 	def _read (self, sock, read_size=64*1024):
