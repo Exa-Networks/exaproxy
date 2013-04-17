@@ -66,6 +66,7 @@ class Daemon (object):
 			self.log.error('exaproxy.daemon.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
 			return
 
+		self.log.warning('your configuration requires %d file descriptors' % self.nb_descriptors)
 		self.filemax = self.nb_descriptors
 
 	def drop_privileges (self):
