@@ -11,7 +11,6 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 
 from .functions import listen
 import socket
-import time
 
 from exaproxy.util.log.logger import Logger
 from exaproxy.configuration import load
@@ -21,15 +20,22 @@ log = Logger('server', configuration.log.server)
 
 class Server(object):
 	_listen = staticmethod(listen)
-	pause_warning_interval = 60
 
-	def __init__(self, poller, read_name, max_clients):
+	def __init__(self, name, poller, read_name, max_clients):
 		self.socks = {}
+		self.name = name
 		self.poller = poller
 		self.read_name = read_name
 		self.max_clients = max_clients
 		self.client_count = 0
-		self.last_pause_warning = None
+		self.saturated = False  # we are receiving more connections than we can handle
+
+	def saturation (self):
+		if not self.saturated:
+			return
+		self.saturated = False
+		log.error('we received more %s connections that we could handle' % self.name)
+		log.error('we current have %s client(s) out of a maximum of %s' % (self.client_count, self.max_clients))
 
 	def listen(self, ip, port, timeout, backlog):
 		s = self._listen(ip, port,timeout,backlog)
@@ -52,17 +58,13 @@ class Server(object):
 		except socket.error, e:
 			# It doesn't really matter if accept fails temporarily. We will
 			# try again next loop
-			log.debug('failure on accept %s' % str(e))
-
+			log.debug('%s could not accept a new connection %s' % (self.name,str(e)))
 		else:
 			self.client_count += 1
 		finally:
 			if self.client_count >= self.max_clients:
-				current_time = time.time()
-				
-				if self.last_pause_warning is None or (current_time - self.pause_warning_interval) > self.last_pause_warning:
-					self.last_pause_warning = current_time
-					log.warning('reached max configured number of clients (%s of %s). pausing' % (self.client_count, self.max_clients))
+				self.saturated = True
+
 				for listening_sock in self.socks:
 					self.poller.removeReadSocket(self.read_name, listening_sock)
 

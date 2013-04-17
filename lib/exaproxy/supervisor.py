@@ -30,9 +30,10 @@ from exaproxy.util.log.writer import SysLogWriter
 from exaproxy.util.log.writer import UsageWriter
 
 class Supervisor(object):
-	alarm_time = 1           # how often we record history data
-	increase_frequency = 5   # muliple of alarm_time for when we add workers
-	decrease_frequency = 60  # muliple of alarm_time for when we remove workers
+	alarm_time = 1             # how often we record history data
+	increase_frequency = 5     # multiple of alarm_time for when we add workers
+	decrease_frequency = 60    # multiple of alarm_time for when we remove workers
+	saturation_frequency = 20  # multiple of alarm time for when we report connection saturation
 
 	# import os
 	# clear = [hex(ord(c)) for c in os.popen('clear').read()]
@@ -105,8 +106,8 @@ class Supervisor(object):
 		self.content = ContentManager(self.poller, self.configuration.web.html, self.page, configuration)
 		self.client = ClientManager(self.poller, configuration)
 		self.resolver = ResolverManager(self.poller, self.configuration, max_resolver_clients)
-		self.proxy = Server(self.poller,'read_proxy', max_proxy_clients)
-		self.web = Server(self.poller,'read_web', max_admin_clients)
+		self.proxy = Server('http proxy',self.poller,'read_proxy', max_proxy_clients)
+		self.web = Server('web server',self.poller,'read_web', max_admin_clients)
 
 		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.manager, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
 
@@ -175,10 +176,12 @@ class Supervisor(object):
 
 		count_increase = 0
 		count_decrease = 0
+		count_saturation = 0
 
 		while True:
 			count_increase = (count_increase + 1) % self.increase_frequency
 			count_decrease = (count_decrease + 1) % self.decrease_frequency
+			count_saturation = (count_saturation + 1) % self.saturation_frequency
 
 			try:
 				if self._toggle_debug:
@@ -234,6 +237,11 @@ class Supervisor(object):
 				# and every so often remove useless workers
 				if count_decrease == 0:
 					self.manager.deprovision()
+
+				# report if we saw too many connections
+				if count_saturation == 0:
+					self.proxy.saturation()
+					self.web.saturation()
 
 			except KeyboardInterrupt:
 				self.log.info('^C received')
