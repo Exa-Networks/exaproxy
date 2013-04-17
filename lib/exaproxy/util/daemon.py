@@ -22,26 +22,51 @@ def signed (value):
 
 class Daemon (object):
 	def __init__ (self,configuration):
+		self.filemax = 0
 		self.daemonize = configuration.daemon.daemonize
 		self.user = configuration.daemon.user
 		self.log = Logger('daemon', configuration.log.daemon)
 		#mask = os.umask(0137)
-		if configuration.daemon.filemax:
-			try:
-				soft_limit,hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
-				wanted_limit = min(configuration.daemon.filemax, hard_limit if hard_limit > 0 else 0)
 
+		if configuration.daemon.reactor == 'epoll' and not sys.platform.startswith('linux'):
+			self.log.error('exaproxy.daemon.reactor can only be epoll on Linux, changing the reactor to select')
+			configuration.daemon.reactor = 'select'
+
+		self.nb_descriptors = 40  # some to be safe ...
+		self.nb_descriptors += configuration.daemon.connections*2  # one socket for client and server connection
+		self.nb_descriptors += configuration.web.connections       # one socket per web client connection
+		self.nb_descriptors += configuration.redirector.maximum*2  # one socket per pipe to the thread and one for the forked process
+		self.nb_descriptors += configuration.dns.retries*10        # some sockets for the DNS
+
+		if configuration.daemon.reactor == 'select':
+			if self.nb_descriptors > 1024:
+				self.log.error('the select reactor is not very scalable, and can only handle 1024 simultaneous descriptors')
+				self.log.error('your configuration requires %d file descriptors' % self.nb_descriptors)
+				self.log.error('please increase your system maximum limit, alternatively you can reduce')
+				self.log.error('exaproxy.daemon.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
+				return
+
+		soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+
+		if soft < self.nb_descriptors:
+			try:
+				self.log.warning('not enough file descriptor available, increasing the limit from %d to %d' % (soft,self.nb_descriptors))
+				soft_limit,hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+				wanted_limit = min(self.nb_descriptors, hard_limit if hard_limit > 0 else self.nb_descriptors)
 				# default on mac are (256,-1)
 				resource.setrlimit(resource.RLIMIT_NOFILE, (wanted_limit, hard_limit))
 
 			except (resource.error,ValueError),e:
-				self.log.error('could not increase file descriptor limit : %s' % str(e))
+				self.log.warning('problem when trying to increase resource limit : ' % str(e))
 
 		soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
-		if soft != wanted_limit:
-			self.log.error('could not increase file descriptor limit to %d, limit is %d' % (wanted_limit,signed(soft)))
+		if soft != self.nb_descriptors:
+			self.log.error('could not increase file descriptor limit to %d, limit is still %d' % (self.nb_descriptors,signed(soft)))
+			self.log.error('please increase your system maximum limit, alternatively you can reduce')
+			self.log.error('exaproxy.daemon.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
+			return
 
-		self.file_limit = soft
+		self.filemax = self.nb_descriptors
 
 	def drop_privileges (self):
 		"""returns true if we are left with insecure privileges"""

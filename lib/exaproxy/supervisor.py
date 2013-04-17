@@ -47,18 +47,6 @@ class Supervisor(object):
 		self.log = Logger('supervisor', configuration.log.supervisor)
 		self.log.error('Starting exaproxy version %s' % configuration.proxy.version)
 
-		if configuration.daemon.reactor == 'epoll' and not sys.platform.startswith('linux'):
-			print >> sys.stderr
-			print >> sys.stderr, 'warning: exaproxy.daemon.reactor can only be epoll on Linux, changing the reactor to select'
-			configuration.daemon.reactor = 'select'
-
-		if configuration.daemon.reactor == 'select' and configuration.daemon.filemax + configuration.redirector.maximum > 1000:
-			print >> sys.stderr
-			print >> sys.stderr, 'error: Please change exaproxy.daemon.filemax to something lower than %d' % configuration.daemon.filemax
-			print >> sys.stderr, 'error: Otherwise it is likely that under load, the program will crash.'
-			print >> sys.stderr, 'error: (OS limit is 1024 and exaproxy requires some filedescriptors internally too.)'
-			sys.exit(1)
-
 		self.signal_log = Logger('signal', configuration.log.signal)
 		self.log_writer = SysLogWriter('log', configuration.log.destination, configuration.log.enable, level=configuration.log.level)
 		self.usage_writer = UsageWriter('usage', configuration.usage.destination, configuration.usage.enable)
@@ -70,18 +58,13 @@ class Supervisor(object):
 			self.log_writer.toggleDebug()
 			self.usage_writer.toggleDebug()
 
-		self.log.info('starting %s' % sys.argv[0])
-		self.log.info('python version %s' % sys.version.replace(os.linesep,' '))
+		self.log.error('python version %s' % sys.version.replace(os.linesep,' '))
+		self.log.debug('starting %s' % sys.argv[0])
 
 		self.pid = PID(self.configuration)
 
 		self.daemon = Daemon(self.configuration)
 		self.poller = Poller(self.configuration.daemon)
-
-		# We want to ensure that we will not try to open too many files at once
-		max_admin_clients = 10
-		max_resolver_clients = 10
-		max_proxy_clients = (self.daemon.file_limit - max_admin_clients - max_resolver_clients)/2
 
 		self.poller.setupRead('read_proxy')           # Listening proxy sockets
 		self.poller.setupRead('read_web')             # Listening webserver sockets
@@ -105,13 +88,13 @@ class Supervisor(object):
 		)
 		self.content = ContentManager(self.poller, self.configuration.web.html, self.page, configuration)
 		self.client = ClientManager(self.poller, configuration)
-		self.resolver = ResolverManager(self.poller, self.configuration, max_resolver_clients)
-		self.proxy = Server('http proxy',self.poller,'read_proxy', max_proxy_clients)
-		self.web = Server('web server',self.poller,'read_web', max_admin_clients)
+		self.resolver = ResolverManager(self.poller, self.configuration, configuration.dns.retries*10)
+		self.proxy = Server('http proxy',self.poller,'read_proxy', configuration.daemon.connections)
+		self.web = Server('web server',self.poller,'read_web', configuration.web.connections)
 
 		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.manager, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
 
-		self._shutdown = False
+		self._shutdown = True if self.daemon.filemax == 0 else False
 		self._reload = False
 		self._toggle_debug = False
 		self._decrease_spawn_limit = 0
@@ -184,6 +167,9 @@ class Supervisor(object):
 			count_saturation = (count_saturation + 1) % self.saturation_frequency
 
 			try:
+				# check for IO change with select
+				self.reactor.run()
+
 				if self._toggle_debug:
 					self._toggle_debug = False
 					self.log_writer.toggleDebug()
@@ -222,9 +208,6 @@ class Supervisor(object):
 					self._pdb = False
 					import pdb
 					pdb.set_trace()
-
-				# check for IO change with select
-				self.reactor.run()
 
 				# Quit on problems which can not be fixed (like running out of file descriptor)
 				#self._shutdown = not self.reactor.running

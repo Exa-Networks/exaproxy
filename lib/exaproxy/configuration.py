@@ -219,10 +219,11 @@ defaults = {
 		'proxied'         : (value.boolean,value.lower,'false', 'request is encapsulated with proxy protocol'),
 	},
 	'web' : {
-		'enable'  : (value.boolean,value.lower,'true',             'enable the built-in webserver'),
-		'host'    : (value.unquote,value.quote,'127.0.0.1',        'the address the web server listens on'),
-		'port'    : (value.integer,value.nop,'8080',               'port the web server listens on'),
-		'html'    : (value.folder,value.path,'etc/exaproxy/html',  'where internal proxy html pages are served from'),
+		'enable'      : (value.boolean,value.lower,'true',             'enable the built-in webserver'),
+		'host'        : (value.unquote,value.quote,'127.0.0.1',        'the address the web server listens on'),
+		'port'        : (value.integer,value.nop,'8080',               'port the web server listens on'),
+		'html'        : (value.folder,value.path,'etc/exaproxy/html',  'where internal proxy html pages are served from'),
+		'connections' : (value.integer,value.nop,'100',                'the maximum number of web connections'),
 	},
 	'daemon' : {
 		'identifier'  : (value.unquote,value.nop,'ExaProxy','a name for the log (to diferenciate multiple instances more easily)'),
@@ -231,7 +232,7 @@ defaults = {
 		'daemonize'   : (value.boolean,value.lower,'false', 'should we run in the background'),
 		'reactor'     : (value.unquote,value.quote,'epoll', 'what event mechanism to use (select/epoll)'),
 		'speed'       : (value.integer,value.nop,'2',       'when waiting for connection how long are we sleeping for'),
-		'filemax'     : (value.integer,value.nop,'10240',   'the maximum number of open file descriptors, tcp connections and programs'),
+		'connections' : (value.integer,value.nop,'10240',   'the maximum number of proxy connections'),
 	},
 	'dns' : {
 		'resolver'     : (value.resolver,value.path,'/etc/resolv.conf',       'resolver file'),
