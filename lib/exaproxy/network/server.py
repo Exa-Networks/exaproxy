@@ -29,6 +29,7 @@ class Server(object):
 		self.max_clients = max_clients
 		self.client_count = 0
 		self.saturated = False  # we are receiving more connections than we can handle
+		log.info('server [%s] accepting up to %d clients' % (name, max_clients))
 
 	def saturation (self):
 		if not self.saturated:
