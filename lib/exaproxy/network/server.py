@@ -11,6 +11,7 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 
 from .functions import listen
 import socket
+import time
 
 from exaproxy.util.log.logger import Logger
 from exaproxy.configuration import load
@@ -20,6 +21,7 @@ log = Logger('server', configuration.log.server)
 
 class Server(object):
 	_listen = staticmethod(listen)
+	pause_warning_interval = 60
 
 	def __init__(self, poller, read_name, max_clients):
 		self.socks = {}
@@ -27,6 +29,7 @@ class Server(object):
 		self.read_name = read_name
 		self.max_clients = max_clients
 		self.client_count = 0
+		self.last_pause_warning = None
 
 	def listen(self, ip, port, timeout, backlog):
 		s = self._listen(ip, port,timeout,backlog)
@@ -55,6 +58,11 @@ class Server(object):
 			self.client_count += 1
 		finally:
 			if self.client_count >= self.max_clients:
+				current_time = time.time()
+				
+				if self.last_pause_warning is None or (current_time - self.pause_warning_interval) > self.last_pause_warning:
+					self.last_pause_warning = current_time
+					log.warning('reached max configured number of clients (%s of %s). pausing' % (self.client_count, self.max_clients))
 				for listening_sock in self.socks:
 					self.poller.removeReadSocket(self.read_name, listening_sock)
 
