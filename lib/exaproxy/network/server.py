@@ -23,13 +23,14 @@ class Server(object):
 	_listen = staticmethod(listen)
 	pause_warning_interval = 60
 
-	def __init__(self, poller, read_name, max_clients):
+	def __init__(self, poller, name, read_name, max_clients):
 		self.socks = {}
 		self.poller = poller
 		self.read_name = read_name
 		self.max_clients = max_clients
 		self.client_count = 0
 		self.last_pause_warning = None
+		log.info('server [%s] accepting up to %d clients' % (name, max_clients))
 
 	def listen(self, ip, port, timeout, backlog):
 		s = self._listen(ip, port,timeout,backlog)
