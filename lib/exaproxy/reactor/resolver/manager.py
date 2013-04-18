@@ -1,5 +1,7 @@
 import time
 
+from collections import deque
+
 from .worker import DNSResolver
 from exaproxy.network.functions import isip
 from exaproxy.util.log.logger import Logger
@@ -30,11 +32,16 @@ class ResolverManager (object):
 		# TCP workers that have not yet sent a complete request
 		self.sending = {}  # sock :
 
+		# Maximum number of entry we will cache (1024 DNS lookup per second !)
+		# assuming 1k per entry, which is a lot, it mean 20Mb of memory
+		# which at the default of 900 seconds of cache is 22 new host per seonds
+		self.max_entries  = 1024*20
+
 		# track the current queries and when they were started
 		self.active = []
 
 		self.cache = {}
-		self.cached = []
+		self.cached = deque()
 
 		self.max_workers = max_workers
 		self.worker_count = len(self.workers)  # the UDP client
@@ -46,7 +53,7 @@ class ResolverManager (object):
 	def cacheDestination (self, hostname, ip):
 		if hostname not in self.cache:
 			expire_time = time.time() + self.configuration.dns.ttl
-			expire_time = expire_time - expire_time % self.configuration.dns.resolution
+			expire_time = expire_time - expire_time % 5  # group the DNS record per buckets 5 seconds
 			latest_time, latest_hosts = self.cached[-1] if self.cached else (-1, None)
 
 			if expire_time > latest_time:
@@ -64,8 +71,8 @@ class ResolverManager (object):
 			current_time = time.time()
 			expire_time, hosts = self.cached[0]
 
-			if current_time >= expire_time:
-				(expire_time, hosts), self.cached = self.cached[0], self.cached[1:]
+			if current_time >= expire_time or len(self.cache) > self.max_entries:
+				expire_time, hosts = self.cached.popleft()
 
 				for hostname in hosts:
 					self.cache.pop(hostname, None)
