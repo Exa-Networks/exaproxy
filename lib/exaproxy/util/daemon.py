@@ -60,7 +60,7 @@ class Daemon (object):
 				self.log.warning('problem when trying to increase resource limit : ' % str(e))
 
 		soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
-		if soft != self.nb_descriptors:
+		if soft < self.nb_descriptors:
 			self.log.error('could not increase file descriptor limit to %d, limit is still %d' % (self.nb_descriptors,signed(soft)))
 			self.log.error('please increase your system maximum limit, alternatively you can reduce')
 			self.log.error('exaproxy.daemon.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
