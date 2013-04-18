@@ -54,13 +54,15 @@ class Client (object):
 		# return a tuple : bool, length
 		# * the bool is : is there more chunk to come
 		# * the len contains the size of the chunk(s) extracted
-		#   a size of None means that we could not decode the data
+		#   a size of None means that we could not decode as it is invalid
 
 		total_len = 0
 
 		while r_buffer:
 			if not '\n' in r_buffer:
-				return True,total_len or None
+				if len(r_buffer) > 6:  # len('FFFF') + len(\r\n)
+					return True, None
+				return True, 0
 
 			header,r_buffer = r_buffer.split('\n', 1)
 			len_header = len(header) + 1
@@ -75,13 +77,11 @@ class Client (object):
 				header = header.split(';',1)[0]
 
 			if not ishex(header):
-				# XXX: huston the data is invalid - we should cause a read abortion
 				return True,None
 
 			len_chunk = int(header, 16)
 
 			if len_chunk > 0xFFFF:
-				# XXX: huston we have a problem - we should cause a read abortion
 				return True,None
 
 			if len_chunk == 0:
@@ -92,7 +92,7 @@ class Client (object):
 				total_len += total
 				r_buffer = r_buffer[total:]
 
-		return True,total_len or None
+		return True,total_len
 
 
 	def _read (self, sock, read_size=64*1024):
