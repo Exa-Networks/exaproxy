@@ -124,6 +124,7 @@ class Client (object):
 						data = sock.recv(read_size)
 						if not data:
 							break  # read failed so we abort
+						self.log.debug("<< [%s]" % data.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n'))
 						r_buffer += data
 					else:
 						processing = False
@@ -285,6 +286,8 @@ class Client (object):
 
 					if not had_buffer or data == '':
 						sent = sock.send(w_buffer)
+						if sent:
+							self.log.debug(">> [%s]" % w_buffer[:sent].replace('\t','\\t').replace('\r','\\r').replace('\n','\\n'))
 						w_buffer = w_buffer[sent:]
 					else:
 						sent = 0

@@ -144,7 +144,7 @@ class UDPClient(DNSClient):
 class TCPClient(DNSClient):
 	extended = True
 	tcp_factory = staticmethod(connect)
-	
+
 	def __init__(self, w_id, dns_factory, configuration, servers):
 		DNSClient.__init__(self, w_id, dns_factory, configuration, servers)
 		self.reader = None
