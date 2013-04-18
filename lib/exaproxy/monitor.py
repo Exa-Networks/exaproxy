@@ -61,7 +61,6 @@ class Monitor (object):
 			'exaproxy.dns.timeout' : conf.dns.timeout,
 #			'exaproxy.dns.force-ttl' : conf.dns.force_ttl,
 			'exaproxy.dns.ttl' : conf.dns.ttl,
-			'exaproxy.dns.expire' : conf.dns.expire,
 			'exaproxy.daemon.user' : conf.daemon.user,
 			'exaproxy.daemon.reactor' : conf.daemon.reactor,
 			'exaproxy.log.level.daemon' : conf.log.daemon,
