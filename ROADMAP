@@ -6,6 +6,7 @@ Reliablity:
  - be more verbose for reactor exception trapped
  - if a remote end / client does not respect connection-close, use time to kill it anyway
  - look at tox: http://tox.testrun.org/latest/
+ - implement the timeout of client sockets.
 
 RFC Compliance
  - consider adding a VIA header to the answer from the server (not done to save CPU)

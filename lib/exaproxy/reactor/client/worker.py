@@ -85,7 +85,7 @@ class Client (object):
 				return True,None
 
 			if len_chunk == 0:
-				total_len += len_header + len_eol
+				total_len += len_header
 				return False, total_len
 			else:
 				total = len_chunk + len_eol
@@ -104,90 +104,116 @@ class Client (object):
 		yield ''
 
 		r_buffer = ''
-		request = ''
-		remaining = 0
+		nb_to_send = 0
 		seek = 0
-		chunked = False
-		extra_headers = False
+		processing = False
+
+		# mode can be one of : request, chunk, extension, relay
+		# request : we are reading the request (read all you can until a separator)
+		# extra-headers : we are reading data until a separator
+		# chunked : we are reading chunk-encoded darta
+		# transfer : we are reading as much as requested in remaining
+		# passthrough : read as much as can to be relayed
+
+		mode = 'request'
 
 		while True:
 			try:
 				while True:
-					if request:
-						# we may have buffered data that was sent along with the request
-						# so the coroutine will be asked for data even if there is nothing
-						# to read in the socket buffer
-						request = ''
-					else:
+					if not processing:
 						data = sock.recv(read_size)
 						if not data:
 							break  # read failed so we abort
 						r_buffer += data
+					else:
+						processing = False
 
-					if remaining > 0:
-						length = min(len(r_buffer), remaining)
-						related, r_buffer = r_buffer[:length], r_buffer[length:]
+					if mode == 'passthrough':
+						yield '', r_buffer
+						r_buffer = ''
+						continue
 
-						extra_size = yield '', related
-						remaining = max(remaining - length + extra_size, 0)
+					if mode in ('transfer','chunked') and nb_to_send:
+						length = min(len(r_buffer), nb_to_send)
+						_, extra_size = yield '', r_buffer[:length]
+						r_buffer = r_buffer[length:]
+						nb_to_send = nb_to_send - length + extra_size
 
-					elif remaining < 0:
-						related, r_buffer = r_buffer, ''
-						yield '', related
+						# we still have data to read before we can send more.
+						if nb_to_send != 0:
+							continue
+						# we finished relaying, go back to reading requests
+						elif mode == 'transfer':
+							mode = 'request'
+						elif mode == 'extra-headers':
+							mode = 'request'
 
-					if remaining != 0:
-						continue  # we expect that the client will write more data
-
-					if chunked:
+					if mode == 'chunked':
 						# sum of the sizes of all chunks in our buffer
-						chunked, chunk_size = self.checkChunkSize(r_buffer)
+						chunked, nb_to_send = self.checkChunkSize(r_buffer)
 
-						if chunk_size is None:
-							# we thought we had the start of a new chunk - abort
+						if nb_to_send is None:
+							# could not read any chunk (data is invalid)
 							break
 
-						remaining = chunk_size
 						if chunked:
+							# process the chunk in the if above
 							continue
 
-						# do not yield until we get to the end of the extra headers
-						remaining = 0
-						extra_headers = True
+						mode = 'end-chunk'
 
-					if extra_headers:
-						related, r_buffer, seek = self.checkRequest(r_buffer)
-						extra_size = yield '', related
+					# seek is only set if we already passed once and found we needed more data to check
+					if mode == 'end-chunk':
+						if r_buffer[nb_to_send:].startswith('\r\n'):
+							nb_to_send += 2
+							processing = True
+							mode = 'transfer'
+							continue
+						elif r_buffer[nb_to_send:].startswith('\n'):
+							nb_to_send += 1
+							processing = True
+							mode = 'transfer'
+							continue
+
+						if not r_buffer[nb_to_send:]:
+							yield '',''
+							continue
+
+						mode = 'extra-headers'
+						seek = nb_to_send
+
+					if mode == 'extra-headers':
+						# seek is up to where we know there is no double CRLF
+						related, r_buffer, seek = self.checkRequest(r_buffer,seek)
+						yield '', related
 
 						if not related:
 							continue
-						remaining = max(extra_size, 0)
-						extra_headers = False
-						seek = 0
 
-					# ignore empty lines before the request
-					# do not perform this mondification in checkRequest since that method
-					# is also used at the end of chunked data, where we do not want to ignore
-					# empty lines
+						seek = 0
+						mode = 'transfer'
+
+
+					if mode != 'request':
+						self.log.error('The programmers are monkeys - please give them bananas ..')
+						self.log.error('the mode was spelled : [%s]' % mode)
+						self.log.error('.. if it works, we are lucky - but it may work.')
+						mode = 'request'
+
+					# ignore EOL
 					r_buffer = r_buffer.lstrip('\r\n')
 
 					# check to see if we have read an entire request
 					request, r_buffer, seek = self.checkRequest(r_buffer, seek)
-					if request:
-						seek = 0
 
-					# r_size is the size of ....
-					# remainaing is how much we expect to need to get the rest of the request, or zero for read all
-					remaining = yield request, ''
-					if request and remaining == 'chunked':
-						chunked = True
-						remaining = 0
+					if not request:
+						yield '', ''
+						continue
+					seek = 0
+					processing = True
 
-					elif not request:
-						remaining = 0
-
-					elif remaining == 0:
-						remaining = yield '', r_buffer
-						r_buffer = ''
+					# nb_to_send is how much we expect to need to get the rest of the request
+					mode, nb_to_send = yield request, ''
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
@@ -208,11 +234,11 @@ class Client (object):
 		self.peer = peer
 
 	def readData(self):
-		request,content = self.reader.send(0)
+		request,content = self.reader.send(('transfer',0))
 		return self.name, self.peer, request, content
 
-	def readRelated(self, remaining):
-		request, content = self.reader.send(remaining)
+	def readRelated(self, mode, remaining):
+		request, content = self.reader.send((mode,remaining))
 		return self.name, self.peer, request, content
 
 	def _write(self, sock):

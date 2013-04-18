@@ -209,6 +209,18 @@ class ClientManager (object):
 
 
 	def startData(self, name, data, remaining):
+		# XXX: soo ugly but fast to code
+		nb_to_read = 0
+		if remaining == 'chunked':
+			mode = 'chunked'
+		elif remaining > 0:
+			mode = 'transfer'
+			nb_to_read = remaining
+		elif remaining == 0:
+			mode = 'request'
+		else:
+			mode = 'passthrough'
+
 		client, source = self.byname.get(name, (None, None))
 		if client:
 			try:
@@ -245,7 +257,7 @@ class ClientManager (object):
 				buffered, had_buffer, sent = res
 
 				# buffered data we read with the HTTP headers
-				name, peer, request, content = client.readRelated(remaining)
+				name, peer, request, content = client.readRelated(mode,nb_to_read)
 				if request:
 					self.log.error('reading multiple requests')
 					self.cleanup(client.sock, name)
