@@ -64,7 +64,10 @@ class value (object):
 
 	@staticmethod
 	def integer (_):
-		return int(_)
+		value = int(_)
+		if value <= 0:
+			raise TypeError('the value must be positive')
+		return value
 
 	@staticmethod
 	def lowunquote (_):
