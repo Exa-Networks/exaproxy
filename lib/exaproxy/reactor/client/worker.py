@@ -88,8 +88,8 @@ class Client (object):
 				total_len += len_header + len_eol
 				return False, total_len
 			else:
-				total = len_header + len_chunk + len_eol
-				total_len += total
+				total = len_chunk + len_eol
+				total_len += total + len_header
 				r_buffer = r_buffer[total:]
 
 		return True,total_len
