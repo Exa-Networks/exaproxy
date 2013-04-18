@@ -81,7 +81,8 @@ class Client (object):
 
 			len_chunk = int(header, 16)
 
-			if len_chunk > 0xFFFF:
+			# 0xFFFF is not enough - coad is complaining :p
+			if len_chunk > 0x100000:
 				return True,None
 
 			if len_chunk == 0:
