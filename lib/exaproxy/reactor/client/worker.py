@@ -97,6 +97,10 @@ class Client (object):
 
 	def _read (self, sock, read_size=64*1024):
 		"""Coroutine managing data read from the client"""
+		# yield request, content
+		# request is the text that form the request header
+		# content any text which is related to the current request after the headers
+
 		r_buffer = ''
 		request = ''
 		remaining = 0
@@ -115,21 +119,20 @@ class Client (object):
 						request = ''
 					else:
 						data = sock.recv(r_size or read_size)
-						if data:
-							r_buffer += data
-						else:          # read failed so we abort
-							break
+						if not data:
+							break  # read failed so we abort
+						r_buffer += data
 
 					if remaining > 0:
 						length = min(len(r_buffer), remaining)
 						related, r_buffer = r_buffer[:length], r_buffer[length:]
 
-						r_size, extra_size = yield '', related, False
+						r_size, extra_size = yield '', related
 						remaining = max(remaining - length + extra_size, 0)
 
 					elif remaining < 0:
 						related, r_buffer = r_buffer, ''
-						r_size, _ = yield '', related, False
+						r_size, _ = yield '', related
 
 					if remaining != 0:
 						continue  # we expect that the client will write more data
@@ -138,30 +141,27 @@ class Client (object):
 						# sum of the sizes of all chunks in our buffer
 						chunked, chunk_size = self.checkChunkSize(r_buffer)
 
-						if chunk_size is not None:
-							remaining = chunk_size
-							if chunked:
-								continue
-							else:
-								# do not yield until we get to the end of the extra headers
-								remaining = 0
-								extra_headers = True
-
-						else:
+						if chunk_size is None:
 							# we thought we had the start of a new chunk - abort
 							break
 
+						remaining = chunk_size
+						if chunked:
+							continue
+
+						# do not yield until we get to the end of the extra headers
+						remaining = 0
+						extra_headers = True
+
 					if extra_headers:
 						related, r_buffer, seek = self.checkRequest(r_buffer)
-						r_size, extra_size = yield '', related, False
+						r_size, extra_size = yield '', related
 
-						if related:
-							remaining = max(extra_size, 0)
-							extra_headers = False
-							seek = 0
-
-						continue
-
+						if not related:
+							continue
+						remaining = max(extra_size, 0)
+						extra_headers = False
+						seek = 0
 
 					# ignore empty lines before the request
 					# do not perform this mondification in checkRequest since that method
@@ -174,7 +174,7 @@ class Client (object):
 					if request:
 						seek = 0
 
-					r_size, remaining = yield request, '', True  # yield to manager.readRequest
+					r_size, remaining = yield request, ''
 					if request and remaining == 'chunked':
 						chunked = True
 						remaining = 0
@@ -183,7 +183,7 @@ class Client (object):
 						remaining = 0
 
 					elif remaining == 0:
-						r_size, remaining = yield '', r_buffer, True  # yield to manager.readRequest
+						r_size, remaining = yield '', r_buffer
 						r_buffer = ''
 
 				# break out of the outer loop as soon as we leave the inner loop
@@ -192,11 +192,11 @@ class Client (object):
 
 			except socket.error, e:
 				if e.args[0] in errno_block:
-					yield '', '', None
+					yield '', ''
 				else:
 					break
 
-		yield None
+		yield None,None
 
 
 	def setPeer (self, peer):
@@ -205,30 +205,12 @@ class Client (object):
 		self.peer = peer
 
 	def readData(self):
-		name, peer = self.name, self.peer
-		res = self.reader.send((0,0))
-
-		if res is not None:
-			request, content, new_request = res
-		else:
-			request, content, new_request = None, None, None
-
-		#if new_request is False:
-		#	raise RuntimeError, 'BAD! We should have a new request'
-		#	request, content = None, None
-
-		return name, peer, request, content
+		request,content = self.reader.send((0,0))
+		return self.name, self.peer, request, content
 
 	def readRelated(self, remaining):
-		name, peer = self.name, self.peer
-		res = self.reader.send((0,remaining))
-
-		if res is not None:
-			request, content, new_request = res
-		else:
-			request, content, new_request = None, None, None
-
-		return name, peer, request, content
+		request, content = self.reader.send((0,remaining))
+		return self.name, self.peer, request, content
 
 	def _write(self, sock):
 		"""Coroutine managing data sent to the client"""
