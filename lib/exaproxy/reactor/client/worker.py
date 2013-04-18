@@ -101,11 +101,12 @@ class Client (object):
 		# request is the text that form the request header
 		# content any text which is related to the current request after the headers
 
+		yield ''
+
 		r_buffer = ''
 		request = ''
 		remaining = 0
 		seek = 0
-		r_size, _ = yield ''
 		chunked = False
 		extra_headers = False
 
@@ -118,7 +119,7 @@ class Client (object):
 						# to read in the socket buffer
 						request = ''
 					else:
-						data = sock.recv(r_size or read_size)
+						data = sock.recv(read_size)
 						if not data:
 							break  # read failed so we abort
 						r_buffer += data
@@ -127,12 +128,12 @@ class Client (object):
 						length = min(len(r_buffer), remaining)
 						related, r_buffer = r_buffer[:length], r_buffer[length:]
 
-						r_size, extra_size = yield '', related
+						extra_size = yield '', related
 						remaining = max(remaining - length + extra_size, 0)
 
 					elif remaining < 0:
 						related, r_buffer = r_buffer, ''
-						r_size, _ = yield '', related
+						yield '', related
 
 					if remaining != 0:
 						continue  # we expect that the client will write more data
@@ -155,7 +156,7 @@ class Client (object):
 
 					if extra_headers:
 						related, r_buffer, seek = self.checkRequest(r_buffer)
-						r_size, extra_size = yield '', related
+						extra_size = yield '', related
 
 						if not related:
 							continue
@@ -174,7 +175,9 @@ class Client (object):
 					if request:
 						seek = 0
 
-					r_size, remaining = yield request, ''
+					# r_size is the size of ....
+					# remainaing is how much we expect to need to get the rest of the request, or zero for read all
+					remaining = yield request, ''
 					if request and remaining == 'chunked':
 						chunked = True
 						remaining = 0
@@ -183,7 +186,7 @@ class Client (object):
 						remaining = 0
 
 					elif remaining == 0:
-						r_size, remaining = yield '', r_buffer
+						remaining = yield '', r_buffer
 						r_buffer = ''
 
 				# break out of the outer loop as soon as we leave the inner loop
@@ -205,11 +208,11 @@ class Client (object):
 		self.peer = peer
 
 	def readData(self):
-		request,content = self.reader.send((0,0))
+		request,content = self.reader.send(0)
 		return self.name, self.peer, request, content
 
 	def readRelated(self, remaining):
-		request, content = self.reader.send((0,remaining))
+		request, content = self.reader.send(remaining)
 		return self.name, self.peer, request, content
 
 	def _write(self, sock):
@@ -303,9 +306,9 @@ class Client (object):
 		elif command == 'file':
 			header, filename = data
 			res = self.writer.send(filename)  # use local file
-			self.writer.send(header)      # write the response headers before the file
+			self.writer.send(header)  # write the response headers before the file
 
-			self.writer.send(None)        # close the connection once the buffer is empty
+			self.writer.send(None)  # close the connection once the buffer is empty
 		else:
 			res = None
 
