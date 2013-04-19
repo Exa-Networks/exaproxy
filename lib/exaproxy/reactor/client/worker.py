@@ -135,15 +135,13 @@ class Client (object):
 						r_buffer = ''
 						continue
 
-					if mode in ('transfer','chunked') and nb_to_send:
-						r_len = len(r_buffer)
-						length = min(r_len, nb_to_send)
+					if nb_to_send:
+						if mode == 'transfer' :
+							r_len = len(r_buffer)
+							length = min(r_len, nb_to_send)
 
-						# do not yield yet if we are chunked since the end of the chunk may
-						# very well be in the rest of the data we just read
-						# XXX: should be able to support pipelining by applying the same idea
-						# when in transfer mode
-						if mode == 'transfer' or r_len <= nb_to_send:
+							# do not yield yet if we are chunked since the end of the chunk may
+							# very well be in the rest of the data we just read
 							_, extra_size = yield '', r_buffer[:length]
 
 							r_buffer = r_buffer[length:]
@@ -152,10 +150,23 @@ class Client (object):
 							# we still have data to read before we can send more.
 							if nb_to_send != 0:
 								continue
+							mode = 'request'
 
-							# we finished relaying, go back to reading requests
-							elif mode == 'transfer':
-								mode = 'request'
+						if mode == 'chunked':
+							r_len = len(r_buffer)
+							length = min(r_len, nb_to_send)
+
+							# do not yield yet if we are chunked since the end of the chunk may
+							# very well be in the rest of the data we just read
+							if r_len <= nb_to_send:
+								_, extra_size = yield '', r_buffer[:length]
+
+								r_buffer = r_buffer[length:]
+								nb_to_send = nb_to_send - length + extra_size
+
+								# we still have data to read before we can send more.
+								if nb_to_send != 0:
+									continue
 
 					if mode == 'chunked':
 						# sum of the sizes of all chunks in our buffer
