@@ -136,30 +136,35 @@ class Client (object):
 						continue
 
 					if mode in ('transfer','chunked') and nb_to_send:
-						length = min(len(r_buffer), nb_to_send)
-						_, extra_size = yield '', r_buffer[:length]
-						r_buffer = r_buffer[length:]
-						nb_to_send = nb_to_send - length + extra_size
+						r_len = len(r_buffer)
+						length = min(r_len, nb_to_send)
 
-						# we still have data to read before we can send more.
-						if nb_to_send != 0:
-							continue
-						# we finished relaying, go back to reading requests
-						elif mode == 'transfer':
-							mode = 'request'
-						elif mode == 'extra-headers':
-							mode = 'request'
+						if mode == 'transfer' or r_len <= nb_to_send:
+							_, extra_size = yield '', r_buffer[:length]
+
+							r_buffer = r_buffer[length:]
+							nb_to_send = nb_to_send - length + extra_size
+
+							# we still have data to read before we can send more.
+							if nb_to_send != 0:
+								continue
+
+							# we finished relaying, go back to reading requests
+							elif mode == 'transfer':
+								mode = 'request'
 
 					if mode == 'chunked':
 						# sum of the sizes of all chunks in our buffer
-						chunked, nb_to_send = self.checkChunkSize(r_buffer)
+						chunked, new_to_send = self.checkChunkSize(r_buffer[nb_to_send:])
 
-						if nb_to_send is None:
+						if new_to_send is None:
 							# could not read any chunk (data is invalid)
 							break
 
+						nb_to_send += new_to_send
 						if chunked:
 							# process the chunk in the if above
+							processing = True
 							continue
 
 						mode = 'end-chunk'
