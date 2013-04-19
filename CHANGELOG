@@ -16,6 +16,7 @@ Version 1.0.9 - th of 2013
  * Fix: bug handling timeout during connection establishment
  * Fix: check that hostnames do not have parts between dots that are more than 255 characters long
  * Fix: ensure we do not read a request immediately after having read a previous request on the same connection
+ * Fix: full rewrite of the chunk parser
  * Improvement: do not attempt to resolve hostnames that do not contain a dot
  * Improvement: changed the worker thread queue to be non blocking
  * Improvement: change exaproxy.redirector.minimum and exaproxy.redirector.maximum using the web interface
