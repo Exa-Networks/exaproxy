@@ -178,8 +178,6 @@ class Client (object):
 
 						nb_to_send += new_to_send
 						if chunked:
-							# process the chunk in the if above
-							processing = True
 							continue
 
 						mode = 'end-chunk'
