@@ -211,7 +211,7 @@ class ClientManager (object):
 	def startData(self, name, data, remaining):
 		# XXX: soo ugly but fast to code
 		nb_to_read = 0
-		if remaining == 'chunked':
+		if 'chunked' in remaining:
 			mode = 'chunked'
 		elif remaining > 0:
 			mode = 'transfer'

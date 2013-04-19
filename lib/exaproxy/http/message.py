@@ -72,10 +72,13 @@ class HTTP (object):
 				#else:
 				#	self.log.info('Invalid address in Client identifier header: %s' % client)
 
+			# encoding can contain trailers and other information see RFC2516 section 14.39
 			encoding = self.headers.get('transfer-encoding', [':'])[0].split(':', 1)[1].strip()
-			content_length = int(self.headers.get('content-length', [':0'])[0].split(':',1)[1].strip())
+			if not encoding:
+				encoding = self.headers.get('te', [':'])[0].split(':', 1)[1].strip()
 
-			self.content_length = encoding if encoding == 'chunked' else content_length
+			content_length = int(self.headers.get('content-length', [':0'])[0].split(':',1)[1].strip())
+			self.content_length = encoding if 'chunked' in encoding else content_length
 			self.url = self.host + ((':%s' % self.port) if self.port != '80' else '') + self.request.path
 			self.url_noport = self.host + self.request.path
 
