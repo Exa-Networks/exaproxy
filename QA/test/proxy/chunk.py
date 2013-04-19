@@ -7,8 +7,8 @@ pattern = ''.join(chr(_) for _ in range(0,256) if chr(_).isalpha())
 
 for sizes in (
 #	[str(_) for _ in range(1,10)],
-#	[str(1) for _ in range(0,0xffff)],
-	('ffff',),
+	[str(1) for _ in range(0,0xffff)],
+#	('ffff',),
 #	('20000',),
 ):
 	for te_key in ('Transfer-Encoding',):  # 'TE','Tranfer-Encoding'):  # everyone does a typo once in a while
@@ -17,7 +17,7 @@ for sizes in (
 			s.connect(("127.0.0.1", 3128))
 
 			s.send(
-				"POST /not-here HTTTP/1.1\r\n"
+				"POST /empty/ HTTTP/1.1\r\n"
 				"Host: 127.0.0.1\r\n"
 				"%s: %s\r\n"
 				"Connection: close\r\n\r\n" % (te_key,te_value)
