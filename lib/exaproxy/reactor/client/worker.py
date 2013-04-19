@@ -139,6 +139,10 @@ class Client (object):
 						r_len = len(r_buffer)
 						length = min(r_len, nb_to_send)
 
+						# do not yield yet if we are chunked since the end of the chunk may
+						# very well be in the rest of the data we just read
+						# XXX: should be able to support pipelining by applying the same idea
+						# when in transfer mode
 						if mode == 'transfer' or r_len <= nb_to_send:
 							_, extra_size = yield '', r_buffer[:length]
 
