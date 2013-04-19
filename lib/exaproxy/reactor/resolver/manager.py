@@ -272,7 +272,7 @@ class ResolverManager (object):
 
 				# check to see if we received an incomplete response
 				if not completed:
-					newidentifier = self.beginResolvingTCP(client_id, command, decision)
+					newidentifier = self.beginResolvingTCP(client_id, command, decision, 1)
 					newhost = hostname
 					response = None
 
