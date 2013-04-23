@@ -147,7 +147,7 @@ class value (object):
 				with open(resolver) as r:
 					if 'nameserver' in (line.strip().split(None,1)[0].lower() for line in r.readlines()):
 						return resolver
-		raise TypeError('resolv.conf can not be found')
+		raise TypeError('resolv.conf can not be found (are you using DHCP without any network setup ?)')
 
 	@staticmethod
 	def exe (path):
@@ -188,97 +188,6 @@ class value (object):
 			raise TypeError('invalid log level %s' % log)
 		return _syslog_value_name[log]
 
-defaults = {
-	'tcp4' : {
-		'host'    : (value.unquote,value.quote,'127.0.0.1', 'the host the proxy listen on'),
-		'port'    : (value.integer,value.nop,'3128',        'the port the proxy listen on'),
-		'timeout' : (value.integer,value.nop,'5',           'time before we abandon inactive established connections'),
-		'backlog' : (value.integer,value.nop,'200',         'when busy how many connection should the OS queue for us'),
-		'listen'  : (value.boolean,value.lower,'true',      'should we listen for connections over IPv4'),
-		'out'     : (value.boolean,value.lower,'true',      'allow connections to remote web servers over IPv4'),
-	},
-	'tcp6' : {
-		'host'    : (value.unquote,value.quote,'::1',   'the host the proxy listen on'),
-		'port'    : (value.integer,value.nop,'3128',    'the port the proxy listen on'),
-		'timeout' : (value.integer,value.nop,'5',       'time before we abandon inactive established connections'),
-		'backlog' : (value.integer,value.nop,'200',     'when busy how many connection should the OS queue for us'),
-		'listen'  : (value.boolean,value.lower,'false', 'should we listen for connections over IPv6'),
-		'out'     : (value.boolean,value.lower,'true',  'allow connections to remote web servers over IPv6'),
-	},
-	'redirector' : {
-		'enable'  : (value.boolean,value.lower,'false',                         'use redirector programs to filter http request'),
-		'program' : (value.exe,value.path,'etc/exaproxy/redirector/url-allow',  'the program used to know where to send request'),
-		'minimum' : (value.integer,value.nop,'5',                               'minimum number of worker threads (forked program)'),
-		'maximum' : (value.integer,value.nop,'25',                              'maximum number of worker threads (forked program)'),
-		'protocol': (value.redirector,value.quote,'url',                        'what protocol to use (url -> squid like / icap:://<uri> -> icap like)')
-	},
-
-	'http' : {
-		'transparent'     : (value.boolean,value.lower,'false', 'do not reveal the presence of the proxy'),
-		'forward'         : (value.lowunquote,value.quote,'',   'read client address from this header (normally x-forwarded-for)'),
-		'allow-connect'   : (value.boolean,value.lower,'true',  'allow client to use CONNECT and https connections'),
-		'extensions'      : (value.methods,value.list,'',       'allow new HTTP method (space separated)'),
-		'proxied'         : (value.boolean,value.lower,'false', 'request is encapsulated with proxy protocol'),
-	},
-	'web' : {
-		'enable'      : (value.boolean,value.lower,'true',             'enable the built-in webserver'),
-		'host'        : (value.unquote,value.quote,'127.0.0.1',        'the address the web server listens on'),
-		'port'        : (value.integer,value.nop,'8080',               'port the web server listens on'),
-		'html'        : (value.folder,value.path,'etc/exaproxy/html',  'where internal proxy html pages are served from'),
-		'connections' : (value.integer,value.nop,'100',                'the maximum number of web connections'),
-	},
-	'daemon' : {
-		'identifier'  : (value.unquote,value.nop,'ExaProxy','a name for the log (to diferenciate multiple instances more easily)'),
-		'pidfile'     : (value.unquote,value.quote,'',      'where to save the pid if we manage it'),
-		'user'        : (value.user,value.quote,'nobody',   'user to run as'),
-		'daemonize'   : (value.boolean,value.lower,'false', 'should we run in the background'),
-		'reactor'     : (value.unquote,value.quote,'epoll', 'what event mechanism to use (select/epoll)'),
-		'speed'       : (value.integer,value.nop,'2',       'when waiting for connection how long are we sleeping for'),
-		'connections' : (value.integer,value.nop,'10240',   'the maximum number of proxy connections'),
-	},
-	'dns' : {
-		'resolver'     : (value.resolver,value.path,'/etc/resolv.conf',       'resolver file'),
-		'timeout'      : (value.integer,value.nop,'60',                       'how long to wait for DNS replies'),
-		'retries'      : (value.integer,value.nop,'3',                        'how many times to retry sending requests'),
-		'ttl'          : (value.integer,value.nop,'900',                      'amount of time (in seconds) we will cache dns results for'),
-		'fqdn'         : (value.boolean,value.lower,'true',                   'only resolve FQDN (hostnames must have a dot'),
-		'definitions'  : (value.folder,value.path,'etc/exaproxy/dns/types',   'location of file defining dns query types'),
-	},
-	'log' : {
-		'enable'        : (value.boolean,value.lower,'true',               'enable traffic logging'),
-		'level'         : (value.syslog_value,value.syslog_name,'ERROR', 'log message with at least the priority logging.<level>'),
-		'destination'   : (value.unquote,value.quote,'stdout',             'where syslog should log'),
-		'signal'        : (value.boolean,value.lower,'true',               'log messages from the signal subsystem'),
-		'configuration' : (value.boolean,value.lower,'true',               'log messages from the configuration subsystem'),
-		'supervisor'    : (value.boolean,value.lower,'true',               'log messages from the supervisor subsystem'),
-		'daemon'        : (value.boolean,value.lower,'true',               'log messages from the daemon subsystem'),
-		'server'        : (value.boolean,value.lower,'true',               'log messages from the server subsystem'),
-		'client'        : (value.boolean,value.lower,'true',               'log messages from the client subsystem'),
-		'manager'       : (value.boolean,value.lower,'true',               'log messages from the manager subsystem'),
-		'worker'        : (value.boolean,value.lower,'true',               'log messages from the worker subsystem'),
-		'download'      : (value.boolean,value.lower,'true',               'log messages from the download subsystem'),
-		'http'          : (value.boolean,value.lower,'true',               'log messages from the http subsystem'),
-		'header'        : (value.boolean,value.lower,'true',               'log messages from the header subsystem'),
-		'resolver'      : (value.boolean,value.lower,'true',               'log messages from the dns subsystem'),
-	},
-	'usage' : {
-		'enable'        : (value.boolean,value.lower,'false',              'enable traffic logging'),
-		'destination'   : (value.unquote,value.quote,'stdout',              'where syslog should log'),
-	},
-	'profile' : {
-		'enable'      : (value.boolean,value.lower,'false', 'enable profiling'),
-		'destination' : (value.unquote,value.quote,'stdout', 'save profiling to file (instead of to the screen on exit)'),
-	},
-	'proxy' : {
-		'version' : (value.nop,value.nop,'unknown',  'ExaProxy\'s version'),
-	},
-	# Here for internal use
-	'debug' : {
-		'memory' : (value.boolean,value.lower,'false','command line option --memory'),
-		'pdb'    : (value.boolean,value.lower,'false','command line option --pdb'),
-		'log'    : (value.boolean,value.lower,'false','command line option --debug'),
-	},
-}
 
 import ConfigParser
 
@@ -318,8 +227,8 @@ def _configuration (conf):
 	if ini_files:
 		ini.read(ini_files[0])
 
-	for section in defaults:
-		default = defaults[section]
+	for section in __defaults:
+		default = __defaults[section]
 
 		for option in default:
 			convert = default[option][0]
@@ -333,8 +242,12 @@ def _configuration (conf):
 				elif rep_name in os.environ:
 					conf = os.environ.get(rep_name)
 				else:
-					# raise and set the default
-					conf = value.unquote(ini.get(proxy_section,option,nonedict))
+					try:
+						# raise and set the default
+						conf = value.unquote(ini.get(section,option,nonedict))
+					except (ConfigParser.NoSectionError,ConfigParser.NoOptionError):
+						# raise and set the default
+						conf = value.unquote(ini.get(proxy_section,option,nonedict))
 					# name without an = or : in the configuration and no value
 					if conf == None:
 						conf = default[option][2]
@@ -343,25 +256,32 @@ def _configuration (conf):
 			try:
 				configuration.setdefault(section,Store())[option] = convert(conf)
 			except TypeError,error:
+				import pdb; pdb.set_trace()
 				raise ConfigurationError('invalid value for %s.%s : %s (%s)' % (section,option,conf,str(error)))
 
 	return configuration
 
+__application = None
 __configuration = None
+__defaults = None
 
-def load (conf=None):
+def load (application=None,defaults=None,conf=None):
+	global __application
+	global __defaults
 	global __configuration
 	if __configuration:
 		return __configuration
 	if conf is None:
 		raise RuntimeError('You can not have an import using load() before main() initialised it')
+	__application = application
+	__defaults = defaults
 	__configuration = _configuration(conf)
 	return __configuration
 
 def default ():
-	for section in sorted(defaults):
-		for option in sorted(defaults[section]):
-			values = defaults[section][option]
+	for section in sorted(__defaults):
+		for option in sorted(__defaults[section]):
+			values = __defaults[section][option]
 			default = "'%s'" % values[2] if values[1] in (value.list,value.path,value.quote,value.unquote) else values[2]
 			yield 'exaproxy.%s.%s %s: %s. default (%s)' % (section,option,' '*(20-len(section)-len(option)),values[3],default)
 
@@ -369,25 +289,26 @@ def ini (diff=False):
 	for section in sorted(__configuration):
 		if section in ('proxy','debug'):
 			continue
-		header = '\n[exaproxy.%s]' % section
+		header = '\n[%s]' % section
 		for k in sorted(__configuration[section]):
 			v = __configuration[section][k]
-			if diff and defaults[section][k][0](defaults[section][k][2]) == v:
+			if diff and __defaults[section][k][0](__defaults[section][k][2]) == v:
 				continue
 			if header:
 				print header
 				header = ''
-			print '%s = %s' % (k,defaults[section][k][1](v))
+			print '%s = %s' % (k,__defaults[section][k][1](v))
 
 def env (diff=False):
+	global __application
 	print
 	for section,values in __configuration.items():
 		if section in ('proxy','debug'):
 			continue
 		for k,v in values.items():
-			if diff and defaults[section][k][0](defaults[section][k][2]) == v:
+			if diff and __defaults[section][k][0](__defaults[section][k][2]) == v:
 				continue
-			if defaults[section][k][1] == value.quote:
-				print "exaproxy.%s.%s='%s'" % (section,k,v)
+			if __defaults[section][k][1] == value.quote:
+				print "%s.%s.%s='%s'" % (__application,section,k,v)
 				continue
-			print "exaproxy.%s.%s=%s" % (section,k,defaults[section][k][1](v))
+			print "%s.%s.%s=%s" % (__application,section,k,__defaults[section][k][1](v))

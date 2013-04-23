@@ -79,6 +79,7 @@ class HTTP (object):
 
 			content_length = int(self.headers.get('content-length', [':0'])[0].split(':',1)[1].strip())
 			self.content_length = 'chunked' if 'chunked' in encoding else content_length
+
 			self.url = self.host + ((':%s' % self.port) if self.port != '80' else '') + self.request.path
 			self.url_noport = self.host + self.request.path
 

@@ -38,4 +38,6 @@ Feature
  - offer an option for happy Eyeballs (RFC 6555) when it comes to IPv6 (http://tools.ietf.org/html/rfc6555)
  - fetch the SSL X.509 certificate from IPs to extract its hostname and pass it to the thread when using CONNECT
  - more monitoring (self-updating page with realtime rotating logs)
-
+ - incomming IP ACL (for allowed users)
+ - outgoing IP ACL (to prevent access to some destination IP - mostly localhost)
+ - ACL to restrict CONNECT ports

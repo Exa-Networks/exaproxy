@@ -9,7 +9,7 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 import os
 import sys
 
-from exaproxy.configuration import default
+from exaproxy.configuration import default,value
 
 def version_warning ():
 	sys.stdout.write('\n')
@@ -109,8 +109,100 @@ def main ():
 		if arg in ['--release','-r']:
 			next = 'release'
 
+	defaults = {
+		'tcp4' : {
+			'host'    : (value.unquote,value.quote,'127.0.0.1', 'the host the proxy listen on'),
+			'port'    : (value.integer,value.nop,'3128',        'the port the proxy listen on'),
+			'timeout' : (value.integer,value.nop,'5',           'time before we abandon inactive established connections'),
+			'backlog' : (value.integer,value.nop,'200',         'when busy how many connection should the OS queue for us'),
+			'listen'  : (value.boolean,value.lower,'true',      'should we listen for connections over IPv4'),
+			'out'     : (value.boolean,value.lower,'true',      'allow connections to remote web servers over IPv4'),
+		},
+		'tcp6' : {
+			'host'    : (value.unquote,value.quote,'::1',   'the host the proxy listen on'),
+			'port'    : (value.integer,value.nop,'3128',    'the port the proxy listen on'),
+			'timeout' : (value.integer,value.nop,'5',       'time before we abandon inactive established connections'),
+			'backlog' : (value.integer,value.nop,'200',     'when busy how many connection should the OS queue for us'),
+			'listen'  : (value.boolean,value.lower,'false', 'should we listen for connections over IPv6'),
+			'out'     : (value.boolean,value.lower,'true',  'allow connections to remote web servers over IPv6'),
+		},
+		'redirector' : {
+			'enable'  : (value.boolean,value.lower,'false',                         'use redirector programs to filter http request'),
+			'program' : (value.exe,value.path,'etc/exaproxy/redirector/url-allow',  'the program used to know where to send request'),
+			'minimum' : (value.integer,value.nop,'5',                               'minimum number of worker threads (forked program)'),
+			'maximum' : (value.integer,value.nop,'25',                              'maximum number of worker threads (forked program)'),
+			'protocol': (value.redirector,value.quote,'url',                        'what protocol to use (url -> squid like / icap:://<uri> -> icap like)')
+		},
+
+		'http' : {
+			'transparent'     : (value.boolean,value.lower,'false', 'do not reveal the presence of the proxy'),
+			'forward'         : (value.lowunquote,value.quote,'',   'read client address from this header (normally x-forwarded-for)'),
+			'allow-connect'   : (value.boolean,value.lower,'true',  'allow client to use CONNECT and https connections'),
+			'extensions'      : (value.methods,value.list,'',       'allow new HTTP method (space separated)'),
+			'proxied'         : (value.boolean,value.lower,'false', 'request is encapsulated with proxy protocol'),
+		},
+		'web' : {
+			'enable'      : (value.boolean,value.lower,'true',             'enable the built-in webserver'),
+			'host'        : (value.unquote,value.quote,'127.0.0.1',        'the address the web server listens on'),
+			'port'        : (value.integer,value.nop,'8080',               'port the web server listens on'),
+			'html'        : (value.folder,value.path,'etc/exaproxy/html',  'where internal proxy html pages are served from'),
+			'connections' : (value.integer,value.nop,'100',                'the maximum number of web connections'),
+		},
+		'daemon' : {
+			'identifier'  : (value.unquote,value.nop,'ExaProxy','a name for the log (to diferenciate multiple instances more easily)'),
+			'pidfile'     : (value.unquote,value.quote,'',      'where to save the pid if we manage it'),
+			'user'        : (value.user,value.quote,'nobody',   'user to run as'),
+			'daemonize'   : (value.boolean,value.lower,'false', 'should we run in the background'),
+			'reactor'     : (value.unquote,value.quote,'epoll', 'what event mechanism to use (select/epoll)'),
+			'speed'       : (value.integer,value.nop,'2',       'when waiting for connection how long are we sleeping for'),
+			'connections' : (value.integer,value.nop,'10240',   'the maximum number of proxy connections'),
+		},
+		'dns' : {
+			'resolver'     : (value.resolver,value.path,'/etc/resolv.conf',       'resolver file'),
+			'timeout'      : (value.integer,value.nop,'60',                       'how long to wait for DNS replies'),
+			'retries'      : (value.integer,value.nop,'3',                        'how many times to retry sending requests'),
+			'ttl'          : (value.integer,value.nop,'900',                      'amount of time (in seconds) we will cache dns results for'),
+			'fqdn'         : (value.boolean,value.lower,'true',                   'only resolve FQDN (hostnames must have a dot'),
+			'definitions'  : (value.folder,value.path,'etc/exaproxy/dns/types',   'location of file defining dns query types'),
+		},
+		'log' : {
+			'enable'        : (value.boolean,value.lower,'true',               'enable traffic logging'),
+			'level'         : (value.syslog_value,value.syslog_name,'ERROR', 'log message with at least the priority logging.<level>'),
+			'destination'   : (value.unquote,value.quote,'stdout',             'where syslog should log'),
+			'signal'        : (value.boolean,value.lower,'true',               'log messages from the signal subsystem'),
+			'configuration' : (value.boolean,value.lower,'true',               'log messages from the configuration subsystem'),
+			'supervisor'    : (value.boolean,value.lower,'true',               'log messages from the supervisor subsystem'),
+			'daemon'        : (value.boolean,value.lower,'true',               'log messages from the daemon subsystem'),
+			'server'        : (value.boolean,value.lower,'true',               'log messages from the server subsystem'),
+			'client'        : (value.boolean,value.lower,'true',               'log messages from the client subsystem'),
+			'manager'       : (value.boolean,value.lower,'true',               'log messages from the manager subsystem'),
+			'worker'        : (value.boolean,value.lower,'true',               'log messages from the worker subsystem'),
+			'download'      : (value.boolean,value.lower,'true',               'log messages from the download subsystem'),
+			'http'          : (value.boolean,value.lower,'true',               'log messages from the http subsystem'),
+			'header'        : (value.boolean,value.lower,'true',               'log messages from the header subsystem'),
+			'resolver'      : (value.boolean,value.lower,'true',               'log messages from the dns subsystem'),
+		},
+		'usage' : {
+			'enable'        : (value.boolean,value.lower,'false',              'enable traffic logging'),
+			'destination'   : (value.unquote,value.quote,'stdout',              'where syslog should log'),
+		},
+		'profile' : {
+			'enable'      : (value.boolean,value.lower,'false', 'enable profiling'),
+			'destination' : (value.unquote,value.quote,'stdout', 'save profiling to file (instead of to the screen on exit)'),
+		},
+		'proxy' : {
+			'version' : (value.nop,value.nop,'unknown',  'ExaProxy\'s version'),
+		},
+		# Here for internal use
+		'debug' : {
+			'memory' : (value.boolean,value.lower,'false','command line option --memory'),
+			'pdb'    : (value.boolean,value.lower,'false','command line option --pdb'),
+			'log'    : (value.boolean,value.lower,'false','command line option --debug'),
+		},
+	}
+
 	try:
-		configuration = load(arguments['configuration'])
+		configuration = load('exaproxy',defaults,arguments['configuration'])
 	except ConfigurationError,e:
 		print >> sys.stderr, 'configuration issue,', str(e)
 		sys.exit(1)
