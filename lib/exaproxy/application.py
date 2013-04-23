@@ -36,9 +36,11 @@ def help ():
 
 	sys.stdout.write('\n')
 	sys.stdout.write('ExaProxy will automatically look for its configuration file (in windows ini format)\n')
-	sys.stdout.write(' - in the etc/exaproxy folder located within the extracted tar.gz \n')
-	sys.stdout.write(' - in /etc/exaproxy/exaproxy.conf\n')
+	sys.stdout.write(' - 1 : in      etc/exaproxy/exaproxy.conf (relative position within the extracted tgz file)\n')
+	sys.stdout.write(' - 2 : in     /etc/exaproxy/exaproxy.conf\n')
+	sys.stdout.write(' - 3 : in /usr/etc/exaproxy/exaproxy.conf\n')
 	sys.stdout.write('\n')
+	sys.stdout.write('You can generate the configuration file using the -i, or -fi, option')
 	sys.stdout.write('Every configuration value has a sensible built-in default\n')
 	sys.stdout.write('\n')
 	sys.stdout.write('Individual configuration options can be set using environment variables, such as :\n')
