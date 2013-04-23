@@ -49,6 +49,7 @@ class ResolverManager (object):
 		self.waiting = []
 
 		self.log = Logger('resolver', configuration.log.resolver)
+		self.chained = {}
 
 	def cacheDestination (self, hostname, ip):
 		if hostname not in self.cache:
@@ -246,11 +247,15 @@ class ResolverManager (object):
 		worker = self.workers.get(sock)
 
 		if worker:
-			result = worker.getResponse()
+			result = worker.getResponse(self.chained)
 
 			if result:
 				identifier, forhost, ip, completed, newidentifier, newhost, newcomplete = result
 				data = self.resolving.pop((worker.w_id, identifier), None)
+
+				chain_count = self.chained.pop(identifier, 0)
+				if newidentifier:
+					self.chained[newidentifier] = chain_count + 1
 
 				if not data:
 					self.log.info('ignoring response for %s (%s) with identifier %s' % (forhost, ip, identifier))

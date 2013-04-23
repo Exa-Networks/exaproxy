@@ -63,7 +63,7 @@ class DNSClient(object):
 		response_s, peer = self.socket.recvfrom(65535)
 		return response_s
 
-	def getResponse(self):
+	def getResponse(self, chained={}):
 		"""Read a response from the wire and return the desired result if present"""
 
 		# We may need to make another query
@@ -96,36 +96,41 @@ class DNSClient(object):
 		if value is None:
 			qtype, value = response.getChainedValue()
 
-		# Or the IPv4 address
-		if value is None:
-			related = response.getRelated()
 
-			if response.qtype == 'A' and related is not None:
-				newidentifier, newcomplete = self.resolveHost(related)
-				newhost = related
+		chain_count = chained.get(response.identifier, 0)
+
+		# watch out for loops
+		if chain_count < 10:
+			# Or the IPv4 address
+			if value is None:
+				related = response.getRelated()
+
+				if response.qtype == 'A' and related is not None:
+					newidentifier, newcomplete = self.resolveHost(related)
+					newhost = related
+					value = None
+
+				elif response.qtype == 'A' and self.configuration.tcp6.out:
+					qtype, value = response.getValue(qtype='AAAA')
+
+					if value is None:
+						newidentifier, newcomplete = self.resolveHost(response.qhost, qtype='AAAA')
+						newhost = response.qhost
+
+				elif response.qtype == 'AAAA':
+					qtype, cname = response.getValue(qtype='CNAME')
+
+					if cname is not None:
+						newidentifier, newcomplete = self.resolveHost(cname)
+						newhost = cname
+					else:
+						newidentifier, newcomplete = self.resolveHost(response.qhost, qtype='CNAME')
+						newhost = response.qhost
+
+			elif response.qtype == 'CNAME':
+				newidentifier, newcomplete = self.resolveHost(value)
+				newhost = value
 				value = None
-
-			elif response.qtype == 'A' and self.configuration.tcp6.out:
-				qtype, value = response.getValue(qtype='AAAA')
-
-				if value is None:
-					newidentifier, newcomplete = self.resolveHost(response.qhost, qtype='AAAA')
-					newhost = response.qhost
-
-			elif response.qtype == 'AAAA':
-				qtype, cname = response.getValue(qtype='CNAME')
-
-				if cname is not None:
-					newidentifier, newcomplete = self.resolveHost(cname)
-					newhost = cname
-				else:
-					newidentifier, newcomplete = self.resolveHost(response.qhost, qtype='CNAME')
-					newhost = response.qhost
-
-		elif response.qtype == 'CNAME':
-			newidentifier, newcomplete = self.resolveHost(value)
-			newhost = value
-			value = None
 
 		return response.identifier, response.qhost, value, response.isComplete(), newidentifier, newhost, newcomplete
 
