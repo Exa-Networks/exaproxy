@@ -102,7 +102,7 @@ class ResolverManager (object):
 					client_id, original, hostname, command, decision = data
 					self.log.error('timeout when requesting address for %s using the %s client - attempt %s' % (hostname, tcpudp, resolve_count))
 
-					if resolve_count < self.configuration.dns.retries:
+					if resolve_count < self.configuration.dns.retries and worker is self.worker:
 						self.log.info('going to retransmit request for %s - attempt %s of %s' % (hostname, resolve_count+1, self.configuration.dns.retries))
 						self.startResolving(client_id, command, decision, resolve_count+1)
 						continue
