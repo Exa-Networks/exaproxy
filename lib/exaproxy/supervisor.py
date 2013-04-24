@@ -9,6 +9,8 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 import os
 import sys
 import signal
+import traceback
+
 
 from .util.pid import PID
 from .util.daemon import Daemon
@@ -237,12 +239,16 @@ class Supervisor(object):
 				self.log.info('^C received')
 				self._shutdown = True
 			except OSError,e:
-				# XXX: we need to stop listening and re-fork ourselves
+				# This shoould never happen as we are limiting how many connections we accept
 				if e.errno == 24:  # Too many open files
 					self.log.critical('Too many opened files, shutting down')
+					for line in traceback.format_exc().split('\n'):
+						self.log.critical(line)
 					self._shutdown = True
 				else:
-					self.log.critical('unrecoverable error : %s' % str(e))
+					self.log.critical('unrecoverable io error')
+					for line in traceback.format_exc().split('\n'):
+						self.log.critical(line)
 					self._shutdown = True
 
 			finally:
