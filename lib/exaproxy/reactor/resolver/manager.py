@@ -81,7 +81,7 @@ class ResolverManager (object):
 
 	def cleanup(self):
 		now = time.time()
-		cutoff = now - max(self.configuration.dns.timeout, 1)
+		cutoff = now - self.configuration.dns.timeout
 		count = 0
 
 		for timestamp, client_id, sock in self.active:
@@ -105,7 +105,7 @@ class ResolverManager (object):
 
 					if resolve_count < self.configuration.dns.retries and worker is self.worker:
 						self.log.info('going to retransmit request for %s - attempt %s of %s' % (hostname, resolve_count+1, self.configuration.dns.retries))
-						self.startResolving(client_id, command, decision, resolve_count+1)
+						self.startResolving(client_id, command, decision, resolve_count+1, identifier=identifier)
 						continue
 
 					self.log.error('given up trying to resolve %s after %s attempts' % (hostname, self.configuration.dns.retries))
@@ -154,7 +154,7 @@ class ResolverManager (object):
 
 		return newdecision
 
-	def startResolving(self, client_id, command, decision, resolve_count=1):
+	def startResolving(self, client_id, command, decision, resolve_count=1, identifier=None):
 		hostname = self.extractHostname(command, decision)
 
 		if hostname:
@@ -183,7 +183,7 @@ class ResolverManager (object):
 				response = client_id, 'rewrite', newdecision
 			# Lookup that DNS name
 			else:
-				identifier, _ = self.worker.resolveHost(hostname)
+				identifier, _ = self.worker.resolveHost(hostname, identifier=identifier)
 				response = None
 				active_time = time.time()
 

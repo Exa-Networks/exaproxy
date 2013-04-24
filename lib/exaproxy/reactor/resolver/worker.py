@@ -37,7 +37,7 @@ class DNSClient(object):
 	def server(self):
 		return random.choice(self.servers)
 
-	def resolveHost(self, hostname, qtype=None):
+	def resolveHost(self, hostname, qtype=None, identifier=None):
 		"""Retrieve an A or AAAA entry for the requested hostname"""
 
 		if qtype is None:
@@ -47,7 +47,7 @@ class DNSClient(object):
 				qtype = 'AAAA'
 
 		# create an A request ready to send on the wire
-		identifier = self.next_identifier()
+		identifier = identifier if identifier is not None else self.next_identifier()
 		request_s = self.dns_factory.createRequestString(identifier, qtype, hostname)
 
 		# and send it over the wire
