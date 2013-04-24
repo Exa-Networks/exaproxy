@@ -161,8 +161,8 @@ def main ():
 		},
 		'dns' : {
 			'resolver'     : (value.resolver,value.path,'/etc/resolv.conf',       'resolver file'),
-			'timeout'      : (value.integer,value.nop,'60',                       'how long to wait for DNS replies'),
-			'retries'      : (value.integer,value.nop,'3',                        'how many times to retry sending requests'),
+			'timeout'      : (value.integer,value.nop,'2',                        'how long to wait for DNS replies before retrying'),
+			'retries'      : (value.integer,value.nop,'10',                       'how many times to retry sending requests'),
 			'ttl'          : (value.integer,value.nop,'900',                      'amount of time (in seconds) we will cache dns results for'),
 			'fqdn'         : (value.boolean,value.lower,'true',                   'only resolve FQDN (hostnames must have a dot'),
 			'definitions'  : (value.folder,value.path,'etc/exaproxy/dns/types',   'location of file defining dns query types'),
