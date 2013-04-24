@@ -45,7 +45,7 @@ class ContentManager(object):
 			try:
 				stat = os.stat(filename)
 			except IOError:
-				# XXX: we are always returning an HTTP/1.1 response
+				# NOTE: we are always returning an HTTP/1.1 response
 				content = 'close', http(501, 'local file is inaccessible %s' % str(filename))
 			else:
 				if filename in self._header :
@@ -60,7 +60,7 @@ class ContentManager(object):
 				content = 'file', (header, filename)
 		else:
 			self.log.debug('local file is missing for %s: %s' % (str(name), str(filename)))
-			# XXX: we are always returning an HTTP/1.1 response
+			# NOTE: we are always returning an HTTP/1.1 response
 			content = 'close', http(501, 'could not serve missing file %s' % str(filename))
 
 		return content
@@ -75,15 +75,15 @@ class ContentManager(object):
 				with open(filename) as fd:
 					body = fd.read() % data
 
-				# XXX: we are always returning an HTTP/1.1 response
+				# NOTE: we are always returning an HTTP/1.1 response
 				content = 'close', http(code, body)
 			except IOError:
 				self.log.debug('local file is missing for %s: %s' % (str(reason), str(filename)))
-				# XXX: we are always returning an HTTP/1.1 response
+				# NOTE: we are always returning an HTTP/1.1 response
 				content = 'close', http(501, 'could not serve missing file  %s' % str(reason))
 		else:
 			self.log.debug('local file is missing for %s: %s' % (str(reason), str(filename)))
-				# XXX: we are always returning an HTTP/1.1 response
+				# NOTE: we are always returning an HTTP/1.1 response
 			content = 'close', http(501, 'could not serve missing file  %s' % str(reason))
 
 		return content
@@ -92,8 +92,10 @@ class ContentManager(object):
 	def getDownloader(self, client_id, host, port, command, request):
 		downloader = self.byclientid.get(client_id, None)
 		if downloader:
-			# XXX: A DNS redirector for part of a site could cause this test to fails
-			# XXX: would it kill any download in progress for the client if it is a proxy ?
+			# NOTE: with pipeline, consequent request could go to other sites if the browser knows we are a proxy
+			# NOTE: therefore the second request could reach the first site
+			# NOTE: and we could kill the connection before the data is fully back to the client
+			# NOTE: in practice modern browser are too clever and test for it !
 			if host != downloader.host or port != downloader.port:
 				self.endClientDownload(client_id)
 				downloader = None
@@ -192,7 +194,7 @@ class ContentManager(object):
 				downloader = None
 				newdownloader = False
 				request = ''
-				# XXX: we are always returning an HTTP/1.1 response
+				# NOTE: we are always returning an HTTP/1.1 response
 				content = ('close', http('200', self.page.html(path)))
 				length = 0
 

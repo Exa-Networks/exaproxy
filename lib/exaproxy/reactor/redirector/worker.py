@@ -6,6 +6,12 @@ Created by Thomas Mangin on 2011-11-29.
 Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
+# prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
+# NOTE: We may have more than one Connection header : http://tools.ietf.org/html/rfc2616#section-14.10
+# NOTE: We may need to remove every step-by-step http://tools.ietf.org/html/rfc2616#section-13.5.1
+# NOTE: We NEED to respect Keep-Alive rules http://tools.ietf.org/html/rfc2068#section-19.7.1
+# NOTE: We may look at Max-Forwards
+
 import traceback
 from threading import Thread
 from Queue import Empty
@@ -457,7 +463,7 @@ Encapsulated: req-hdr=0, null-body=%d
 					if operation is not None:
 						self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
 				else:
-					# XXX: we are always returning an HTTP/1.1 response
+					# NOTE: we are always returning an HTTP/1.1 response
 					self.respond(Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n')))
 					self.usage.logRequest(client_id, peer, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
 				continue
@@ -466,24 +472,24 @@ Encapsulated: req-hdr=0, null-body=%d
 				if message.headers.get('max-forwards',''):
 					max_forwards = message.headers.get('max-forwards','Max-Forwards: -1')[-1].split(':')[-1].strip()
 					if not max_forwards.isdigit():
-						# XXX: we are always returning an HTTP/1.1 response
+						# NOTE: we are always returning an HTTP/1.1 response
 						self.respond(Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n')))
 						self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
 						continue
 					max_forward = int(max_forwards)
 					if max_forward < 0 :
-						# XXX: we are always returning an HTTP/1.1 response
+						# NOTE: we are always returning an HTTP/1.1 response
 						self.respond(Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n')))
 						self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
 						continue
 					if max_forward == 0:
 						if method == 'OPTIONS':
-							# XXX: we are always returning an HTTP/1.1 response
+							# NOTE: we are always returning an HTTP/1.1 response
 							self.respond(Respond.http(client_id, http('200', '')))
 							self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', 'OPTIONS')
 							continue
 						if method == 'TRACE':
-							# XXX: we are always returning an HTTP/1.1 response
+							# NOTE: we are always returning an HTTP/1.1 response
 							self.respond(Respond.http(client_id, http('200', header)))
 							self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', 'TRACE')
 							continue
@@ -507,7 +513,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.request)
 				continue
 
-			# XXX: we are always returning an HTTP/1.1 response
+			# NOTE: we are always returning an HTTP/1.1 response
 			self.respond(Respond.http(client_id, http('405', '')))  # METHOD NOT ALLOWED
 			self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
 			continue
@@ -526,8 +532,3 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		self.destroyProcess()
 
-# prevent persistence : http://tools.ietf.org/html/rfc2616#section-8.1.2.1
-# XXX: We may have more than one Connection header : http://tools.ietf.org/html/rfc2616#section-14.10
-# XXX: We may need to remove every step-by-step http://tools.ietf.org/html/rfc2616#section-13.5.1
-# XXX: We NEED to respect Keep-Alive rules http://tools.ietf.org/html/rfc2068#section-19.7.1
-# XXX: We may look at Max-Forwards

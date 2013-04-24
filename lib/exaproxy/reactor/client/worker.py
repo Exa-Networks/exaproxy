@@ -281,7 +281,7 @@ class Client (object):
 		# check to see if we are returning data directly from a local file
 		if filename is not None:
 			try:
-				# XXX: we must read from the file on demand rather than doing this
+				# NOTE: we must read from the file on demand rather than doing this
 				with open(filename) as fd:
 					w_buffer = fd.read()
 

@@ -28,7 +28,7 @@ class HTTP (object):
 		self.log = Logger('header', configuration.log.header)
 		self.reply_code = 0
 		self.reply_string = ''
-		# XXX: ugly ugly remove me
+		# NOTE: ugly ugly remove me
 		self.request = None
 		self.headers = None
 		self.expect = configuration.http.expect
