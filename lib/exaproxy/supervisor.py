@@ -242,8 +242,8 @@ class Supervisor(object):
 					self.log.critical('Too many opened files, shutting down')
 					self._shutdown = True
 				else:
-					# Not sure we can get here, let the user know by raising
-					raise
+					self.log.critical('unrecoverable error : %s' % str(e))
+					self._shutdown = True
 
 			finally:
 				pass

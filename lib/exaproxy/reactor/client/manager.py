@@ -24,6 +24,7 @@ class ClientManager (object):
 		self.poller = poller
 		self.log = Logger('client', configuration.log.client)
 		self.proxied = configuration.http.proxied
+		self.max_buffer = configuration.http.header_size
 
 	def __contains__(self, item):
 		return item in self.byname
@@ -34,7 +35,7 @@ class ClientManager (object):
 
 	def newConnection(self, sock, peer, source):
 		name = self.getnextid()
-		client = Client(name, sock, peer, self.log)
+		client = Client(name, sock, peer, self.log, self.max_buffer)
 
 		self.norequest[sock] = client, source
 		self.byname[name] = client, source

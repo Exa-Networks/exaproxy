@@ -143,6 +143,7 @@ def main ():
 			'expect'          : (value.boolean,value.lower,'true',  'handle EXPECT headers'),
 			'extensions'      : (value.methods,value.list,'',       'allow new HTTP method (space separated)'),
 			'proxied'         : (value.boolean,value.lower,'false', 'request is encapsulated with proxy protocol'),
+			'header-size'     : (value.integer,value.nop,'65536',   'maximum size in bytes for HTTP headers (0 : unlimited)'),
 		},
 		'web' : {
 			'enable'      : (value.boolean,value.lower,'true',             'enable the built-in webserver'),

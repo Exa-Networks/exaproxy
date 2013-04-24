@@ -20,11 +20,11 @@ def count_quotes (data):
 class Client (object):
 	eor = ['\r\n\r\n', '\n\n']
 
-	def __init__(self, name, sock, peer, logger):
+	def __init__(self, name, sock, peer, logger, max_buffer):
 		self.name = name
 		self.sock = sock
 		self.peer = peer
-		self.reader = self._read(sock)
+		self.reader = self._read(sock,max_buffer)
 		self.writer = self._write(sock)
 
 		self.log = logger
@@ -33,8 +33,7 @@ class Client (object):
 		# start the _read coroutine
 		self.reader.next()
 
-	def checkRequest (self, r_buffer, seek=0):
-		# XXX: max buffer size
+	def checkRequest (self, r_buffer, size, seek=0):
 		for eor in self.eor:
 			pos = r_buffer[seek:].find(eor)
 			if pos == -1: continue
@@ -46,6 +45,9 @@ class Client (object):
 				return buff + eor, r_buffer[seek+pos+len(eor):], seek
 
 			seek += pos + len(eor)
+
+		if size and len(r_buffer) > size:
+			return None,None,None
 
 		return '', r_buffer, seek
 
@@ -96,7 +98,7 @@ class Client (object):
 		return True,total_len
 
 
-	def _read (self, sock, read_size=64*1024):
+	def _read (self, sock, max_buffer, read_size=64*1024):
 		"""Coroutine managing data read from the client"""
 		# yield request, content
 		# request is the text that form the request header
@@ -204,7 +206,12 @@ class Client (object):
 
 					if mode == 'extra-headers':
 						# seek is up to where we know there is no double CRLF
-						related, r_buffer, seek = self.checkRequest(r_buffer,seek)
+						related, r_buffer, seek = self.checkRequest(r_buffer,max_buffer,seek)
+
+						if related is None:
+							# most likely could not find an header
+							break
+
 						yield '', related
 
 						if not related:
@@ -224,7 +231,11 @@ class Client (object):
 					r_buffer = r_buffer.lstrip('\r\n')
 
 					# check to see if we have read an entire request
-					request, r_buffer, seek = self.checkRequest(r_buffer, seek)
+					request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
+
+					if related is None:
+						# most likely could not find an header
+						break
 
 					if not request:
 						yield '', ''
