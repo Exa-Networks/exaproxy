@@ -233,7 +233,7 @@ class Client (object):
 					# check to see if we have read an entire request
 					request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
 
-					if related is None:
+					if request is None:
 						# most likely could not find an header
 						break
 
