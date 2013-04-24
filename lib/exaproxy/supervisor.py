@@ -30,10 +30,11 @@ from exaproxy.util.log.writer import SysLogWriter
 from exaproxy.util.log.writer import UsageWriter
 
 class Supervisor(object):
-	alarm_time = 1             # how often we record history data
-	increase_frequency = 5     # multiple of alarm_time for when we add workers
-	decrease_frequency = 60    # multiple of alarm_time for when we remove workers
-	saturation_frequency = 20  # multiple of alarm time for when we report connection saturation
+	alarm_time = 0.1                           # regular backend work
+	history_frequency = int(1/alarm_time)      # when we record history
+	increase_frequency = int(5/alarm_time)     # when we add workers
+	decrease_frequency = int(60/alarm_time)    # when we remove workers
+	saturation_frequency = int(20/alarm_time)  # when we report connection saturation
 
 	# import os
 	# clear = [hex(ord(c)) for c in os.popen('clear').read()]
@@ -143,7 +144,8 @@ class Supervisor(object):
 	def sigalrm (self,signum, frame):
 		self.signal_log.debug('SIG ALRM received, timed actions')
 		self.reactor.running = False
-		signal.alarm(self.alarm_time)
+		#signal.alarm(self.alarm_time)
+		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
 
 	def run (self):
 		if self.daemon.drop_privileges():
@@ -155,13 +157,16 @@ class Supervisor(object):
 		if not ok:
 			self._shutdown = True
 
-		signal.alarm(self.alarm_time)
+		#signal.alarm(self.alarm_time)
+		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
 
+		count_history = 0
 		count_increase = 0
 		count_decrease = 0
 		count_saturation = 0
 
 		while True:
+			count_history = (count_history + 1) % self.history_frequency
 			count_increase = (count_increase + 1) % self.increase_frequency
 			count_decrease = (count_decrease + 1) % self.decrease_frequency
 			count_saturation = (count_saturation + 1) % self.saturation_frequency
@@ -213,7 +218,9 @@ class Supervisor(object):
 				#self._shutdown = not self.reactor.running
 
 				# save our monitoring stats
-				self.monitor.record()
+				if count_history == 0:
+					self.monitor.record()
+
 				# make sure we have enough workers
 				if count_increase == 0:
 					self.manager.provision()
