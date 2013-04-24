@@ -300,7 +300,6 @@ def ini (diff=False):
 			print '%s = %s' % (k,_defaults[section][k][1](v))
 
 def env (diff=False):
-	global _application
 	print
 	for section,values in _config.items():
 		if section in ('proxy','debug'):
