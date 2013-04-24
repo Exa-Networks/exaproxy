@@ -15,9 +15,9 @@ import sys
 import logging
 import pwd
 
-__application = None
-__configuration = None
-__defaults = None
+_application = None
+_config = None
+_defaults = None
 
 class ConfigurationError (Exception):
 	pass
@@ -126,7 +126,7 @@ class value (object):
 
 	@staticmethod
 	def path (path):
-		split = sys.argv[0].split('lib/exaproxy')
+		split = sys.argv[0].split('lib/%s' % _application)
 		if len(split) > 1:
 			prefix = os.sep.join(split[:1])
 			if prefix and path.startswith(prefix):
@@ -144,7 +144,8 @@ class value (object):
 
 	@staticmethod
 	def resolver(path):
-		paths = value.root('etc/exaproxy/dns/resolv.conf')
+		global _application
+		paths = value.root('etc/%s/dns/resolv.conf' % _application)
 		paths.append(os.path.normpath(os.path.join('/','etc','resolv.conf')))
 		for resolver in paths:
 			if os.path.exists(resolver):
@@ -220,9 +221,9 @@ def _configuration (conf):
 	if conf:
 		_conf_paths.append(os.path.abspath(os.path.normpath(conf)))
 	if location:
-		_conf_paths.append(os.path.normpath(os.path.join(location,'etc',__application,'%s.conf' % __application)))
-	_conf_paths.append(os.path.normpath(os.path.join('/','etc',__application,'%s.conf' % __application)))
-	_conf_paths.append(os.path.normpath(os.path.join('/','usr','etc',__application,'%s.conf' % __application)))
+		_conf_paths.append(os.path.normpath(os.path.join(location,'etc',_application,'%s.conf' % _application)))
+	_conf_paths.append(os.path.normpath(os.path.join('/','etc',_application,'%s.conf' % _application)))
+	_conf_paths.append(os.path.normpath(os.path.join('/','usr','etc',_application,'%s.conf' % _application)))
 
 	configuration = Store()
 	ini = ConfigParser.ConfigParser()
@@ -231,13 +232,13 @@ def _configuration (conf):
 	if ini_files:
 		ini.read(ini_files[0])
 
-	for section in __defaults:
-		default = __defaults[section]
+	for section in _defaults:
+		default = _defaults[section]
 
 		for option in default:
 			convert = default[option][0]
 			try:
-				proxy_section = 'exaproxy.%s' % section
+				proxy_section = '%s.%s' % (_application,section)
 				env_name = '%s.%s' % (proxy_section,option)
 				rep_name = env_name.replace('.','_')
 
@@ -265,49 +266,49 @@ def _configuration (conf):
 	return configuration
 
 def load (application=None,defaults=None,conf=None):
-	global __application
-	global __defaults
-	global __configuration
-	if __configuration:
-		return __configuration
+	global _application
+	global _defaults
+	global _config
+	if _config:
+		return _config
 	if conf is None:
 		raise RuntimeError('You can not have an import using load() before main() initialised it')
-	__application = application
-	__defaults = defaults
-	__configuration = _configuration(conf)
-	return __configuration
+	_application = application
+	_defaults = defaults
+	_config = _configuration(conf)
+	return _config
 
 def default ():
-	for section in sorted(__defaults):
-		for option in sorted(__defaults[section]):
-			values = __defaults[section][option]
+	for section in sorted(_defaults):
+		for option in sorted(_defaults[section]):
+			values = _defaults[section][option]
 			default = "'%s'" % values[2] if values[1] in (value.list,value.path,value.quote,value.unquote) else values[2]
-			yield 'exaproxy.%s.%s %s: %s. default (%s)' % (section,option,' '*(20-len(section)-len(option)),values[3],default)
+			yield '%s.%s.%s %s: %s. default (%s)' % (_application,section,option,' '*(20-len(section)-len(option)),values[3],default)
 
 def ini (diff=False):
-	for section in sorted(__configuration):
+	for section in sorted(_config):
 		if section in ('proxy','debug'):
 			continue
 		header = '\n[%s]' % section
-		for k in sorted(__configuration[section]):
-			v = __configuration[section][k]
-			if diff and __defaults[section][k][0](__defaults[section][k][2]) == v:
+		for k in sorted(_config[section]):
+			v = _config[section][k]
+			if diff and _defaults[section][k][0](_defaults[section][k][2]) == v:
 				continue
 			if header:
 				print header
 				header = ''
-			print '%s = %s' % (k,__defaults[section][k][1](v))
+			print '%s = %s' % (k,_defaults[section][k][1](v))
 
 def env (diff=False):
-	global __application
+	global _application
 	print
-	for section,values in __configuration.items():
+	for section,values in _config.items():
 		if section in ('proxy','debug'):
 			continue
 		for k,v in values.items():
-			if diff and __defaults[section][k][0](__defaults[section][k][2]) == v:
+			if diff and _defaults[section][k][0](_defaults[section][k][2]) == v:
 				continue
-			if __defaults[section][k][1] == value.quote:
-				print "%s.%s.%s='%s'" % (__application,section,k,v)
+			if _defaults[section][k][1] == value.quote:
+				print "%s.%s.%s='%s'" % (_application,section,k,v)
 				continue
-			print "%s.%s.%s=%s" % (__application,section,k,__defaults[section][k][1](v))
+			print "%s.%s.%s=%s" % (_application,section,k,_defaults[section][k][1](v))
