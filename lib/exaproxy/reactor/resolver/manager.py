@@ -80,7 +80,8 @@ class ResolverManager (object):
 
 
 	def cleanup(self):
-		cutoff = time.time() - min(self.configuration.dns.timeout/self.configuration.dns.retries, 1)
+		now = time.time()
+		cutoff = now - max(self.configuration.dns.timeout, 1)
 		count = 0
 
 		for timestamp, client_id, sock in self.active:
