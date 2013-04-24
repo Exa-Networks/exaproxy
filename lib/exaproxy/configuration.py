@@ -15,6 +15,10 @@ import sys
 import logging
 import pwd
 
+__application = None
+__configuration = None
+__defaults = None
+
 class ConfigurationError (Exception):
 	pass
 
@@ -216,9 +220,9 @@ def _configuration (conf):
 	if conf:
 		_conf_paths.append(os.path.abspath(os.path.normpath(conf)))
 	if location:
-		_conf_paths.append(os.path.normpath(os.path.join(location,'etc','exaproxy','exaproxy.conf')))
-	_conf_paths.append(os.path.normpath(os.path.join('/','etc','exaproxy','exaproxy.conf')))
-	_conf_paths.append(os.path.normpath(os.path.join('/','usr','etc','exaproxy','exaproxy.conf')))
+		_conf_paths.append(os.path.normpath(os.path.join(location,'etc',__application,'%s.conf' % __application)))
+	_conf_paths.append(os.path.normpath(os.path.join('/','etc',__application,'%s.conf' % __application)))
+	_conf_paths.append(os.path.normpath(os.path.join('/','usr','etc',__application,'%s.conf' % __application)))
 
 	configuration = Store()
 	ini = ConfigParser.ConfigParser()
@@ -256,14 +260,9 @@ def _configuration (conf):
 			try:
 				configuration.setdefault(section,Store())[option] = convert(conf)
 			except TypeError,error:
-				import pdb; pdb.set_trace()
 				raise ConfigurationError('invalid value for %s.%s : %s (%s)' % (section,option,conf,str(error)))
 
 	return configuration
-
-__application = None
-__configuration = None
-__defaults = None
 
 def load (application=None,defaults=None,conf=None):
 	global __application
