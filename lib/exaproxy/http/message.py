@@ -31,6 +31,7 @@ class HTTP (object):
 		# XXX: ugly ugly remove me
 		self.request = None
 		self.headers = None
+		self.expect = configuration.http.expect
 
 	def parse (self,transparent):
 		self.log.debug('parsing header [[%s]]' % str(self.raw).replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n'))
@@ -43,7 +44,7 @@ class HTTP (object):
 				self.separator = '\n'
 
 			self.request = Request(first.rstrip('\r')).parse()
-			self.headers = Headers(self.request.version,self.separator).parse(transparent,remaining)
+			self.headers = Headers(self.request.version,self.separator,self.expect).parse(transparent,remaining)
 
 			self.headerhost = self.extractHost()
 

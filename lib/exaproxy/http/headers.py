@@ -18,11 +18,12 @@ class InvalidRequest (Exception):
 	pass
 
 class Headers (object):
-	def __init__ (self,http_version,separator):
+	def __init__ (self,http_version,separator, expect=True):
 		self._order = []
 		self._data = {}
 		self.http_version = http_version
 		self.separator = separator
+		self.expect = expect
 
 	def get (self,key,default):
 		return self._data.get(key,default)
@@ -137,7 +138,7 @@ class Headers (object):
 
 				# this proxy can not honour expect, so we are returning a 417 through the use of an exception
 				expect = self.get('expect',None)
-				if expect:
+				if expect and self.expect:
 					raise ExpectationFailed()
 
 			except (KeyError,TypeError,IndexError):
