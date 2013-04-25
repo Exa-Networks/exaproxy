@@ -227,8 +227,8 @@ def getifaddrs():
 		sa = sockaddr.from_address(ifa.ifa_addr)
 
 		if sa.sa_family == AF_INET:
-			address = inet_ntop(AF_INET,sockaddr_in.from_address(ifa.ifa_addr).sin_addr) if ifa.ifa_addr else None,
-			netmask = inet_ntop(AF_INET,sockaddr_in.from_address(ifa.ifa_netmask).sin_addr) if ifa.ifa_netmask else None,
+			address = inet_ntop(AF_INET,sockaddr_in.from_address(ifa.ifa_addr).sin_addr) if ifa.ifa_addr else None
+			netmask = inet_ntop(AF_INET,sockaddr_in.from_address(ifa.ifa_netmask).sin_addr) if ifa.ifa_netmask else None
 			yield result (name(ifa),ifa.ifa_flags,sa.sa_family,address,netmask,None)
 
 		elif sa.sa_family == AF_INET6:
