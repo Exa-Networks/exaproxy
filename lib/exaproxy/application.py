@@ -59,6 +59,8 @@ def help ():
 	sys.stdout.write('The following UNIX signal are acted on :\n')
 	sys.stdout.write(' - SIGUSR1  : decrease the maximum number of processes\n')
 	sys.stdout.write(' - SIGUSR2  : increase the mininum number of processes\n')
+	sys.stdout.write(' - SIGTTOU  : stop listening for new proxy connections\n')
+	sys.stdout.write(' - SIGTTIN  : start listening for new proxy connections\n')
 	sys.stdout.write('\n')
 	sys.stdout.write('Valid configuration options are :\n')
 	sys.stdout.write('\n')
