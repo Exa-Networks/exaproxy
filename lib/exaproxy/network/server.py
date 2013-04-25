@@ -16,7 +16,6 @@ from exaproxy.util.log.logger import Logger
 from exaproxy.configuration import load
 
 configuration = load()
-log = Logger('server', configuration.log.server)
 
 class Server(object):
 	_listen = staticmethod(listen)
@@ -29,19 +28,47 @@ class Server(object):
 		self.max_clients = max_clients
 		self.client_count = 0
 		self.saturated = False  # we are receiving more connections than we can handle
-		log.info('server [%s] accepting up to %d clients' % (name, max_clients))
+		self.binding = set()
+		self.serving = True  # We are currenrly listening
+		self.log = Logger('server', configuration.log.server)
+		self.log.info('server [%s] accepting up to %d clients' % (name, max_clients))
+
+
+	def accepting (self):
+		if self.serving:
+			return True
+
+		for ip, port, timeout, backlog in self.binding:
+			try:
+				self.log.critical('re-listening on %s:%d' % (ip,port))
+				self.listen(ip,port,timeout,backlog)
+			except socket.error,e:
+				self.log.critical('could not re-listen on %s:%d : %s' % (ip,port,str(e)))
+				return False
+		self.serving = True
+		return True
+
+	def rejecting (self):
+		if self.serving:
+			for sock,(ip,port) in self.socks.items():
+				self.log.critical('stop listening on %s:%d' % (ip,port))
+				self.poller.removeReadSocket(self.read_name,sock)
+				sock.close()
+			self.socks = {}
+			self.serving = False
 
 	def saturation (self):
 		if not self.saturated:
 			return
 		self.saturated = False
-		log.error('we received more %s connections that we could handle' % self.name)
-		log.error('we current have %s client(s) out of a maximum of %s' % (self.client_count, self.max_clients))
+		self.log.error('we received more %s connections that we could handle' % self.name)
+		self.log.error('we current have %s client(s) out of a maximum of %s' % (self.client_count, self.max_clients))
 
 	def listen(self, ip, port, timeout, backlog):
 		s = self._listen(ip, port,timeout,backlog)
 		if s:
-			self.socks[s] = True
+			self.binding.add((ip,port,timeout,backlog))
+			self.socks[s] = (ip,port)
 
 			# register the socket with the poller
 			if self.client_count < self.max_clients:
@@ -59,7 +86,7 @@ class Server(object):
 		except socket.error, e:
 			# It doesn't really matter if accept fails temporarily. We will
 			# try again next loop
-			log.debug('%s could not accept a new connection %s' % (self.name,str(e)))
+			self.log.debug('%s could not accept a new connection %s' % (self.name,str(e)))
 		else:
 			self.client_count += 1
 		finally:

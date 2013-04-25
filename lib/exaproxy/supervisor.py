@@ -104,12 +104,15 @@ class Supervisor(object):
 		self._increase_spawn_limit = 0
 		self._refork = False
 		self._pdb = False
+		self._listen = None
 
 		signal.signal(signal.SIGTERM, self.sigterm)
 		signal.signal(signal.SIGHUP, self.sighup)
 		signal.signal(signal.SIGALRM, self.sigalrm)
 		signal.signal(signal.SIGUSR1, self.sigusr1)
 		signal.signal(signal.SIGUSR2, self.sigusr2)
+		signal.signal(signal.SIGTTOU, self.sigttou)
+		signal.signal(signal.SIGTTIN, self.sigttin)
 		#signal.signal(signal.SIGTRAP, self.sigtrap)
 		#signal.signal(signal.SIGABRT, self.sigabrt)
 
@@ -138,6 +141,14 @@ class Supervisor(object):
 	def sigusr2 (self,signum, frame):
 		self.signal_log.info('SIG USR2 received, increase worker number')
 		self._increase_spawn_limit += 1
+
+	def sigttou (self,signum, frame):
+		self.signal_log.info('SIG TTOU received, stop listening')
+		self._listen = False
+
+	def sigttin (self,signum, frame):
+		self.signal_log.info('SIG IN received, star listening')
+		self._listen = True
 
 	def sigabrt (self,signum, frame):
 		self.signal_log.info('SIG INFO received, refork request')
@@ -174,6 +185,15 @@ class Supervisor(object):
 			count_saturation = (count_saturation + 1) % self.saturation_frequency
 
 			try:
+				# Must be done before the reactor.run, so it can log in failing
+				if self._listen is not None:
+					if self._listen:
+						self._shutdown = not self.proxy.accepting()
+						self._listen = None
+					else:
+						self.proxy.rejecting()
+						self._listen = None
+
 				# check for IO change with select
 				self.reactor.run()
 

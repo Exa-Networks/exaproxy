@@ -16,6 +16,7 @@ RFC Compliance
  - do not forward 100 response due to Expect:100 if client is HTTP/1.0 (Section 8.2.3)
  - the Expect mechanism is hop-by-hop: that is, an HTTP/1.1 proxy MUST return a 417 (Expectation Failed) status if it receives a request with an expectation that it cannot meet. However, the Expect request-header itself is end-to-end; it MUST be forwarded if the request is forwarded.
  - pass the REQUEST HTTP version all the way to the HTTP page generated in response
+ - 414 Request-URI Too Long instead of aborting the request
 
 DOS Protection
  - limit GET size as a option value (8192 default)
