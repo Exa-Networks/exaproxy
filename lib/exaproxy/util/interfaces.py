@@ -129,11 +129,20 @@ class sockaddr_dl (Structure):
 
 if platform.startswith("darwin"):
 	AF_LINK = 18
+
 	IFT_OTHER = 0x1      # none of the following (many entries not listed here)
 	IFT_ETHER = 0x6      # Ethernet CSMA/CD
 	IFT_PPP = 0x17       # PPP
 	IFT_LOOP = 0x18      # loopback
 	IFT_IEEE1394 = 0x90  # IEEE1394 High Performance SerialBus
+
+	# Define constants for the most useful interface flags (from if.h).
+	IFF_UP            = 0x0001
+	IFF_BROADCAST     = 0x0002
+	IFF_LOOPBACK      = 0x0008
+	IFF_POINTTOPOINT  = 0x0010
+	IFF_RUNNING       = 0x0040
+	IFF_MULTICAST     = 0x8000
 
 	sockaddr = sockaddr_bsd
 	sockaddr_in = sockaddr_in_bsd
@@ -149,18 +158,34 @@ elif platform.startswith("freebsd"):
 	IFT_LOOP = 0x18      # loopback
 	IFT_IEEE1394 = 0x90  # IEEE1394 High Performance SerialBus
 
+	# Define constants for the most useful interface flags (from if.h).
+	IFF_UP            = 0x0001
+	IFF_BROADCAST     = 0x0002
+	IFF_LOOPBACK      = 0x0008
+	IFF_POINTTOPOINT  = 0x0010
+	IFF_RUNNING       = 0x0040
+	IFF_MULTICAST     = 0x8000
+
 	sockaddr = sockaddr_bsd
 	sockaddr_in = sockaddr_in_bsd
 	sockaddr_in6 = sockaddr_in6_bsd
 
 	libc = CDLL("libc.so")
 
-else:
+elif sys.platform.startswith('linux'):
 	AF_LINK = -1
 	IFT_OTHER = -1
 	IFT_ETHER = -1
 	IFT_PPP = -1
 	IFT_LOOP = -1
+
+	# Define constants for the most useful interface flags (from if.h).
+	IFF_UP            = 0x0001
+	IFF_BROADCAST     = 0x0002
+	IFF_LOOPBACK      = 0x0008
+	IFF_POINTTOPOINT  = 0x0010
+	IFF_RUNNING       = 0x0040
+	IFF_MULTICAST     = 0x1000
 
 	sockaddr = sockaddr_linux
 	sockaddr_in = sockaddr_in_linux
@@ -170,6 +195,8 @@ else:
 		libc = CDLL("libc.so.6")
 	except OSError:
 		libc = CDLL("libc.so")
+else:
+	raise RuntimeError('unsupported platform')
 
 # There is a bug in FreeBSD
 # (PR kern/152036) and MacOSX wherein the netmask's sockaddr may be
@@ -227,6 +254,8 @@ def getifaddrs():
 			break
  
 	libc.freeifaddrs(ptr)
+
+__all__ = ['getifaddrs'] + [n for n in dir() if n.startswith('IFF_')]
 
 if __name__ == '__main__':
 	ifaces=getifaddrs()
