@@ -61,6 +61,8 @@ def help ():
 	sys.stdout.write(' - SIGUSR2  : increase the mininum number of processes\n')
 	sys.stdout.write(' - SIGTTOU  : stop listening for new proxy connections\n')
 	sys.stdout.write(' - SIGTTIN  : start listening for new proxy connections\n')
+	sys.stdout.write(' - SIGQUIT  : stop listening and exit when exiting connections are all closed\n')
+	sys.stdout.write(' - SIGTERM  : terminate the program immediatly (SIGINT too atm)\n')
 	sys.stdout.write('\n')
 	sys.stdout.write('Valid configuration options are :\n')
 	sys.stdout.write('\n')

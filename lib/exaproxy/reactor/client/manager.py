@@ -329,6 +329,12 @@ class ClientManager (object):
 		if sock in self.buffered:
 			self.buffered.remove(sock)
 
+	def softstop (self):
+		if len(self.byname) > 0 or len(self.norequest) > 0:
+			return False
+		self.log.critical('no more client connection, exiting.')
+		return True
+
 	def stop(self):
 		for client, source in self.bysock.itervalues():
 			client.shutdown()

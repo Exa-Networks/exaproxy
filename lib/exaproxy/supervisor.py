@@ -97,68 +97,87 @@ class Supervisor(object):
 
 		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.manager, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
 
-		self._shutdown = True if self.daemon.filemax == 0 else False
-		self._reload = False
-		self._toggle_debug = False
+		self._shutdown = True if self.daemon.filemax == 0 else False  # stop the program
+		self._softstop = False  # stop once all current connection have been dealt with
+		self._reload = False  # unimplemented
+		self._toggle_debug = False  # start logging a lot
 		self._decrease_spawn_limit = 0
 		self._increase_spawn_limit = 0
-		self._refork = False
-		self._pdb = False
-		self._listen = None
+		self._refork = False  # unimplemented
+		self._pdb = False  # turn on pdb debugging
+		self._listen = None  # listening change ? None: no, True: listen, False: stop listeing
+		self.wait_time = 5.0  # how long do we wait at maximum once we have been soft-killed
 
+		signal.signal(signal.SIGQUIT, self.sigquit)
+		signal.signal(signal.SIGINT, self.sigterm)
 		signal.signal(signal.SIGTERM, self.sigterm)
-		signal.signal(signal.SIGHUP, self.sighup)
-		signal.signal(signal.SIGALRM, self.sigalrm)
+		# signal.signal(signal.SIGABRT, self.sigabrt)
+		# signal.signal(signal.SIGHUP, self.sighup)
+
+		signal.signal(signal.SIGTRAP, self.sigtrap)
+
 		signal.signal(signal.SIGUSR1, self.sigusr1)
 		signal.signal(signal.SIGUSR2, self.sigusr2)
 		signal.signal(signal.SIGTTOU, self.sigttou)
 		signal.signal(signal.SIGTTIN, self.sigttin)
-		#signal.signal(signal.SIGTRAP, self.sigtrap)
-		#signal.signal(signal.SIGABRT, self.sigabrt)
+
+		signal.signal(signal.SIGALRM, self.sigalrm)
 
 		# make sure we always have data in history, here as record() requires self to be partially initialised to run
 		self.monitor.record()
 
+	def sigquit (self,signum, frame):
+		if self._softstop:
+			self.signal_log.critical('multiple SIG INT received, shutdown')
+			self._shutdown = True
+		else:
+			self.signal_log.critical('SIG INT received, soft-stop')
+			self._softstop = True
+			self._listen = False
+
 	def sigterm (self,signum, frame):
-		self.signal_log.info('SIG TERM received, shutdown request')
+		self.signal_log.critical('SIG TERM received, shutdown request')
 		if os.environ.get('PDB',False):
 			self._pdb = True
 		else:
 			self._shutdown = True
 
-	def sighup (self,signum, frame):
-		self.signal_log.info('SIG HUP received, reload request')
-		self._reload = True
+	# def sigabrt (self,signum, frame):
+	# 	self.signal_log.info('SIG INFO received, refork request')
+	# 	self._refork = True
+
+	# def sighup (self,signum, frame):
+	# 	self.signal_log.info('SIG HUP received, reload request')
+	# 	self._reload = True
 
 	def sigtrap (self,signum, frame):
-		self.signal_log.info('SIG TRAP received, toggle debug')
+		self.signal_log.critical('SIG TRAP received, toggle debug')
 		self._toggle_debug = True
 
+
 	def sigusr1 (self,signum, frame):
-		self.signal_log.info('SIG USR1 received, decrease worker number')
+		self.signal_log.critical('SIG USR1 received, decrease worker number')
 		self._decrease_spawn_limit += 1
 
 	def sigusr2 (self,signum, frame):
-		self.signal_log.info('SIG USR2 received, increase worker number')
+		self.signal_log.critical('SIG USR2 received, increase worker number')
 		self._increase_spawn_limit += 1
 
+
 	def sigttou (self,signum, frame):
-		self.signal_log.info('SIG TTOU received, stop listening')
+		self.signal_log.critical('SIG TTOU received, stop listening')
 		self._listen = False
 
 	def sigttin (self,signum, frame):
-		self.signal_log.info('SIG IN received, star listening')
+		self.signal_log.critical('SIG IN received, star listening')
 		self._listen = True
 
-	def sigabrt (self,signum, frame):
-		self.signal_log.info('SIG INFO received, refork request')
-		self._refork = True
 
 	def sigalrm (self,signum, frame):
 		self.signal_log.debug('SIG ALRM received, timed actions')
 		self.reactor.running = False
-		#signal.alarm(self.alarm_time)
 		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
+
 
 	def run (self):
 		if self.daemon.drop_privileges():
@@ -166,11 +185,9 @@ class Supervisor(object):
 			self.log.stdout('Set the environment value USER to change the unprivileged user')
 			return
 
-		ok = self.initialise()
-		if not ok:
+		if not self.initialise():
 			self._shutdown = True
 
-		#signal.alarm(self.alarm_time)
 		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
 
 		count_history = 0
@@ -185,22 +202,18 @@ class Supervisor(object):
 			count_saturation = (count_saturation + 1) % self.saturation_frequency
 
 			try:
-				# Must be done before the reactor.run, so it can log in failing
-				if self._listen is not None:
-					if self._listen:
-						self._shutdown = not self.proxy.accepting()
-						self._listen = None
-					else:
-						self.proxy.rejecting()
-						self._listen = None
+				if self._pdb:
+					self._pdb = False
+					import pdb
+					pdb.set_trace()
+
 
 				# check for IO change with select
 				self.reactor.run()
 
-				if self._toggle_debug:
-					self._toggle_debug = False
-					self.log_writer.toggleDebug()
 
+				# must follow the reactor so we are sure to go through the reactor at least once
+				# and flush any logs
 				if self._shutdown:
 					self._shutdown = False
 					self.shutdown()
@@ -214,6 +227,28 @@ class Supervisor(object):
 					# stop listening to new connections
 					# refork the program (as we have been updated)
 					# just handle current open connection
+
+
+				if self._softstop:
+					if self._listen == False:
+						self.proxy.rejecting()
+						self._listen = None
+					if self.client.softstop():
+						self._shutdown = True
+				# only change listening if we are not shutting down
+				elif self._listen is not None:
+					if self._listen:
+						self._shutdown = not self.proxy.accepting()
+						self._listen = None
+					else:
+						self.proxy.rejecting()
+						self._listen = None
+
+
+				if self._toggle_debug:
+					self._toggle_debug = False
+					self.log_writer.toggleDebug()
+
 
 				if self._increase_spawn_limit:
 					number = self._increase_spawn_limit
@@ -231,13 +266,6 @@ class Supervisor(object):
 					for _ in range(number):
 						self.manager.decrease()
 
-				if self._pdb:
-					self._pdb = False
-					import pdb
-					pdb.set_trace()
-
-				# Quit on problems which can not be fixed (like running out of file descriptor)
-				#self._shutdown = not self.reactor.running
 
 				# save our monitoring stats
 				if count_history == 0:
@@ -285,6 +313,7 @@ class Supervisor(object):
 #				except KeyboardInterrupt:
 #					self.log.info('^C received')
 #					self._shutdown = True
+
 
 	def initialise (self):
 		self.daemon.daemonise()
