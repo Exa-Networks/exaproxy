@@ -91,7 +91,7 @@ class sockaddr_in6_bsd (Structure):
 		("sin6_scope_id", c_uint32),
 	]
 
-class sockaddr_in6 (Structure):
+class sockaddr_in6_linux (Structure):
 	_fields_ = [
 		("sin6_family",   c_short),
 		("sin6_port",     c_ushort),
@@ -172,7 +172,7 @@ elif platform.startswith("freebsd"):
 
 	libc = CDLL("libc.so")
 
-elif sys.platform.startswith('linux'):
+elif platform.startswith('linux'):
 	AF_LINK = -1
 	IFT_OTHER = -1
 	IFT_ETHER = -1
