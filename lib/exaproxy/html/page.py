@@ -9,6 +9,8 @@ Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 import cgi
 import json
 
+from urllib import unquote
+
 from .menu import Menu
 from .graph import graph
 from .mail import mail
@@ -17,7 +19,7 @@ from .licence import licence
 from .humans import humans
 
 from exaproxy.util.log.history import History
-
+from exaproxy.util.log.logger import Logger
 
 options = (
 	('/index.html', 'Home', (
@@ -38,7 +40,9 @@ options = (
 		('/performance/events.html', 'Events'),
 		('/performance/queue.html', 'Queue'),
 	)),
-	('/update.html', 'Update', (
+	('/control.html', 'Control', (
+		('/control/workers.html', 'Workers'),
+		('/control/debug.html', 'Debug'),
 	)),
 	('/about.html', 'About', (
 		('/about/email.html', 'Email'),
@@ -84,6 +88,7 @@ class Page (object):
 		self.supervisor = supervisor
 		self.monitor = supervisor.monitor
 		self.email_sent = False
+		self.log = Logger('web', supervisor.configuration.log.web)
 
 	def _introspection (self,objects):
 		introduction = "<div style='padding: 10px 10px 10px 10px; font-weight:bold;'>Looking at the internal of ExaProxy for %s </div><br/>\n" % cgi.escape('.'.join(objects))
@@ -199,8 +204,8 @@ class Page (object):
 			True,
 		)
 
-	def _update (self):
-		form = '<form action="/update/commit" method="get">%s: <input type="text" name="%s" value="%s"><input type="submit" value="Submit"></form>'
+	def _workers (self):
+		form = '<form action="/control/workers/commit" method="get">%s: <input type="text" name="%s" value="%s"><input type="submit" value="Submit"></form>'
 
 		change = {
 			'exaproxy.redirector.minimum' : self.supervisor.manager.low,
@@ -213,8 +218,14 @@ class Page (object):
 			forms.append(form % (name,name,value))
 		return '<pre style="margin-left:40px;">\n' + '\n'.join(forms)
 
+	def _run (self):
+		s  = '<pre style="margin-left:40px;">'
+		s += '<form action="/control/debug/eval" method="get">eval <textarea type="text" name="python" cols="100" rows="10"></textarea><input type="submit" value="Submit"></form>'
+		s += '<form action="/control/debug/exec" method="get">exec <textarea type="text" name="python" cols="100" rows="10"></textarea><input type="submit" value="Submit"></form>'
+		return s
+
 	def _logs (self):
-		return '<div style="padding: 10px 10px 10px 10px; font-weight:bold;">'+'<br/>\n'.join(History().formated()) + '</div>'
+		return 'do not view this in a web browser - the input is not sanitised, you have been warned !\n\n' + '\n'.join(History().formated())
 
 	def _email (self,args):
 		if self.email_sent:
@@ -245,7 +256,7 @@ class Page (object):
 		elif not path.endswith('.html'):
 			if path == '/humans.txt':
 				return humans.txt
-			if path not in ('/json','/json/running','/json/configuration','/update/commit'):
+			if path not in ('/json','/json/running','/json/configuration','/control/workers/commit','/control/debug/eval','/control/debug/exec'):
 				return menu('<center><b>invalid url</b></center>')
 			sections = path[1:].split('/') + ['']
 		else:
@@ -274,7 +285,7 @@ class Page (object):
 			if subsection == 'statistics':
 				return menu(self._statistics())
 			if subsection == 'logs':
-				return menu(self._logs())
+				return self._logs()
 			return menu(index)
 
 		if section == 'performance':
@@ -296,30 +307,61 @@ class Page (object):
 				return menu(self._queue())
 			return menu(index)
 
-		if section == 'update':
-			if subsection == 'commit':
-				if '=' in args:
-					key,value = args.split('=',1)
+		if section == 'control':
+			action = (sections + [None,]) [2]
 
-					if key == 'exaproxy.redirector.minimum':
-						if value.isdigit():  # this prevents negative values
-							setting = int(value)
-							if setting > self.supervisor.manager.high:
-								return menu(self._update() + '<div style="color: red; padding-top: 3em;">value is higher than exaproxy.redirector.maximum</div>')
-							self.supervisor.manager.low = setting
-							return menu(self._update() + '<div style="color: green; padding-top: 3em;">changed successfully</div>')
+			if subsection == 'debug':
+				if not self.supervisor.configuration.daemon.debug:
+					return menu('not enabled')
 
-					if key == 'exaproxy.redirector.maximum':
-						if value.isdigit():
-							setting = int(value)
-							if setting < self.supervisor.manager.low:
-								return menu(self._update() + '<div style="color: red; padding-top: 3em;">value is lower than exaproxy.redirector.minimum</div>')
-							self.supervisor.manager.high = setting
-							return menu(self._update() + '<div style="color: green; padding-top: 3em;">changed successfully</div>')
+				if action == 'exec':
+					if '=' in args:
+						key,value = args.split('=',1)
+						try:
+							self.log.critical('PYTHON CODE RAN : %s' % value)
+							code = compile(unquote(value),'<string>', 'exec')
+							exec code
+							return 'done !'
+						except Exception,e:
+							return 'failed to run : \n' + unquote(value) + '\n\nreason : \n' + str(type(e)) + '\n' + str(e)
 
-					return menu(self._update() + '<div style="color: red; padding-top: 3em;">invalid request</div>')
+				if action == 'eval':
+					if '=' in args:
+						key,value = args.split('=',1)
+						self.log.critical('PYTHON CODE RAN : %s' % value)
+						try:
+							return str(eval(unquote(value)))
+						except Exception,e:
+							return 'failed to run : \n' + unquote(value) + '\n\nreason : \n' + str(type(e)) + '\n' + str(e)
 
-			return menu(self._update())
+				return menu(self._run())
+
+			if subsection == 'workers':
+				if action == 'commit':
+					if '=' in args:
+						key,value = args.split('=',1)
+
+						if key == 'exaproxy.redirector.minimum':
+							if value.isdigit():  # this prevents negative values
+								setting = int(value)
+								if setting > self.supervisor.manager.high:
+									return menu(self._workers() + '<div style="color: red; padding-top: 3em;">value is higher than exaproxy.redirector.maximum</div>')
+								self.supervisor.manager.low = setting
+								return menu(self._workers() + '<div style="color: green; padding-top: 3em;">changed successfully</div>')
+
+						if key == 'exaproxy.redirector.maximum':
+							if value.isdigit():
+								setting = int(value)
+								if setting < self.supervisor.manager.low:
+									return menu(self._workers() + '<div style="color: red; padding-top: 3em;">value is lower than exaproxy.redirector.minimum</div>')
+								self.supervisor.manager.high = setting
+								return menu(self._workers() + '<div style="color: green; padding-top: 3em;">changed successfully</div>')
+
+						return menu(self._workers() + '<div style="color: red; padding-top: 3em;">invalid request</div>')
+
+				return menu(self._workers())
+
+			return menu('')
 
 		if section == 'about':
 			if subsection == 'email':

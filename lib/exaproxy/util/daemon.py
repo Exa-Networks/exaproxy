@@ -28,6 +28,9 @@ class Daemon (object):
 		self.log = Logger('daemon', configuration.log.daemon)
 		#mask = os.umask(0137)
 
+		if configuration.daemon.debug:
+			self.log.critical('WARNING: python remove execution via the web server is enabled')
+
 		if configuration.daemon.reactor == 'epoll' and not sys.platform.startswith('linux'):
 			self.log.error('exaproxy.daemon.reactor can only be epoll on Linux, changing the reactor to select')
 			configuration.daemon.reactor = 'select'

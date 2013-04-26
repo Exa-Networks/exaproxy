@@ -165,6 +165,7 @@ def main ():
 			'daemonize'   : (value.boolean,value.lower,'false', 'should we run in the background'),
 			'reactor'     : (value.unquote,value.quote,'epoll', 'what event mechanism to use (select/epoll)'),
 			'speed'       : (value.integer,value.nop,'2',       'when waiting for connection how long are we sleeping for'),
+			'debug'       : (value.boolean,value.lower,'false', 'allow to debug the program via the web client (do not use in production)'),
 		},
 		'dns' : {
 			'resolver'     : (value.resolver,value.path,'/etc/resolv.conf',       'resolver file'),
@@ -190,6 +191,7 @@ def main ():
 			'http'          : (value.boolean,value.lower,'true',               'log messages from the http subsystem'),
 			'header'        : (value.boolean,value.lower,'true',               'log messages from the header subsystem'),
 			'resolver'      : (value.boolean,value.lower,'true',               'log messages from the dns subsystem'),
+			'web'           : (value.boolean,value.lower,'true',               'log messages from the web subsystem'),
 		},
 		'usage' : {
 			'enable'        : (value.boolean,value.lower,'false',              'enable traffic logging'),
@@ -247,6 +249,7 @@ def main ():
 			sys.exit(0)
 		if arg in ['-d','--debug']:
 			configuration.debug.log = True
+			configuration.daemon.debug = True
 		if arg in ['-p','--pdb']:
 			# The following may fail on old version of python (but is required for debug.py)
 			os.environ['PDB'] = 'true'
