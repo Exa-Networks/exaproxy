@@ -54,7 +54,7 @@ class Reactor(object):
 			for name,ev in events.items():
 				self.nb_events += len(ev)
 
-			self.log.debug('events : ' + ', '.join(events.keys()))
+			self.log.debug('events : ' + ', '.join('%s:%d' % (k,len(v)) for (k,v) in events.items()))
 
 			# handle new connections before anything else
 			for sock in events.get('read_proxy',[]):
