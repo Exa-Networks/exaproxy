@@ -168,8 +168,8 @@ def main ():
 			'debug'       : (value.boolean,string.lower,'false', 'allow to debug the program via the web client (do not use in production)'),
 		},
 		'security' : {
-			'local'       : (value.services,string.services,   '',     'ip:port for allowed services (*:80 or 127.0.0.1:* allowed)'),
-			'connect'     : (value.list,string.list,           '413',  'ports allowed with CONNECT'),
+			'local'       : (value.services,string.services,   '',              'ip:port for allowed services (*:80 or 127.0.0.1:* allowed)'),
+			'connect'     : (value.ports,string.list,          '443 981 7000',  'ports allowed with CONNECT'),
 		},
 		'dns' : {
 			'resolver'     : (value.resolver,string.path,'/etc/resolv.conf',       'resolver file'),

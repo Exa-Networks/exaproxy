@@ -46,7 +46,7 @@ class Request (object):
 
 					self.port = self._checkport(port[1:])
 				else:
-					self.port = '80'
+					self.port = 80
 
 				return self
 			else:
@@ -64,7 +64,7 @@ class Request (object):
 				self.port = self._checkport(port)
 			else:
 				self.host = host
-				self.port = '80'
+				self.port = 80
 		else:
 			self.path = '/'
 			if ':' in uri:
@@ -72,13 +72,13 @@ class Request (object):
 				self.port = self._checkport(port)
 			else:
 				self.host = uri
-				self.port = '80'
+				self.port = 80
 		return self
 
 	def _checkport (self,port):
 		if port and not port.isdigit():
 			raise ValueError('Malformed headers')
-		return port
+		return int(port)
 
 	def __str__ (self):
 		if self.protocol == 'http':

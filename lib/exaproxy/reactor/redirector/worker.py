@@ -35,11 +35,11 @@ from exaproxy.util.log.logger import UsageLogger
 class Respond (object):
 	@staticmethod
 	def download (client_id, ip, port, upgrade, length, message):
-		return '\0'.join((client_id, 'download', ip, port, upgrade, str(length), str(message)))
+		return '\0'.join((client_id, 'download', ip, str(port), upgrade, str(length), str(message)))
 
 	@staticmethod
 	def connect (client_id, host, port, message):
-		return '\0'.join((client_id, 'connect', host, port, str(message)))
+		return '\0'.join((client_id, 'connect', host, str(port), str(message)))
 
 	@staticmethod
 	def file (client_id, code, reason):
@@ -126,7 +126,7 @@ class Redirector (Thread):
 				stdin=subprocess.PIPE,
 				stdout=subprocess.PIPE,
 				universal_newlines=self.universal,
-				preexec_fn = preexec,
+				preexec_fn=preexec,
 			)
 			self.log.debug('spawn process %s' % self.program)
 		except KeyboardInterrupt:
@@ -452,20 +452,21 @@ Encapsulated: req-hdr=0, null-body=%d
 
 			# someone want to use us as https proxy
 			if method == 'CONNECT':
+				# we do allow connect
+				if not self.configuration.http.allow_connect or message.port not in self.configuration.security.connect:
+					# NOTE: we are always returning an HTTP/1.1 response
+					self.respond(Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n')))
+					self.usage.logRequest(client_id, peer, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
+					pass
+
 				if not self.enabled:
 					self.respond(Respond.connect(client_id, message.host, message.port, http))
 					continue
 
-				# we do allow connect
-				if self.configuration.http.allow_connect:
-					(operation, destination), response = self.connect(client_id, *(self.classify(message,header,tainted)+(peer,header,source)))
-					self.respond(response)
-					if operation is not None:
-						self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
-				else:
-					# NOTE: we are always returning an HTTP/1.1 response
-					self.respond(Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n')))
-					self.usage.logRequest(client_id, peer, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
+				(operation, destination), response = self.connect(client_id, *(self.classify(message,header,tainted)+(peer,header,source)))
+				self.respond(response)
+				if operation is not None:
+					self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
 				continue
 
 			if method in ('OPTIONS','TRACE'):

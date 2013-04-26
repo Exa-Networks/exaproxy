@@ -100,6 +100,13 @@ class value (object):
 		return _.split()
 
 	@staticmethod
+	def ports (_):
+		try:
+			return [int(x) for x in _.split()]
+		except ValueError:
+			raise TypeError('resolv.conf can not be found (are you using DHCP without any network setup ?)')
+
+	@staticmethod
 	def methods (_):
 		return _.upper().split()
 
@@ -198,7 +205,7 @@ class string (object):
 
 	@staticmethod
 	def list (_):
-		return "'%s'" % ' '.join(_)
+		return "'%s'" % ' '.join((str(x) for x in _))
 
 	@staticmethod
 	def services (_):
