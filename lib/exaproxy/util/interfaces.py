@@ -20,11 +20,11 @@ class ifa_ifu_u (Union):
 
 class ifaddrs (Structure):
 	_fields_ = [
-		("ifa_next",    c_void_p ),
-		("ifa_name",    c_char_p ),
-		("ifa_flags",   c_uint	),
-		("ifa_addr",    c_void_p ),
-		("ifa_netmask", c_void_p ),
+		("ifa_next",    c_void_p),
+		("ifa_name",    c_char_p),
+		("ifa_flags",   c_uint),
+		("ifa_addr",    c_void_p),
+		("ifa_netmask", c_void_p),
 		("ifa_ifu",     ifa_ifu_u),
 		("ifa_data",    c_void_p),
 	]
@@ -56,7 +56,7 @@ class sockaddr_in_bsd (Structure):
 		("sin_family", c_uint8),
 		("sin_port",   c_ushort),
 		("sin_addr",   in_addr),
-		("sin_zero",   (c_char * 8)), # padding
+		("sin_zero",   (c_char * 8)),  # padding
 	]
 
 class sockaddr_in_linux (Structure):
@@ -64,7 +64,7 @@ class sockaddr_in_linux (Structure):
 		("sin_family", c_short),
 		("sin_port",   c_ushort),
 		("sin_addr",   in_addr),
-		("sin_zero",   (c_char * 8)), # padding
+		("sin_zero",   (c_char * 8)),  # padding
 	]
 
 
@@ -107,21 +107,21 @@ class sockaddr_ll (Structure):
 		("sll_protocol", c_uint16),
 		("sll_ifindex",  c_uint32),
 		("sll_hatype",   c_uint16),
-		("sll_pktype",   c_uint8 ),
-		("sll_halen",    c_uint8 ),
+		("sll_pktype",   c_uint8),
+		("sll_halen",    c_uint8),
 		("sll_addr",     (c_uint8 * 8)),
 	]
 
 # AF_LINK / BSD|OSX
 class sockaddr_dl (Structure):
 	_fields_ = [
-		("sdl_len",    c_uint8 ),
-		("sdl_family", c_uint8 ),
+		("sdl_len",    c_uint8),
+		("sdl_family", c_uint8),
 		("sdl_index",  c_uint16),
-		("sdl_type",   c_uint8 ),
-		("sdl_nlen",   c_uint8 ),
-		("sdl_alen",   c_uint8 ),
-		("sdl_slen",   c_uint8 ),
+		("sdl_type",   c_uint8),
+		("sdl_nlen",   c_uint8),
+		("sdl_alen",   c_uint8),
+		("sdl_slen",   c_uint8),
 		("sdl_data",   (c_uint8 * 46)),
 	]
 
@@ -252,7 +252,7 @@ def getifaddrs():
 			ifa = ifaddrs.from_address(ifa.ifa_next)
 		else:
 			break
- 
+
 	libc.freeifaddrs(ptr)
 
 __all__ = ['getifaddrs'] + [n for n in dir() if n.startswith('IFF_')]
@@ -269,4 +269,4 @@ if __name__ == '__main__':
 	# 			if i in addr:
 	# 				print("\t\t%s %s" % (i, str(addr[i])))
 	# 		print("")
-	# 
+	#
