@@ -146,9 +146,9 @@ def main ():
 			'transparent'     : (value.boolean,value.lower,'false', 'do not reveal the presence of the proxy'),
 			'forward'         : (value.lowunquote,value.quote,'',   'read client address from this header (normally x-forwarded-for)'),
 			'allow-connect'   : (value.boolean,value.lower,'true',  'allow client to use CONNECT and https connections'),
-			'expect'          : (value.boolean,value.lower,'false',  'handle EXPECT headers'),
+			'expect'          : (value.boolean,value.lower,'false', 'block messages with EXPECT headers with a 417'),
 			'extensions'      : (value.methods,value.list,'',       'allow new HTTP method (space separated)'),
-			'proxied'         : (value.boolean,value.lower,'false', 'request is encapsulated with proxy protocol'),
+			'proxied'         : (value.boolean,value.lower,'false', 'request is encapsulated with haproxy proxy protocol'),
 			'header-size'     : (value.integer,value.nop,'65536',   'maximum size in bytes for HTTP headers (0 : unlimited)'),
 		},
 		'web' : {

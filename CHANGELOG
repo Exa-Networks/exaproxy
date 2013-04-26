@@ -8,6 +8,7 @@ Version
  * Improvement: implement SIGQUIT as a way to quit once all current connections are closed
  * Improvement: allow to choose an IP for outgoing connections, permit over 2^16/2 client connections
  * Improvement: allow to control^Wbreak the proxy using some python code on the web page
+ * Improvement: prevent connection to the local host to prevent firewall bypass
  * Backward compatibility: exaproxy.daemon.connections was renamed to exaproxy.http.connections
 
 Version 1.1.0 - 23rd of April 2013

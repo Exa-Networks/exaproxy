@@ -31,12 +31,15 @@ from exaproxy.util.log.logger import Logger
 from exaproxy.util.log.writer import SysLogWriter
 from exaproxy.util.log.writer import UsageWriter
 
+from exaproxy.util.interfaces import getifaddrs,AF_INET,AF_INET6
+
 class Supervisor(object):
 	alarm_time = 0.1                           # regular backend work
 	history_frequency = int(1/alarm_time)      # when we record history
 	increase_frequency = int(5/alarm_time)     # when we add workers
 	decrease_frequency = int(60/alarm_time)    # when we remove workers
 	saturation_frequency = int(20/alarm_time)  # when we report connection saturation
+	interface_frequency = int(300/alarm_time)  # when we check for new interfaces
 
 	# import os
 	# clear = [hex(ord(c)) for c in os.popen('clear').read()]
@@ -89,7 +92,7 @@ class Supervisor(object):
 			self.configuration,
 			self.poller,
 		)
-		self.content = ContentManager(self.poller, self.configuration.web.html, self.page, configuration)
+		self.content = ContentManager(self,configuration)
 		self.client = ClientManager(self.poller, configuration)
 		self.resolver = ResolverManager(self.poller, self.configuration, configuration.dns.retries*10)
 		self.proxy = Server('http proxy',self.poller,'read_proxy', configuration.http.connections)
@@ -107,6 +110,9 @@ class Supervisor(object):
 		self._pdb = False  # turn on pdb debugging
 		self._listen = None  # listening change ? None: no, True: listen, False: stop listeing
 		self.wait_time = 5.0  # how long do we wait at maximum once we have been soft-killed
+		self.local = set()  # what addresses are on our local interfaces
+
+		self.interfaces()
 
 		signal.signal(signal.SIGQUIT, self.sigquit)
 		signal.signal(signal.SIGINT, self.sigterm)
@@ -179,6 +185,22 @@ class Supervisor(object):
 		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
 
 
+	def interfaces (self):
+		local = set(['127.0.0.1','::1'])
+		for interface in getifaddrs():
+			if interface.family not in (AF_INET,AF_INET6):
+				continue
+			if interface.address not in self.local:
+				self.log.info('found new ip %s (%s)' % (interface.address,interface.name))
+			local.add(interface.address)
+		for ip in self.local:
+			if ip not in local:
+				self.log.info('removed ip %s' % ip)
+		if local == self.local:
+			self.log.info('no ip change')
+		else:
+			self.local = local
+
 	def run (self):
 		if self.daemon.drop_privileges():
 			self.log.stdout('Could not drop privileges to \'%s\'. Refusing to run as root' % self.daemon.user)
@@ -194,12 +216,14 @@ class Supervisor(object):
 		count_increase = 0
 		count_decrease = 0
 		count_saturation = 0
+		count_interface = 0
 
 		while True:
 			count_history = (count_history + 1) % self.history_frequency
 			count_increase = (count_increase + 1) % self.increase_frequency
 			count_decrease = (count_decrease + 1) % self.decrease_frequency
 			count_saturation = (count_saturation + 1) % self.saturation_frequency
+			count_interface = (count_interface + 1) % self.interface_frequency
 
 			try:
 				if self._pdb:
@@ -282,6 +306,9 @@ class Supervisor(object):
 				if count_saturation == 0:
 					self.proxy.saturation()
 					self.web.saturation()
+
+				if count_interface == 0:
+					self.interfaces()
 
 			except KeyboardInterrupt:
 				self.log.info('^C received')

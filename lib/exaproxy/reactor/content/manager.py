@@ -19,7 +19,7 @@ class ParsingError (Exception):
 class ContentManager(object):
 	downloader_factory = Content
 
-	def __init__(self, poller, location, page, configuration):
+	def __init__(self, supervisor, configuration):
 		self.total_sent = 0L
 		self.opening = {}
 		self.established = {}
@@ -27,12 +27,13 @@ class ContentManager(object):
 		self.buffered = []
 		self.retry = []
 		self.configuration = configuration
+		self.supervisor = supervisor
 
-		self.poller = poller
+		self.poller = supervisor.poller
 		self.log = Logger('download', configuration.log.download)
 
-		self.location = os.path.realpath(os.path.normpath(location))
-		self.page = page
+		self.location = os.path.realpath(os.path.normpath(configuration.web.html))
+		self.page = supervisor.page
 		self._header = {}
 
 	def hasClient(self, client_id):
@@ -114,12 +115,15 @@ class ContentManager(object):
 			return None, False
 
 		if downloader is None:
+			# supervisor.local is replaced when interface are changed, so do not cache or reference it in this class
+			if host in self.supervisor.local:
+				return None, False
+
 			downloader = self.downloader_factory(client_id, host, port, bind, command, request, self.log)
 			newdownloader = True
 
 		if downloader.sock is None:
-			downloader = None
-			newdownloader = False
+			return None, False
 
 		return downloader, newdownloader
 
