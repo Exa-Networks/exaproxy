@@ -235,20 +235,20 @@ def getifaddrs():
 				netmask = inet_ntop(AF_INET,pack('=L',sockaddr_in.from_address(ifa.ifa_netmask).sin_addr.s_addr))
 			# CPYTHON
 			except AttributeError:
-				address = inet_ntop(AF_INET,sockaddr_in.from_address(ifa.ifa_addr).sin_addr) if ifa.ifa_addr else None
-				netmask = inet_ntop(AF_INET,sockaddr_in.from_address(ifa.ifa_netmask).sin_addr) if ifa.ifa_netmask else None
+				address = inet_ntop(AF_INET,sockaddr_in.from_address(ifa.ifa_addr).sin_addr)
+				netmask = inet_ntop(AF_INET,sockaddr_in.from_address(ifa.ifa_netmask).sin_addr)
 
 			yield result (name(ifa),ifa.ifa_flags,sa.sa_family,address,netmask,None)
 
 		elif sa.sa_family == AF_INET6:
 			# PYPY
 			try:
-				address = inet_ntop(AF_INET6,''.join([chr(_) for _ in  sockaddr_in6.from_address(ifa.ifa_addr).sin6_addr.in6_u.u6_addr8])) if ifa.ifa_addr else None
-				netmask = inet_ntop(AF_INET6,''.join([chr(_) for _ in  sockaddr_in6.from_address(ifa.ifa_netmask).sin6_addr.in6_u.u6_addr8])) if ifa.ifa_netmask else None
+				address = inet_ntop(AF_INET6,''.join([chr(_) for _ in  sockaddr_in6.from_address(ifa.ifa_addr).sin6_addr.in6_u.u6_addr8]))
+				netmask = inet_ntop(AF_INET6,''.join([chr(_) for _ in  sockaddr_in6.from_address(ifa.ifa_netmask).sin6_addr.in6_u.u6_addr8]))
 			# CPYTHON
 			except AttributeError:
-				address = inet_ntop(AF_INET6,sockaddr_in6.from_address(ifa.ifa_addr).sin6_addr) if ifa.ifa_addr else None
-				netmask = inet_ntop(AF_INET6,sockaddr_in6.from_address(ifa.ifa_netmask).sin6_addr) if ifa.ifa_netmask else None
+				address = inet_ntop(AF_INET6,sockaddr_in6.from_address(ifa.ifa_addr).sin6_addr)
+				netmask = inet_ntop(AF_INET6,sockaddr_in6.from_address(ifa.ifa_netmask).sin6_addr)
 			scope = sockaddr_in6.from_address(ifa.ifa_addr).sin6_scope_id if address and address.startswith('fe80:') else None
 			yield result (name(ifa),ifa.ifa_flags,sa.sa_family,address,netmask,scope)
 
