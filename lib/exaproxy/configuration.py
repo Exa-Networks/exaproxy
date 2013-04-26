@@ -38,17 +38,29 @@ _syslog_value_name = {
 
 
 
+
 class NoneDict (dict):
 	def __getitem__ (self,name):
 		return None
 nonedict = NoneDict()
 
+home = os.path.normpath(sys.argv[0]) if sys.argv[0].startswith('/') else os.path.normpath(os.path.join(os.getcwd(),sys.argv[0]))
+
 class value (object):
-	location = os.path.normpath(sys.argv[0]) if sys.argv[0].startswith('/') else os.path.normpath(os.path.join(os.getcwd(),sys.argv[0]))
+
+	@staticmethod
+	def nop (_):
+		return _
+
+	@staticmethod
+	def syslog (log):
+		if log not in _syslog_name_value:
+			raise TypeError('invalid log level %s' % log)
+		return _syslog_name_value[log]
 
 	@staticmethod
 	def root (path):
-		roots = value.location.split(os.sep)
+		roots = home.split(os.sep)
 		location = []
 		for index in range(len(roots)-1,-1,-1):
 			if roots[index] in ('lib','bin'):
@@ -80,28 +92,12 @@ class value (object):
 		return _.strip().strip('\'"')
 
 	@staticmethod
-	def quote (_):
-		return "'%s'" % str(_)
-
-	@staticmethod
-	def nop (_):
-		return _
-
-	@staticmethod
 	def boolean (_):
 		return _.lower() in ('1','yes','on','enable','true')
 
 	@staticmethod
 	def methods (_):
 		return _.upper().split()
-
-	@staticmethod
-	def list (_):
-		return "'%s'" % ' '.join(_)
-
-	@staticmethod
-	def lower (_):
-		return str(_).lower()
 
 	@staticmethod
 	def user (_):
@@ -120,18 +116,6 @@ class value (object):
 		first = options[0]
 		if not first: raise TypeError('%s does not exists' % first)
 		return first
-
-	@staticmethod
-	def path (path):
-		split = sys.argv[0].split('lib/%s' % _application)
-		if len(split) > 1:
-			prefix = os.sep.join(split[:1])
-			if prefix and path.startswith(prefix):
-				path = path[len(prefix):]
-		home = os.path.expanduser('~')
-		if path.startswith(home):
-			return "'~%s'" % path[len(home):]
-		return "'%s'" % path
 
 	@staticmethod
 	def conf(path):
@@ -157,14 +141,15 @@ class value (object):
 		if not os.access(first, os.X_OK): raise TypeError('%s is not an executable' % first)
 		return first
 
-	# @staticmethod
-	# def syslog (path):
-	# 	path = value.unquote(path)
-	# 	if path in ('stdout','stderr'):
-	# 		return path
-	# 	if path.startswith('host:'):
-	# 		return path
-	# 	return path
+	@staticmethod
+	def services (all):
+		try:
+			services = []
+			for service in (_ for _ in all.split() if _):
+				host,port = service.split(':')
+				services.append((host,int(port)))
+		except ValueError:
+			raise TypeError('resolv.conf can not be found (are you using DHCP without any network setup ?)')
 
 	@staticmethod
 	def redirector (name):
@@ -172,23 +157,47 @@ class value (object):
 			return name
 		raise TypeError('invalid redirector protocol %s, options are url or header' % name)
 
+
+
+
+class string (object):
 	@staticmethod
-	def syslog_int (log):
-		if log not in _syslog_name_value:
-			raise TypeError('invalid log level %s' % log)
-		return _syslog_name_value[log]
+	def nop (_):
+		return _
 
 	@staticmethod
-	def syslog_value (log):
-		if log not in _syslog_name_value:
-			raise TypeError('invalid log level %s' % log)
-		return _syslog_name_value[log]
-
-	@staticmethod
-	def syslog_name (log):
+	def syslog (log):
 		if log not in _syslog_value_name:
 			raise TypeError('invalid log level %s' % log)
 		return _syslog_value_name[log]
+
+	@staticmethod
+	def quote (_):
+		return "'%s'" % str(_)
+
+	@staticmethod
+	def lower (_):
+		return str(_).lower()
+
+	@staticmethod
+	def path (path):
+		split = sys.argv[0].split('lib/%s' % _application)
+		if len(split) > 1:
+			prefix = os.sep.join(split[:1])
+			if prefix and path.startswith(prefix):
+				path = path[len(prefix):]
+		home = os.path.expanduser('~')
+		if path.startswith(home):
+			return "'~%s'" % path[len(home):]
+		return "'%s'" % path
+
+	@staticmethod
+	def list (_):
+		return "'%s'" % ' '.join(_)
+
+	@staticmethod
+	def services (_):
+		pass
 
 
 import ConfigParser
@@ -208,7 +217,7 @@ class Store (dict):
 
 
 def _configuration (conf):
-	location = os.path.join(os.sep,*os.path.join(value.location.split(os.sep)))
+	location = os.path.join(os.sep,*os.path.join(home.split(os.sep)))
 	while location and location != '/':
 		location, directory = os.path.split(location)
 		if directory in ('lib','bin'):
@@ -279,7 +288,7 @@ def default ():
 	for section in sorted(_defaults):
 		for option in sorted(_defaults[section]):
 			values = _defaults[section][option]
-			default = "'%s'" % values[2] if values[1] in (value.list,value.path,value.quote,value.unquote) else values[2]
+			default = "'%s'" % values[2] if values[1] in (string.list,string.path,string.quote) else values[2]
 			yield '%s.%s.%s %s: %s. default (%s)' % (_application,section,option,' '*(20-len(section)-len(option)),values[3],default)
 
 def ini (diff=False):
@@ -304,7 +313,7 @@ def env (diff=False):
 		for k,v in values.items():
 			if diff and _defaults[section][k][0](_defaults[section][k][2]) == v:
 				continue
-			if _defaults[section][k][1] == value.quote:
+			if _defaults[section][k][1] == string.quote:
 				print "%s.%s.%s='%s'" % (_application,section,k,v)
 				continue
 			print "%s.%s.%s=%s" % (_application,section,k,_defaults[section][k][1](v))
