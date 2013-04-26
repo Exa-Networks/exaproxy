@@ -37,7 +37,7 @@ class Content (object):
 		Don't send anything yet if the client sent a CONNECT - instead,
 		we respond with our own HTTP header indicating that we connected"""
 
-		self.log.info('download socket is now open for client %s %s' % (self.client_id, self.sock))
+		#self.log.info('download socket is now open for client %s %s' % (self.client_id, self.sock))
 
 		res,sent = self.writeData('')
 		response='HTTP/1.1 200 Connection Established\r\n\r\n' if self.method == 'connect' else ''
@@ -50,8 +50,8 @@ class Content (object):
 			# without this the exception can barf with data not defined on error
 			data = ''
 			data = self.sock.recv(buflen) or None
-			if data:
-				self.log.debug("<< [%s]" % data.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n'))
+			#if data:
+			#	self.log.debug("<< [%s]" % data.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n'))
 		except socket.error, e:
 			if e.args[0] in errno_block:
 				self.log.info('interrupted when trying to read, will retry: got %s bytes' % len(data))
@@ -71,9 +71,9 @@ class Content (object):
 
 		try:
 			sent = self.sock.send(w_buffer)
-			if sent:
-				self.log.debug(">> [%s]" % w_buffer[:sent].replace('\t','\\t').replace('\r','\\r').replace('\n','\\n'))
-			self.log.info('sent %s of %s bytes of data. %s bytes were unbuffered : %s' % (sent, len(w_buffer), len(data), self.sock))
+			#if sent:
+			#	self.log.debug(">> [%s]" % w_buffer[:sent].replace('\t','\\t').replace('\r','\\r').replace('\n','\\n'))
+			#self.log.info('sent %s of %s bytes of data. %s bytes were unbuffered : %s' % (sent, len(w_buffer), len(data), self.sock))
 			self.w_buffer = w_buffer[sent:]
 			res = bool(self.w_buffer)
 
