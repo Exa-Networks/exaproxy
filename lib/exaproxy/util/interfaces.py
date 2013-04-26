@@ -1,3 +1,4 @@
+# encoding: utf-8
 # Modified from http://pastebin.com/wxjai3Mw linked from http://carnivore.it/2010/07/22/python_-_getifaddrs
 
 from collections import namedtuple
@@ -5,6 +6,7 @@ from sys import platform
 from ctypes import *
 
 from socket import AF_INET, AF_INET6, inet_ntop
+from struct import pack
 
 try:
 	from socket import AF_PACKET
@@ -227,13 +229,26 @@ def getifaddrs():
 		sa = sockaddr.from_address(ifa.ifa_addr)
 
 		if sa.sa_family == AF_INET:
-			address = inet_ntop(AF_INET,sockaddr_in.from_address(ifa.ifa_addr).sin_addr) if ifa.ifa_addr else None
-			netmask = inet_ntop(AF_INET,sockaddr_in.from_address(ifa.ifa_netmask).sin_addr) if ifa.ifa_netmask else None
+			# PYPY
+			try:
+				address = inet_ntop(AF_INET,pack('=L',sockaddr_in.from_address(ifa.ifa_addr).sin_addr.s_addr))
+				netmask = inet_ntop(AF_INET,pack('=L',sockaddr_in.from_address(ifa.ifa_netmask).sin_addr.s_addr))
+			# CPYTHON
+			except AttributeError:
+				address = inet_ntop(AF_INET,sockaddr_in.from_address(ifa.ifa_addr).sin_addr) if ifa.ifa_addr else None
+				netmask = inet_ntop(AF_INET,sockaddr_in.from_address(ifa.ifa_netmask).sin_addr) if ifa.ifa_netmask else None
+
 			yield result (name(ifa),ifa.ifa_flags,sa.sa_family,address,netmask,None)
 
 		elif sa.sa_family == AF_INET6:
-			address = inet_ntop(AF_INET6,sockaddr_in6.from_address(ifa.ifa_addr).sin6_addr) if ifa.ifa_addr else None
-			netmask = inet_ntop(AF_INET6,sockaddr_in6.from_address(ifa.ifa_netmask).sin6_addr) if ifa.ifa_netmask else None
+			# PYPY
+			try:
+				address = inet_ntop(AF_INET6,''.join([chr(_) for _ in  sockaddr_in6.from_address(ifa.ifa_addr).sin6_addr.in6_u.u6_addr8])) if ifa.ifa_addr else None
+				netmask = inet_ntop(AF_INET6,''.join([chr(_) for _ in  sockaddr_in6.from_address(ifa.ifa_netmask).sin6_addr.in6_u.u6_addr8])) if ifa.ifa_netmask else None
+			# CPYTHON
+			except AttributeError:
+				address = inet_ntop(AF_INET6,sockaddr_in6.from_address(ifa.ifa_addr).sin6_addr) if ifa.ifa_addr else None
+				netmask = inet_ntop(AF_INET6,sockaddr_in6.from_address(ifa.ifa_netmask).sin6_addr) if ifa.ifa_netmask else None
 			scope = sockaddr_in6.from_address(ifa.ifa_addr).sin6_scope_id if address and address.startswith('fe80:') else None
 			yield result (name(ifa),ifa.ifa_flags,sa.sa_family,address,netmask,scope)
 
@@ -255,7 +270,7 @@ def getifaddrs():
 
 	libc.freeifaddrs(ptr)
 
-__all__ = ['getifaddrs'] + [n for n in dir() if n.startswith('IFF_')]
+__all__ = ['getifaddrs'] + [n for n in dir() if n.startswith('IFF_') or n.startswith('AF_')]
 
 if __name__ == '__main__':
 	ifaces=getifaddrs()
