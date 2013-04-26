@@ -92,7 +92,7 @@ class Supervisor(object):
 		self.content = ContentManager(self.poller, self.configuration.web.html, self.page, configuration)
 		self.client = ClientManager(self.poller, configuration)
 		self.resolver = ResolverManager(self.poller, self.configuration, configuration.dns.retries*10)
-		self.proxy = Server('http proxy',self.poller,'read_proxy', configuration.daemon.connections)
+		self.proxy = Server('http proxy',self.poller,'read_proxy', configuration.http.connections)
 		self.web = Server('web server',self.poller,'read_web', configuration.web.connections)
 
 		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.manager, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)

@@ -33,7 +33,7 @@ class Daemon (object):
 			configuration.daemon.reactor = 'select'
 
 		self.nb_descriptors = 40  # some to be safe ...
-		self.nb_descriptors += configuration.daemon.connections*2  # one socket for client and server connection
+		self.nb_descriptors += configuration.http.connections*2  # one socket for client and server connection
 		self.nb_descriptors += configuration.web.connections       # one socket per web client connection
 		self.nb_descriptors += configuration.redirector.maximum*2  # one socket per pipe to the thread and one for the forked process
 		self.nb_descriptors += configuration.dns.retries*10        # some sockets for the DNS
@@ -43,7 +43,7 @@ class Daemon (object):
 				self.log.error('the select reactor is not very scalable, and can only handle 1024 simultaneous descriptors')
 				self.log.error('your configuration requires %d file descriptors' % self.nb_descriptors)
 				self.log.error('please increase your system maximum limit, alternatively you can reduce')
-				self.log.error('exaproxy.daemon.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
+				self.log.error('exaproxy.http.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
 				return
 
 		soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
@@ -63,7 +63,7 @@ class Daemon (object):
 		if soft < self.nb_descriptors:
 			self.log.error('could not increase file descriptor limit to %d, limit is still %d' % (self.nb_descriptors,signed(soft)))
 			self.log.error('please increase your system maximum limit, alternatively you can reduce')
-			self.log.error('exaproxy.daemon.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
+			self.log.error('exaproxy.http.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
 			return
 
 		self.log.warning('your configuration requires %d file descriptors' % self.nb_descriptors)

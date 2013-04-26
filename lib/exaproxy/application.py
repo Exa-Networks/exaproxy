@@ -141,6 +141,7 @@ def main ():
 		},
 
 		'http' : {
+			'connections'     : (value.integer,value.nop,'10240',   'the maximum number of proxy connections'),
 			'transparent'     : (value.boolean,value.lower,'false', 'do not reveal the presence of the proxy'),
 			'forward'         : (value.lowunquote,value.quote,'',   'read client address from this header (normally x-forwarded-for)'),
 			'allow-connect'   : (value.boolean,value.lower,'true',  'allow client to use CONNECT and https connections'),
@@ -163,7 +164,6 @@ def main ():
 			'daemonize'   : (value.boolean,value.lower,'false', 'should we run in the background'),
 			'reactor'     : (value.unquote,value.quote,'epoll', 'what event mechanism to use (select/epoll)'),
 			'speed'       : (value.integer,value.nop,'2',       'when waiting for connection how long are we sleeping for'),
-			'connections' : (value.integer,value.nop,'10240',   'the maximum number of proxy connections'),
 		},
 		'dns' : {
 			'resolver'     : (value.resolver,value.path,'/etc/resolv.conf',       'resolver file'),
