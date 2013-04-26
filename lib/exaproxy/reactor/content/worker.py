@@ -23,9 +23,9 @@ DEFAULT_READ_BUFFER_SIZE = 64*1024
 class Content (object):
 	_connect = staticmethod(connect)
 
-	def __init__(self, client_id, host, port, method, request, logger):
+	def __init__(self, client_id, host, port, bind, method, request, logger):
 		self.client_id = client_id
-		self.sock = self._connect(host, port)
+		self.sock = self._connect(host, port, bind)
 		self.host = host
 		self.port = port
 		self.method = method

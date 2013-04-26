@@ -16,14 +16,14 @@ from exaproxy.configuration import load
 configuration = load()
 log = Logger('server', configuration.log.server)
 
-def _ipv4(address):
+def isipv4(address):
 	try:
 		socket.inet_pton(socket.AF_INET, address)
 		return True
 	except socket.error:
 		return False
 
-def _ipv6(address):
+def isipv6(address):
 	try:
 		socket.inet_pton(socket.AF_INET6, address)
 		return True
@@ -31,11 +31,11 @@ def _ipv6(address):
 		return False
 
 def isip(address):
-	return _ipv4(address) or _ipv6(address)
+	return isipv4(address) or isipv6(address)
 
 def listen (ip,port,timeout=None,backlog=0):
 	try:
-		if _ipv6(ip):
+		if isipv6(ip):
 			s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 			try:
 				s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -43,7 +43,7 @@ def listen (ip,port,timeout=None,backlog=0):
 			except AttributeError:
 				pass
 			s.bind((ip,port,0,0))
-		elif _ipv4(ip):
+		elif isipv4(ip):
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 			try:
 				s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -68,11 +68,11 @@ def listen (ip,port,timeout=None,backlog=0):
 		return None
 
 
-def connect (ip,port,immediate=True):
+def connect (ip,port,bind,immediate=True):
 	try:
-		if _ipv6(ip):
+		if isipv6(ip):
 			s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP)
-		elif _ipv4(ip):
+		elif isipv4(ip):
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 		else:
 			return None
@@ -95,6 +95,12 @@ def connect (ip,port,immediate=True):
 			s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 		except AttributeError:
 			pass
+
+	if bind not in ('0.0.0.0','::'):
+		try:
+			s.bind((bind,0))
+		except socket.error,e:
+			log.critical('could not bind to the requested ip "%s" - using OS default' % bind)
 
 	try:
 		s.setblocking(0)

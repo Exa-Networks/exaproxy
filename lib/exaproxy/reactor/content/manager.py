@@ -8,6 +8,7 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 
 import os
 
+from exaproxy.network.functions import isipv4,isipv6
 from exaproxy.util.log.logger import Logger
 from exaproxy.http.response import http, file_header
 from .worker import Content
@@ -25,6 +26,7 @@ class ContentManager(object):
 		self.byclientid = {}
 		self.buffered = []
 		self.retry = []
+		self.configuration = configuration
 
 		self.poller = poller
 		self.log = Logger('download', configuration.log.download)
@@ -102,8 +104,17 @@ class ContentManager(object):
 			else:
 				newdownloader = False
 
+		if isipv4(host):
+			bind = self.configuration.tcp4.bind
+		elif isipv6(host):
+			bind = self.configuration.tcp6.bind
+		else:
+			# should really never happen
+			self.log.critical('the host IP address is neither IPv4 or IPv6 .. what year is it ?')
+			return None, False
+
 		if downloader is None:
-			downloader = self.downloader_factory(client_id, host, port, command, request, self.log)
+			downloader = self.downloader_factory(client_id, host, port, bind, command, request, self.log)
 			newdownloader = True
 
 		if downloader.sock is None:

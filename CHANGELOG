@@ -6,6 +6,7 @@ Version explained:
 Version
  * Improvement: allow to unbind and rebind like haproxy
  * Improvement: implement SIGQUIT as a way to quit once all current connections are closed
+ * Improvement: allow to choose an IP for outgoing connections, permit over 2^16/2 client connections
  * Backward compatibility: exaproxy.daemon.connections was renamed to exaproxy.http.connections
 
 Version 1.1.0 - 23rd of April 2013

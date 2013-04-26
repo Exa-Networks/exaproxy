@@ -34,6 +34,7 @@ Performance
 Cleanup
  - refactor the communication over pipe to have the serialisation/deserialisation in one place
  - use some structure when passing message for readability
+ - configuration should not be stored in object as it prevents reload (unless required)
 
 Feature
  - offer an option for happy Eyeballs (RFC 6555) when it comes to IPv6 (http://tools.ietf.org/html/rfc6555)

@@ -123,6 +123,7 @@ def main ():
 			'backlog' : (value.integer,value.nop,'200',         'when busy how many connection should the OS queue for us'),
 			'listen'  : (value.boolean,value.lower,'true',      'should we listen for connections over IPv4'),
 			'out'     : (value.boolean,value.lower,'true',      'allow connections to remote web servers over IPv4'),
+			'bind'    : (value.unquote,value.quote,'0.0.0.0',   'which ipv4 to use when creating outbound connection'),
 		},
 		'tcp6' : {
 			'host'    : (value.unquote,value.quote,'::1',   'the host the proxy listen on'),
@@ -131,6 +132,7 @@ def main ():
 			'backlog' : (value.integer,value.nop,'200',     'when busy how many connection should the OS queue for us'),
 			'listen'  : (value.boolean,value.lower,'false', 'should we listen for connections over IPv6'),
 			'out'     : (value.boolean,value.lower,'true',  'allow connections to remote web servers over IPv6'),
+			'bind'    : (value.unquote,value.quote,'::',    'which ipv6 to use when creating outbound connection'),
 		},
 		'redirector' : {
 			'enable'  : (value.boolean,value.lower,'false',                         'use redirector programs to filter http request'),
@@ -139,7 +141,6 @@ def main ():
 			'maximum' : (value.integer,value.nop,'25',                              'maximum number of worker threads (forked program)'),
 			'protocol': (value.redirector,value.quote,'url',                        'what protocol to use (url -> squid like / icap:://<uri> -> icap like)')
 		},
-
 		'http' : {
 			'connections'     : (value.integer,value.nop,'10240',   'the maximum number of proxy connections'),
 			'transparent'     : (value.boolean,value.lower,'false', 'do not reveal the presence of the proxy'),
