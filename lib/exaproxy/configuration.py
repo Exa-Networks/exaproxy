@@ -96,6 +96,10 @@ class value (object):
 		return _.lower() in ('1','yes','on','enable','true')
 
 	@staticmethod
+	def list (_):
+		return _.split()
+
+	@staticmethod
 	def methods (_):
 		return _.upper().split()
 
@@ -145,9 +149,10 @@ class value (object):
 	def services (all):
 		try:
 			services = []
-			for service in (_ for _ in all.split() if _):
+			for service in value.unquote(all).split():
 				host,port = service.split(':')
 				services.append((host,int(port)))
+			return services
 		except ValueError:
 			raise TypeError('resolv.conf can not be found (are you using DHCP without any network setup ?)')
 
@@ -197,8 +202,8 @@ class string (object):
 
 	@staticmethod
 	def services (_):
-		pass
-
+		l = ' '.join(('%s:%d' % (host,port) for host,port in _))
+		return "'%s'" % l
 
 import ConfigParser
 

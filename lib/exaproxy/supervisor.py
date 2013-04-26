@@ -191,11 +191,11 @@ class Supervisor(object):
 			if interface.family not in (AF_INET,AF_INET6):
 				continue
 			if interface.address not in self.local:
-				self.log.info('found new ip %s (%s)' % (interface.address,interface.name))
+				self.log.info('found new local ip %s (%s)' % (interface.address,interface.name))
 			local.add(interface.address)
 		for ip in self.local:
 			if ip not in local:
-				self.log.info('removed ip %s' % ip)
+				self.log.info('removed local ip %s' % ip)
 		if local == self.local:
 			self.log.info('no ip change')
 		else:

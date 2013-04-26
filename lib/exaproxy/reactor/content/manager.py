@@ -117,7 +117,12 @@ class ContentManager(object):
 		if downloader is None:
 			# supervisor.local is replaced when interface are changed, so do not cache or reference it in this class
 			if host in self.supervisor.local:
-				return None, False
+				for h,p in self.configuration.security.local:
+					if (h == '*' or h == host) and (p == '*' or p == port):
+						break
+				else:
+					# we did not break
+					return None, False
 
 			downloader = self.downloader_factory(client_id, host, port, bind, command, request, self.log)
 			newdownloader = True
