@@ -22,27 +22,26 @@ class humans:
 """
 
 	html = """\
-<b style="padding: 20px 20px 20px 20px;">/* TEAM */</b>
-<br>
-<br style="clear:both;"/>
-<div style="float:left;margin-left:80px;margin-right:10px;">
-<img width="100px" src="data:image/png;base64,%s"/>
-</div>
-<br>
-Slave Driver / Grand Visionary
-<br>
-<a href="https://plus.google.com/104241996506596749840">Thomas Mangin</a>
-<br style="clear:both;"/>
+<div style="padding: 20px 20px 20px 20px;">
+	<b>/* TEAM */</b><br/>
+	<br/>
+	<div style="margin-left:20px;margin-right:10px;">
+		<img width="100px" src="data:image/png;base64,%s"/>
+	</div>
+	<br/>
+	Slave Driver / Grand Visionary<br/>
+	<a href="https://plus.google.com/104241996506596749840">Thomas Mangin</a><br/>
+	<br/>
 
-<div style="float:left;margin-left:80px;margin-right:10px;">
-<img width="100px" src="data:image/png;base64,%s"/>
+	<div style="margin-left:20px;margin-right:10px;">
+		<img width="100px" src="data:image/png;base64,%s"/>
+	</div>
+	<br/>
+	Engineer Extraordinaire<br/>
+	<a href="https://plus.google.com/108845019528954357090">David Farrar</a><br/>
 </div>
-<br>
-Engineer Extraordinaire
-<br>
-<a href="https://plus.google.com/108845019528954357090">David Farrar</a>
-<br style="clear:both;"/>
-<br>
-<b style="padding: 20px 20px 20px 20px;">/* Other contributors */</b>
-<br>
+<div style="padding: 20px 20px 20px 20px;">
+	<b>/* Other contributors */</b>
+	<br/>
+</div>
 """ % (thomas,david)
