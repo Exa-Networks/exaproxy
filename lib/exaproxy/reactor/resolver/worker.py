@@ -17,7 +17,7 @@ def next_identifier():
 
 
 
-class DNSClient(object):
+class DNSClient (object):
 	extended = False
 
 	def __init__(self, w_id, dns_factory, configuration, servers, port=53):
@@ -139,14 +139,14 @@ class DNSClient(object):
 
 
 
-class UDPClient(DNSClient):
+class UDPClient (DNSClient):
 	extended = False
 
 	def startConnecting (self):
 		return socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 
 
-class TCPClient(DNSClient):
+class TCPClient (DNSClient):
 	extended = True
 	tcp_factory = staticmethod(connect)
 
