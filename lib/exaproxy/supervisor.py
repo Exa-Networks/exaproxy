@@ -353,31 +353,34 @@ class Supervisor(object):
 		tcp4 = self.configuration.tcp4
 		tcp6 = self.configuration.tcp6
 
-		ok = bool(tcp4.listen or tcp6.listen)
-		if not ok:
-			self.log.error('Not listening on IPv4 or IPv6.')
+		out = bool(tcp4.out or tcp6.out)
+		if not out:
+			self.log.critical('we need to use IPv4 or IPv6 for outgoing connection - both can not be disabled !')
+
+		listen = bool(tcp4.listen or tcp6.listen)
+		if not listen:
+			self.log.critical('Not listening on either IPv4 or IPv6.')
+
+		ok = out and listen
 
 		if ok and tcp4.listen:
 			s = self.proxy.listen(tcp4.host,tcp4.port, tcp4.timeout, tcp4.backlog)
 			ok = bool(s)
-			if not s:
-				print >> sys.stderr, 'IPv4 proxy, unable to listen on %s:%s' % (tcp4.host,tcp4.port)
-				self.log.error('IPv4 proxy, unable to listen on %s:%s' % (tcp4.host,tcp4.port))
+			if not ok:
+				self.log.critical('IPv4 proxy, unable to listen on %s:%s' % (tcp4.host,tcp4.port))
 
 		if ok and tcp6.listen:
 			s = self.proxy.listen(tcp6.host,tcp6.port, tcp6.timeout, tcp6.backlog)
 			ok = bool(s)
-			if not s:
-				print >> sys.stderr, 'IPv6 proxy, unable to listen on %s:%s' % (tcp6.host,tcp6.port)
-				self.log.error('IPv6 proxy, unable to listen on %s:%s' % (tcp6.host,tcp6.port))
+			if not ok:
+				self.log.critical('IPv6 proxy, unable to listen on %s:%s' % (tcp6.host,tcp6.port))
 
 
 		if ok and self.configuration.web.enable:
 			s = self.web.listen(self.configuration.web.host,self.configuration.web.port, 10, 10)
-			if not s:
-				print >> sys.stderr, 'internal web server, unable to listen on %s:%s' % (self.configuration.web.host, self.configuration.web.port)
-				self.log.error('internal web server, unable to listen on %s:%s' % (self.configuration.web.host, self.configuration.web.port))
-				ok = False
+			ok = bool(s)
+			if not ok:
+				self.log.critical('internal web server, unable to listen on %s:%s' % (self.configuration.web.host, self.configuration.web.port))
 
 		return ok
 
