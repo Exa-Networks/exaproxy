@@ -157,6 +157,7 @@ def main ():
 			'port'        : (value.integer,string.nop,'8080',               'port the web server listens on'),
 			'html'        : (value.folder,string.path,'etc/exaproxy/html',  'where internal proxy html pages are served from'),
 			'connections' : (value.integer,string.nop,'100',                'the maximum number of web connections'),
+			'debug'       : (value.boolean,string.lower,'false',            'allow to debug the program via the web client (do not use in production)'),
 		},
 		'daemon' : {
 			'identifier'  : (value.unquote,string.nop,'ExaProxy','a name for the log (to diferenciate multiple instances more easily)'),
@@ -165,7 +166,6 @@ def main ():
 			'daemonize'   : (value.boolean,string.lower,'false', 'should we run in the background'),
 			'reactor'     : (value.unquote,string.quote,'epoll', 'what event mechanism to use (select/epoll)'),
 			'speed'       : (value.integer,string.nop,'2',       'when waiting for connection how long are we sleeping for'),
-			'debug'       : (value.boolean,string.lower,'false', 'allow to debug the program via the web client (do not use in production)'),
 		},
 		'security' : {
 			'local'       : (value.services,string.services,   '',              'ip:port for allowed services (*:80 or 127.0.0.1:* allowed)'),
@@ -253,7 +253,7 @@ def main ():
 			sys.exit(0)
 		if arg in ['-d','--debug']:
 			configuration.debug.log = True
-			configuration.daemon.debug = True
+			configuration.web.debug = True
 		if arg in ['-p','--pdb']:
 			# The following may fail on old version of python (but is required for debug.py)
 			os.environ['PDB'] = 'true'

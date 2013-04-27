@@ -203,11 +203,11 @@ class Supervisor(object):
 
 	def run (self):
 		if self.daemon.drop_privileges():
-			self.log.stdout('Could not drop privileges to \'%s\'. Refusing to run as root' % self.daemon.user)
-			self.log.stdout('Set the environment value USER to change the unprivileged user')
-			return
+			self.log.critical('Could not drop privileges to \'%s\'. Refusing to run as root' % self.daemon.user)
+			self.log.critical('Set the environment value USER to change the unprivileged user')
+			self._shutdown = True
 
-		if not self.initialise():
+		elif not self.initialise():
 			self._shutdown = True
 
 		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
@@ -294,6 +294,7 @@ class Supervisor(object):
 				# save our monitoring stats
 				if count_history == 0:
 					self.monitor.record()
+					self.reactor.log.debug('events : ' + ', '.join('%s:%d' % (k,len(v)) for (k,v) in self.reactor.events.items()))
 
 				# make sure we have enough workers
 				if count_increase == 0:
@@ -311,7 +312,7 @@ class Supervisor(object):
 					self.interfaces()
 
 			except KeyboardInterrupt:
-				self.log.info('^C received')
+				self.log.critical('^C received')
 				self._shutdown = True
 			except OSError,e:
 				# This shoould never happen as we are limiting how many connections we accept

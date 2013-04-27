@@ -316,7 +316,7 @@ class Page (object):
 			action = (sections + [None,]) [2]
 
 			if subsection == 'debug':
-				if not self.supervisor.configuration.daemon.debug:
+				if not self.supervisor.configuration.web.debug:
 					return menu('not enabled')
 
 				if action == 'exec':

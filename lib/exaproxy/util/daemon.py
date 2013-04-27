@@ -28,7 +28,7 @@ class Daemon (object):
 		self.log = Logger('daemon', configuration.log.daemon)
 		#mask = os.umask(0137)
 
-		if configuration.daemon.debug:
+		if configuration.web.debug:
 			self.log.critical('WARNING: python remove execution via the web server is enabled')
 
 		if configuration.daemon.reactor == 'epoll' and not sys.platform.startswith('linux'):
@@ -43,10 +43,10 @@ class Daemon (object):
 
 		if configuration.daemon.reactor == 'select':
 			if self.nb_descriptors > 1024:
-				self.log.error('the select reactor is not very scalable, and can only handle 1024 simultaneous descriptors')
-				self.log.error('your configuration requires %d file descriptors' % self.nb_descriptors)
-				self.log.error('please increase your system maximum limit, alternatively you can reduce')
-				self.log.error('exaproxy.http.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
+				self.log.critical('the select reactor is not very scalable, and can only handle 1024 simultaneous descriptors')
+				self.log.critical('your configuration requires %d file descriptors' % self.nb_descriptors)
+				self.log.critical('please increase your system maximum limit, alternatively you can reduce')
+				self.log.critical('exaproxy.http.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
 				return
 
 		soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
@@ -69,7 +69,7 @@ class Daemon (object):
 			self.log.critical('exaproxy.http.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
 			return
 
-		self.log.info('your configuration requires %d file descriptors' % self.nb_descriptors)
+		self.log.info('for information, your configuration requires %d available file descriptors' % self.nb_descriptors)
 		self.filemax = self.nb_descriptors
 
 	def drop_privileges (self):

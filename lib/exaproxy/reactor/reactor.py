@@ -25,6 +25,7 @@ class Reactor(object):
 		self.running = True       # Until we stop we run :)
 		self.nb_events = 0L       # Number of events received
 		self.nb_loops = 0L        # Number of loop iteration
+		self.events = []          # events so we can report them once in a while
 
 		self.log = Logger('supervisor', configuration.log.supervisor)
 
@@ -49,12 +50,11 @@ class Reactor(object):
 		while self.running:
 			# wait until we have something to do
 			events = poller.poll()
+			self.events = events
 
 			self.nb_loops += 1
 			for name,ev in events.items():
 				self.nb_events += len(ev)
-
-			self.log.debug('events : ' + ', '.join('%s:%d' % (k,len(v)) for (k,v) in events.items()))
 
 			# handle new connections before anything else
 			for sock in events.get('read_proxy',[]):

@@ -366,7 +366,6 @@ Encapsulated: req-hdr=0, null-body=%d
 
 	def run (self):
 		while self.running:
-			self.log.debug('waiting for some work')
 			try:
 				# The timeout is really caused by the SIGALARM sent on the main thread every second
 				# BUT ONLY IF the timeout is present in this call

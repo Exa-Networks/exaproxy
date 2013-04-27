@@ -55,7 +55,6 @@ class Monitor (object):
 			'exaproxy.daemon.identifier' : conf.daemon.identifier,
 			'exaproxy.daemon.pidfile' : conf.daemon.pidfile,
 			'exaproxy.daemon.sleep' : conf.daemon.speed,
-			'exaproxy.daemon.debug' : conf.daemon.debug,
 			'exaproxy.profile.enable' : conf.profile.enable,
 			'exaproxy.profile.destination' : conf.profile.destination,
 			'exaproxy.dns.fqdn' : conf.dns.fqdn,
@@ -107,6 +106,7 @@ class Monitor (object):
 			'exaproxy.web.enable' : conf.web.enable,
 			'exaproxy.web.host' : '127.0.0.1',
 			'exaproxy.web.port' : conf.web.port,
+			'exaproxy.web.debug' : conf.web.debug,
 		}
 
 	def statistics (self):
