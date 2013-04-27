@@ -10,7 +10,7 @@ import os
 import sys
 import signal
 import traceback
-
+from socket import has_ipv6
 
 from .util.pid import PID
 from .util.daemon import Daemon
@@ -352,6 +352,11 @@ class Supervisor(object):
 		# only start listening once we know we were able to fork our worker processes
 		tcp4 = self.configuration.tcp4
 		tcp6 = self.configuration.tcp6
+
+		if not has_ipv6 and (tcp6.listen or tcp6.out):
+			tcp6.listen = False
+			tcp6.out = False
+			self.log.critical('your python interpreter does not have ipv6 support !')
 
 		out = bool(tcp4.out or tcp6.out)
 		if not out:
