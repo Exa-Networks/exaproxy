@@ -93,7 +93,7 @@ class Monitor (object):
 			'exaproxy.http.connections' : conf.http.connections,
 			'exaproxy.http.forward' : conf.http.forward,
 			'exaproxy.http.transparent' : conf.http.transparent,
-			'exaproxy.http.extensions' : ' '.join(conf.http.extensions),
+			'exaproxy.http.extensions' : ' '.join(str (_) for _ in conf.http.extensions),
 			'exaproxy.proxy.version' : conf.proxy.version,
 			'exaproxy.redirector.enable' : conf.redirector.enable,
 			'exaproxy.redirector.protocol' : conf.redirector.protocol,
