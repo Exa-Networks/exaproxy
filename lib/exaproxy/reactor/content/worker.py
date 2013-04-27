@@ -1,12 +1,12 @@
 # encoding: utf-8
 """
-downloader.py
+worker.py
 
 Created by Thomas Mangin on 2011-12-01.
 Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
-from exaproxy.network.functions import connect
+from exaproxy.network.functions import connect,isipv4
 from exaproxy.network.errno_list import errno_block
 from exaproxy.network.errno_list import errno_unavailable
 
@@ -31,6 +31,7 @@ class Content (object):
 		self.method = method
 		self.w_buffer = request
 		self.log = logger
+		self.ipv4 = isipv4(host)
 
 	def startConversation(self):
 		"""Send our buffered request to get the conversation flowing
@@ -39,7 +40,8 @@ class Content (object):
 
 		#self.log.info('download socket is now open for client %s %s' % (self.client_id, self.sock))
 
-		res,sent = self.writeData('')
+		res,sent4,sent6 = self.writeData('')
+		# XXX: Are we not accounting this data transfer ! ?
 		response='HTTP/1.1 200 Connection Established\r\n\r\n' if self.method == 'connect' else ''
 		return self.client_id, res is not None, response
 
@@ -89,7 +91,7 @@ class Content (object):
 			else:
 				res = None
 
-		return res,sent
+		return res,sent if self.ipv4 else 0, 0 if self.ipv4 else sent
 
 	def bufferData(self, data):
 		"""Buffer data to be sent later"""

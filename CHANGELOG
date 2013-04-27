@@ -11,7 +11,9 @@ Version
  * Improvement: prevent connection to the local host to prevent firewall bypass
  * Improvement: allow to specify exclusions for the block on localhost
  * Improvement: limit connect methods to only port 443, 981 and 7000 as default (other ports can be added)
+ * Improvement: different counters for ipv4 and ipv6
  * Backward compatibility: exaproxy.daemon.connections was renamed to exaproxy.http.connections
+ * Backward compatibility: running.transfer keys have been renamed
 
 Version 1.1.0 - 23rd of April 2013
  * Many bug fixes including (but not exclusively)

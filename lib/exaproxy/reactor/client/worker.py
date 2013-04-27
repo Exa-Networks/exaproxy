@@ -9,6 +9,7 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 import socket
 import errno
 
+from exaproxy.network.functions import isipv4
 from exaproxy.network.errno_list import errno_block
 
 def ishex (s):
@@ -22,6 +23,7 @@ class Client (object):
 
 	def __init__(self, name, sock, peer, logger, max_buffer):
 		self.name = name
+		self.ipv4 = isipv4(sock.getsockname()[0])
 		self.sock = sock
 		self.peer = peer
 		self.reader = self._read(sock,max_buffer)
@@ -285,7 +287,7 @@ class Client (object):
 				with open(filename) as fd:
 					w_buffer = fd.read()
 
-				found = True, False, 0
+				found = True, False, 0, 0
 			except IOError:
 				found = None
 
@@ -323,7 +325,7 @@ class Client (object):
 						sent = 0
 
 					buffered = bool(w_buffer) or finished
-					data = yield buffered, had_buffer, sent
+					data = yield buffered, had_buffer, sent if self.ipv4 else 0, 0 if self.ipv4 else sent
 
 
 				# break out of the outer loop as soon as we leave the inner loop
@@ -335,7 +337,7 @@ class Client (object):
 				if e.args[0] in errno_block:
 					self.log.debug('interrupted when trying to sent %d bytes, fine, will retry' % len(data))
 					self.log.debug('reason: errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
-					data = yield bool(w_buffer) or finished, had_buffer, 0
+					data = yield bool(w_buffer) or finished, had_buffer, 0, 0
 				else:
 					self.log.debug('handled an unexpected error writing on socket')
 					self.log.debug('reason, errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
@@ -345,8 +347,7 @@ class Client (object):
 		yield None
 
 	def writeData(self, data):
-		res = self.writer.send(data)
-		return res
+		return self.writer.send(data)
 
 
 	def startData(self, command, data):

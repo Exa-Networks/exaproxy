@@ -15,7 +15,8 @@ class ClientManager (object):
 	unproxy = ProxyProtocol().parseRequest
 
 	def __init__(self, poller, configuration):
-		self.total_sent = 0L
+		self.total_sent4 = 0L
+		self.total_sent6 = 0L
 		self.norequest = {}
 		self.bysock = {}
 		self.byname = {}
@@ -129,12 +130,13 @@ class ClientManager (object):
 				# close the client connection
 				self.cleanup(sock, client.name)
 
-				buffered, had_buffer,sent = None, None, 0
+				buffered, had_buffer, sent4, sent6 = None, None, 0, 0
 				result = None
 				buffer_change = None
 			else:
-				buffered, had_buffer, sent = res
-				self.total_sent += sent
+				buffered, had_buffer, sent4, sent6 = res
+				self.total_sent4 += sent4
+				self.total_sent6 += sent6
 				result = buffered
 
 
@@ -173,13 +175,13 @@ class ClientManager (object):
 				# we cannot write to the client so clean it up
 				self.cleanup(client.sock, name)
 
-				buffered, had_buffer, sent = None, None, 0
-				#self.total_sent += sent
+				buffered, had_buffer, sent4, sent6 = None, None, 0, 0
 				result = None
 				buffer_change = None
 			else:
-				buffered, had_buffer, sent = res
-				self.total_sent += sent
+				buffered, had_buffer, sent4, sent6 = res
+				self.total_sent4 += sent4
+				self.total_sent6 += sent6
 				result = buffered
 
 			if buffered:
@@ -256,7 +258,7 @@ class ClientManager (object):
 
 
 			if res is not None:
-				buffered, had_buffer, sent = res
+				buffered, had_buffer, sent4, sent6 = res
 
 				# buffered data we read with the HTTP headers
 				name, peer, request, content = client.readRelated(mode,nb_to_read)

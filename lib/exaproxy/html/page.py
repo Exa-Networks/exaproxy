@@ -116,7 +116,7 @@ class Page (object):
 	def _connections (self):
 		return graph(
 			self.monitor,
-			'Proxy Connections',
+			'Connections',
 			20000,
 			[
 				'running.proxy.clients.established',
@@ -128,7 +128,7 @@ class Page (object):
 	def _processes (self):
 		return graph(
 			self.monitor,
-			'Proxy Processes',
+			'Forked processes',
 			20000,
 			[
 				'running.processes.forked',
@@ -137,24 +137,26 @@ class Page (object):
 			]
 		)
 
-	def _sent (self):
+	def _clients (self):
 		return graph(
 			self.monitor,
-			'Proxy Bytes Sent / seconds',
+			'Bytes Received from clients / seconds',
 			20000,
 			[
-				'running.transfer.request',
+				'running.transfer.client4',
+				'running.transfer.client6',
 			],
 			True,
 		)
 
-	def _received (self):
+	def _servers (self):
 		return graph(
 			self.monitor,
-			'Proxy Bytes Received / seconds',
+			'Bytes Received from servers / seconds',
 			20000,
 			[
-				'running.transfer.download',
+				'running.transfer.content4',
+				'running.transfer.content6',
 			],
 			True,
 		)
@@ -162,11 +164,11 @@ class Page (object):
 	def _transfer (self):
 		return graph(
 			self.monitor,
-			'Proxy Bytes Transfered / seconds',
+			'Bytes received / seconds',
 			20000,
 			[
-				'running.transfer.request',
-				'running.transfer.download',
+				'running.transfer.client',
+				'running.transfer.content',
 			],
 			True,
 		)
@@ -174,7 +176,7 @@ class Page (object):
 	def _loops (self):
 		return graph(
 			self.monitor,
-			'Proxy Bytes Transfered / seconds',
+			'Reactor loops / seconds',
 			20000,
 			[
 				'running.load.loops',
@@ -185,7 +187,7 @@ class Page (object):
 	def _events (self):
 		return graph(
 			self.monitor,
-			'Proxy Bytes Transfered / seconds',
+			'Sockets which became readeable / seconds',
 			20000,
 			[
 				'running.load.events',
@@ -196,7 +198,7 @@ class Page (object):
 	def _queue (self):
 		return graph(
 			self.monitor,
-			'Proxy Bytes Sent / seconds',
+			'Queued URL for classification / seconds',
 			20000,
 			[
 				'running.queue.size',
@@ -294,9 +296,9 @@ class Page (object):
 			if subsection == 'connections':
 				return menu(self._connections())
 			if subsection == 'servers':
-				return menu(self._sent())
+				return menu(self._servers())
 			if subsection == 'clients':
-				return menu(self._received())
+				return menu(self._clients())
 			if subsection == 'transfered':
 				return menu(self._transfer())
 			if subsection == 'loops':

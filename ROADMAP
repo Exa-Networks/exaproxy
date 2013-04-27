@@ -41,7 +41,7 @@ Feature
  - fetch the SSL X.509 certificate from IPs to extract its hostname and pass it to the thread when using CONNECT
  - more monitoring (self-updating page with realtime rotating logs)
  - incomming IP ACL (for allowed users) - for the moment the firewall of the machine will do ..
- - Log IPv6 and IPv4 traffic separately
+ - a redirector which connects to our ICAP service
 
  Fun
   - make a redirector which blocks all old version of IE

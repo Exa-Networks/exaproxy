@@ -20,7 +20,8 @@ class ContentManager(object):
 	downloader_factory = Content
 
 	def __init__(self, supervisor, configuration):
-		self.total_sent = 0L
+		self.total_sent4 = 0L
+		self.total_sent6 = 0L
 		self.opening = {}
 		self.established = {}
 		self.byclientid = {}
@@ -244,8 +245,9 @@ class ContentManager(object):
 			self.poller.addWriteSocket('opening_download', downloader.sock)
 
 		elif downloader is not None:
-			buffered,sent = downloader.writeData(request)
-			self.total_sent += sent
+			buffered,sent4,sent6 = downloader.writeData(request)
+			self.total_sent4 += sent4
+			self.total_sent6 += sent6
 			if buffered:
 				if downloader.sock not in self.buffered:
 					self.buffered.append(downloader.sock)
@@ -326,8 +328,9 @@ class ContentManager(object):
 	def sendSocketData(self, sock, data):
 		downloader = self.established.get(sock, None)
 		if downloader:
-			buffered,sent = downloader.writeData(data)
-			self.total_sent += sent
+			buffered,sent4,sent6 = downloader.writeData(data)
+			self.total_sent4 += sent4
+			self.total_sent6 += sent6
 			client_id = downloader.client_id
 
 			if buffered:
@@ -360,8 +363,10 @@ class ContentManager(object):
 		downloader = self.byclientid.get(client_id, None)
 		if downloader:
 			if downloader.sock in self.established:
-				buffered,sent = downloader.writeData(data)
-				self.total_sent += sent
+				buffered,sent4,sent6 = downloader.writeData(data)
+				self.total_sent4 += sent4
+				self.total_sent6 += sent6
+
 
 				if buffered:
 					if downloader.sock not in self.buffered:
