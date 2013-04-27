@@ -42,6 +42,11 @@ options = (
 		('Workers', '/control/workers.html', False),
 		('Debug', '/control/debug.html', False),
 	)),
+	('JSON', '/index.html', (
+		('running', '/json/running', True),
+		('configuration', '/json/configuration', True),
+	)),
+
 	('About', '/about.html', (
 		('Email', '/about/email.html', False),
 		('Licence', '/about/licence.html', False),
@@ -117,9 +122,9 @@ class Page (object):
 			'Connections',
 			20000,
 			[
-				'running.proxy.clients.established',
-				'running.proxy.servers.opening',
-				'running.proxy.servers.established',
+				'clients.established',
+				'servers.opening',
+				'servers.established',
 				]
 		)
 
@@ -129,9 +134,9 @@ class Page (object):
 			'Forked processes',
 			20000,
 			[
-				'running.processes.forked',
-				'running.processes.min',
-				'running.processes.max',
+				'processes.forked',
+				'processes.min',
+				'processes.max',
 			]
 		)
 
@@ -141,8 +146,8 @@ class Page (object):
 			'Bytes Received from clients / seconds',
 			20000,
 			[
-				'running.transfer.client4',
-				'running.transfer.client6',
+				'transfer.client4',
+				'transfer.client6',
 			],
 			True,
 		)
@@ -153,8 +158,8 @@ class Page (object):
 			'Bytes Received from servers / seconds',
 			20000,
 			[
-				'running.transfer.content4',
-				'running.transfer.content6',
+				'transfer.content4',
+				'transfer.content6',
 			],
 			True,
 		)
@@ -165,8 +170,8 @@ class Page (object):
 			'Bytes received / seconds',
 			20000,
 			[
-				'running.transfer.client',
-				'running.transfer.content',
+				'transfer.client',
+				'transfer.content',
 			],
 			True,
 		)
@@ -177,7 +182,7 @@ class Page (object):
 			'Reactor loops / seconds',
 			20000,
 			[
-				'running.load.loops',
+				'load.loops',
 			],
 			True,
 		)
@@ -188,7 +193,7 @@ class Page (object):
 			'Sockets which became readeable / seconds',
 			20000,
 			[
-				'running.load.events',
+				'load.events',
 			],
 			True,
 		)
@@ -199,7 +204,7 @@ class Page (object):
 			'Queued URL for classification / seconds',
 			20000,
 			[
-				'running.queue.size',
+				'queue.size',
 			],
 			True,
 		)

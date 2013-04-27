@@ -7,6 +7,7 @@ Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 """
 
 from collections import deque
+from configuration import string
 
 class _Container (object):
 	def __init__ (self,supervisor):
@@ -99,8 +100,8 @@ class Monitor (object):
 			'exaproxy.redirector.program' : conf.redirector.program,
 			'exaproxy.redirector.minimum' : conf.redirector.minimum,
 			'exaproxy.redirector.maximum' : conf.redirector.maximum,
-			'exaproxy.security.local' : conf.security.local,
-			'exaproxy.security.connect' : conf.security.connect,
+			'exaproxy.security.local' : ' '.join(str(_) for _ in conf.security.local),
+			'exaproxy.security.connect' : ' '.join(str(_) for _ in conf.security.connect),
 			'exaproxy.usage.destination' : conf.usage.destination,
 			'exaproxy.usage.enable' : conf.usage.enable,
 			'exaproxy.web.enable' : conf.web.enable,
@@ -117,22 +118,22 @@ class Monitor (object):
 		reactor = self._supervisor.reactor
 
 		return {
-			'running.pid.saved' : self._supervisor.pid._saved_pid,
-			'running.processes.forked' : len(manager.worker),
-			'running.processes.min' : manager.low,
-			'running.processes.max' : manager.high,
-			'running.proxy.clients.established': len(client.byname),
-			'running.proxy.servers.opening': len(content.opening),
-			'running.proxy.servers.established': len(content.established),
-			'running.transfer.client4' : client.total_sent4,
-			'running.transfer.client6' : client.total_sent6,
-			'running.transfer.client' : client.total_sent4 + client.total_sent6,
-			'running.transfer.content4' : content.total_sent4,
-			'running.transfer.content6' : content.total_sent6,
-			'running.transfer.content' : content.total_sent4 + content.total_sent6,
-			'running.load.loops' : reactor.nb_loops,
-			'running.load.events' : reactor.nb_events,
-			'running.queue.size' : manager.queue.qsize(),
+			'pid.saved' : self._supervisor.pid._saved_pid,
+			'processes.forked' : len(manager.worker),
+			'processes.min' : manager.low,
+			'processes.max' : manager.high,
+			'clients.established': len(client.byname),
+			'servers.opening': len(content.opening),
+			'servers.established': len(content.established),
+			'transfer.client4' : client.total_sent4,
+			'transfer.client6' : client.total_sent6,
+			'transfer.client' : client.total_sent4 + client.total_sent6,
+			'transfer.content4' : content.total_sent4,
+			'transfer.content6' : content.total_sent6,
+			'transfer.content' : content.total_sent4 + content.total_sent6,
+			'load.loops' : reactor.nb_loops,
+			'load.events' : reactor.nb_events,
+			'queue.size' : manager.queue.qsize(),
 		}
 
 	def record (self):
