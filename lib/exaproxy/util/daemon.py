@@ -64,12 +64,12 @@ class Daemon (object):
 
 		soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 		if soft < self.nb_descriptors:
-			self.log.error('could not increase file descriptor limit to %d, limit is still %d' % (self.nb_descriptors,signed(soft)))
-			self.log.error('please increase your system maximum limit, alternatively you can reduce')
-			self.log.error('exaproxy.http.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
+			self.log.critical('could not increase file descriptor limit to %d, limit is still %d' % (self.nb_descriptors,signed(soft)))
+			self.log.critical('please increase your system maximum limit, alternatively you can reduce')
+			self.log.critical('exaproxy.http.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
 			return
 
-		self.log.warning('your configuration requires %d file descriptors' % self.nb_descriptors)
+		self.log.info('your configuration requires %d file descriptors' % self.nb_descriptors)
 		self.filemax = self.nb_descriptors
 
 	def drop_privileges (self):
@@ -139,7 +139,7 @@ class Daemon (object):
 	def silence (self):
 		maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
 		if (maxfd == resource.RLIM_INFINITY):
-			maxfd = MAXFD
+			maxfd = 1024
 
 		for fd in range(0, maxfd):
 			try:
@@ -150,4 +150,3 @@ class Daemon (object):
 		os.open("/dev/null", os.O_RDWR)
 		os.dup2(0, 1)
 		os.dup2(0, 2)
-

@@ -42,6 +42,7 @@ Feature
  - more monitoring (self-updating page with realtime rotating logs)
  - incomming IP ACL (for allowed users) - for the moment the firewall of the machine will do ..
  - a redirector which connects to our ICAP service
+ - option to prever IPv6 DNS answers over IPv4 or vice-versa
 
  Fun
   - make a redirector which blocks all old version of IE
