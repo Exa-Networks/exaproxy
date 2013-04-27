@@ -26,7 +26,7 @@ _chart = """\
 		]);
 
 		var options = {
-			width: 800, height: 600,
+			width: 600, height: 500,
 			title: '%(title)s',
 			legend : {
 				position: 'right',

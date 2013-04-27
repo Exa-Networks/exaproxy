@@ -22,31 +22,29 @@ from exaproxy.util.log.history import History
 from exaproxy.util.log.logger import Logger
 
 options = (
-	('/index.html', 'Home', (
+	('Information', '/information.html', (
+		('Introspection', '/information/introspection/supervisor.html', False),
+		('Configuration', '/information/configuration.html', False),
+		('Statistics', '/information/statistics.html', False),
+		('Logs', '/information/logs.html', True),
 	)),
-	('/information.html', 'Information', (
-		('/information/introspection/supervisor.html', 'Introspection'),
-		('/information/configuration.html', 'Configuration'),
-		('/information/statistics.html', 'Statistics'),
-		('/information/logs.html', 'Logs'),
+	('Performance', '/performance.html', (
+		('Loops', '/performance/loops.html', False),
+		('Events', '/performance/events.html', False),
+		('Processes', '/performance/processes.html', False),
+		('Queue', '/performance/queue.html', False),
+		('Connections', '/performance/connections.html', False),
+		('Transfered', '/performance/transfered.html', False),
+		('Clients', '/performance/clients.html', False),
+		('Servers', '/performance/servers.html', False),
 	)),
-	('/performance.html', 'Performance', (
-		('/performance/processes.html', 'Processes'),
-		('/performance/connections.html', 'Connections'),
-		('/performance/clients.html', 'Clients'),
-		('/performance/servers.html', 'Servers'),
-		('/performance/transfered.html', 'Transfered'),
-		('/performance/loops.html', 'Loops'),
-		('/performance/events.html', 'Events'),
-		('/performance/queue.html', 'Queue'),
+	('Control', '/control.html', (
+		('Workers', '/control/workers.html', False),
+		('Debug', '/control/debug.html', False),
 	)),
-	('/control.html', 'Control', (
-		('/control/workers.html', 'Workers'),
-		('/control/debug.html', 'Debug'),
-	)),
-	('/about.html', 'About', (
-		('/about/email.html', 'Email'),
-		('/about/licence.html', 'Licence'),
+	('About', '/about.html', (
+		('Email', '/about/email.html', False),
+		('Licence', '/about/licence.html', False),
 	)),
 )
 
@@ -363,7 +361,7 @@ class Page (object):
 
 				return menu(self._workers())
 
-			return menu('')
+			return menu(index)
 
 		if section == 'about':
 			if subsection == 'email':
@@ -372,8 +370,8 @@ class Page (object):
 				return menu(mail.form)
 			if subsection == 'licence':
 				return menu(licence)
-			return menu('')
+			return menu(index)
 
 		if section == 'humans':
 			return menu(humans.html)
-		return menu('')
+		return menu(index)

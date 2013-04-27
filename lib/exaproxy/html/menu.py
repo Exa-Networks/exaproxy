@@ -10,7 +10,7 @@ from .img import png
 from .images import logo
 
 
-def html (title,header,color='#FF0000',image=png(logo),menu='',text='',):
+def html (title,header,color='#FF0000',image=png(logo)):
 	if header: header += '<br/>'
 	return """\
 <html>
@@ -18,156 +18,95 @@ def html (title,header,color='#FF0000',image=png(logo),menu='',text='',):
 		<title>%s</title>
 		<meta http-equiv="cache-control" content="no-cache">
 	</head>
+	<style type="text/css" media="screen">
+		.vmenu {
+			font-family: Verdana, Arial, Helvetica, sans-serif;
+			font-size: 100%%%%;
+			width: 160px;
+			padding: 0px;
+			margin: 0px 10px 0px 0px;
+			border-left: 1px solid #000000;
+			float: right;
+		}
+		.vmenu h1 {
+			display: block;
+			background-color:#F4F4F4;
+			font-size: 90%%%%;
+			padding: 13px 0px 5px 3px;
+			color: #333333;
+			margin: 0px;
+			border-bottom: 1px solid #000000;
+			width:159px;
+		}
+		.vmenu h1 a, .vmenu h1 a:hover, .vmenu h1 a:focus {
+			color: #0000C3;
+			text-decoration: none;
+		}
+		.vmenu ul {
+			list-style: none;
+			margin: 0px;
+			padding: 0px;
+			border: none;
+		}
+		.vmenu ul li {
+			margin: 0px;
+			padding: 0px;
+		}
+		.vmenu ul li a {
+			font-size: 80%%%%;
+			display: block;
+			border-bottom: 1px dashed #004E9C;
+			padding: 1px 0px 2px 20px;
+			text-decoration: none;
+			color: #666666;
+			width: 142px;
+		}
+		.vmenu ul li a:hover, .vmenu ul li a:focus {
+			color: #000000;
+			background-color: #EEEEEE;
+		}
+	</style>
 	<body leftmargin="0" topmargin="0" rightmargin="0" bgcolor="#FFFFFF" text="#000000" link="#0000FF" alink="#0000FF" vlink="#0000FF">
 		<center>
-			<div style="padding:15; color: #FFFFFF; background: %s; font-size: 40px; font-family: verdana,sans-serif,arial; font-weight: bold; border-bottom: solid 1px #A0A0A0;">
+			<div style="padding:15px; color: #FFFFFF; background: %s; font-size: 40px; font-family: verdana,sans-serif,arial; font-weight: bold; border-bottom: solid 1px #A0A0A0;">
 				%s
 				%s
 			</div>
 		</center>
-		%s
-		<br/>
-		%s
-		<br/>
+<div style="float: left">
+*text*
+<br/>
+<br/>
+</div>
+*menu*
 	</body>
 </html>
 
-""" % (title,color,header,image,menu,text)
-
-
-_menu = """\
-<style type="text/css" media="screen">
-	.droplinebar{
-		overflow: hidden;
-	}
-
-	.droplinebar ul{
-		margin: 0;
-		padding: 0;
-		float: left;
-		width: 100%;
-		font: bold 13px Arial;
-		background: #242c54 center center repeat-x; /*default background of menu bar*/
-	}
-
-	.droplinebar ul li{
-		display: inline;
-	}
-
-	.droplinebar ul li a{
-		float: left;
-		color: white;
-		padding: 9px 11px;
-		text-decoration: none;
-	}
-
-	.droplinebar ul li a:visited{
-		color: white;
-	}
-
-	.droplinebar ul li a:hover, .droplinebar ul li .current{ /*background of main menu bar links onMouseover*/
-		color: white;
-	}
-
-	/* Sub level menus*/
-	.droplinebar ul li ul{
-		position: absolute;
-		z-index: 100;
-		left: 0;
-		top: 0;
-		background: #303c76; /*sub menu background color */
-		visibility: hidden;
-	}
-
-	/* Sub level menu links style */
-	.droplinebar ul li ul li a{
-		font: normal 13px Verdana;
-		padding: 6px;
-		padding-right: 8px;
-		margin: 0;
-		border-bottom: 1px solid navy;
-	}
-
-	.droplinebar ul li ul li a:hover{ /*sub menu links' background color onMouseover */
-		background: #242c54;
-	}
-</style>
-
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
-
-<script type="text/javascript">
-	/*********************
-	//* jQuery Drop Line Menu- By Dynamic Drive: http://www.dynamicdrive.com/
-	//* Last updated: May 9th, 11'
-	//* Menu avaiable at DD CSS Library: http://www.dynamicdrive.com/style/
-	*********************/
-
-	var droplinemenu={
-
-		animateduration: {over: 200, out: 100}, //duration of slide in/ out animation, in milliseconds
-
-		buildmenu:function(menuid){
-			jQuery(document).ready(function($){
-				var $mainmenu=$("#"+menuid+">ul")
-				var $headers=$mainmenu.find("ul").parent()
-				$headers.each(function(i){
-					var $curobj=$(this)
-					var $subul=$(this).find('ul:eq(0)')
-					this._dimensions={h:$curobj.find('a:eq(0)').outerHeight()}
-					this.istopheader=$curobj.parents("ul").length==1? true : false
-					if (!this.istopheader)
-						$subul.css({left:0, top:this._dimensions.h})
-					var $innerheader=$curobj.children('a').eq(0)
-					$innerheader=($innerheader.children().eq(0).is('span'))? $innerheader.children().eq(0) : $innerheader //if header contains inner SPAN, use that
-					$curobj.hover(
-						function(e){
-							var $targetul=$(this).children("ul:eq(0)")
-							if ($targetul.queue().length<=1) //if 1 or less queued animations
-								if (this.istopheader)
-									$targetul.css({left: $mainmenu.position().left, top: $mainmenu.position().top+this._dimensions.h})
-								if (document.all && !window.XMLHttpRequest) //detect IE6 or less, fix issue with overflow
-									$mainmenu.find('ul').css({overflow: (this.istopheader)? 'hidden' : 'visible'})
-								$targetul.dequeue().slideDown(droplinemenu.animateduration.over)
-						},
-						function(e){
-							var $targetul=$(this).children("ul:eq(0)")
-							$targetul.dequeue().slideUp(droplinemenu.animateduration.out)
-						}
-					) //end hover
-				}) //end $headers.each()
-				$mainmenu.find("ul").css({display:'none', visibility:'visible', width:$mainmenu.width()})
-			}) //end document.ready
-		}
-	}
-
-	//build menu with DIV ID="myslidemenu" on page:
-	droplinemenu.buildmenu("mydroplinemenu");
-</script>
-
-*menu*
-"""
+""" % (title,color,header,image)
 
 _title = 'ExaProxy Monitoring'
 _image = '<a href="http://www.exa-networks.co.uk/" target="exa-networks">%s</a>' % png(logo)
 
 
 def Menu (options):
-	menu = '<div id="mydroplinemenu" class="droplinebar">\n<ul>\n'
+	menu = '<div class="vmenu">\n'
+	menu += '\t<h1><a href="/index.html">Home</a></h1>\n'
 
-	for url, name, section in options:
-		menu += '\t<li><a href="%s">%s</a>\n' % (url,name)
+	for name, url, section in options:
+		menu += '\t<h1>%s</h1>\n' % (name)
 
 		if section:
-			menu += '\t\t<ul>\n'
-			for url, name in section:
-				menu += '\t\t\t<li><a href="%s">%s</a></li>\n' % (url,name)
-			menu += '\t\t</ul>\n'
+			menu += '\t<ul>\n'
+			for name, url, new in section:
+				if new:
+					menu += '\t\t<li><a href="%s" target="%s">%s</a></li>\n' % (url,name,name)
+				else:
+					menu += '\t\t<li><a href="%s">%s</a></li>\n' % (url,name)
+			menu += '\t</ul>\n'
 
-		menu += '\t</li>\n'
+	menu += '</div>\n'
 
-	menu += '</ul>\n</div>\n'
-
-	_html = html(_title,'','#9999FF',_image,_menu,'*string*').replace('%','%%').replace('*string*','%s').replace('*menu*',menu)
+	_html = html(_title,'','#9999FF',_image).replace('*text*','%s').replace('*menu*',menu)
 
 	def _lambda (page):
 		return _html % page
