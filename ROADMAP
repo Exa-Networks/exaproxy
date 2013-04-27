@@ -2,8 +2,6 @@ BUG Fixes:
  - fix all XXX:
 
 Reliablity:
- - make sure all exception were trapped (all errno are covered)
- - be more verbose for reactor exception trapped
  - if a remote end / client does not respect connection-close, use time to kill it anyway
  - look at tox: http://tox.testrun.org/latest/
  - implement the timeout of client sockets.
@@ -14,22 +12,19 @@ RFC Compliance
  - need to remove connection: header if HTTP is 1/0
  - support 100-continue ? (Section 8.2.3)
  - do not forward 100 response due to Expect:100 if client is HTTP/1.0 (Section 8.2.3)
- - the Expect mechanism is hop-by-hop: that is, an HTTP/1.1 proxy MUST return a 417 (Expectation Failed) status if it receives a request with an expectation that it cannot meet. However, the Expect request-header itself is end-to-end; it MUST be forwarded if the request is forwarded.
  - pass the REQUEST HTTP version all the way to the HTTP page generated in response
  - 414 Request-URI Too Long instead of aborting the request
 
-DOS Protection
- - limit GET size as a option value (8192 default)
+Protection
+ - incomming IP ACL (for allowed users) - for the moment the firewall of the machine will do ..
 
 Performance
- - use ctypes and the linux slice system call for better performance
+ - use ctypes and the linux splice system call for better performance
  - remove a double dict lookup in the main loop
  - look at python Buffer and Array API
  - make sure we do not use string concatenation (perhaps not necessary with python 2.7 ?)
  - investigate regex for header parsing performance
  - investigate why pypy takes more CPU than cPython in some cases
- - splice incoming data directly to a client socket if we have no buffered data for the client
-   ( and make the buffer information accessible to the connection manager )
 
 Cleanup
  - refactor the communication over pipe to have the serialisation/deserialisation in one place
@@ -40,7 +35,6 @@ Feature
  - offer an option for happy Eyeballs (RFC 6555) when it comes to IPv6 (http://tools.ietf.org/html/rfc6555)
  - fetch the SSL X.509 certificate from IPs to extract its hostname and pass it to the thread when using CONNECT
  - more monitoring (self-updating page with realtime rotating logs)
- - incomming IP ACL (for allowed users) - for the moment the firewall of the machine will do ..
  - a redirector which connects to our ICAP service
  - option to prever IPv6 DNS answers over IPv4 or vice-versa
 
