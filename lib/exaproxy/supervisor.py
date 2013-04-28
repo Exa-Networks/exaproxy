@@ -35,7 +35,8 @@ from exaproxy.util.interfaces import getifaddrs,AF_INET,AF_INET6
 
 class Supervisor(object):
 	alarm_time = 0.1                           # regular backend work
-	history_frequency = int(1/alarm_time)      # when we record history
+	second_frequency = int(1/alarm_time)       # when we record history
+	minute_frequency = int(60/alarm_time)      # when we want to average history
 	increase_frequency = int(5/alarm_time)     # when we add workers
 	decrease_frequency = int(60/alarm_time)    # when we remove workers
 	saturation_frequency = int(20/alarm_time)  # when we report connection saturation
@@ -129,8 +130,10 @@ class Supervisor(object):
 
 		signal.signal(signal.SIGALRM, self.sigalrm)
 
-		# make sure we always have data in history, here as record() requires self to be partially initialised to run
-		self.monitor.record()
+		# make sure we always have data in history
+		# (done in zero for dependencies reasons)
+		self.monitor.zero()
+
 
 	def sigquit (self,signum, frame):
 		if self._softstop:
@@ -212,14 +215,17 @@ class Supervisor(object):
 
 		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
 
-		count_history = 0
+		count_second = 0
+		count_minute = 0
 		count_increase = 0
 		count_decrease = 0
 		count_saturation = 0
 		count_interface = 0
 
 		while True:
-			count_history = (count_history + 1) % self.history_frequency
+			count_second = (count_second + 1) % self.second_frequency
+			count_minute = (count_minute + 1) % self.minute_frequency
+
 			count_increase = (count_increase + 1) % self.increase_frequency
 			count_decrease = (count_decrease + 1) % self.decrease_frequency
 			count_saturation = (count_saturation + 1) % self.saturation_frequency
@@ -292,9 +298,12 @@ class Supervisor(object):
 
 
 				# save our monitoring stats
-				if count_history == 0:
-					self.monitor.record()
+				if count_second == 0:
+					self.monitor.second()
 					self.reactor.log.debug('events : ' + ', '.join('%s:%d' % (k,len(v)) for (k,v) in self.reactor.events.items()))
+
+				if count_minute == 0:
+					self.monitor.minute()
 
 				# make sure we have enough workers
 				if count_increase == 0:

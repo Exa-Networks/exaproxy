@@ -143,7 +143,7 @@ class Page (object):
 	def _clients (self):
 		return graph(
 			self.monitor,
-			'Bytes Received from clients / seconds',
+			'Bytes Received from clients',
 			20000,
 			[
 				'transfer.client4',
@@ -155,7 +155,7 @@ class Page (object):
 	def _servers (self):
 		return graph(
 			self.monitor,
-			'Bytes Received from servers / seconds',
+			'Bytes Received from servers',
 			20000,
 			[
 				'transfer.content4',
@@ -167,7 +167,7 @@ class Page (object):
 	def _transfer (self):
 		return graph(
 			self.monitor,
-			'Bytes received / seconds',
+			'Bytes received',
 			20000,
 			[
 				'transfer.client',
@@ -179,7 +179,7 @@ class Page (object):
 	def _loops (self):
 		return graph(
 			self.monitor,
-			'Reactor loops / seconds',
+			'Reactor loops',
 			20000,
 			[
 				'load.loops',
@@ -190,7 +190,7 @@ class Page (object):
 	def _events (self):
 		return graph(
 			self.monitor,
-			'Sockets which became readeable / seconds',
+			'Sockets which became readeable',
 			20000,
 			[
 				'load.events',
@@ -201,7 +201,7 @@ class Page (object):
 	def _queue (self):
 		return graph(
 			self.monitor,
-			'Queued URL for classification / seconds',
+			'Queued URL for classification',
 			20000,
 			[
 				'queue.size',
@@ -239,7 +239,7 @@ class Page (object):
 		return message
 
 	def _json_running (self):
-		return json.dumps(self.monitor.history[-1],sort_keys=True,indent=2,separators=(',', ': '))
+		return json.dumps(self.monitor.seconds[-1],sort_keys=True,indent=2,separators=(',', ': '))
 
 	def _json_configuration (self):
 		return json.dumps(self.monitor.configuration(),sort_keys=True,indent=2,separators=(',', ': '))

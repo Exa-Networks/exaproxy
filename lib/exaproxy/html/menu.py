@@ -74,12 +74,11 @@ def html (title,header,color='#FF0000',image=png(logo)):
 				%s
 			</div>
 		</center>
-<div style="float: left">
+*menu*
 *text*
 <br/>
 <br/>
 </div>
-*menu*
 	</body>
 </html>
 

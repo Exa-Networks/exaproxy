@@ -6,8 +6,7 @@ Created by Thomas Mangin on 2012-02-05.
 Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 """
 
-from collections import deque
-from configuration import string
+from collections import deque,defaultdict
 
 class _Container (object):
 	def __init__ (self,supervisor):
@@ -19,7 +18,17 @@ class Monitor (object):
 	def __init__(self,supervisor):
 		self._supervisor = supervisor
 		self._container = _Container(supervisor)
-		self.history = deque()
+		self.seconds = deque()
+		self.minutes = deque()
+
+	def zero (self):
+		# make sure we always have data in seconds
+		start = dict()
+		for k in self.statistics():
+			start[k] = 0
+
+		self.seconds.append(start)
+		self.minutes.append(start)
 
 	def introspection (self,objects):
 		obj = self._container
@@ -41,11 +50,6 @@ class Monitor (object):
 
 	def configuration (self):
 		conf = self._supervisor.configuration
-		#content = self._supervisor.content
-		#client = self._supervisor.client
-		#log = self._supervisor.log
-		#manager = self._supervisor.manager
-		#reactor = self._supervisor.reactor
 
 		return {
 			'exaproxy.debug.log' : bool(conf.debug.log),
@@ -110,10 +114,8 @@ class Monitor (object):
 		}
 
 	def statistics (self):
-		#conf = self._supervisor.configuration
 		content = self._supervisor.content
 		client = self._supervisor.client
-		#log = self._supervisor.log
 		manager = self._supervisor.manager
 		reactor = self._supervisor.reactor
 
@@ -136,7 +138,22 @@ class Monitor (object):
 			'queue.size' : manager.queue.qsize(),
 		}
 
-	def record (self):
-		self.history.append(self.statistics())
-		if len(self.history) > self.nb_recorded:
-			self.history.popleft()
+	def second (self):
+		self.seconds.append(self.statistics())
+		if len(self.seconds) > self.nb_recorded:
+			self.seconds.popleft()
+
+	def minute (self):
+		self.minutes.append(self.statistics())
+		if len(self.minutes) > self.nb_recorded:
+			self.minutes.popleft()
+
+		# minutes = defaultdict(lambda: 0)
+
+		# for record in self.seconds:
+		# 	for k,v in record.items():
+		# 		minutes[k] += v
+
+		# self.minutes.append(minutes)
+		# if len(self.minutes) > self.nb_recorded:
+		# 	self.seconds.popleft()
