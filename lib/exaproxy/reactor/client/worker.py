@@ -28,6 +28,7 @@ class Client (object):
 		self.peer = peer
 		self.reader = self._read(sock,max_buffer)
 		self.writer = self._write(sock)
+		self.w_buffer = ''
 
 		self.log = logger
 		self.blockupload = None
@@ -276,8 +277,6 @@ class Client (object):
 
 	def _write(self, sock):
 		"""Coroutine managing data sent to the client"""
-
-		w_buffer = ''
 		filename = yield None
 
 		# check to see if we are returning data directly from a local file
@@ -285,23 +284,25 @@ class Client (object):
 			try:
 				# NOTE: we must read from the file on demand rather than doing this
 				with open(filename) as fd:
-					w_buffer = fd.read()
+					self.w_buffer += fd.read()
 
 				found = True, False, 0, 0
 			except IOError:
 				found = None
 
 			data = yield found
-			w_buffer = data + w_buffer
+			self.w_buffer = data + self.w_buffer
 		else:
 			found = None
 
 		data = yield found
 		finished = False
+		w_buffer = self.w_buffer
 
 		while True:
 			try:
 				while True:
+					w_buffer = self.w_buffer
 					had_buffer = bool(w_buffer)
 
 					if data is not None:
@@ -324,9 +325,9 @@ class Client (object):
 					else:
 						sent = 0
 
+					self.w_buffer = w_buffer
 					buffered = bool(w_buffer) or finished
 					data = yield buffered, had_buffer, sent if self.ipv4 else 0, 0 if self.ipv4 else sent
-
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
@@ -334,6 +335,7 @@ class Client (object):
 				break
 
 			except socket.error, e:
+				self.w_buffer = w_buffer
 				if e.args[0] in errno_block:
 					self.log.debug('interrupted when trying to sent %d bytes, fine, will retry' % len(data))
 					self.log.debug('reason: errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '<no errno name>')))
