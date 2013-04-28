@@ -156,7 +156,12 @@ class TCPClient (DNSClient):
 		self.writer = None
 
 	def startConnecting (self):
-		sock = self.tcp_factory(self.server, self.port)
+		if self.configuration.tcp4.out:
+			bind = self.configuration.tcp4.bind
+		else:
+			bind = self.configuration.tcp6.bind
+
+		sock = self.tcp_factory(self.server, self.port, bind)
 		return sock
 
 	def _read (self, sock):
