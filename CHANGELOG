@@ -10,8 +10,9 @@ Version
  * Improvement: allow to control^Wbreak the proxy using some python code on the web page
  * Improvement: prevent connection to the local host to prevent firewall bypass
  * Improvement: allow to specify exclusions for the block on localhost
- * Improvement: limit connect methods to only port 443, 981 and 7000 as default (other ports can be added)
+ * Improvement: limit connect methods to only port 443, 981 and 7000 as default (user option)
  * Improvement: different counters for ipv4 and ipv6
+ * Improvement: new web interface without javascript
  * Backward compatibility: exaproxy.daemon.connections was renamed to exaproxy.http.connections
  * Backward compatibility: running.transfer keys have been renamed
  * Backward compatibility: all json "running." keys have been renamed

@@ -18,6 +18,7 @@ def html (title,header,color='#FF0000',image=png(logo)):
 		<title>%s</title>
 		<meta http-equiv="cache-control" content="no-cache">
 	</head>
+	<!-- If you are so curious look at /humans.txt or /humans.html -->
 	<style type="text/css" media="screen">
 		.vmenu {
 			font-family: Verdana, Arial, Helvetica, sans-serif;
