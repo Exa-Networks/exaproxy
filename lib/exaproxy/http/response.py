@@ -13,7 +13,6 @@ import time
 #from exaproxy.html.img import png
 
 from exaproxy.configuration import load
-version = load().proxy.version
 
 _HTTP_NAMES = {
 	'100': 'CONTINUE',
@@ -61,11 +60,12 @@ _HTTP_NAMES = {
 }
 
 
-def file_header(code, size, name):
+def file_header(code, size, name, protocol='1.1'):
 	date = time.strftime('%c %Z')
+	version = load().proxy.version
 
 	return '\r\n'.join([
-		'HTTP/1.1 %s %s' % (str(code), _HTTP_NAMES.get(code,'-')),
+		'HTTP/%s %s %s' % (protocol, str(code), _HTTP_NAMES.get(code,'-')),
 		'Date: %s' % date,
 		'Server: exaproxy/%s (%s)' % (str(version), str(sys.platform)),
 		'Content-Length: %d' % size,
@@ -76,12 +76,13 @@ def file_header(code, size, name):
 		''
 	])
 
-def http (code,message, version='1.1'):
-	encoding = 'html' if '</html>' in message else 'plain'
+def http (code,message, protocol='1.1'):
+	encoding = 'html' if message[:5].lower().startswith('<html') else 'plain'
 	date = time.strftime('%c %Z')
+	version = load().proxy.version
 
 	return '\r\n'.join([
-		'HTTP/%s %s %s' % (version, str(code), _HTTP_NAMES.get(code,'-')),
+		'HTTP/%s %s %s' % (protocol, str(code), _HTTP_NAMES.get(code,'-')),
 		'Date: %s' % date,
 		'Server: exaproxy/%s (%s)' % (str(version), str(sys.platform)),
 		'Content-Length: %d' % len(message),
