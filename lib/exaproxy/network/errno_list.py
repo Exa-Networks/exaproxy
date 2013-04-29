@@ -14,7 +14,7 @@ errno_block = set((
 	errno.EINPROGRESS, errno.EALREADY,
 	errno.EAGAIN, errno.EWOULDBLOCK,
 	errno.EINTR, errno.EDEADLK,
-	errno.ENOMEM, 
+	errno.ENOMEM,
 ))
 
 errno_fatal = set((
@@ -22,6 +22,7 @@ errno_fatal = set((
 	errno.ECONNREFUSED, errno.EBADF,
 	errno.ESHUTDOWN, errno.ENOTCONN,
 	errno.ECONNRESET, errno.ETIMEDOUT,
+	errno.EINVAL,
 ))
 
 errno_unavailable = set((
