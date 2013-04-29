@@ -327,23 +327,25 @@ class Page (object):
 
 				if action == 'exec':
 					if '=' in args:
-						key,value = args.split('=',1)
 						try:
+							key,value = args.split('=',1)
 							self.log.critical('PYTHON CODE RAN : %s' % value)
-							code = compile(unquote(value),'<string>', 'exec')
+							command = unquote(value.replace('+',' '))
+							code = compile(command,'<string>', 'exec')
 							exec code
 							return 'done !'
 						except Exception,e:
-							return 'failed to run : \n' + unquote(value) + '\n\nreason : \n' + str(type(e)) + '\n' + str(e)
+							return 'failed to run : \n' + command + '\n\nreason : \n' + str(type(e)) + '\n' + str(e)
 
 				if action == 'eval':
 					if '=' in args:
-						key,value = args.split('=',1)
-						self.log.critical('PYTHON CODE RAN : %s' % value)
 						try:
-							return str(eval(unquote(value)))
+							key,value = args.split('=',1)
+							self.log.critical('PYTHON CODE RAN : %s' % value)
+							command = unquote(value.replace('+',' '))
+							return str(eval(command))
 						except Exception,e:
-							return 'failed to run : \n' + unquote(value) + '\n\nreason : \n' + str(type(e)) + '\n' + str(e)
+							return 'failed to run : \n' + command + '\n\nreason : \n' + str(type(e)) + '\n' + str(e)
 
 				return menu(self._run())
 

@@ -39,6 +39,7 @@ Feature
  - a redirector which connects to our ICAP service
  - option to prever IPv6 DNS answers over IPv4 or vice-versa
  - record data transfered ?
+ - show number of connections per ip on the webpage
 
  Fun
   - make a redirector which blocks all old version of IE
