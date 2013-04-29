@@ -85,6 +85,9 @@ _listing = """\
 </div>
 """""
 
+def Bpstobps (bytes):
+	return bytes * 8
+
 class Page (object):
 
 	def __init__(self,supervisor):
@@ -143,37 +146,40 @@ class Page (object):
 	def _clients (self):
 		return graph(
 			self.monitor,
-			'Bytes Received from clients',
+			'Bits/seconds received from clients',
 			20000,
 			[
 				'transfer.client4',
 				'transfer.client6',
 			],
 			True,
+			adaptor=Bpstobps,
 		)
 
 	def _servers (self):
 		return graph(
 			self.monitor,
-			'Bytes Received from servers',
+			'Bits/seconds received from servers',
 			20000,
 			[
 				'transfer.content4',
 				'transfer.content6',
 			],
 			True,
+			adaptor=Bpstobps,
 		)
 
 	def _transfer (self):
 		return graph(
 			self.monitor,
-			'Bytes received',
+			'Bits/seconds received',
 			20000,
 			[
 				'transfer.client',
 				'transfer.content',
 			],
 			True,
+			adaptor=Bpstobps,
 		)
 
 	def _loops (self):

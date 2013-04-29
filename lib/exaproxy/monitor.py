@@ -6,7 +6,7 @@ Created by Thomas Mangin on 2012-02-05.
 Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 """
 
-from collections import deque,defaultdict
+from collections import deque
 
 class _Container (object):
 	def __init__ (self,supervisor):

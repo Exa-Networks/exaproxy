@@ -5,6 +5,7 @@ Reliablity:
  - if a remote end / client does not respect connection-close, use time to kill it anyway
  - look at tox: http://tox.testrun.org/latest/
  - implement the timeout of client sockets.
+ - warning when we are reaching 90% connection limit
 
 RFC Compliance
  - consider adding a VIA header to the answer from the server (not done to save CPU)
@@ -37,6 +38,7 @@ Feature
  - more monitoring (self-updating page with realtime rotating logs)
  - a redirector which connects to our ICAP service
  - option to prever IPv6 DNS answers over IPv4 or vice-versa
+ - record data transfered ?
 
  Fun
   - make a redirector which blocks all old version of IE

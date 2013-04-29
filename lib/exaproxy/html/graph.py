@@ -40,12 +40,13 @@ _chart = """\
 </script>
 """
 
+def _nothing (value): return value
 
-def graph (monitor,title,reload_time,_keys,cumulative=False,split=False):
+def graph (monitor,title,reload_time,_keys,cumulative=False,split=False,adaptor=_nothing):
 	page = _chart_header % reload_time + '<div>'
 	keys = [[_] for _ in _keys] if split else [_keys]
 
-	for ident, interval in (('seconds','Seconds'),('minutes','Minutes')):
+	for ident, interval,ratio in (('seconds','Seconds',1),('minutes','Minutes',60)):
 		data = []
 		datasource = getattr(monitor,ident)
 		for k in keys:
@@ -58,10 +59,10 @@ def graph (monitor,title,reload_time,_keys,cumulative=False,split=False):
 			for values in datasource:
 				if cumulative:
 					new = [values[_] for _ in k]
-					chart.append("[ %d, %s]" % (index, ','.join([str(max(0,n-l)).rstrip('L') for (n,l) in zip(new,last)])))
+					chart.append("[ %d, %s]" % (index, ','.join([str(max(0,adaptor(n-l)/ratio)).rstrip('L') for (n,l) in zip(new,last)])))
 					last = new
 				else:
-					chart.append("[ %d, %s]" % (index, ','.join([str(values[_]) for _ in k])))
+					chart.append("[ %d, %s]" % (index, ','.join([str(adaptor(values[_])) for _ in k])))
 				index += 1
 
 			if cumulative and chart:

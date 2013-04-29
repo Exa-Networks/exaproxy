@@ -298,4 +298,3 @@ class DNSResolver (object):
 			result = None
 
 		return result
-
