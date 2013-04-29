@@ -33,7 +33,7 @@ from exaproxy.util.log.writer import UsageWriter
 
 from exaproxy.util.interfaces import getifaddrs,AF_INET,AF_INET6
 
-class Supervisor(object):
+class Supervisor (object):
 	alarm_time = 0.1                           # regular backend work
 	second_frequency = int(1/alarm_time)       # when we record history
 	minute_frequency = int(60/alarm_time)      # when we want to average history

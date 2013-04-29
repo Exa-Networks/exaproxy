@@ -9,6 +9,8 @@ Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 import cgi
 import json
 
+from collections import defaultdict
+
 from urllib import unquote
 
 from .menu import Menu
@@ -28,15 +30,19 @@ options = (
 		('Statistics', '/information/statistics.html', False),
 		('Logs', '/information/logs.html', True),
 	)),
-	('Performance', '/performance.html', (
-		('Loops', '/performance/loops.html', False),
-		('Events', '/performance/events.html', False),
-		('Processes', '/performance/processes.html', False),
-		('Queue', '/performance/queue.html', False),
-		('Connections', '/performance/connections.html', False),
-		('Transfered', '/performance/transfered.html', False),
-		('Clients', '/performance/clients.html', False),
-		('Servers', '/performance/servers.html', False),
+	('Graphs', '/graph.html', (
+		('Loops', '/graph/loops.html', False),
+		('Events', '/graph/events.html', False),
+		('Processes', '/graph/processes.html', False),
+		('Queue', '/graph/queue.html', False),
+		('Connections', '/graph/connections.html', False),
+		('Transfered', '/graph/transfered.html', False),
+		('Clients', '/graph/clients.html', False),
+		('Servers', '/graph/servers.html', False),
+	)),
+	('End Points', '/end-point.html', (
+		('Clients', '/end-point/clients.html', False),
+		('Servers', '/end-point/servers.html', False),
 	)),
 	('Control', '/control.html', (
 		('Workers', '/control/workers.html', False),
@@ -215,6 +221,34 @@ class Page (object):
 			True,
 		)
 
+
+	def _source (self,bysock):
+		number = 0
+
+		clients = defaultdict(lambda:0)
+		for sock in bysock:
+			host,ip = sock.getpeername()
+			clients[host] += 1
+			number += 1
+
+		ordered = defaultdict(list)
+		for host,number in clients.items():
+			ordered[number].append(host)
+
+		result = ['<div style="margin-left:40px;"><p><b> we have %d connection(s) from %d client(s)</b></p><pre>' % (number, len(clients))]
+		for number in reversed(sorted(ordered)):
+			for host in ordered[number]:
+				result.append('%-15s : %4d' % (host,number))
+
+		return '\n'.join(result) + '</pre></div>'
+
+	def _servers_source (self):
+		return self._source(self.supervisor.content.established)
+
+	def _clients_source (self):
+		return self._source(self.supervisor.client.bysock)
+
+
 	def _workers (self):
 		form = '<form action="/control/workers/commit" method="get">%s: <input type="text" name="%s" value="%s"><input type="submit" value="Submit"></form>'
 
@@ -299,7 +333,7 @@ class Page (object):
 				return self._logs()
 			return menu(index)
 
-		if section == 'performance':
+		if section == 'graph':
 			if subsection == 'processes':
 				return menu(self._processes())
 			if subsection == 'connections':
@@ -316,6 +350,13 @@ class Page (object):
 				return menu(self._events())
 			if subsection == 'queue':
 				return menu(self._queue())
+			return menu(index)
+
+		if section == 'end-point':
+			if subsection == 'servers':
+				return menu(self._servers_source())
+			if subsection == 'clients':
+				return menu(self._clients_source())
 			return menu(index)
 
 		if section == 'control':
