@@ -3,20 +3,25 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
-Version
+Version 1.1.1 - 30th of April 2013
+ * Fix: new requests on an existing connection would destroy the buffer and cause us to wake up at every loop.
+ * Fix: correctly report our verion in the webpage we serve
+ * Fix: do not fail of python was compiled without IPv6 support
  * Improvement: allow to unbind and rebind like haproxy
  * Improvement: implement SIGQUIT as a way to quit once all current connections are closed
  * Improvement: allow to choose an IP for outgoing connections, permit over 2^16/2 client connections
  * Improvement: allow to control^Wbreak the proxy using some python code on the web page
  * Improvement: prevent connection to the local host to prevent firewall bypass
+ * Improvement: allow to stop / restart listening on port and soft-stop (stop when all connections close)
  * Improvement: allow to specify exclusions for the block on localhost
  * Improvement: limit connect methods to only port 443, 981 and 7000 as default (user option)
  * Improvement: different counters for ipv4 and ipv6
- * Improvement: new web interface without javascript
+ * Improvement: new web interface without javascript, with more options (debug, ...)
  * Improvement: better monitoring (60 seconds and 60 minutes graphs)
  * Backward compatibility: exaproxy.daemon.connections was renamed to exaproxy.http.connections
  * Backward compatibility: running.transfer keys have been renamed
  * Backward compatibility: all json "running." keys have been renamed
+ * Backward compatibility: renamed many web page (URL should never be scraped)
 
 Version 1.1.0 - 23rd of April 2013
  * Many bug fixes including (but not exclusively)
