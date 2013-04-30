@@ -103,7 +103,7 @@ class Page (object):
 		self.log = Logger('web', supervisor.configuration.log.web)
 
 	def _introspection (self,objects):
-		introduction = "<div style='padding: 10px 10px 10px 10px; font-weight:bold;'>Looking at the internal of ExaProxy for %s </div><br/>\n" % cgi.escape('.'.join(objects))
+		introduction = '<div style="padding: 10px 10px 10px 10px; font-weight:bold;">Looking at the internal of ExaProxy for %s </div><br/>\n' % cgi.escape('.'.join(objects))
 		link = cgi.escape('/'.join(objects[:-1])) if objects[:-1] else 'supervisor'
 		line = ['<a href="/information/introspection/%s.html">Back to parent object</a><br/>' % link]
 		for k,content in self.monitor.introspection(objects):
@@ -112,14 +112,14 @@ class Page (object):
 		return introduction + _listing % ('\n'.join(line))
 
 	def _configuration (self):
-		introduction = "<div style='padding: 10px 10px 10px 10px; font-weight:bold;'>ExaProxy Configuration</div><br/>\n"
+		introduction = '<div style="padding: 10px 10px 10px 10px; font-weight:bold;">ExaProxy Configuration</div><br/>\n'
 		line = []
 		for k,v in sorted(self.monitor.configuration().items()):
 			line.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (k,cgi.escape(str(v))))
 		return introduction + _listing % ('\n'.join(line))
 
 	def _statistics (self):
-		introduction = "<div style='padding: 10px 10px 10px 10px; font-weight:bold;'>ExaProxy Statistics</div><br/>\n"
+		introduction = '<div style="padding: 10px 10px 10px 10px; font-weight:bold;">ExaProxy Statistics</div><br/>\n'
 		line = []
 		for k,v in sorted(self.monitor.statistics().items()):
 			line.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (k,cgi.escape(str(str(v)))))
@@ -223,24 +223,26 @@ class Page (object):
 
 
 	def _source (self,bysock):
-		number = 0
+		conns = 0
 
 		clients = defaultdict(lambda:0)
 		for sock in bysock:
 			host,ip = sock.getpeername()
 			clients[host] += 1
-			number += 1
+			conns += 1
 
 		ordered = defaultdict(list)
 		for host,number in clients.items():
 			ordered[number].append(host)
 
-		result = ['<div style="margin-left:40px;"><p><b> we have %d connection(s) from %d client(s)</b></p><pre>' % (number, len(clients))]
+		result = []
+		result.append('<div style="padding: 10px 10px 10px 10px; font-weight:bold;">ExaProxy Statistics</div><br/>')
+		result.append('<center>we have %d connection(s) from %d source(s)</center><br/>' % (conns, len(clients)))
 		for number in reversed(sorted(ordered)):
 			for host in ordered[number]:
-				result.append('%-15s : %4d' % (host,number))
+				result.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (host,number))
 
-		return '\n'.join(result) + '</pre></div>'
+		return _listing % '\n'.join(result)
 
 	def _servers_source (self):
 		return self._source(self.supervisor.content.established)
