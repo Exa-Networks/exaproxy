@@ -3,6 +3,10 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
+Version 1.1.2 -  of 2013
+ * Improvement: added the opened connection where the client never spoke to the graphs
+ * Backward compatibility: changed the name of the clients. and servers. keys
+
 Version 1.1.1 - 30th of April 2013
  * Fix: new requests on an existing connection would destroy the buffer and cause us to wake up at every loop.
  * Fix: correctly report our verion on the webpage we serve

@@ -131,7 +131,8 @@ class Page (object):
 			'Connections',
 			20000,
 			[
-				'clients.established',
+				'clients.silent',
+				'clients.speaking',
 				'servers.opening',
 				'servers.established',
 				]
