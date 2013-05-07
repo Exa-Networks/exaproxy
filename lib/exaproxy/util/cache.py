@@ -32,7 +32,7 @@ class TimeCache (dict):
 			self.last = None
 
 		while self.time and maximum:
-			k,t = self.time.popitem()
+			k,t = self.time.popitem(False)
 			if t > expire:
 				self.last = k,t
 				break
