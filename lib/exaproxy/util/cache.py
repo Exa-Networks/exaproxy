@@ -1,29 +1,40 @@
 # encoding: utf-8
 
-from collections import deque
+from collections import OrderedDict
 from time import time
 
 class TimeCache (dict):
 	def __init__ (self,timeout):
 		self.timeout = timeout
-		self.queued = deque()
+		self.last = None
+		self.time = OrderedDict()
 		dict.__init__(self)
 
 	def __setitem__ (self,key,value):
 		dict.__setitem__(self,key,value)
-		self.queued.append((time(),key))
+		if self.timeout > 0:
+			self.time[key] = time()
+
+	def __delitem__ (self,key):
+		del self.time[key]
+		dict.__delitem__(self,key)
 
 	def expired (self,maximum):
 		expire = time() - self.timeout
-		while self.queued and maximum:
-			t,k = self.queued.popleft()
-			if self.timeout <= 0:
-				continue
-			if k not in self:
-				continue
-			maximum -= 1
-			if t <= expire:
+
+		if self.last:
+			k,t = self.last
+			if t > expire:
+				return
+			if k in self:
+				maximum -= 1
 				yield k
-				continue
-			self.queued.appendleft((t,k))
-			break
+			self.last = None
+
+		while self.time and maximum:
+			k,t = self.time.popitem()
+			if t > expire:
+				self.last = k,t
+				break
+			maximum -= 1
+			yield k

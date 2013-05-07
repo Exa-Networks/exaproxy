@@ -37,7 +37,7 @@ class ClientManager (object):
 
 	def expire (self,number=100):
 		for sock in self.norequest.expired(number):
-			client = self.norequest.get(sock)[0]
+			client = self.norequest.get(sock,[None,])[0]
 			if client:
 				self.cleanup(sock,client.name)
 
