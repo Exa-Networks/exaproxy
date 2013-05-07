@@ -14,6 +14,7 @@ errno_block = set((
 	errno.EINPROGRESS, errno.EALREADY,
 	errno.EAGAIN, errno.EWOULDBLOCK,
 	errno.EINTR, errno.EDEADLK,
+	errno.EBUSY, errno.ENOBUFS,
 	errno.ENOMEM,
 ))
 
