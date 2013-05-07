@@ -6,6 +6,7 @@ Version explained:
 Version 1.1.2 -  of 2013
  * Improvement: added the opened connection where the client never spoke to the graphs
  * Improvement: can timeout new HTTP connection which does not send data (new connections idle timeout)
+ * Improvement: let pass invalid pre-RFC 2616 syntaxes
  * Backward compatibility: changed the name of the clients. and servers. keys
 
 Version 1.1.1 - 30th of April 2013

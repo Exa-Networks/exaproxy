@@ -7,9 +7,29 @@ Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 """
 
 class Request (object):
-	def __init__ (self,request):
-		self.raw = request
-		method, self.uri, version = request.split()
+	def __init__ (self,data):
+		request, remaining = data.split('\n',1)
+		parts = request.split()
+		if len(parts) == 3:
+			self.raw = request.rstrip('\r')
+			method, self.uri, version = parts
+			self.use_raw = False
+			self.remaining = remaining
+		elif len(parts) == 2:
+			http,rest = remaining.split('\n',1)
+			if http.upper()[:5].startswith('HTTP/'):
+				version = http.strip().split('/',1)[-1]
+				self.raw = '%s\n%s' % (request,http)
+				self.remaining = rest
+			else:
+				version = '1.0'
+				self.raw = request
+				self.remaining = remaining
+			method, self.uri = parts
+			self.use_raw = True
+		else:
+			raise ValueError('Malformed request')
+
 		self.method = method.upper()
 
 		version = version.split('/')[-1]
@@ -81,7 +101,6 @@ class Request (object):
 		return int(port)
 
 	def __str__ (self):
-		if self.protocol == 'http':
-			return self.method + ' ' + self.path + ' HTTP/' + self.version
-
-		return self.raw
+		if self.use_raw or self.protocol != 'http':
+			return self.raw
+		return self.method + ' ' + self.path + ' HTTP/' + self.version

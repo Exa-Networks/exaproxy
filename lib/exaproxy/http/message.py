@@ -37,14 +37,13 @@ class HTTP (object):
 		self.log.debug('parsing header [[%s]]' % str(self.raw).replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n'))
 
 		try:
-			first, remaining = self.raw.split('\n',1)
 			if '\r' in self.raw:
 				self.separator = '\r\n'
 			else:
 				self.separator = '\n'
 
-			self.request = Request(first.rstrip('\r')).parse()
-			self.headers = Headers(self.request.version,self.separator,self.expect).parse(transparent,remaining)
+			self.request = Request(self.raw).parse()
+			self.headers = Headers(self.request.version,self.separator,self.expect).parse(transparent,self.request.remaining)
 
 			self.headerhost = self.extractHost()
 
