@@ -199,8 +199,7 @@ class ClientManager (object):
 					# watch for the socket's send buffer becoming less than full
 					self.poller.addWriteSocket('write_client', client.sock)
 				else:
-					#buffer_change = False
-					buffer_change = True
+					buffer_change = False
 
 			elif had_buffer and client.sock in self.buffered:
 				self.buffered.remove(client.sock)
