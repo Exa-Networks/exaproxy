@@ -15,10 +15,6 @@ class TimeCache (dict):
 		if self.timeout > 0:
 			self.time[key] = time()
 
-	def __delitem__ (self,key):
-		del self.time[key]
-		dict.__delitem__(self,key)
-
 	def expired (self,maximum):
 		expire = time() - self.timeout
 
@@ -36,5 +32,6 @@ class TimeCache (dict):
 			if t > expire:
 				self.last = k,t
 				break
-			maximum -= 1
-			yield k
+			if k in self:
+				maximum -= 1
+				yield k
