@@ -1,12 +1,13 @@
 # encoding: utf-8
 """
-server.py
+manager.py
 
 Created by David Farrar  on 2011-11-30.
 Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
 from exaproxy.util.log.logger import Logger
+from exaproxy.util.cache import TimeCache
 from .worker import Client
 
 from exaproxy.http.proxy import ProxyProtocol
@@ -17,7 +18,7 @@ class ClientManager (object):
 	def __init__(self, poller, configuration):
 		self.total_sent4 = 0L
 		self.total_sent6 = 0L
-		self.norequest = {}
+		self.norequest = TimeCache(configuration.http.idle_connect)
 		self.bysock = {}
 		self.byname = {}
 		self.buffered = []
@@ -33,6 +34,12 @@ class ClientManager (object):
 	def getnextid(self):
 		self._nextid += 1
 		return str(self._nextid)
+
+	def expire (self,number=100):
+		for sock in self.norequest.expired(number):
+			client = self.norequest.get(sock)[0]
+			if client:
+				self.cleanup(sock,client.name)
 
 	def newConnection(self, sock, peer, source):
 		name = self.getnextid()

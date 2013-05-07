@@ -142,6 +142,7 @@ def main ():
 			'protocol': (value.redirector,string.quote,'url',                        'what protocol to use (url -> squid like / icap:://<uri> -> icap like)')
 		},
 		'http' : {
+			'idle-connect'    : (value.integer,string.nop,'60',      'time before we abandon new inactive http client connections'),
 			'connections'     : (value.integer,string.nop,'32768',   'the maximum number of proxy connections'),
 			'transparent'     : (value.boolean,string.lower,'false', 'do not reveal the presence of the proxy'),
 			'forward'         : (value.lowunquote,string.quote,'',   'read client address from this header (normally x-forwarded-for)'),
