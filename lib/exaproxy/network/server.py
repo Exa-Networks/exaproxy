@@ -96,9 +96,9 @@ class Server(object):
 				for listening_sock in self.socks:
 					self.poller.removeReadSocket(self.read_name, listening_sock)
 
-	def notifyClose (self, client):
+	def notifyClose (self, client, count=1):
 		paused = self.client_count >= self.max_clients
-		self.client_count -= 1
+		self.client_count -= count
 
 		if paused and self.client_count < self.max_clients:
 			for listening_sock in self.socks:

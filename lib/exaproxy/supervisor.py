@@ -300,8 +300,13 @@ class Supervisor (object):
 				# save our monitoring stats
 				if count_second == 0:
 					self.monitor.second()
-					self.reactor.client.expire()
+					expired = self.reactor.client.expire()
 					self.reactor.log.debug('events : ' + ', '.join('%s:%d' % (k,len(v)) for (k,v) in self.reactor.events.items()))
+				else:
+					expired = 0
+
+				if expired:
+					self.proxy.notifyClose(expired)
 
 				if count_minute == 0:
 					self.monitor.minute()

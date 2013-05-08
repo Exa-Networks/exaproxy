@@ -36,10 +36,14 @@ class ClientManager (object):
 		return str(self._nextid)
 
 	def expire (self,number=100):
+		count = 0
 		for sock in self.norequest.expired(number):
 			client = self.norequest.get(sock,[None,])[0]
 			if client:
 				self.cleanup(sock,client.name)
+				count += 1
+
+		return count
 
 	def newConnection(self, sock, peer, source):
 		name = self.getnextid()
