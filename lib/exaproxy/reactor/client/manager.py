@@ -273,7 +273,7 @@ class ClientManager (object):
 				# buffered data we read with the HTTP headers
 				name, peer, request, content = client.readRelated(mode,nb_to_read)
 				if request:
-					self.log.error('reading multiple requests')
+					self.log.info('reading multiple requests')
 					self.cleanup(client.sock, name)
 					buffered, had_buffer = None, None
 					content = None
