@@ -8,6 +8,7 @@ Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 
 import cgi
 import json
+import socket
 
 from collections import defaultdict
 
@@ -228,7 +229,11 @@ class Page (object):
 
 		clients = defaultdict(lambda:0)
 		for sock in bysock:
-			host,ip = sock.getpeername()
+			try:
+				host,port = sock.getpeername()
+			except socket.error:
+				host,port = None,None
+
 			clients[host] += 1
 			conns += 1
 
