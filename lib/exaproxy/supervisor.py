@@ -323,7 +323,7 @@ class Supervisor (object):
 					self.proxy.saturation()
 					self.web.saturation()
 
-				if count_interface == 0:
+				if self.configuration.daemon.poll_interfaces and count_interface == 0:
 					self.interfaces()
 
 			except KeyboardInterrupt:

@@ -167,6 +167,7 @@ def main ():
 			'daemonize'   : (value.boolean,string.lower,'false', 'should we run in the background'),
 			'reactor'     : (value.unquote,string.quote,'epoll', 'what event mechanism to use (select/epoll)'),
 			'speed'       : (value.integer,string.nop,'2',       'when waiting for connection how long are we sleeping for'),
+			'poll-interfaces' : (value.boolean,string.lower,'true',  'periodically poll for local addresses the proxy should not connect to'),
 		},
 		'security' : {
 			'local'       : (value.services,string.services,   '',              'ip:port for allowed services (*:80 or 127.0.0.1:* allowed)'),
