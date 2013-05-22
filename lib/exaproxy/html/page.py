@@ -32,6 +32,7 @@ options = (
 		('Logs', '/information/logs.html', True),
 	)),
 	('Graphs', '/graph.html', (
+		('Requests', '/graph/requests.html', False),
 		('Loops', '/graph/loops.html', False),
 		('Events', '/graph/events.html', False),
 		('Processes', '/graph/processes.html', False),
@@ -149,6 +150,17 @@ class Page (object):
 				'processes.min',
 				'processes.max',
 			]
+		)
+
+	def _requests (self):
+		return graph(
+			self.monitor,
+			'Requests/seconds received from clients',
+			20000,
+			[
+				'clients.requests',
+			],
+			True,
 		)
 
 	def _clients (self):
@@ -352,6 +364,8 @@ class Page (object):
 				return menu(self._clients())
 			if subsection == 'transfered':
 				return menu(self._transfer())
+			if subsection == 'requests':
+				return menu(self._requests())
 			if subsection == 'loops':
 				return menu(self._loops())
 			if subsection == 'events':

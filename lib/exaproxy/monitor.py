@@ -126,6 +126,7 @@ class Monitor (object):
 			'processes.max' : manager.high,
 			'clients.silent': len(client.norequest),
 			'clients.speaking': len(client.byname),
+			'clients.requests': client.total_requested,
 			'servers.opening': len(content.opening),
 			'servers.established': len(content.established),
 			'transfer.client4' : client.total_sent4,

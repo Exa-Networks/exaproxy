@@ -18,6 +18,7 @@ class ClientManager (object):
 	def __init__(self, poller, configuration):
 		self.total_sent4 = 0L
 		self.total_sent6 = 0L
+		self.total_requested = 0L
 		self.norequest = TimeCache(configuration.http.idle_connect)
 		self.bysock = {}
 		self.byname = {}
@@ -65,6 +66,7 @@ class ClientManager (object):
 		if client:
 			name, peer, request, content = client.readData()
 			if request:
+				self.total_requested += 1
 				# headers can be read only once
 				self.norequest.pop(sock, (None, None))
 
@@ -93,6 +95,7 @@ class ClientManager (object):
 		if client:
 			name, peer, request, content = client.readData()
 			if request:
+				self.total_requested += 1
 				# Parsing of the new request will be handled asynchronously. Ensure that
 				# we do not read anything from the client until a request has been sent
 				# to the remote webserver.
@@ -115,6 +118,7 @@ class ClientManager (object):
 		if client:
 			name, peer, request, content = client.readData()
 			if request:
+				self.total_requested += 1
 				# Parsing of the new request will be handled asynchronously. Ensure that
 				# we do not read anything from the client until a request has been sent
 				# to the remote webserver.
@@ -273,6 +277,7 @@ class ClientManager (object):
 				# buffered data we read with the HTTP headers
 				name, peer, request, content = client.readRelated(mode,nb_to_read)
 				if request:
+					self.total_requested += 1
 					self.log.info('reading multiple requests')
 					self.cleanup(client.sock, name)
 					buffered, had_buffer = None, None
