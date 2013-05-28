@@ -215,7 +215,15 @@ Encapsulated: req-hdr=0, null-body=%d
 
 				if length < 0:
 					return message, 'file', 'internal_error.html', ''
-				headers = self.process.stdout.read(length)
+
+				headers = ''
+				read_bytes = 0
+
+				while read_bytes < length:
+					headers_s = self.process.stdout.read(length)
+					headers += headers_s
+					read_bytes += len(headers_s)
+
 			except (ValueError,IndexError):
 				# IndexError can be raised with split()
 				# ValueError can be raised when converting to int and other bits
