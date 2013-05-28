@@ -304,9 +304,10 @@ class ResolverManager (object):
 
 				# maybe we read the wrong response?
 				elif forhost != hostname:
+					_, _, _, resolve_count = clidata
 					active_time = time.time()
 					self.resolving[(worker.w_id, identifier)] = client_id, original, hostname, command, decision
-					self.clients[client_id] = (worker.w_id, identifier, active_time, 1)
+					self.clients[client_id] = (worker.w_id, identifier, active_time, resolve_count)
 					self.active.append((active_time, client_id, worker.socket))
 					response = None
 
