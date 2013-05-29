@@ -158,7 +158,7 @@ class Redirector (Thread):
 		# so the shutdown will not be immediate
 		self.running = False
 
-	def transparent (self,message):
+	def transparent (self, message, peer):
 		headers = message.headers
 		# http://homepage.ntlworld.com./jonathan.deboynepollard/FGA/web-proxy-connection-header.html
 		headers.pop('proxy-connection',None)
@@ -166,6 +166,7 @@ class Redirector (Thread):
 		# NOTE: At the moment we only add it from the client to the server (which is what really matters)
 		if not self._transparent:
 			headers.extend('via','Via: %s %s' % (message.request.version, self._proxy))
+			headers.extend('x_forwarded_for', 'X-Forwarded-For: %s' % peer)
 			headers.pop('proxy-authenticate')
 
 		return message
@@ -326,11 +327,11 @@ Encapsulated: req-hdr=0, null-body=%d
 
 	def request (self,client_id, message, classification, data, comment, peer, header, source):
 		if classification == 'permit':
-			return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message))
+			return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message, peer))
 
 		if classification == 'rewrite':
 			message.redirect(None, data)
-			return ('REWRITE', data), Respond.download(client_id, message.host, message.port, '', message.content_length, self.transparent(message))
+			return ('REWRITE', data), Respond.download(client_id, message.host, message.port, '', message.content_length, self.transparent(message, peer))
 
 		if classification == 'file':
 			return ('FILE', data), Respond.rewrite(client_id, '200', data, comment, message)
@@ -339,7 +340,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			return ('REDIRECT', data), Respond.redirect(client_id, data)
 
 		if classification == 'intercept':
-			return ('INTERCEPT', data), Respond.download(client_id, data, message.port, '', message.content_length, self.transparent(message))
+			return ('INTERCEPT', data), Respond.download(client_id, data, message.port, '', message.content_length, self.transparent(message, peer))
 
 		if classification == 'requeue':
 			return (None, None), Respond.requeue(client_id, peer, header, source)
@@ -347,7 +348,7 @@ Encapsulated: req-hdr=0, null-body=%d
 		if classification == 'http':
 			return ('LOCAL', ''), Respond.http(client_id, data)
 
-		return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message))
+		return ('PERMIT', message.host), Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message, peer))
 
 	def connect (self,client_id, message, classification, data, comment, peer, header, source):
 		if classification == 'permit':
@@ -446,7 +447,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			# classify and return the filtered page
 			if method in ('GET', 'PUT', 'POST','HEAD','DELETE','PATCH'):
 				if not self.enabled:
-					self.respond(Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message)))
+					self.respond(Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message, peer)))
 					self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
 					continue
 
@@ -457,7 +458,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				continue
 
 
-			# someone want to use us as https proxy
+			# someone want to use us as https prox, peery
 			if method == 'CONNECT':
 				# we do allow connect
 				if not self.configuration.http.allow_connect or message.port not in self.configuration.security.connect:
@@ -504,7 +505,7 @@ Encapsulated: req-hdr=0, null-body=%d
 						raise RuntimeError('should never reach here')
 					message.headers.set('max-forwards','Max-Forwards: %d' % (max_forward-1))
 				# Carefull, in the case of OPTIONS message.host is NOT message.headerhost
-				self.respond(Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message)))
+				self.respond(Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message, peer)))
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.headerhost)
 				continue
 
@@ -512,12 +513,12 @@ Encapsulated: req-hdr=0, null-body=%d
 			if method in (
 			  'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE',
 			  'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
-				self.respond(Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message)))
+				self.respond(Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message, peer)))
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', method)
 				continue
 
 			if message.request in self.configuration.http.extensions:
-				self.respond(Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message)))
+				self.respond(Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message, peer)))
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.request)
 				continue
 
