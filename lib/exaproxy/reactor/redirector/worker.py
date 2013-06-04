@@ -192,12 +192,20 @@ Encapsulated: req-hdr=0, null-body=%d
 		try:
 			self.process.stdin.write(line)
 			try:
-				code = self.process.stdout.readline().rstrip().split()[1]
+				data = None
+				while not data:
+					data = self.process.stdout.readline()
+
+				code = data.rstrip().split()[1]
 				length = -1
 
 				comment = ''
 				while True:
-					line = self.process.stdout.readline().rstrip()
+					line = self.process.stdout.readline()
+					if not line:
+						continue
+
+					line = line.rstrip()
 					if not line:
 						break
 
@@ -291,7 +299,12 @@ Encapsulated: req-hdr=0, null-body=%d
 		try:
 			squid = '%s %s - %s -' % (message.url_noport, message.client, message.request.method)
 			self.process.stdin.write(squid + os.linesep)
-			response = self.process.stdout.readline().strip()
+
+			response = None
+			while not response:
+				response = self.process.stdout.readline()
+
+			response = response.strip()
 		except IOError, e:
 			self.log.error('IO/Error when sending to process: %s' % str(e))
 			if tainted is False:
