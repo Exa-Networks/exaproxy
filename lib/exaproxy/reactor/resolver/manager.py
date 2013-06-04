@@ -294,13 +294,17 @@ class ResolverManager (object):
 
 					if completed and newcomplete:
 						self.poller.addReadSocket('read_resolver', worker.socket)
+
 					elif completed and not newcomplete:
 						self.poller.addWriteSocket('write_resolver', worker.socket)
 						self.sending[worker.socket] = client_id, original, hostname, command, decision
 
 				# we just started a new (TCP) request and have not yet completely sent it
+				# make sure we still know who the request is for
 				elif not completed:
 					response = None
+					self.clients[client_id] = (worker.w_id, identifier, active_time, resolve_count)
+					self.log.info('not yet sent full request for: %s' % hostname)
 
 				# maybe we read the wrong response?
 				elif forhost != hostname:
@@ -344,14 +348,20 @@ class ResolverManager (object):
 		data = self.sending.get(sock)
 		if data:
 			client_id, original, hostname, command, decision = data
-			worker = self.workers[sock]
-			w_id, identifier, active_time, resolve_count = self.clients[client_id]
+		else:
+			client_id, original, hostname, command, decision = None, None, None, None, None, None
 
-			res = worker.continueSending()
+		worker = self.workers[sock]
+		res = worker.continueSending()
 
-			if res is False: # we've sent all we need to send
+		if res is False: # we've sent all we need to send
+			self.poller.removeWriteSocket('write_resolver', sock)
+
+			if client_id in self.clients:
+				w_id, identifier, active_time, resolve_count = self.clients[client_id]
 				tmp = self.sending.pop(sock)
 				self.resolving[(w_id, identifier)] = tmp
-
-				self.poller.removeWriteSocket('write_resolver', sock)
 				self.poller.addReadSocket('read_resolver', sock)
+
+			else:
+				self.log.error('could not find client for dns request for %s. request is being left to timeout.' % str(hostname))
