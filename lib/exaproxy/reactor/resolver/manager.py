@@ -303,8 +303,6 @@ class ResolverManager (object):
 				# make sure we still know who the request is for
 				elif not completed:
 					response = None
-					self.clients[client_id] = clidata
-					self.log.info('not yet sent full request for: %s' % hostname)
 
 				# maybe we read the wrong response?
 				elif forhost != hostname:
