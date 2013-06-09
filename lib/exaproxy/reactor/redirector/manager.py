@@ -7,7 +7,7 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
 import time
-from Queue import Queue
+from exaproxy.util.messagequeue import Queue
 
 from .worker import Redirector
 

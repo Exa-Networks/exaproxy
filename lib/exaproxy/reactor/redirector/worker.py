@@ -14,7 +14,7 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 
 import traceback
 from threading import Thread
-from Queue import Empty
+from exaproxy.util.messagequeue import Empty
 import subprocess
 import errno
 
