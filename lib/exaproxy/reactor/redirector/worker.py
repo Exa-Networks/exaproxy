@@ -138,7 +138,23 @@ class Redirector (Thread):
 			self.log.error('could not spawn process %s' % self.program)
 			process = None
 
-		fcntl.fcntl(process.stderr, fcntl.F_SETFL, os.O_NONBLOCK)
+		if process:
+			try:
+				fcntl.fcntl(process.stderr, fcntl.F_SETFL, os.O_NONBLOCK)
+				ok = True
+			except IOError: 
+				ok = False
+		else:
+			ok = None
+
+		if process and ok is False:
+			try:
+				process.terminate()
+				process.wait()
+			except OSError:
+				pass
+
+			process = None
 
 		return process
 
