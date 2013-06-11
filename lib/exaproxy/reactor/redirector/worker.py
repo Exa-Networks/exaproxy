@@ -29,6 +29,8 @@ from exaproxy.http.response import http
 from exaproxy.util.log.logger import Logger
 from exaproxy.util.log.logger import UsageLogger
 
+from exaproxy.util.log.history import Errors,History,Level
+
 
 class ChildError (Exception):
 	pass
@@ -290,6 +292,15 @@ Encapsulated: req-hdr=0, null-body=%d
 				# 	self.log.info(line)
 				self.stop()
 				return message, 'file', 'internal_error.html', ''
+			finally:
+				try:
+					errors = Errors()
+					snap = History().snapshot()
+					errors.messages.extend(-snap[len(snap)/4:])
+					errors.record(time.time(), self.process.pid, Level.value.CRITICAL, child_stderr)
+				except Exception:
+					pass
+
 		except IOError:
 			self.log.error('IO/Error when sending to process')
 			for line in traceback.format_exc().split('\n'):

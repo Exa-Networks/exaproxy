@@ -25,12 +25,12 @@ class Level:
 
 
 class _History:
-	_instance = None
+	_log = None
+	_err = None
 
 	def __init__ (self, size):
 		self.size = size
 		self.messages = deque()
-
 
 	def record (self, timestamp, name, level, text):
 		message = timestamp, name, level, text
@@ -47,6 +47,11 @@ class _History:
 			yield '%s %s %-13s %s' % (date, name, Level.name(level), text)
 
 def History (size=1000):
-	if not _History._instance:
-		_History._instance = _History(size)
-	return _History._instance
+	if not _History._log:
+		_History._log = _History(size)
+	return _History._log
+
+def Errors (size=1000):
+	if not _History._err:
+		_History._err = _History(size)
+	return _History._err
