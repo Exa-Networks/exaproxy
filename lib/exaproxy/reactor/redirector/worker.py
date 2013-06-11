@@ -141,14 +141,9 @@ class Redirector (Thread):
 		if process:
 			try:
 				fcntl.fcntl(process.stderr, fcntl.F_SETFL, os.O_NONBLOCK)
-			except IOError: 
-				try:
-					process.terminate()
-					process.wait()
-				except OSError:
-					pass
-
-			process = None
+			except IOError:
+				self.destroyProcess()
+				process = None
 
 		return process
 
@@ -238,7 +233,7 @@ Encapsulated: req-hdr=0, null-body=%d
 					child_stderr = self.process.stderr.read(4096)
 				except Exception, e:
 					child_stderr = ''
-					
+
 				if child_stderr:
 					raise ChildError(child_stderr)
 
