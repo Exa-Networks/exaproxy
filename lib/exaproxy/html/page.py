@@ -21,7 +21,7 @@ from .index import index
 from .licence import licence
 from .humans import humans
 
-from exaproxy.util.log.history import History
+from exaproxy.util.log.history import History,Errors
 from exaproxy.util.log.logger import Logger
 
 options = (
@@ -29,7 +29,6 @@ options = (
 		('Introspection', '/information/introspection/supervisor.html', False),
 		('Configuration', '/information/configuration.html', False),
 		('Statistics', '/information/statistics.html', False),
-		('Logs', '/information/logs.html', True),
 	)),
 	('Graphs', '/graph.html', (
 		('Requests', '/graph/requests.html', False),
@@ -54,7 +53,10 @@ options = (
 		('running', '/json/running', True),
 		('configuration', '/json/configuration', True),
 	)),
-
+	('Logs','/index.html', (
+		('Logs', '/information/logs.html', True),
+		('Errors (children)', '/information/errs.html', True),
+	)),
 	('About', '/about.html', (
 		('Email', '/about/email.html', False),
 		('Licence', '/about/licence.html', False),
@@ -292,6 +294,9 @@ class Page (object):
 	def _logs (self):
 		return 'do not view this in a web browser - the input is not sanitised, you have been warned !\n\n' + '\n'.join(History().formated())
 
+	def _errs (self):
+		return 'do not view this in a web browser - the input is not sanitised, you have been warned !\n\n' + '\n'.join(Errors().formated())
+
 	def _email (self,args):
 		if self.email_sent:
 			return '<center><b>You can only send one email per time ExaProxy is started</b></center>'
@@ -351,6 +356,8 @@ class Page (object):
 				return menu(self._statistics())
 			if subsection == 'logs':
 				return self._logs()
+			if subsection == 'errs':
+				return self._errs()
 			return menu(index)
 
 		if section == 'graph':
