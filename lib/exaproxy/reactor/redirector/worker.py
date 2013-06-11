@@ -20,8 +20,7 @@ import errno
 
 import os
 import time
-
-#import fcntl
+import fcntl
 
 from exaproxy.http.message import HTTP
 from exaproxy.http.request import Request
@@ -30,6 +29,9 @@ from exaproxy.http.response import http
 from exaproxy.util.log.logger import Logger
 from exaproxy.util.log.logger import UsageLogger
 
+
+class ChildError (Exception):
+	pass
 
 
 class Respond (object):
@@ -125,6 +127,7 @@ class Redirector (Thread):
 			process = subprocess.Popen([self.program,],
 				stdin=subprocess.PIPE,
 				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE,
 				universal_newlines=self.universal,
 				preexec_fn=preexec,
 			)
@@ -134,6 +137,9 @@ class Redirector (Thread):
 		except (subprocess.CalledProcessError,OSError,ValueError):
 			self.log.error('could not spawn process %s' % self.program)
 			process = None
+
+		fcntl.fcntl(process.stderr, fcntl.F_SETFL, os.O_NONBLOCK)
+
 		return process
 
 	def destroyProcess (self):
@@ -192,9 +198,9 @@ Encapsulated: req-hdr=0, null-body=%d
 		try:
 			self.process.stdin.write(line)
 			try:
-				data = None
-				while not data:
-					data = self.process.stdout.readline()
+				data = self.process.stdout.readline()
+				if not data:
+					raise ChildError, ''
 
 				code = data.rstrip().split()[1]
 				length = -1
@@ -203,7 +209,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				while True:
 					line = self.process.stdout.readline()
 					if not line:
-						continue
+						raise ChildError, ''
 
 					line = line.rstrip()
 					if not line:
@@ -217,6 +223,14 @@ Encapsulated: req-hdr=0, null-body=%d
 						# BIG Shortcut for performance - we know the last header is the size
 						length = int(line.split('=')[-1])
 						continue
+
+				try:
+					error_s = self.process.stderr.read(1024)
+				except Exception, e:
+					error_s = ''
+					
+				if error_s:
+					raise ChildError, error_s
 
 				# 304 (no modified)
 				if code == '304':
@@ -241,6 +255,26 @@ Encapsulated: req-hdr=0, null-body=%d
 				self.log.info('stopping this thread as we can not assume the processus will behave from now on.')
 				# for line in traceback.format_exc().split('\n'):
 				# 	self.log.info(line)
+				self.stop()
+				return message, 'file', 'internal_error.html', ''
+			except ChildError, e:
+				self.log.info('problem detected, the redirector program not send valid data')
+				self.log.info('returning to the client our internal error page even if we are not to blame.')
+				self.log.info('stopping this thread as we can not assume the processus will behave from now on.')
+
+				# wow this is nasty but we may be here because we read something from stderr and
+				# we'd like to know what we read
+				error_s = str(e)
+				try:
+					while True:
+						chunk_s = self.process.stderr.read(4096)
+						if not chunk_s:
+							break
+						error_s += chunk_s
+				except:
+					pass
+
+				self.log.info(error_s)
 				self.stop()
 				return message, 'file', 'internal_error.html', ''
 			except Exception:
