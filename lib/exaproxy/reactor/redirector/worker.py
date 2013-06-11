@@ -216,7 +216,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			try:
 				data = self.process.stdout.readline()
 				if not data:
-					raise ChildError, ''
+					raise ChildError('')
 
 				code = data.rstrip().split()[1]
 				length = -1
@@ -225,7 +225,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				while True:
 					line = self.process.stdout.readline()
 					if not line:
-						raise ChildError, ''
+						raise ChildError('')
 
 					line = line.rstrip()
 					if not line:
@@ -246,7 +246,7 @@ Encapsulated: req-hdr=0, null-body=%d
 					error_s = ''
 					
 				if error_s:
-					raise ChildError, error_s
+					raise ChildError(error_s)
 
 				# 304 (no modified)
 				if code == '304':
