@@ -241,7 +241,7 @@ Encapsulated: req-hdr=0, null-body=%d
 						continue
 
 				try:
-					error_s = self.process.stderr.read(1024)
+					error_s = self.process.stderr.read(4096)
 				except Exception, e:
 					error_s = ''
 					
