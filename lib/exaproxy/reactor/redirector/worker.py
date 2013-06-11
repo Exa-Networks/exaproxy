@@ -141,18 +141,12 @@ class Redirector (Thread):
 		if process:
 			try:
 				fcntl.fcntl(process.stderr, fcntl.F_SETFL, os.O_NONBLOCK)
-				nonblock_ok = True
 			except IOError: 
-				nonblock_ok = False
-		else:
-			nonblock_ok = None
-
-		if process and nonblock_ok is False:
-			try:
-				process.terminate()
-				process.wait()
-			except OSError:
-				pass
+				try:
+					process.terminate()
+					process.wait()
+				except OSError:
+					pass
 
 			process = None
 
