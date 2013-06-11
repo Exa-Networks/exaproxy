@@ -241,12 +241,12 @@ Encapsulated: req-hdr=0, null-body=%d
 						continue
 
 				try:
-					error_s = self.process.stderr.read(4096)
+					child_stderr = self.process.stderr.read(4096)
 				except Exception, e:
-					error_s = ''
+					child_stderr = ''
 					
-				if error_s:
-					raise ChildError(error_s)
+				if child_stderr:
+					raise ChildError(child_stderr)
 
 				# 304 (no modified)
 				if code == '304':
@@ -280,17 +280,17 @@ Encapsulated: req-hdr=0, null-body=%d
 
 				# wow this is nasty but we may be here because we read something from stderr and
 				# we'd like to know what we read
-				error_s = str(e)
+				child_stderr = str(e)
 				try:
 					while True:
 						chunk_s = self.process.stderr.read(4096)
 						if not chunk_s:
 							break
-						error_s += chunk_s
+						child_stderr += chunk_s
 				except:
 					pass
 
-				self.log.info(error_s)
+				self.log.info(child_stderr)
 				self.stop()
 				return message, 'file', 'internal_error.html', ''
 			except Exception:
