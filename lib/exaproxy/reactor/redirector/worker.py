@@ -255,17 +255,17 @@ Encapsulated: req-hdr=0, null-body=%d
 			except (ValueError,IndexError):
 				# IndexError can be raised with split()
 				# ValueError can be raised when converting to int and other bits
-				self.log.info('problem detected, the redirector program not send valid data')
-				self.log.info('returning to the client our internal error page even if we are not to blame.')
-				self.log.info('stopping this thread as we can not assume the processus will behave from now on.')
+				self.log.info('problem detected, the redirector program did not send valid data')
+				self.log.info('returning our internal error page to the client even if we are not to blame.')
+				self.log.info('stopping this thread as we can not assume that the process will behave from now on.')
 				# for line in traceback.format_exc().split('\n'):
 				# 	self.log.info(line)
 				self.stop()
 				return message, 'file', 'internal_error.html', ''
 			except ChildError, e:
-				self.log.info('problem detected, the redirector program not send valid data')
-				self.log.info('returning to the client our internal error page even if we are not to blame.')
-				self.log.info('stopping this thread as we can not assume the processus will behave from now on.')
+				self.log.info('problem detected, the redirector program did not send valid data')
+				self.log.info('returning our internal error page to the client even if we are not to blame.')
+				self.log.info('stopping this thread as we can not assume that the process will behave from now on.')
 
 				# wow this is nasty but we may be here because we read something from stderr and
 				# we'd like to know what we read
@@ -283,9 +283,9 @@ Encapsulated: req-hdr=0, null-body=%d
 				self.stop()
 				return message, 'file', 'internal_error.html', ''
 			except Exception:
-				self.log.info('problem detected, the redirector program not send valid data')
-				self.log.info('returning to the client our internal error page even if we are not to blame.')
-				self.log.info('stopping this thread as we can not assume the processus will behave from now on.')
+				self.log.info('problem detected, the redirector program did not send valid data')
+				self.log.info('returning our internal error page to the client even if we are not to blame.')
+				self.log.info('stopping this thread as we can not assume that the process will behave from now on.')
 				# for line in traceback.format_exc().split('\n'):
 				# 	self.log.info(line)
 				self.stop()
@@ -297,7 +297,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			if tainted is False:
 				self.log.info('retrying ...')
 				return message, 'requeue', None, None
-			self.log.info('stopping this thread as we can not assume the processus will behave from now on.')
+			self.log.info('stopping this thread as we can not assume that the process will behave from now on.')
 			self.stop()
 			return message, 'file', 'internal_error.html', ''
 
