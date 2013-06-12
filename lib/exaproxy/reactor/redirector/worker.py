@@ -257,49 +257,56 @@ Encapsulated: req-hdr=0, null-body=%d
 			except (ValueError,IndexError):
 				# IndexError can be raised with split()
 				# ValueError can be raised when converting to int and other bits
-				self.log.info('problem detected, the redirector program did not send valid data')
-				self.log.info('returning our internal error page to the client even if we are not to blame.')
-				self.log.info('stopping this thread as we can not assume that the process will behave from now on.')
+				self.log.critical('problem detected, the redirector program did not send valid data')
+				self.log.critical('returning our internal error page to the client even if we are not to blame.')
+				self.log.critical('stopping this thread as we can not assume that the process will behave from now on.')
+
+				self.stop()
+
 				# for line in traceback.format_exc().split('\n'):
 				# 	self.log.info(line)
-				self.stop()
+
 				return message, 'file', 'internal_error.html', ''
+
 			except ChildError, e:
-				self.log.info('problem detected, the redirector program did not send valid data')
-				self.log.info('returning our internal error page to the client even if we are not to blame.')
-				self.log.info('stopping this thread as we can not assume that the process will behave from now on.')
+				self.log.critical('problem detected, the redirector program did not send valid data')
+				self.log.critical('returning our internal error page to the client even if we are not to blame.')
+				self.log.critical('stopping this thread as we can not assume that the process will behave from now on.')
+
+				self.stop()
 
 				# wow this is nasty but we may be here because we read something from stderr and
 				# we'd like to know what we read
 				child_stderr = str(e)
 				try:
 					while True:
-						chunk_s = self.process.stderr.read(4096)
-						if not chunk_s:
+						data = self.process.stderr.read(4096)
+						if not data:
 							break
-						child_stderr += chunk_s
+						child_stderr += data
 				except:
 					pass
 
-				self.log.info(child_stderr)
-				self.stop()
+				for line in child_stderr.strip().split('\n'):
+					self.log.critical(line)
+
+				errors = Errors()
+				snap = History().snapshot()
+				errors.messages.extend(snap[-len(snap)/4:])
+				#errors.record(time.localtime(), self.process.pid, Level.value.CRITICAL, child_stderr)
+
 				return message, 'file', 'internal_error.html', ''
+
 			except Exception:
-				self.log.info('problem detected, the redirector program did not send valid data')
-				self.log.info('returning our internal error page to the client even if we are not to blame.')
-				self.log.info('stopping this thread as we can not assume that the process will behave from now on.')
+				self.log.critical('problem detected, the redirector program did not send valid data')
+				self.log.critical('returning our internal error page to the client even if we are not to blame.')
+				self.log.critical('stopping this thread as we can not assume that the process will behave from now on.')
+				self.stop()
+
 				# for line in traceback.format_exc().split('\n'):
 				# 	self.log.info(line)
-				self.stop()
+
 				return message, 'file', 'internal_error.html', ''
-			finally:
-				try:
-					errors = Errors()
-					snap = History().snapshot()
-					errors.messages.extend(-snap[len(snap)/4:])
-					errors.record(time.time(), self.process.pid, Level.value.CRITICAL, child_stderr)
-				except Exception:
-					pass
 
 		except IOError:
 			self.log.error('IO/Error when sending to process')
