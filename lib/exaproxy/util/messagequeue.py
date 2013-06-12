@@ -16,7 +16,8 @@ class Queue():
 
 	def get (self, timeout=None):
 		try:
-			return self.queue.popleft()
+			if self.queue:
+				return self.queue.popleft()
 		except IndexError:
 			pass
 
