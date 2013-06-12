@@ -288,7 +288,7 @@ Encapsulated: req-hdr=0, null-body=%d
 					pass
 
 				for line in child_stderr.strip().split('\n'):
-					self.log.critical(line)
+					self.log.critical("child said : %s" % line)
 
 				errors = Errors()
 				snap = History().snapshot()
