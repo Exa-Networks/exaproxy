@@ -16,39 +16,32 @@ class Queue():
 
 	def get (self, timeout=None):
 		try:
-			found, res = (True, self.queue.popleft()) if self.queue else (False, None)
+			return self.queue.popleft()
 		except IndexError:
-			found, res = False, None
+			pass
 
-		if found:
-			delay = None
-			endtime = None
-			remaining = None
+		delay = 0.0005
+		start = time.time()
 
-		else:
-			delay = 0.0005
-			endtime = (time.time() + timeout) if timeout is not None else None
-			remaining = timeout
+		running = True
 
-		while (remaining is None or remaining > 0) and not found:
+		while running:
 			try:
-				while not found:
-					remaining = (endtime - time.time()) if endtime is not None else None
-					if remaining is not None and remaining <= 0:
-						break
+				while True:
+					if timeout:
+						if time.time() > start + timeout:
+							running = False
+							break
 
-					delay = min(0.05, 2*delay, remaining)
+					delay = min(0.05, 2*delay)
 					time.sleep(delay)
 
-					# try again to read from the queue
-					found, res = (True, self.queue.popleft()) if self.queue else (False, None)
+					if self.queue:
+						return self.queue.popleft()
 			except IndexError:
 				pass
 
-		if not found:
-			raise Empty
-
-		return res
+		raise Empty
 
 
 if __name__ == '__main__':
@@ -57,7 +50,10 @@ if __name__ == '__main__':
 	q.put('bar')
 	print q.get(1)
 	print q.get(1)
-	print q.get(1)
-	print q.get(1)
-	q.put('yay')
-	print q.get(1)
+	try:
+		q.put('yay')
+		print q.get(1)
+		print q.get(2)
+	except:
+		print 'forever - print ^C'
+		print q.get()
