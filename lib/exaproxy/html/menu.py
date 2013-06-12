@@ -6,6 +6,8 @@ Created by Thomas Mangin on 2012-02-25.
 Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 """
 
+import time
+
 from .img import png
 from .images import logo
 
@@ -68,12 +70,18 @@ def html (title,header,color='#FF0000',image=png(logo)):
 		}
 	</style>
 	<body leftmargin="0" topmargin="0" rightmargin="0" bgcolor="#FFFFFF" text="#000000" link="#0000FF" alink="#0000FF" vlink="#0000FF">
-		<center>
 			<div style="padding:15px; color: #FFFFFF; background: %s; font-size: 40px; font-family: verdana,sans-serif,arial; font-weight: bold; border-bottom: solid 1px #A0A0A0;">
-				%s
-				%s
+				<center>
+					%s
+					%s
+				</center>
+				<span style="font-size: 10px;align:right;float: left;">
+					%s
+				</span>
+				<span style="font-size: 10px;align:right;float: right;">
+					*time*
+				</span>
 			</div>
-		</center>
 *menu*
 *text*
 <br/>
@@ -82,7 +90,7 @@ def html (title,header,color='#FF0000',image=png(logo)):
 	</body>
 </html>
 
-""" % (title,color,header,image)
+""" % (title,color,header,image,time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()))
 
 _title = 'ExaProxy Monitoring'
 _image = '<a href="http://www.exa-networks.co.uk/" target="exa-networks">%s</a>' % png(logo)
@@ -109,6 +117,6 @@ def Menu (options):
 	_html = html(_title,'','#9999FF',_image).replace('*text*','%s').replace('*menu*',menu)
 
 	def _lambda (page):
-		return _html % page
+		return _html.replace('*time*',time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())) % page
 
 	return _lambda
