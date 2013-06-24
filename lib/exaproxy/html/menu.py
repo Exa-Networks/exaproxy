@@ -6,11 +6,13 @@ Created by Thomas Mangin on 2012-02-25.
 Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 """
 
+import sys
 import time
 
 from .img import png
 from .images import logo
 
+python = '%s %s' % ('Pypy' if 'PyPy' in sys.version else 'Python', sys.version.split()[0])
 
 def html (title,header,color='#FF0000',image=png(logo)):
 	if header: header += '<br/>'
@@ -70,17 +72,23 @@ def html (title,header,color='#FF0000',image=png(logo)):
 		}
 	</style>
 	<body leftmargin="0" topmargin="0" rightmargin="0" bgcolor="#FFFFFF" text="#000000" link="#0000FF" alink="#0000FF" vlink="#0000FF">
-			<div style="padding:15px; color: #FFFFFF; background: %s; font-size: 40px; font-family: verdana,sans-serif,arial; font-weight: bold; border-bottom: solid 1px #A0A0A0;">
+			<div style="padding:15px; color: #FFFFFF; background: %s; font-size: 10px; font-family: verdana,sans-serif,arial; font-weight: bold; border-bottom: solid 1px #A0A0A0;">
 				<center>
 					%s
 					%s
 				</center>
-				<span style="font-size: 10px;align:right;float: left;">
-					%s
-				</span>
-				<span style="font-size: 10px;align:right;float: right;">
-					*time*
-				</span>
+				<br/>
+				<center>
+					<span style="float: left;">
+						%s
+					</span>
+					<span style="font-size: 10px">
+						%s
+					</span>
+					<span style="float: right;">
+						*time*
+					</span>
+				</center>
 			</div>
 *menu*
 *text*
@@ -90,7 +98,7 @@ def html (title,header,color='#FF0000',image=png(logo)):
 	</body>
 </html>
 
-""" % (title,color,header,image,time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()))
+""" % (title,color,header,image,time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()),python)
 
 _title = 'ExaProxy Monitoring'
 _image = '<a href="http://www.exa-networks.co.uk/" target="exa-networks">%s</a>' % png(logo)
