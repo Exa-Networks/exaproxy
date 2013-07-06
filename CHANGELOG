@@ -11,6 +11,7 @@ Version 1.1.2 -  of 2013
  * Backward compatibility: changed the name of the clients. and servers. keys
  * Fix: do not assume that our synchronous reads return all the data we ask for
  * Improvement: add required X-Forwarded-For header
+ * Improvement/Fix: fix scalability issue for large number of open connections ( over 30k )
 
 Version 1.1.1 - 30th of April 2013
  * Fix: new requests on an existing connection would destroy the buffer and cause us to wake up at every loop.
