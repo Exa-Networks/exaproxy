@@ -32,13 +32,13 @@ class EPoller (IPoller):
 	def addReadSocket(self, name, sock):
 		sockets, poller, fdtosock, corked = self.sockets[name]
 		if sock not in sockets:
-			sockets.append(sock)
+			sockets[sock] = True
 			try:
 				fileno = sock.fileno()
 				poller.register(sock, EPOLLIN | EPOLLHUP)
 				res = True
 			except socket.error, e:
-				sockets.remove(sock)
+				sockets.pop(sock)
 				res = False
 				print "ERROR registering socket (%s): %s" % (str(sock), str(e))
 
@@ -62,7 +62,7 @@ class EPoller (IPoller):
 			except socket.error:
 				pass
 
-			sockets.remove(sock)
+			sockets.pop(sock)
 			if sock not in corked:
 				poller.unregister(sock)
 			else:
@@ -93,7 +93,7 @@ class EPoller (IPoller):
 					poller.register(sock, EPOLLIN | EPOLLHUP)
 					res = True
 				except socket.error, e:
-					sockets.remove(sock)
+					sockets.pop(sock)
 					res = False
 					print "ERROR reregistering socket (%s): %s" % (str(sock), str(e))
 
@@ -111,7 +111,7 @@ class EPoller (IPoller):
 	def setupRead(self, name):
 		if name not in self.sockets:
 			poller = self.epoll()
-			sockets = []
+			sockets = {}
 			fdtosock = {}
 			corked = {}
 			self.pollers[poller.fileno()] = name, poller, sockets, fdtosock
@@ -120,7 +120,7 @@ class EPoller (IPoller):
 			self.master.register(poller, EPOLLIN)
 
 	def clearRead(self, name):
-		sockets, poller, fdtosock, corked = self.sockets.pop(name, ([], None, None, None))
+		sockets, poller, fdtosock, corked = self.sockets.pop(name, ({}, None, None, None))
 		if sockets:
 			self.master.unregister(poller)
 			self.pollers.pop(poller.fileno(), None)
@@ -131,13 +131,13 @@ class EPoller (IPoller):
 	def addWriteSocket(self, name, sock):
 		sockets, poller, fdtosock, corked = self.sockets[name]
 		if sock not in sockets:
-			sockets.append(sock)
+			sockets[sock] = True
 			try:
 				fileno = sock.fileno()
 				poller.register(sock, EPOLLOUT | EPOLLHUP)
 				res = True
 			except socket.error, e:
-				sockets.remove(sock)
+				sockets.pop(sock)
 				res = False
 				print "ERROR registering socket (%s): %s" % (str(sock), str(e))
 
@@ -160,7 +160,7 @@ class EPoller (IPoller):
 			except socket.error:
 				pass
 
-			sockets.remove(sock)
+			sockets.pop(sock)
 			if sock not in corked:
 				poller.unregister(sock)
 			else:
@@ -191,7 +191,7 @@ class EPoller (IPoller):
 					poller.register(sock, EPOLLOUT | EPOLLHUP)
 					res = True
 				except socket.error, e:
-					sockets.remove(sock)
+					sockets.pop(sock)
 					res = False
 					print "ERROR reregistering socket (%s): %s" % (str(sock), str(e))
 
@@ -209,7 +209,7 @@ class EPoller (IPoller):
 	def setupWrite(self, name):
 		if name not in self.sockets:
 			poller = self.epoll()
-			sockets = []
+			sockets = {}
 			fdtosock = {}
 			corked = {}
 			self.pollers[poller.fileno()] = name, poller, sockets, fdtosock
@@ -218,7 +218,7 @@ class EPoller (IPoller):
 			self.master.register(poller, EPOLLIN)
 
 	def clearWrite(self, name):
-		sockets, poller, fdtosock, corked = self.sockets.pop(name, ([], None, None, None))
+		sockets, poller, fdtosock, corked = self.sockets.pop(name, ({}, None, None, None))
 		if sockets:
 			self.master.unregister(poller)
 			self.pollers.pop(poller.fileno(), None)
