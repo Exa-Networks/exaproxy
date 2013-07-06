@@ -10,7 +10,7 @@ from exaproxy.util.log.logger import Logger
 from exaproxy.util.cache import TimeCache
 from .worker import Client
 
-from exaproxy.htmuttp.proxy import ProxyProtocol
+from exaproxy.http.proxy import ProxyProtocol
 
 class ClientManager (object):
 	unproxy = ProxyProtocol().parseRequest
