@@ -2,11 +2,10 @@ BUG Fixes:
  - fix all XXX:
 
 Reliablity:
- - if a remote end / client does not respect connection-close, use time to kill it anyway
  - look at tox: http://tox.testrun.org/latest/
  - implement the timeout of client sockets.
  - warning when we are reaching 90% connection limit
- - serve the JS from the proxy should the proxy have no net access ( !!! .... )
+ - do not rely on remote Google JS code should the proxy not have no net access ( !!! .... )
 
 RFC Compliance
  - consider adding a VIA header to the answer from the server (not done to save CPU)
@@ -24,9 +23,10 @@ Performance
  - use ctypes and the linux splice system call for better performance
  - remove a double dict lookup in the main loop
  - look at python Buffer and Array API
- - make sure we do not use string concatenation (perhaps not necessary with python 2.7 ?)
+ - look at python 2.7 performance for list.join vs string appending
  - investigate regex for header parsing performance
  - investigate why pypy takes more CPU than cPython in some cases
+ - split the worker forking to another process as the process can use several GB of memory when it happens
 
 Cleanup
  - refactor the communication over pipe to have the serialisation/deserialisation in one place
