@@ -40,7 +40,7 @@ def listen (ip,port,timeout=None,backlog=0):
 			try:
 				s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 				s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-			except AttributeError:
+			except (AttributeError, socket.error):
 				pass
 			s.bind((ip,port,0,0))
 		elif isipv4(ip):
@@ -48,7 +48,7 @@ def listen (ip,port,timeout=None,backlog=0):
 			try:
 				s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 				s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-			except AttributeError:
+			except (AttributeError, socket.error):
 				pass
 			s.bind((ip,port))
 		else:
