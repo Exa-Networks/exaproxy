@@ -139,6 +139,7 @@ class value (object):
 		global _application
 		paths = value.root('etc/%s/dns/resolv.conf' % _application)
 		paths.append(os.path.normpath(os.path.join('/','etc','resolv.conf')))
+		paths.append(os.path.normpath(os.path.join('/','var','run','resolv.conf')))
 		for resolver in paths:
 			if os.path.exists(resolver):
 				with open(resolver) as r:
