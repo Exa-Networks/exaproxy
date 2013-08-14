@@ -1,6 +1,11 @@
 # encoding: utf-8
 
-from collections import OrderedDict
+try:
+	from collections import OrderedDict
+except ImportError:
+	# support installable ordereddict module in older python versions
+	from ordereddict import OrderedDict
+
 from time import time
 
 class TimeCache (dict):
