@@ -231,6 +231,8 @@ class ClientManager (object):
 		if type(remaining) == type(''):
 			if 'chunked' in remaining:
 				mode = 'chunked'
+			else:
+				mode = 'passthrough'
 		elif remaining > 0:
 			mode = 'transfer'
 			nb_to_read = remaining
