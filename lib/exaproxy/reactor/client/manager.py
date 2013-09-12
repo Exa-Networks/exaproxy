@@ -79,7 +79,7 @@ class ClientManager (object):
 			self.log.error('trying to read headers from a client that does not exist %s' % sock)
 			name, peer, request, content, source = None, None, None, None, None
 
-		if request and self.proxied is True:
+		if request and self.proxied is True and source == 'proxy':
 			client_ip, client_request = self.unproxy(request)
 
 			if client_ip and client_request:
