@@ -14,9 +14,7 @@ from distutils.core import setup
 from distutils.util import get_platform
 
 try:
-	f = open('.hgtags','r')
-	version = f.readlines()[-1].split(' ')[-1].strip()
-	f.close()
+	version = os.popen('git describe --tags').read().split('-')[0].strip()
 except Exception,e:
 	print "can not find the hgtags file in the repository"
 	sys.exit(1)
