@@ -244,7 +244,7 @@ class EPoller (IPoller):
 
 			response[name] = [fdtosock[sock_fd] for (sock_fd, sock_events) in events]
 
-		for fd, name in self.errors.itervalues():
+		for fd, name in self.errors.iteritems():
 			response.setdefault(name, []).append(fd)
 
 #			for sock_fd, sock_events in events:
