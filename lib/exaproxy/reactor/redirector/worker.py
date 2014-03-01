@@ -539,6 +539,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 				if not self.enabled:
 					self.respond(Respond.connect(client_id, message.host, message.port, http))
+					self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
 					continue
 
 				(operation, destination), response = self.connect(client_id, *(self.classify(message,header,tainted)+(peer,header,source)))
