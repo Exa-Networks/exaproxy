@@ -12,9 +12,10 @@ from exaproxy.util.log.logger import Logger
 
 
 class Reactor(object):
-	def __init__(self, configuration, web, proxy, decider, content, client, resolver, logger, usage, poller):
+	def __init__(self, configuration, web, proxy, icap, decider, content, client, resolver, logger, usage, poller):
 		self.web = web            # Manage listening web sockets
 		self.proxy = proxy        # Manage listening proxy sockets
+		self.icap = icap          # Manage listening icap sockets
 		self.decider = decider    # Task manager for handling child decider processes
 		self.content = content    # The Content Download manager
 		self.client = client      # Currently open client connections
@@ -59,36 +60,43 @@ class Reactor(object):
 			# handle new connections before anything else
 			for sock in events.get('read_proxy',[]):
 				for s, peer in self.proxy.accept(sock):
-					self.client.newConnection(s, peer, 'proxy')
+					self.client.httpConnection(s, peer, 'proxy')
 
+			# handle new connections before anything else
+			for sock in events.get('read_icap',[]):
+				for s, peer in self.icap.accept(sock):
+					self.client.icapConnection(s, peer, 'icap')
 
 			# handle new connections before anything else
 			for sock in events.get('read_web',[]):
 				for s, peer in self.web.accept(sock):
-					self.client.newConnection(s, peer, 'web')
-
+					self.client.httpConnection(s, peer, 'web')
 
 			# incoming opening requests from clients
 			for client in events.get('opening_client',[]):
-				client_id, peer, request, data, source = self.client.readRequest(client)
+				client_id, peer, request, subrequest, data, source = self.client.readRequest(client)
 
 				if request:
 					# we have a new request - decide what to do with it
-					self.decider.request(client_id, peer, request, source)
+					self.decider.request(client_id, peer, request, subrequest, source)
 
 				elif request is None and client_id is not None:
 					if source == 'proxy':
 						self.proxy.notifyClose(client)
+
+					elif source == 'icap':
+						self.icap.notifyClose(client)
+
 					elif source == 'web':
 						self.web.notifyClose(client)
 
 
 			# incoming data from clients
 			for client in events.get('read_client',[]):
-				client_id, peer, request, data, source = self.client.readDataBySocket(client)
+				client_id, peer, request, subrequest, data, source = self.client.readDataBySocket(client)
 				if request:
 					# we have a new request - decide what to do with it
-					self.decider.request(client_id, peer, request, 'proxy')
+					self.decider.request(client_id, peer, request, subrequest, source)
 
 				if data:
 					# we read something from the client so pass it on to the remote server

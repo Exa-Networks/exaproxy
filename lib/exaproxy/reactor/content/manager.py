@@ -185,6 +185,13 @@ class ContentManager(object):
 				content = ('close', args)
 				length = 0
 
+			elif command == 'icap':
+				downloader = None
+				newdownloader = False
+				request = ''
+				content = ('stream', args)
+				length = 0
+
 			elif command == 'file':
 				try:
 					code, reason = args.split('\0', 1)
@@ -217,6 +224,13 @@ class ContentManager(object):
 				request = ''
 				# NOTE: we are always returning an HTTP/1.1 response
 				content = ('close', http('200', self.page.html(path)))
+				length = 0
+
+			elif command == 'close':
+				downloader = None
+				newdownloader = False
+				request = ''
+				content = ('close', None)
 				length = 0
 
 			else:

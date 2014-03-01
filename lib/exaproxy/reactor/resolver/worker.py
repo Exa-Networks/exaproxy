@@ -176,12 +176,14 @@ class TCPClient (DNSClient):
 				yield data
 
 			except socket.error, e:
+				buffer_s = ''
 				if e.errno in errno_block:
 					yield ''
 					continue
 
-			if not buffer_s:
-				break
+			else:
+				if not buffer_s:
+					break
 
 		yield None
 

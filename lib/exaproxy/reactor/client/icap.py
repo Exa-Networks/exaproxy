@@ -18,7 +18,7 @@ def ishex (s):
 def count_quotes (data):
 	return data.count('"') - data.count('\\"')
 
-class Client (object):
+class ICAPClient (object):
 	eor = ['\r\n\r\n', '\n\n']
 
 	def __init__(self, name, sock, peer, logger, max_buffer):
@@ -115,13 +115,14 @@ class Client (object):
 		processing = False
 
 		# mode can be one of : request, chunk, extension, relay
+		# icap : we are reading the icap headers
 		# request : we are reading the request (read all you can until a separator)
 		# extra-headers : we are reading data until a separator
 		# chunked : we are reading chunk-encoded darta
 		# transfer : we are reading as much as requested in remaining
 		# passthrough : read as much as can to be relayed
 
-		mode = 'request'
+		mode = 'icap'
 
 		while True:
 			try:
@@ -136,7 +137,7 @@ class Client (object):
 						processing = False
 
 					if mode == 'passthrough':
-						yield '', r_buffer
+						yield '', '', r_buffer
 						r_buffer = ''
 						continue
 
@@ -147,7 +148,7 @@ class Client (object):
 
 							# do not yield yet if we are chunked since the end of the chunk may
 							# very well be in the rest of the data we just read
-							_, extra_size = yield '', r_buffer[:length]
+							_, extra_size = yield '', '', r_buffer[:length]
 
 							r_buffer = r_buffer[length:]
 							nb_to_send = nb_to_send - length + extra_size
@@ -155,7 +156,7 @@ class Client (object):
 							# we still have data to read before we can send more.
 							if nb_to_send != 0:
 								continue
-							mode = 'request'
+							mode = 'icap'
 
 						if mode == 'chunked':
 							r_len = len(r_buffer)
@@ -164,7 +165,7 @@ class Client (object):
 							# do not yield yet if we are chunked since the end of the chunk may
 							# very well be in the rest of the data we just read
 							if r_len <= nb_to_send:
-								_, extra_size = yield '', r_buffer[:length]
+								_, extra_size = yield '', '', r_buffer[:length]
 
 								r_buffer = r_buffer[length:]
 								nb_to_send = nb_to_send - length + extra_size
@@ -201,7 +202,7 @@ class Client (object):
 							continue
 
 						if not r_buffer[nb_to_send:]:
-							yield '',''
+							yield '','',''
 							continue
 
 						mode = 'extra-headers'
@@ -215,7 +216,7 @@ class Client (object):
 							# most likely could not find an header
 							break
 
-						yield '', related
+						yield '', '', related
 
 						if not related:
 							continue
@@ -223,12 +224,11 @@ class Client (object):
 						seek = 0
 						mode = 'transfer'
 
-
-					if mode != 'request':
+					if mode not in ('icap', 'request'):
 						self.log.error('The programmers are monkeys - please give them bananas ..')
 						self.log.error('the mode was spelled : [%s]' % mode)
 						self.log.error('.. if it works, we are lucky - but it may work.')
-						mode = 'request'
+						mode = 'icap'
 
 					# ignore EOL
 					r_buffer = r_buffer.lstrip('\r\n')
@@ -240,14 +240,21 @@ class Client (object):
 						# most likely could not find an header
 						break
 
+					if request and mode == 'icap':
+						icap_request = request
+						request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, 0)
+						mode = 'request'
+
 					if not request:
-						yield '', ''
+						yield '', '', ''
 						continue
+
 					seek = 0
 					processing = True
 
 					# nb_to_send is how much we expect to need to get the rest of the request
-					mode, nb_to_send = yield request, ''
+					mode, nb_to_send = yield icap_request, request, ''
+					icap_request = ''
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
@@ -255,11 +262,11 @@ class Client (object):
 
 			except socket.error, e:
 				if e.args[0] in errno_block:
-					yield '', ''
+					yield '', '', ''
 				else:
 					break
 
-		yield None,None
+		yield None,None,None
 
 
 	def setPeer (self, peer):
@@ -268,12 +275,13 @@ class Client (object):
 		self.peer = peer
 
 	def readData(self):
-		request,content = self.reader.send(('transfer',0))
-		return self.name, self.peer, request, content
+		icap_header, http_header, content = self.reader.send(('transfer',0))
+		return self.name, self.peer, icap_header, http_header, content
 
 	def readRelated(self, mode, remaining):
-		request, content = self.reader.send((mode,remaining))
-		return self.name, self.peer, request, content
+		mode = mode or 'icap'
+		icap_header, http_header, content = self.reader.send((mode,remaining))
+		return self.name, self.peer, icap_header, http_header, content
 
 	def _write(self, sock):
 		"""Coroutine managing data sent to the client"""

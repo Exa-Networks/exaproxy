@@ -19,7 +19,7 @@ class RedirectorManager (object):
 		self.configuration = configuration
 
 		self.low = configuration.redirector.minimum       # minimum number of workers at all time
-		self.high = configuration.redirector.maximum      # maximum numbe of workers at all time
+		self.high = configuration.redirector.maximum      # maximum number of workers at all time
 		self.program = configuration.redirector.program   # what program speaks the squid redirector API
 
 		self.nextid = 1                   # incremental number to make the name of the next worker
@@ -90,7 +90,7 @@ class RedirectorManager (object):
 			for wid in set(self.worker):
 				self.reap(wid)
 			for thread in threads:
-				self.request(None, None, None, 'nop')
+				self.request(None, None, None, None, 'nop')
 			for thread in threads:
 				thread.destroyProcess()
 				thread.join()
@@ -150,8 +150,8 @@ class RedirectorManager (object):
 			if worker:
 				self.reap(worker.wid)
 
-	def request(self, client_id, peer, request, source):
-		return self.queue.put((client_id,peer,request,source,False))
+	def request(self, client_id, peer, request, subrequest, source):
+		return self.queue.put((client_id,peer,request,subrequest,source,False))
 
 	def getDecision(self, box):
 		# NOTE: reads may block if we send badly formatted data
@@ -202,8 +202,8 @@ class RedirectorManager (object):
 			decision = None
 
 		if command == 'requeue':
-			_client_id, _peer, _source, _header = response.split('\0', 3)
-			self.queue.put((_client_id,_peer,_header,_source,True))
+			_client_id, _command, _peer, _source, _header, _subheader = response.split('\0', 5)
+			self.queue.put((_client_id,_peer,_header,_subheader,_source,True))
 
 			client_id = None
 			command = None

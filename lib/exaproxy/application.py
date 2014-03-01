@@ -152,6 +152,16 @@ def main ():
 			'proxied'         : (value.boolean,string.lower,'false', 'request is encapsulated with haproxy proxy protocol'),
 			'header-size'     : (value.integer,string.nop,'65536',   'maximum size in bytes for HTTP headers (0 : unlimited)'),
 		},
+		'icap' : {
+			'enable'          : (value.boolean,string.lower,'true',             'enable the icap server'),
+			'host'            : (value.unquote,string.quote,'127.0.0.1',        'the address the icap server listens on'),
+			'ipv6'            : (value.unquote,string.quote,'::',               'the ipv6 address the icap server listens on'),
+			'port'            : (value.integer,string.nop,'1344',               'port the icap server listens on'),
+			'idle-connect'    : (value.integer,string.nop,'300',     'time before we abandon new inactive icap client connections (0: unlimited)'),
+			'connections'     : (value.integer,string.nop,'32768',   'the maximum number of icap connections'),
+			'proxied'         : (value.boolean,string.lower,'false', 'request is encapsulated with haproxy proxy protocol'),
+			'header-size'     : (value.integer,string.nop,'65536',   'maximum size in bytes for ICAP headers (0 : unlimited)'),
+		},
 		'web' : {
 			'enable'      : (value.boolean,string.lower,'true',             'enable the built-in webserver'),
 			'host'        : (value.unquote,string.quote,'127.0.0.1',        'the address the web server listens on'),

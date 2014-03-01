@@ -25,6 +25,7 @@ import fcntl
 from exaproxy.http.message import HTTP
 from exaproxy.http.request import Request
 from exaproxy.http.response import http
+from exaproxy.icap.parser import ICAPParser
 
 from exaproxy.util.log.logger import Logger
 from exaproxy.util.log.logger import UsageLogger
@@ -37,6 +38,10 @@ class ChildError (Exception):
 
 
 class Respond (object):
+	@staticmethod
+	def icap (client_id, response):
+		return '\0'.join((client_id, 'icap', response))
+
 	@staticmethod
 	def download (client_id, ip, port, upgrade, length, message):
 		return '\0'.join((client_id, 'download', ip, str(port), upgrade, str(length), str(message)))
@@ -70,19 +75,25 @@ class Respond (object):
 		return '\0'.join((wid, 'stats', timestamp, stats))
 
 	@staticmethod
-	def requeue (client_id, peer, header, source):
+	def requeue (client_id, peer, header, subheader, source):
 		# header and source are flipped to make it easier to split the values
-		return '\0'.join((client_id, peer, source, header))
+		return '\0'.join((client_id, peer, source, header, subheader))
 
 	@staticmethod
 	def hangup (wid):
 		return '\0'.join(('', 'hangup', wid))
 
+	@staticmethod
+	def close (client_id):
+		return '\0'.join((client_id, 'close', ''))
+
 class Redirector (Thread):
 	# TODO : if the program is a function, fork and run :)
+	ICAPParser = ICAPParser
 
 	def __init__ (self, configuration, name, request_box, program):
 		self.configuration = configuration
+		self.icap_parser = self.ICAPParser(configuration)
 		self.enabled = configuration.redirector.enable
 		self.protocol = configuration.redirector.protocol
 		self._transparent = configuration.http.transparent
@@ -92,19 +103,19 @@ class Redirector (Thread):
 		self.universal = True if self.protocol == 'url' else False
 		self.icap = self.protocol[len('icap://'):].split('/')[0] if self.protocol.startswith('icap://') else ''
 
-		r, w = os.pipe()                                # pipe for communication with the main thread
-		self.response_box_write = os.fdopen(w,'w',0)    # results are written here
-		self.response_box_read = os.fdopen(r,'r',0)     # read from the main thread
+		r, w = os.pipe()								# pipe for communication with the main thread
+		self.response_box_write = os.fdopen(w,'w',0)	# results are written here
+		self.response_box_read = os.fdopen(r,'r',0)	 # read from the main thread
 
-		self.wid = name                               # a unique name
-		self.creation = time.time()                   # when the thread was created
-	#	self.last_worked = self.creation              # when the thread last picked a task
-		self.request_box = request_box                # queue with HTTP headers to process
+		self.wid = name							   # a unique name
+		self.creation = time.time()				   # when the thread was created
+	#	self.last_worked = self.creation			  # when the thread last picked a task
+		self.request_box = request_box				# queue with HTTP headers to process
 
-		self.program = program                        # the squid redirector program to fork
-		self.running = True                           # the thread is active
+		self.program = program						# the squid redirector program to fork
+		self.running = True						   # the thread is active
 
-		self.stats_timestamp = None                   # time of the most recent outstanding request to generate stats
+		self.stats_timestamp = None				   # time of the most recent outstanding request to generate stats
 
 		self._proxy = 'ExaProxy-%s-id-%d' % (configuration.proxy.version,os.getpid())
 
@@ -115,7 +126,7 @@ class Redirector (Thread):
 
 
 		# Do not move, we need the forking AFTER the setup
-		self.process = self._createProcess()          # the forked program to handle classification
+		self.process = self._createProcess()		  # the forked program to handle classification
 		Thread.__init__(self)
 
 	def _createProcess (self):
@@ -391,6 +402,59 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		return message, 'file', 'internal_error.html', ''
 
+	def classifyICAP (self, headers):
+		if not self.process:
+			self.log.error('No more process to classify the HTTP request received')
+			return None
+
+		try:
+			self.process.stdin.write(headers)
+			response = self.process.stdout.readline()
+			code = (response.rstrip().split()+[None])[1] if response else None
+			length = -1
+
+			while True:
+				line = self.process.stdout.readline()
+				response += line
+
+				if not line:
+					response = None
+					break
+
+				elif not line.rstrip():
+					break
+
+				if line.startswith('Encapsulated: res-hdr=0, null-body='):
+					length = int(line.split('=')[-1])
+
+			read_bytes = 0
+			bytes_to_read = max(0, length)
+
+			while read_bytes < bytes_to_read:
+				headers_s = self.process.stdout.read(bytes_to_read-read_bytes)
+				response += headers_s
+				read_bytes += len(headers_s)
+
+			if code is None:
+				response = None
+
+			# 304 (not modified)
+			elif code != '304' and length < 0:
+				response = None
+
+		except IOError:
+			response = None
+
+		try:
+			child_stderr = self.process.stderr.read(4096)
+		except Exception, e:
+			child_stderr = ''
+
+		if child_stderr:
+			response = None
+
+		return response
+
 	def respond(self, response):
 		self.response_box_write.write(str(len(response)) + ':' + response + ',')
 		self.response_box_write.flush()
@@ -413,7 +477,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			return ('INTERCEPT', data), Respond.download(client_id, data, message.port, '', message.content_length, self.transparent(message, peer))
 
 		if classification == 'requeue':
-			return (None, None), Respond.requeue(client_id, peer, header, source)
+			return (None, None), Respond.requeue(client_id, peer, header, '', source)
 
 		if classification == 'http':
 			return ('LOCAL', ''), Respond.http(client_id, data)
@@ -425,7 +489,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			return ('PERMIT', message.host), Respond.connect(client_id, message.host, message.port, message)
 
 		if classification == 'requeue':
-			return (None, None), Respond.requeue(client_id, peer, header, source)
+			return (None, None), Respond.requeue(client_id, peer, header, '', source)
 
 		if classification == 'redirect':
 			return ('REDIRECT', data), Respond.redirect(client_id, data)
@@ -443,162 +507,259 @@ Encapsulated: req-hdr=0, null-body=%d
 		return ('PERMIT', message.host), Respond.connect(client_id, message.host, message.port, message)
 
 
+
+	def createRequest (self, peer, request):
+		icap_request = """\
+REQMOD %s ICAP/1.0
+Host: %s
+Pragma: client=%s
+Pragma: host=%s""" % (
+			self.protocol, self.icap,
+			peer, request.http_request.host,
+			)
+
+		username = request.headers.get('x-authenticated-user', '').strip()
+		groups = request.headers.get('x-authenticated-groups', '').strip()
+		ip_addr = request.headers.get('x-client-ip', '').strip()
+		customer = request.headers.get('x-customer-name', '').strip()
+
+		if ip_addr:
+			icap_request += """
+X-Client-IP: %s""" % ip_addr
+
+		if username:
+			icap_request += """
+X-Authenticated-User: %s""" % username
+
+		if groups:
+			icap_request += """
+X-Authenticated-Groups: %s""" % groups
+
+		if customer:
+			icap_request += """
+X-Customer-Name: %s""" % customer
+
+		return icap_request + """
+Encapsulated: req-hdr=0, null-body=%d
+
+%s""" % (len(request.http_header), request.http_header)
+
+
+	def parseHTTP (self, peer, http_header):
+		message = HTTP(self.configuration, http_header, peer)
+
+		if not message.parse(self._transparent):
+			try:
+				version = message.request.version
+			except AttributeError:
+				version = '1.0'
+
+			if message.reply_string:
+				response = Respond.http(client_id, http(str(message.reply_code), '%s<br/>\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % (message.reply_string,header.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n')),version))
+			else:
+				response = Respond.http(client_id, http(str(message.reply_code),'',version))
+
+			message = None
+
+		elif message.reply_code:
+			response = Respond.http(client_id, http(str(message.reply_code), self.reply_string, message.request.version))
+			message = None
+
+		else:
+			response = None
+
+		return message, response
+
+	def doHTTPRequest (self, client_id, peer, message, http_header, source, tainted):
+		method = message.request.method
+
+		if self.enabled:
+			classification = self.classify(message, http_header, tainted)
+			(operation, destination), response = self.request(client_id, *(classification + (peer, http_header, source)))
+
+			if operation is not None:
+				self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
+
+		else:
+			response = Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message, peer))
+			self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
+
+		return response
+
+	def doHTTPConnect (self, client_id, peer, message):
+		if not self.configuration.http.allow_connect or message.port not in self.configuration.security.connect:
+			# NOTE: we are always returning an HTTP/1.1 response
+			response = Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n'))
+			self.usage.logRequest(client_id, peer, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
+
+		else:
+			response = None
+
+		return response
+
+	def doHTTPOptions (self, client, peer, message):
+		# NOTE: we are always returning an HTTP/1.1 response
+		method = message.request.method
+
+		if message.headers.get('max-forwards',''):
+			max_forwards = message.headers.get('max-forwards','Max-Forwards: -1')[-1].split(':')[-1].strip()
+			max_forward = int(max_forwards) if max_forwards.isdigit() else None
+
+			if max_forward is None:
+				response = Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n'))
+				self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
+
+			elif max_forward == 0:
+				response = Respond.http(client_id, http('200', ''))
+				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', method)
+
+			else:
+				response = None
+
+			message.headers.set('max-forwards','Max-Forwards: %d' % (max_forward-1))
+
+		if response is None:
+			response = Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message, peer))
+
+		return response
+
+	def doHTTP (self, client_id, peer, http_header, source, tainted):
+		message, response = self.parseHTTP(peer, http_header)
+
+		if response is None and source == 'web':
+			response = Respond.monitor(client_id, message.request.path)
+			message = None
+
+		if message is not None:
+			method = message.request.method
+		
+			if method in ('GET', 'PUT', 'POST','HEAD','DELETE','PATCH'):
+				response = self.doHTTPRequest(client_id, peer, message, http_header, source, tainted)
+
+			elif method == 'CONNECT':
+				response = self.doHTTPConnect(client_id, peer, message)
+				response = response or self.doHTTPRequest(client_id, peer, message, http_header, source, tainted)
+
+			elif method in ('OPTIONS','TRACE'):
+				response = self.doHTTPOptions(client_id, peer, message)
+
+			elif method in (
+			'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE',
+			'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
+				response = selfRespond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message, peer))
+				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', method)
+
+			elif message.request in self.configuration.http.extensions:
+				response = Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message, peer))
+				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.request)
+
+			else:
+				# NOTE: we are always returning an HTTP/1.1 respons
+				response = Respond.http(client_id, http('405', '')) # METHOD NOT ALLOWED
+				self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
+
+		return response
+
+	def parseICAP (self, peer, icap_header, http_header):
+		request = self.icap_parser.parseRequest(peer, icap_header, http_header)
+		if request and not request.http_request.request:
+			request = None
+
+		return request
+
+	def doICAP (self, client_id, peer, icap_header, http_header, tainted):
+		received_request = self.parseICAP(peer, icap_header, http_header)
+		icap_request = self.createRequest(peer, received_request) if received_request else None
+		icap_response = self.classifyICAP(icap_request) if icap_request else None
+
+		if icap_response:
+			response = Respond.icap(client_id, icap_response)
+
+		elif icap_request:
+			self.stop()
+
+			if not tainted:
+				response = Respond.requeue(client_id, peer, icap_header, http_header, 'icap')
+
+		else:
+			response = None
+
+		return response
+
+	def checkChild (self):
+		if self.enabled:
+			ok = bool(self.process) and self.process.poll() is None
+		else:
+			ok = True
+
+		return ok
+
+	def doStats (self):
+		# This code does nothing ATM, as self.stats_timestamp is always null
+		stats_timestamp = self.stats_timestamp
+		if stats_timestamp:
+			self.stats_timestamp = None if stats_timestamp == self.stats_timestamp else self.stats_timestamp
+
+	def receiveMessage (self):
+		try:
+			# The timeout is really caused by the SIGALARM sent on the main thread every second
+			# BUT ONLY IF the timeout is present in this call
+			data = self.request_box.get(timeout=2)
+		except Empty:
+			data = None
+		except ValueError:
+			self.log.error('Problem reading from request box')
+			data = None
+
+		try:
+			if data is not None:
+				client_id, peer, icap_header, http_header, source, tainted = data
+			else:
+				client_id, peer, icap_header, http_header, source, tainted = None, None, None, None, None, None
+
+		except TypeError:
+			self.log.alert('Received invalid message: %s' % data)
+			client_id, peer, icap_header, http_header, source, tainted = None, None, None, None, None, None
+
+		return client_id, peer, icap_header, http_header, source, tainted
+
 	def run (self):
 		while self.running:
-			try:
-				# The timeout is really caused by the SIGALARM sent on the main thread every second
-				# BUT ONLY IF the timeout is present in this call
-				data = self.request_box.get(timeout=2)
-			except Empty:
-				if self.enabled:
-					if not self.process or self.process.poll() is not None:
-						if self.running:
-							self.log.error('stopping the worker as the forked process exited !')
-						self.running = False
-				continue
-			except ValueError:
-				self.log.error('Problem reading from request_box')
+			message = self.receiveMessage()
+			client_id, peer, header, subheader, source, tainted = message
+			response = None
+
+			if client_id is not None:
+				self.doStats()
+			else:
 				continue
 
-			try:
-				client_id, peer, header, source, tainted = data
-			except TypeError:
-				self.log.alert('Received invalid message: %s' % data)
-				continue
-
-			if self.enabled:
-				if not self.process or self.process.poll() is not None:
-					if self.running:
-						self.log.error('cleanly stopping the worker, as the forked process died on us !')
-					self.running = False
-					if source != 'nop':
-						self.respond(Respond.requeue(client_id, peer, header, source))
-					break
+			if not self.checkChild():
+				response = Respond.requeue(client_id, peer, icap_header, http_header, source) if source != 'nop' else None
+				if self.running:
+					self.log.warning('Cleanly stopping worker thread after the forked process exited')
+				self.running = False
+				break
 
 			if source == 'nop':
-				continue  # /break
+				continue
 
 			if not self.running:
-				self.log.warning('Consumed a message before we knew we should stop.')
+				self.log.warning('Consumed a message before we knew we should stop. Oh well.')
 
-			# This code does nothing ATM, as self.stats_timestamp is always null
-			stats_timestamp = self.stats_timestamp
-			if stats_timestamp:
-				# Is this actually atomic as I am guessing?
-				# There's a race condition here if not. We're unlikely to hit it though, unless
-				# the classifier can take a long time
-				self.stats_timestamp = None if stats_timestamp == self.stats_timestamp else self.stats_timestamp
-
-				# we still have work to do after this so don't continue
-				stats = self._stats()
-				self.respond(Respond.stats(self.wid, stats))
-
-			message = HTTP(self.configuration,header,peer)
-			if not message.parse(self._transparent):
-				try:
-					version = message.request.version
-				except AttributeError:
-					version = '1.0'
-				if message.reply_string:
-					self.respond(Respond.http(client_id, http(str(message.reply_code), '%s<br/>\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % (message.reply_string,header.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n')),version)))
+			if response is None:
+				if source == 'icap':
+					response = self.doICAP(client_id, peer, header, subheader, tainted)
 				else:
-					self.respond(Respond.http(client_id, http(str(message.reply_code),'',version)))
-				continue
-			if message.reply_code:
-				self.respond(Respond.http(client_id, http(str(message.reply_code), self.reply_string, message.request.version)))
-				continue
+					response = self.doHTTP(client_id, peer, header, source, tainted)
 
-			method = message.request.method
+			if response is None:
+				response = Respond.close(client_id)
 
-			if source == 'web':
-				self.respond(Respond.monitor(client_id, message.request.path))
-				continue
-
-			# classify and return the filtered page
-			if method in ('GET', 'PUT', 'POST','HEAD','DELETE','PATCH'):
-				if not self.enabled:
-					self.respond(Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message, peer)))
-					self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
-					continue
-
-				(operation, destination), response = self.request(client_id, *(self.classify (message,header,tainted) + (peer, header, source)))
-				self.respond(response)
-				if operation is not None:
-					self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
-				continue
-
-
-			# someone want to use us as https prox, peery
-			if method == 'CONNECT':
-				# we do allow connect
-				if not self.configuration.http.allow_connect or message.port not in self.configuration.security.connect:
-					# NOTE: we are always returning an HTTP/1.1 response
-					self.respond(Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n')))
-					self.usage.logRequest(client_id, peer, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
-					pass
-
-				if not self.enabled:
-					self.respond(Respond.connect(client_id, message.host, message.port, http))
-					self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
-					continue
-
-				(operation, destination), response = self.connect(client_id, *(self.classify(message,header,tainted)+(peer,header,source)))
-				self.respond(response)
-				if operation is not None:
-					self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
-				continue
-
-			if method in ('OPTIONS','TRACE'):
-				if message.headers.get('max-forwards',''):
-					max_forwards = message.headers.get('max-forwards','Max-Forwards: -1')[-1].split(':')[-1].strip()
-					if not max_forwards.isdigit():
-						# NOTE: we are always returning an HTTP/1.1 response
-						self.respond(Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n')))
-						self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
-						continue
-					max_forward = int(max_forwards)
-					if max_forward < 0 :
-						# NOTE: we are always returning an HTTP/1.1 response
-						self.respond(Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n')))
-						self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
-						continue
-					if max_forward == 0:
-						if method == 'OPTIONS':
-							# NOTE: we are always returning an HTTP/1.1 response
-							self.respond(Respond.http(client_id, http('200', '')))
-							self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', 'OPTIONS')
-							continue
-						if method == 'TRACE':
-							# NOTE: we are always returning an HTTP/1.1 response
-							self.respond(Respond.http(client_id, http('200', header)))
-							self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', 'TRACE')
-							continue
-						raise RuntimeError('should never reach here')
-					message.headers.set('max-forwards','Max-Forwards: %d' % (max_forward-1))
-				# Carefull, in the case of OPTIONS message.host is NOT message.headerhost
-				self.respond(Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message, peer)))
-				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.headerhost)
-				continue
-
-			# WEBDAV
-			if method in (
-			  'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE',
-			  'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
-				self.respond(Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message, peer)))
-				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', method)
-				continue
-
-			if message.request in self.configuration.http.extensions:
-				self.respond(Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message, peer)))
-				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.request)
-				continue
-
-			# NOTE: we are always returning an HTTP/1.1 response
-			self.respond(Respond.http(client_id, http('405', '')))  # METHOD NOT ALLOWED
-			self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
-			continue
+			self.respond(response)
 
 		self.respond(Respond.hangup(self.wid))
+
 
 	def shutdown(self):
 		try:
