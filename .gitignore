@@ -1,5 +1,5 @@
-syntax: glob
 *~
 *pyc
 *.swp
 *.orig
+run
