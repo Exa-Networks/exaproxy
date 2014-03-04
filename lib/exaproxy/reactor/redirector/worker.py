@@ -626,6 +626,8 @@ Encapsulated: req-hdr=0, null-body=%d
 			else:
 				response = None
 
+        else:
+            response = None
 			message.headers.set('max-forwards','Max-Forwards: %d' % (max_forward-1))
 
 		if response is None:
