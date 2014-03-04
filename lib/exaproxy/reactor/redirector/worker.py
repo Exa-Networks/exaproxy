@@ -580,6 +580,11 @@ Encapsulated: req-hdr=0, null-body=%d
 			if operation is not None:
 				self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
 
+		elif method == 'CONNECT':
+			response = Respond.connect(client_id, message.host, message.port, message)
+			self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
+			
+
 		else:
 			response = Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message, peer))
 			self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
