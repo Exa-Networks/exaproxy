@@ -580,11 +580,6 @@ Encapsulated: req-hdr=0, null-body=%d
 			if operation is not None:
 				self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
 
-		elif method == 'CONNECT':
-			response = Respond.connect(client_id, message.host, message.port, message)
-			self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
-			
-
 		else:
 			response = Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, self.transparent(message, peer))
 			self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
@@ -592,13 +587,23 @@ Encapsulated: req-hdr=0, null-body=%d
 		return response
 
 	def doHTTPConnect (self, client_id, peer, message):
+		method = message.request.method
+
 		if not self.configuration.http.allow_connect or message.port not in self.configuration.security.connect:
 			# NOTE: we are always returning an HTTP/1.1 response
 			response = Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n'))
 			self.usage.logRequest(client_id, peer, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
 
+		elif self.enabled:
+			classification = self.classify(message, http_header, tainted)
+			(operation, destination), response = self.connect(client_id, *(classification + (peer, http_header, source)))
+
+			if operation is not None:
+				self.usage.logRequest(client_id, peer, method, message.url, operation, destination)
+
 		else:
-			response = None
+			response = Respond.connect(client_id, message.host, message.port, message)
+			self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
 
 		return response
 
@@ -643,7 +648,6 @@ Encapsulated: req-hdr=0, null-body=%d
 
 			elif method == 'CONNECT':
 				response = self.doHTTPConnect(client_id, peer, message)
-				response = response or self.doHTTPRequest(client_id, peer, message, http_header, source, tainted)
 
 			elif method in ('OPTIONS','TRACE'):
 				response = self.doHTTPOptions(client_id, peer, message)
