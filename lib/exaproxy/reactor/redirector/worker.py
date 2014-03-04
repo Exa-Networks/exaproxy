@@ -734,10 +734,10 @@ Encapsulated: req-hdr=0, null-body=%d
 			client_id, peer, header, subheader, source, tainted = message
 			response = None
 
-			if client_id is not None:
-				self.doStats()
-			else:
+			if client_id is None:
 				continue
+
+			self.doStats()
 
 			if not self.checkChild():
 				response = Respond.requeue(client_id, peer, icap_header, http_header, source) if source != 'nop' else None
