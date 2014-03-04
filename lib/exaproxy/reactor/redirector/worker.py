@@ -545,7 +545,7 @@ Encapsulated: req-hdr=0, null-body=%d
 %s""" % (len(request.http_header), request.http_header)
 
 
-	def parseHTTP (self, peer, http_header):
+	def parseHTTP (self, client_id, peer, http_header):
 		message = HTTP(self.configuration, http_header, peer)
 
 		if not message.parse(self._transparent):
@@ -624,7 +624,7 @@ Encapsulated: req-hdr=0, null-body=%d
 		return response
 
 	def doHTTP (self, client_id, peer, http_header, source, tainted):
-		message, response = self.parseHTTP(peer, http_header)
+		message, response = self.parseHTTP(client_id, peer, http_header)
 
 		if response is None and source == 'web':
 			response = Respond.monitor(client_id, message.request.path)
