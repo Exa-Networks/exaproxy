@@ -555,7 +555,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				version = '1.0'
 
 			if message.reply_string:
-				response = Respond.http(client_id, http(str(message.reply_code), '%s<br/>\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % (message.reply_string,header.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n')),version))
+				response = Respond.http(client_id, http(str(message.reply_code), '%s<br/>\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % (message.reply_string,http_header.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n')),version))
 			else:
 				response = Respond.http(client_id, http(str(message.reply_code),'',version))
 
