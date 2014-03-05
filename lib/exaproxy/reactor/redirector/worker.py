@@ -649,7 +649,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			elif method in (
 			'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE',
 			'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
-				response = selfRespond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message, peer))
+				response = Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, self.transparent(message, peer))
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', method)
 
 			elif message.request in self.configuration.http.extensions:
@@ -658,7 +658,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 			else:
 				# NOTE: we are always returning an HTTP/1.1 respons
-				response = Respond.http(client_id, http('405', '')) # METHOD NOT ALLOWED
+				response = Respond.http(client_id, http('405', ''))  # METHOD NOT ALLOWED
 				self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
 
 		return response
