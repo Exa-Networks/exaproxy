@@ -103,19 +103,19 @@ class Redirector (Thread):
 		self.universal = True if self.protocol == 'url' else False
 		self.icap = self.protocol[len('icap://'):].split('/')[0] if self.protocol.startswith('icap://') else ''
 
-		r, w = os.pipe()								# pipe for communication with the main thread
-		self.response_box_write = os.fdopen(w,'w',0)	# results are written here
-		self.response_box_read = os.fdopen(r,'r',0)	 # read from the main thread
+		r, w = os.pipe()                              # pipe for communication with the main thread
+		self.response_box_write = os.fdopen(w,'w',0)  # results are written here
+		self.response_box_read = os.fdopen(r,'r',0)   # read from the main thread
 
-		self.wid = name							   # a unique name
-		self.creation = time.time()				   # when the thread was created
-	#	self.last_worked = self.creation			  # when the thread last picked a task
-		self.request_box = request_box				# queue with HTTP headers to process
+		self.wid = name                               # a unique name
+		self.creation = time.time()                   # when the thread was created
+	#	self.last_worked = self.creation	             # when the thread last picked a task
+		self.request_box = request_box                # queue with HTTP headers to process
 
-		self.program = program						# the squid redirector program to fork
-		self.running = True						   # the thread is active
+		self.program = program                        # the squid redirector program to fork
+		self.running = True                           # the thread is active
 
-		self.stats_timestamp = None				   # time of the most recent outstanding request to generate stats
+		self.stats_timestamp = None                   # time of the most recent outstanding request to generate stats
 
 		self._proxy = 'ExaProxy-%s-id-%d' % (configuration.proxy.version,os.getpid())
 
