@@ -15,7 +15,6 @@ from socket import has_ipv6
 from .util.pid import PID
 from .util.daemon import Daemon
 
-from .reactor.redirector.manager import RedirectorManager
 from .reactor.content.manager import ContentManager
 from .reactor.client.manager import ClientManager
 from .reactor.resolver.manager import ResolverManager
@@ -25,6 +24,7 @@ from .html.page import Page
 from .monitor import Monitor
 
 from .reactor import Reactor
+from .reactor.redirector import fork_redirector
 
 from .configuration import load
 from exaproxy.util.log.logger import Logger
@@ -34,13 +34,13 @@ from exaproxy.util.log.writer import UsageWriter
 from exaproxy.util.interfaces import getifaddrs,AF_INET,AF_INET6
 
 class Supervisor (object):
-	alarm_time = 0.1                           # regular backend work
-	second_frequency = int(1/alarm_time)       # when we record history
-	minute_frequency = int(60/alarm_time)      # when we want to average history
-	increase_frequency = int(5/alarm_time)     # when we add workers
-	decrease_frequency = int(60/alarm_time)    # when we remove workers
-	saturation_frequency = int(20/alarm_time)  # when we report connection saturation
-	interface_frequency = int(300/alarm_time)  # when we check for new interfaces
+	alarm_time = 0.1							# regular backend work
+	second_frequency = int(1/alarm_time)		# when we record history
+	minute_frequency = int(60/alarm_time)		# when we want to average history
+	increase_frequency = int(5/alarm_time)		# when we add workers
+	decrease_frequency = int(60/alarm_time)		# when we remove workers
+	saturation_frequency = int(20/alarm_time)	# when we report connection saturation
+	interface_frequency = int(300/alarm_time)	# when we check for new interfaces
 
 	# import os
 	# clear = [hex(ord(c)) for c in os.popen('clear').read()]
@@ -73,27 +73,27 @@ class Supervisor (object):
 		self.daemon = Daemon(self.configuration)
 		self.poller = Poller(self.configuration.daemon)
 
-		self.poller.setupRead('read_proxy')           # Listening proxy sockets
-		self.poller.setupRead('read_web')             # Listening webserver sockets
-		self.poller.setupRead('read_icap')             # Listening icap sockets
-		self.poller.setupRead('read_workers')         # Pipes carrying responses from the child processes
-		self.poller.setupRead('read_resolver')        # Sockets currently listening for DNS responses
+		self.poller.setupRead('read_proxy')			# Listening proxy sockets
+		self.poller.setupRead('read_web')			# Listening webserver sockets
+		self.poller.setupRead('read_icap')			# Listening icap sockets
+		self.poller.setupRead('read_redirector')	# Pipes carrying responses from the redirector process
+		self.poller.setupRead('read_resolver')		# Sockets currently listening for DNS responses
 
-		self.poller.setupRead('read_client')          # Active clients
-		self.poller.setupRead('opening_client')       # Clients we have not yet read a request from
-		self.poller.setupWrite('write_client')        # Active clients with buffered data to send
-		self.poller.setupWrite('write_resolver')      # Active DNS requests with buffered data to send
+		self.poller.setupRead('read_client')		# Active clients
+		self.poller.setupRead('opening_client')		# Clients we have not yet read a request from
+		self.poller.setupWrite('write_client')		# Active clients with buffered data to send
+		self.poller.setupWrite('write_resolver')	# Active DNS requests with buffered data to send
 
-		self.poller.setupRead('read_download')        # Established connections
-		self.poller.setupWrite('write_download')      # Established connections we have buffered data to send to
-		self.poller.setupWrite('opening_download')    # Opening connections
+		self.poller.setupRead('read_download')		# Established connections
+		self.poller.setupWrite('write_download')	# Established connections we have buffered data to send to
+		self.poller.setupWrite('opening_download')	# Opening connections
+
+		# fork the redirector process before performing any further setup
+		redirector = fork_redirector(self.poller, self.configuration)
 
 		self.monitor = Monitor(self)
 		self.page = Page(self)
-		self.manager = RedirectorManager(
-			self.configuration,
-			self.poller,
-		)
+		self.redirector = redirector
 		self.content = ContentManager(self,configuration)
 		self.client = ClientManager(self.poller, configuration)
 		self.resolver = ResolverManager(self.poller, self.configuration, configuration.dns.retries*10)
@@ -101,7 +101,7 @@ class Supervisor (object):
 		self.web = Server('web server',self.poller,'read_web', configuration.web.connections)
 		self.icap = Server('icap server',self.poller,'read_icap', configuration.icap.connections)
 
-		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.icap, self.manager, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
+		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.icap, self.redirector, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
 
 		self._shutdown = True if self.daemon.filemax == 0 else False  # stop the program
 		self._softstop = False  # stop once all current connection have been dealt with
@@ -136,6 +136,8 @@ class Supervisor (object):
 		# (done in zero for dependencies reasons)
 		self.monitor.zero()
 
+	def exit (self):
+		sys.exit()
 
 	def sigquit (self,signum, frame):
 		if self._softstop:
@@ -185,7 +187,6 @@ class Supervisor (object):
 
 
 	def sigalrm (self,signum, frame):
-		self.signal_log.debug('SIG ALRM received, timed actions')
 		self.reactor.running = False
 		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
 
@@ -219,8 +220,6 @@ class Supervisor (object):
 
 		count_second = 0
 		count_minute = 0
-		count_increase = 0
-		count_decrease = 0
 		count_saturation = 0
 		count_interface = 0
 
@@ -228,8 +227,6 @@ class Supervisor (object):
 			count_second = (count_second + 1) % self.second_frequency
 			count_minute = (count_minute + 1) % self.minute_frequency
 
-			count_increase = (count_increase + 1) % self.increase_frequency
-			count_decrease = (count_decrease + 1) % self.decrease_frequency
 			count_saturation = (count_saturation + 1) % self.saturation_frequency
 			count_interface = (count_interface + 1) % self.interface_frequency
 
@@ -241,8 +238,9 @@ class Supervisor (object):
 
 
 				# check for IO change with select
-				self.reactor.run()
-
+				status = self.reactor.run()
+				if status is False:
+					self.exit()
 
 				# must follow the reactor so we are sure to go through the reactor at least once
 				# and flush any logs
@@ -282,28 +280,18 @@ class Supervisor (object):
 					self.log_writer.toggleDebug()
 
 
-				if self._increase_spawn_limit:
-					number = self._increase_spawn_limit
-					self._increase_spawn_limit = 0
-					self.manager.low += number
-					self.manager.high = max(self.manager.low,self.manager.high)
-					for _ in range(number):
-						self.manager.increase()
-
 				if self._decrease_spawn_limit:
-					number = self._decrease_spawn_limit
-					self._decrease_spawn_limit = 0
-					self.manager.high = max(1,self.manager.high-number)
-					self.manager.low = min(self.manager.high,self.manager.low)
-					for _ in range(number):
-						self.manager.decrease()
+					count = self._decrease_spawn_limit
+					self.redirector.decreaseSpawnLimit(count)
 
+				if self._increase_spawn_limit:
+					count = self._increase_spawn_limit
+					self.redirector.increaseSpawnLimit(count)
 
 				# save our monitoring stats
 				if count_second == 0:
 					self.monitor.second()
 					expired = self.reactor.client.expire()
-					self.reactor.log.debug('events : ' + ', '.join('%s:%d' % (k,len(v)) for (k,v) in self.reactor.events.items()))
 				else:
 					expired = 0
 
@@ -312,13 +300,6 @@ class Supervisor (object):
 
 				if count_minute == 0:
 					self.monitor.minute()
-
-				# make sure we have enough workers
-				if count_increase == 0:
-					self.manager.provision()
-				# and every so often remove useless workers
-				if count_decrease == 0:
-					self.manager.deprovision()
 
 				# report if we saw too many connections
 				if count_saturation == 0:
@@ -363,9 +344,6 @@ class Supervisor (object):
 	def initialise (self):
 		self.daemon.daemonise()
 		self.pid.save()
-		# start our threads
-		self.manager.start()
-
 
 		# only start listening once we know we were able to fork our worker processes
 		tcp4 = self.configuration.tcp4
@@ -425,7 +403,7 @@ class Supervisor (object):
 		try:
 			self.web.stop()  # accept no new web connection
 			self.proxy.stop()  # accept no new proxy connections
-			self.manager.stop()  # shut down redirector children
+			self.redirector.stop()  # shut down redirector children
 			os.kill(os.getpid(),signal.SIGALRM)
 			self.content.stop()  # stop downloading data
 			self.client.stop()  # close client connections
@@ -436,4 +414,4 @@ class Supervisor (object):
 
 	def reload (self):
 		self.log.info('Performing reload of exaproxy %s' % self.configuration.proxy.version ,'supervisor')
-		self.manager.respawn()
+		self.redirector.respawn()

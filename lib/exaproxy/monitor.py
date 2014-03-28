@@ -116,14 +116,14 @@ class Monitor (object):
 	def statistics (self):
 		content = self._supervisor.content
 		client = self._supervisor.client
-		manager = self._supervisor.manager
+		redirector = self._supervisor.redirector
 		reactor = self._supervisor.reactor
 
 		return {
 			'pid.saved' : self._supervisor.pid._saved_pid,
-			'processes.forked' : len(manager.worker),
-			'processes.min' : manager.low,
-			'processes.max' : manager.high,
+			'processes.forked' : -1,
+			'processes.min' : -1,
+			'processes.max' : -1,
 			'clients.silent': len(client.norequest),
 			'clients.speaking': len(client.byname),
 			'clients.requests': client.total_requested,
@@ -137,7 +137,7 @@ class Monitor (object):
 			'transfer.content' : content.total_sent4 + content.total_sent6,
 			'load.loops' : reactor.nb_loops,
 			'load.events' : reactor.nb_events,
-			'queue.size' : manager.queue.qsize(),
+			'queue.size' : -1,
 		}
 
 	def second (self):

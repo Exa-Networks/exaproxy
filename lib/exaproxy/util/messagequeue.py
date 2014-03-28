@@ -11,6 +11,9 @@ class Queue():
 	def qsize (self):
 		return len(self.queue)
 
+	def isempty (self):
+		return len(self.queue) == 0
+
 	def put (self, message):
 			self.queue.append(message)
 

@@ -78,7 +78,7 @@ class Reactor(object):
 
 				if request:
 					# we have a new request - decide what to do with it
-					self.decider.request(client_id, peer, request, subrequest, source)
+					self.decider.sendRequest(client_id, peer, request, subrequest, source)
 
 				elif request is None and client_id is not None:
 					if source == 'proxy':
@@ -96,7 +96,7 @@ class Reactor(object):
 				client_id, peer, request, subrequest, data, source = self.client.readDataBySocket(client)
 				if request:
 					# we have a new request - decide what to do with it
-					self.decider.request(client_id, peer, request, subrequest, source)
+					self.decider.sendRequest(client_id, peer, request, subrequest, source)
 
 				if data:
 					# we read something from the client so pass it on to the remote server
@@ -163,8 +163,12 @@ class Reactor(object):
 
 
 			# decisions made by the child processes
-			for worker in events.get('read_workers',[]):
-				client_id, command, decision = self.decider.getDecision(worker)
+			for _ in events.get('read_redirector',[]):
+				client_id, command, decision = self.decider.getDecision()
+
+				if command is None:
+					# if the redirector process disappears then we must close the proxy
+					return False
 
 				# check that the client didn't get bored and go away
 				if client_id in self.client:
@@ -274,3 +278,5 @@ class Reactor(object):
 
 			self.logger.writeMessages()
 			self.usage.writeMessages()
+
+		return True
