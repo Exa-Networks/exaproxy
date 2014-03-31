@@ -299,7 +299,7 @@ class Redirector:
 		else:
 			response = None
 
-		if response is not None and source == 'web':
+		if response is not None and source == 'proxy':
 			classification, data, comment = response
 
 			if request.method in ('GET','PUT','POST','HEAD','DELETE','PATCH'):
