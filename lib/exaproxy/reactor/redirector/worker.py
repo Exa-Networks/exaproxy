@@ -175,7 +175,7 @@ class Redirector:
 			status = self.writeChild(request_string) if request_string else None
 
 			if status is True:
-				response = Respond.defer(client_id, message, http_header, '', source)
+				response = Respond.defer(client_id, message)
 
 			else:
 				response = None
@@ -199,7 +199,7 @@ class Redirector:
 			status = self.writeChild(request_string) if request_string else None
 
 			if status is True:
-				response = Respond.defer(client_id, message, http_header, '', source)
+				response = Respond.defer(client_id, message)
 
 			else:
 				response = None
