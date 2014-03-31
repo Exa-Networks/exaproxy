@@ -139,10 +139,10 @@ class Redirector:
 		return 'file', 'internal_error.html', ''
 
 
-
 	def parseHTTP (self, client_id, peer, http_header):
-		message = HTTP(self.configuration, http_header, peer)
+		return HTTP(self.configuration, http_header, peer)
 
+	def validateHTTP (self, client_id, message):
 		if not message.parse(self._transparent):
 			try:
 				version = message.request.version
@@ -150,7 +150,7 @@ class Redirector:
 				version = '1.0'
 
 			if message.reply_string:
-				clean_header = http_header.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n')
+				clean_header = message.raw.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n')
 				content = '%s<br/>\n<!--\n\n<![CDATA[%s]]>\n\n-->\n' % (message.reply_string, clean_header)
 				response = Respond.http(client_id, http(str(message.reply_code), content, version))
 			else:
@@ -237,7 +237,8 @@ class Redirector:
 		return response
 
 	def doHTTP (self, client_id, peer, http_header, source):
-		message, response = self.parseHTTP(client_id, peer, http_header)
+		message = self.parseHTTP(client_id, peer, http_header)
+		response = self.validateHTTP(client_id, message)
 
 		if message is not None:
 			message = self.addHeaders(message, peer)
@@ -271,7 +272,9 @@ class Redirector:
 
 
 	def doMonitor (self, client_id, peer, http_header, source):
-		message, response = self.parseHTTP(client_id, peer, http_header)
+		message = self.parseHTTP(client_id, peer, http_header)
+		response = self.validateHTTP(client_id, message)
+
 		return Respond.monitor(client_id, message.request.path)
 
 
