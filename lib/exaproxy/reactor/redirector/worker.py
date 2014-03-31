@@ -111,7 +111,7 @@ class Redirector:
 
 
 	def createChildRequest (self, peer, message, http_header):
-		return '%s %s - %s -' % (message.url_noport, peer, message.request.method)
+		return '%s %s - %s -\n' % (message.url_noport, peer, message.request.method)
 
 	def classifyURL (self, request, url_response):
 		if not url_response:
@@ -291,10 +291,10 @@ class Redirector:
 
 		return response
 
-	def progress (self, client_id, peer, request, http_header, subheader, source):
+	def progress (self, client_id, peer, message, http_header, subheader, source):
 		if self.checkChild():
 			response_s = self.readChildResponse()
-			response = self.classifyURL(request, response_s) if response_s is not None else None
+			response = self.classifyURL(message.request, response_s) if response_s is not None else None
 
 		else:
 			response = None
@@ -302,18 +302,18 @@ class Redirector:
 		if response is not None and source == 'proxy':
 			classification, data, comment = response
 
-			if request.method in ('GET','PUT','POST','HEAD','DELETE','PATCH'):
-				(operation, destination), decision = self.response_factory.contentResponse(client_id, request, classification, data, comment, peer, http_header, source)
+			if message.request.method in ('GET','PUT','POST','HEAD','DELETE','PATCH'):
+				(operation, destination), decision = self.response_factory.contentResponse(client_id, message, classification, data, comment, peer, http_header, source)
 
-			elif request.method == 'CONNECT':
-				(operation, destination), decision = self.response_factory.connectResponse(client_id, request, classification, data, comment, peer, http_header, source)
+			elif message.request.method == 'CONNECT':
+				(operation, destination), decision = self.response_factory.connectResponse(client_id, message, classification, data, comment, peer, http_header, source)
 
 			else:
 				# How did we get here
 				operation, destination, decision = None, None, None
 
 			if operation is not None:
-				self.usage.logRequest(client_id, peer, request.method, request.url, operation, request.host)
+				self.usage.logRequest(client_id, peer, message.request.method, message.url, operation, message.host)
 
 		else:
 			decision = None
