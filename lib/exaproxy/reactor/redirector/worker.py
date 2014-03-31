@@ -41,7 +41,7 @@ class Redirector:
 	def __init__ (self, configuration, name, program, protocol):
 		self.configuration = configuration
 		self.http_parser = self.HTTPParser(configuration)
-		self.enabled = configuration.redirector.enable
+		self.enabled = bool(program is not None)
 		self._transparent = configuration.http.transparent
 		self.log = Logger('worker ' + str(name), configuration.log.worker)
 		self.usage = UsageLogger('usage', configuration.log.worker)
