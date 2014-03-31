@@ -249,7 +249,7 @@ class RedirectorManager (object):
 		return client_id, command, decision
 
 
-	def getResponse (self, pipe_in):
+	def getDecision (self, pipe_in):
 		worker = self.processes.get(pipe_in, None)
 
 		if worker is not None and worker.wid in self.active:
