@@ -1,5 +1,5 @@
 from .worker import Redirector
-#from .icap import ICAPRedirector
+from .icap import ICAPRedirector
 
 class RedirectorFactory (object):
 	def __init__ (self, configuration, program, protocol):
@@ -11,7 +11,7 @@ class RedirectorFactory (object):
 		if self.protocol == 'url':
 			redirector = Redirector(self.configuration, wid, self.program, self.protocol)
 
-		elif self.protocol == 'icap':
+		elif self.protocol.startswith('icap://'):
 			redirector = ICAPRedirector(self.configuration, wid, self.program, self.protocol)
 
 		else:

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 from .request import ICAPRequestFactory
+from .response import ICAPResponseFactory
 
 class ICAPParser (object):
 	ICAPRequestFactory = ICAPRequestFactory
@@ -108,4 +109,20 @@ class ICAPParser (object):
 		else:
 			headers = None
 
-		return self.response_factory.create(version, code, status, headers, icap_string, http_string)
+		if http_string is not None and http_string.startswith('CONNECT'):
+			intercept_string, http_string = self.splitResponse(http_string)
+
+		else:
+			intercept_string = None
+
+		return self.response_factory.create(version, code, status, headers, icap_string, http_string, intercept_string)
+
+	def splitResponse (self, response_string):
+		response_string = response_string.replace('\r\n', '\n')
+		if '\n\n' in response_string:
+			header_string, subheader_string = response_string.split('\n\n', 1)
+
+		else:
+			header_string, subheader_string = response_string, ''
+
+		return header_string, subheader_string

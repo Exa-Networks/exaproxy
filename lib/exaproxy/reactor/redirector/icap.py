@@ -9,13 +9,18 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 from .response import ResponseEncoder as Respond
 from exaproxy.icap.parser import ICAPParser
 
+from .worker import Redirector
+
 
 class ICAPRedirector (Redirector):
 	ICAPParser = ICAPParser
 
-	def __init__ (self, configuration, name, request_box, program):
+	def __init__ (self, configuration, name, program, protocol):
 		self.icap_parser = self.ICAPParser(configuration)
-		Redirector.__init__ (self, configuration, name, request_box, program)
+		self.protocol = protocol
+		self.icap = protocol[len('icap://'):].split('/')[0]
+
+		Redirector.__init__ (self, configuration, name, program, protocol)
 
 	def readChildResponse (self):
 		try:
@@ -66,11 +71,14 @@ class ICAPRedirector (Redirector):
 		return response
 
 
-	def createICAPRequest (self, peer, http_header, icap_header):
-		username = icap_header.headers.get('x-authenticated-user', '').strip() if icap_header else None
-		groups = icap_header.headers.get('x-authenticated-groups', '').strip() if icap_header else None
-		ip_addr = icap_header.headers.get('x-client-ip', '').strip() if icap_header else None
-		customer = icap_header.headers.get('x-customer-name', '').strip() if icap_header else None
+	def createChildRequest (self, peer, message, http_header):
+		return self.createICAPRequest(peer, message, None, http_header)
+
+	def createICAPRequest (self, peer, message, icap_message, http_header):
+		username = icap_message.headers.get('x-authenticated-user', '').strip() if icap_message else None
+		groups = icap_message.headers.get('x-authenticated-groups', '').strip() if icap_message else None
+		ip_addr = icap_message.headers.get('x-client-ip', '').strip() if icap_message else None
+		customer = icap_message.headers.get('x-customer-name', '').strip() if icap_message else None
 
 		icap_request = """\
 REQMOD %s ICAP/1.0
@@ -78,7 +86,7 @@ Host: %s
 Pragma: client=%s
 Pragma: host=%s""" % (
 			self.protocol, self.icap,
-			peer, http_header.host,
+			peer, message.host,
 			)
 
 		if ip_addr:
@@ -107,24 +115,39 @@ Encapsulated: req-hdr=0, null-body=%d
 	def decideICAP (self, response_string):
 		return Respond.icap(client_id, response_string) if icap_response else None
 
-	def decideHTTP (self, icap_response):
+	def decideHTTP (self, client_id, icap_response, message, peer, source):
 		# 304 (not modified)
 		if icap_response.code == '304':
-			return 'permit', None, None
+			classification, data, comment = 'permit', None, None
 
-		if icap_response.isContent():
-			return 'http', icap_response.http_header, icap_response.comment
+		elif icap_response.isContent():
+			classification, data, comment = 'http', icap_response.http_header, icap_response.comment
 
-		if icap_response.isIntercept():
-			return 'intercept', icap_response.destination, icap_response.comment
+		elif icap_response.isIntercept():
+			classification, data, comment = 'intercept', icap_response.destination, icap_response.comment
 
-		return 'permit', None, comment
+		else:
+			classification, data, comment = 'permit', None, None
+
+		if classification is not None:
+			if message.request.method in ('GET','PUT','POST','HEAD','DELETE','PATCH'):
+				(operation, destination), decision = self.response_factory.contentResponse(client_id, message, classification, data, comment, peer, icap_response.http_header, source)
+
+			elif message.request.method == 'CONNECT':
+				(operation, destination), decision = self.response_factory.connectResponse(client_id, message, classification, data, comment, peer, icap_response.http_header, source)
+
+			else:
+				# How did we get here
+				operation, destination, decision = None, None, None
+
+		return decision
+
 
 	def doICAP (self, client_id, peer, icap_header, http_header, tainted):
 		icap_request = self.icap_parser.parseRequest(peer, icap_header, http_header)
 		http_request = self.http_parser.parseRequest(peer, http_header)
 
-		request_string = self.createICAPRequest(peer, http_request, icap_request) if icap_request else None
+		request_string = self.createICAPRequest(peer, http_request, icap_request, http_header) if icap_request else None
 		return self.queryChild(request_string) if request_string else None
 
 	def decide (self, client_id, peer, header, subheader, source):
@@ -142,11 +165,11 @@ Encapsulated: req-hdr=0, null-body=%d
 				response = Respond.hangup(client_id)
 
 		else:
-			response = None
+			response = Respond.error(client_id)
 
 		return response
 
-    def progress (self, client_id, peer, request, http_header, subheader, source):
+	def progress (self, client_id, peer, message, http_header, subheader, source):
 		if self.checkChild():
 			response_string = self.readChildResponse()
 
@@ -154,19 +177,23 @@ Encapsulated: req-hdr=0, null-body=%d
 			response_string = None
 
 		if response_string is not None and source == 'icap':
-			classification = self.decideICAP(response_string)
+			decision = self.decideICAP(response_string)
 
-		elif response_string is not None and source == 'web':
+		elif response_string is not None and source == 'proxy':
 			icap_header, http_header = self.icap_parser.splitResponse(response_string)
 			icap_response = self.icap_parser.parseResponse(icap_header, http_header)
 
-			classification = self.decideHTTP(icap_response)
+			try:
+				decision = self.decideHTTP(client_id, icap_response, message, peer, source)
+			except Exception, e:
+				print type(e), str(e)
 
 		elif response_string is not None:
-			classification = None
+			decision = Respond.hangup(client_id)
 
-		if classification is not None:
-			
+		else:
+			decision = Respond.error(client_id)
 
 		return decision
+
 
