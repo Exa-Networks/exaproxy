@@ -2,12 +2,15 @@ import os
 import signal
 
 from exaproxy.util.messagebox import MessageBox, MessageReader
+from exaproxy.util.control import ControlBox
+
 
 
 class ProxyToRedirectorMessageBox:
-	def __init__ (self, pid, pipe_in, pipe_out):
+	def __init__ (self, pid, pipe_in, pipe_out, control_in, control_out):
 		self.pid = pid
 		self.box = MessageBox(pipe_in, pipe_out)
+		self.control = ControlBox(control_in, control_out)
 
 	def close (self):
 		return self.box.close()
@@ -27,18 +30,21 @@ class ProxyToRedirectorMessageBox:
 		return client_id, command, decision
 
 	def stop (self):
-		os.kill(self.pid, signal.SIGSTOP)
+		identifier = self.control.send('STOP')
 
 	def respawn (self):
-		os.kill(self.pid, signal.SIGHUP)
+		identifier = self.control.send('RESPAWN')
 
-	def decreaseSpawnCount (self, count=1):
-		for _ in range(count):
-			os.kill(self.pid, signal.SIGUSR1)
+	def decreaseSpawnLimit (self, count=1):
+		identifier = self.control.send('DECREASE', count)
 
-	def increaseSpawnCount (self, count=1):
-		for _ in range(count):
-			os.kill(self.pid, signal.SIIGUSR2)
+	def increaseSpawnLimit (self, count=1):
+		identifier = self.control.send('INCREASE', count)
+
+	def getStats (self):
+		identifier = self.control.send('STATS')
+		return self.control.receive(identifier)
+
 
 
 class RedirectorToProxyMessageBox:
@@ -59,25 +65,3 @@ class RedirectorToProxyMessageBox:
 		return self.box.put(message)
 
 
-
-
-class RedirectorMessageBox:
-	def __init__ (self, pipe_in, pipe_out):
-		self.box = MessageBox(pipe_in, pipe_out)
-
-	def close (self):
-		return self.box.close()
-
-	def getResponse (self):
-		return self.box.get()
-
-	def sendResponse (self, message):
-		return self.box.put(message)
-
-
-class RedirectorMessageReader:
-	def __init__ (self):
-		self.box = MessageReader()
-
-	def getResponse (self, pipe_in):
-		return self.box.get(pipe_in)

@@ -119,16 +119,18 @@ class Monitor (object):
 		redirector = self._supervisor.redirector
 		reactor = self._supervisor.reactor
 
+		[redirector_stats] = redirector.getStats()
+
 		return {
 			'pid.saved' : self._supervisor.pid._saved_pid,
-			'processes.forked' : -1,
-			'processes.min' : -1,
-			'processes.max' : -1,
-			'clients.silent': len(client.norequest),
-			'clients.speaking': len(client.byname),
-			'clients.requests': client.total_requested,
-			'servers.opening': len(content.opening),
-			'servers.established': len(content.established),
+			'processes.forked' : redirector_stats['forked'],
+			'processes.min' : redirector_stats['min'],
+			'processes.max' : redirector_stats['max'],
+			'clients.silent' : len(client.norequest),
+			'clients.speaking' : len(client.byname),
+			'clients.requests' : client.total_requested,
+			'servers.opening' : len(content.opening),
+			'servers.established' : len(content.established),
 			'transfer.client4' : client.total_sent4,
 			'transfer.client6' : client.total_sent6,
 			'transfer.client' : client.total_sent4 + client.total_sent6,
@@ -137,7 +139,7 @@ class Monitor (object):
 			'transfer.content' : content.total_sent4 + content.total_sent6,
 			'load.loops' : reactor.nb_loops,
 			'load.events' : reactor.nb_events,
-			'queue.size' : -1,
+			'queue.size' : redirector_stats['queue'],
 		}
 
 	def second (self):

@@ -21,7 +21,7 @@ class RedirectorSupervisor (object):
 	increase_frequency = int(5/alarm_time)	# when we add workers
 	decrease_frequency = int(60/alarm_time)	# when we remove workers
 
-	def __init__ (self, configuration, messagebox):
+	def __init__ (self, configuration, messagebox, controlbox):
 		self.configuration = configuration
 		self.usage_writer = UsageWriter('usage', configuration.usage.destination, configuration.usage.enable)
 
@@ -29,42 +29,31 @@ class RedirectorSupervisor (object):
 			self.usage_writer.toggleDebug()
 
 		self.messagebox = messagebox
-		self.poller = Poller(self.configuration.daemon)
+		self.controlbox = controlbox
+		self.poller = Poller(self.configuration.daemon, speed=0)
+		self.poller.setupRead('control')		# control messages from the main process
+		self.poller.addReadSocket('control', controlbox.box.pipe_in)
 
-		self.manager = RedirectorManager(configuration, self.poller)
-
-		signal.signal(signal.SIGUSR1, self.sigusr1)
-		signal.signal(signal.SIGUSR2, self.sigusr2)
-		signal.signal(signal.SIGSTOP, self.sigstop)
-		signal.signal(signal.SIGHUP, self.sighup)
 		signal.signal(signal.SIGALRM, self.sigalrm)
-
-		self.poller.setupRead('read_request')		# requests passed from the main process
-		self.poller.setupRead('read_workers')		# responses from the child processes
-		self.poller.addReadSocket('read_request', messagebox.box.pipe_in)
-		print 'reading input on', messagebox.box.pipe_in.fileno()
-
 		self._increase_spawn_limit = 0
 		self._decrease_spawn_limit = 0
 		self._respawn = False
 
+		# poller for the reactor
+		poller = Poller(self.configuration.daemon)
+		poller.setupRead('read_request')		# requests passed from the main process
+		poller.setupRead('read_workers')		# responses from the child processes
+		poller.setupRead('control')				# the reactor needs to yield to the supervisor
+		poller.addReadSocket('read_request', messagebox.box.pipe_in)
+		poller.addReadSocket('control', controlbox.box.pipe_in)
+
+		self.manager = RedirectorManager(configuration, poller)
+
 		# start the child processes
 		self.manager.provision()
 
-		self.reactor = RedirectorReactor(self.configuration, self.messagebox, self.manager, self.usage_writer, self.poller)
+		self.reactor = RedirectorReactor(self.configuration, self.messagebox, self.manager, self.usage_writer, poller)
 		self.running = True
-
-	def sigusr1 (self, signum, frame):
-		self._decrease_spawn_limit += 1
-
-	def sigusr2 (self, signum, frame):
-		self._increase_spawn_limit += 1
-
-	def sigstop (self, signum, frame):
-		self.running = False
-
-	def sighup (self, signum, frame):
-		self._respawn = True
 
 	def sigalrm (self, signum, frame):
 		self.reactor.running = False
@@ -87,6 +76,31 @@ class RedirectorSupervisor (object):
 		self.manager.low = min(self.manager.high, self.manager.low)
 		self.manager.decrease(count)
 
+	def sendStats (self, identifier):
+		self.controlbox.respond(identifier, {
+			'forked' : len(self.manager.worker),
+			'min' :    self.manager.low,
+			'max' :    self.manager.high,
+			'queue' :  self.manager.queue.qsize(),
+		})
+
+	def control (self):
+		identifier, command, data = self.controlbox.receive()
+
+		if command == 'INCREASE':
+			self._increase_spawn_limit += data[0]
+
+		elif command == 'DECREASE':
+			self._decrease_spawn_limit += data[0]
+
+		elif command == 'RESPAWN':
+			self._respawn = True
+
+		elif command == 'STOP':
+			self.running = False
+
+		elif command == 'STATS':
+			self.sendStats(identifier)
 
 	def run (self):
 		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
@@ -97,6 +111,11 @@ class RedirectorSupervisor (object):
 		while self.running is True:
 			count_increase = (count_increase + 1) % self.increase_frequency
 			count_decrease = (count_decrease + 1) % self.decrease_frequency
+
+			events = self.poller.poll()
+			while events.get('control'):
+				self.control()
+				events = self.poller.poll()
 
 			try:
 				# check for IO change with select

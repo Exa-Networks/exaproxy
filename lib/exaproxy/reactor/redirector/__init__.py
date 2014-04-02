@@ -2,19 +2,26 @@ import os
 import sys
 from .supervisor import RedirectorSupervisor
 from .messagebox import ProxyToRedirectorMessageBox, RedirectorToProxyMessageBox
+from exaproxy.util.control import SlaveBox
 
 def fork_redirector (poller, configuration):
 	r1, w1 = os.pipe()
 	r2, w2 = os.pipe()
+
+	cr1, cw1 = os.pipe()
+	cr2, cw2 = os.pipe()
 
 	pid = os.fork()
 
 	if pid == 0: # the child process
 		os.close(r1)
 		os.close(w2)
+		os.close(cr1)
+		os.close(cw2)
 
 		messagebox = RedirectorToProxyMessageBox(r2, w1)
-		supervisor = RedirectorSupervisor(configuration, messagebox)
+		controlbox = SlaveBox(cr2, cw1)
+		supervisor = RedirectorSupervisor(configuration, messagebox, controlbox)
 		redirector = None
 
 		# run forever
@@ -26,8 +33,10 @@ def fork_redirector (poller, configuration):
 	else:
 		os.close(w1)
 		os.close(r2)
+		os.close(cw1)
+		os.close(cr2)
 
-		redirector = ProxyToRedirectorMessageBox(pid, r1, w2)
+		redirector = ProxyToRedirectorMessageBox(pid, r1, w2, cr1, cw2)
 		poller.addReadSocket('read_redirector', redirector.box.pipe_in)
 
 	return redirector

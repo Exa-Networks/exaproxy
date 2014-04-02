@@ -39,6 +39,9 @@ class RedirectorReactor (object):
 			# wait until we have something to do
 			events = self.poller.poll()
 
+			if events.get('control'):
+				break
+
 			# new requests
 			if events.get('read_request'):
 				try:

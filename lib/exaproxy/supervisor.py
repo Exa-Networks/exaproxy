@@ -283,10 +283,12 @@ class Supervisor (object):
 				if self._decrease_spawn_limit:
 					count = self._decrease_spawn_limit
 					self.redirector.decreaseSpawnLimit(count)
+					self._decrease_spawn_limit = 0
 
 				if self._increase_spawn_limit:
 					count = self._increase_spawn_limit
 					self.redirector.increaseSpawnLimit(count)
+					self._increase_spawn_limit = 0
 
 				# save our monitoring stats
 				if count_second == 0:

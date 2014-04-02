@@ -8,11 +8,21 @@ class MessageReader:
 
 	def read (self, pipe_in):
 		# NOTE: we may block here if badly formatted data is sent
-		try:
-			message_s = pipe_in.read(3)
-			while message_s.isdigit():
-				message_s += pipe_in.read(1)
 
+		while True:
+			try:
+				message_s = pipe_in.read(3)
+				break
+			except IOError:
+				pass
+
+		while message_s.isdigit():
+			try:
+				message_s += pipe_in.read(1)
+			except IOError:
+				pass
+			
+		try:
 			if self.delimiter in message_s:
 				pickled_size, pickled = message_s.split(self.delimiter, 1)
 
