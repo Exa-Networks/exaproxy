@@ -310,7 +310,7 @@ class ResolverManager (object):
 				# success
 				elif ip is not None:
 					resolved = self.resolveDecision(command, decision, ip)
-					response = client_id, command, resolved
+					response = (client_id, command) + resolved
 					self.cacheDestination(original, ip)
 
 				# not found

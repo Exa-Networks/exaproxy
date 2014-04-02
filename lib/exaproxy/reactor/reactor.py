@@ -175,7 +175,7 @@ class Reactor(object):
 					if self.resolver.resolves(command, decision):
 						identifier, response = self.resolver.startResolving(client_id, command, decision)
 						if response:
-							cid, command, decision = response[0], response[1], response[2]
+							cid, command, decision = response[0], response[1], response[2:]
 							decisions.append((client_id, command, decision))
 
 						# something went wrong
@@ -189,7 +189,7 @@ class Reactor(object):
 			for resolver in events.get('read_resolver', []):
 				response = self.resolver.getResponse(resolver)
 				if response:
-					client_id, command, decision = response
+					client_id, command, decision = response[0], response[1], response[2:]
 					decisions.append((client_id, command, decision))
 
 			# all decisions we are currently able to process
