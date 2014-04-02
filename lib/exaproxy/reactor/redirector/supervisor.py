@@ -85,27 +85,25 @@ class RedirectorSupervisor (object):
 		})
 
 	def control (self):
+		status = True
 		identifier, command, data = self.controlbox.receive()
 
-		if command == 'INCREASE':
-			self._increase_spawn_limit += data[0]
+		if command == 'STATS':
+			self.sendStats(identifier)
+
+		elif command == 'INCREASE':
+			self.increase_spawn_limit(data[0])
 
 		elif command == 'DECREASE':
-			self._decrease_spawn_limit += data[0]
+			self.decrease_spawn_limit(data[0])
 
 		elif command == 'RESPAWN':
 			self._respawn = True
 
-		elif command == 'STOP':
-			self.running = False
+		if command == 'STOP' or not command:
+			status = False
 
-		elif command == 'STATS':
-			self.sendStats(identifier)
-
-		elif not command:
-			self.running = False
-
-		return self.running
+		return status
 
 	def run (self):
 		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
@@ -117,37 +115,31 @@ class RedirectorSupervisor (object):
 			count_increase = (count_increase + 1) % self.increase_frequency
 			count_decrease = (count_decrease + 1) % self.decrease_frequency
 
+			# check for IO change with select
+			status = self.reactor.run()
+			if status is False:
+				break
+
+
+			# make sure we have enough workers
+			if count_increase == 0:
+				self.manager.provision()
+
+			# and every so often remove useless workers
+			if count_decrease == 0:
+				self.manager.deprovision()
+
+			# check to respawn command
+			if self._respawn is True:
+				self._respawn = False
+				self.manager.respawn()
+
+
 			events = self.poller.poll()
 			while events.get('control'):
-				status = self.control()
-				if not status:
+				if not self.control():
+					self.running = False
 					break
+
 				events = self.poller.poll()
 
-			try:
-				# check for IO change with select
-				status = self.reactor.run()
-				if status is False:
-					break
-
-				if self._increase_spawn_limit:
-					self.increase_spawn_limit()
-
-				if self._decrease_spawn_limit:
-					self.decrease_spawn_limit()
-
-				# make sure we have enough workers
-				if count_increase == 0:
-					self.manager.provision()
-
-				# and every so often remove useless workers
-				if count_decrease == 0:
-					self.manager.deprovision()
-
-				# check to respawn command
-				if self._respawn is True:
-					self._respawn = False
-					self.manager.respawn()
-
-			except:
-				pass
