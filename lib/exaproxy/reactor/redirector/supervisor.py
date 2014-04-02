@@ -102,6 +102,11 @@ class RedirectorSupervisor (object):
 		elif command == 'STATS':
 			self.sendStats(identifier)
 
+		elif not command:
+			self.running = False
+
+		return self.running
+
 	def run (self):
 		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
 
@@ -114,7 +119,9 @@ class RedirectorSupervisor (object):
 
 			events = self.poller.poll()
 			while events.get('control'):
-				self.control()
+				status = self.control()
+				if not status:
+					break
 				events = self.poller.poll()
 
 			try:
