@@ -88,20 +88,14 @@ class Supervisor (object):
 		self.poller.setupWrite('write_download')	# Established connections we have buffered data to send to
 		self.poller.setupWrite('opening_download')	# Opening connections
 
-		# fork the redirector process before performing any further setup
-		redirector = fork_redirector(self.poller, self.configuration)
-
 		self.monitor = Monitor(self)
 		self.page = Page(self)
-		self.redirector = redirector
 		self.content = ContentManager(self,configuration)
 		self.client = ClientManager(self.poller, configuration)
 		self.resolver = ResolverManager(self.poller, self.configuration, configuration.dns.retries*10)
 		self.proxy = Server('http proxy',self.poller,'read_proxy', configuration.http.connections)
 		self.web = Server('web server',self.poller,'read_web', configuration.web.connections)
 		self.icap = Server('icap server',self.poller,'read_icap', configuration.icap.connections)
-
-		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.icap, self.redirector, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
 
 		self._shutdown = True if self.daemon.filemax == 0 else False  # stop the program
 		self._softstop = False  # stop once all current connection have been dealt with
@@ -114,6 +108,18 @@ class Supervisor (object):
 		self._listen = None  # listening change ? None: no, True: listen, False: stop listeing
 		self.wait_time = 5.0  # how long do we wait at maximum once we have been soft-killed
 		self.local = set()  # what addresses are on our local interfaces
+
+		if not self.initialise():
+			self._shutdown = True
+
+		elif self.daemon.drop_privileges():
+			self.log.critical('Could not drop privileges to \'%s\'. Refusing to run as root' % self.daemon.user)
+			self.log.critical('Set the environment value USER to change the unprivileged user')
+			self._shutdown = True
+
+		# fork the redirector process before performing any further setup
+		self.redirector = fork_redirector(self.poller, self.configuration)
+		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.icap, self.redirector, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
 
 		self.interfaces()
 
@@ -208,14 +214,6 @@ class Supervisor (object):
 			self.local = local
 
 	def run (self):
-		if self.daemon.drop_privileges():
-			self.log.critical('Could not drop privileges to \'%s\'. Refusing to run as root' % self.daemon.user)
-			self.log.critical('Set the environment value USER to change the unprivileged user')
-			self._shutdown = True
-
-		elif not self.initialise():
-			self._shutdown = True
-
 		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
 
 		count_second = 0
