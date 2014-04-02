@@ -160,7 +160,7 @@ class ResolverManager (object):
 
 				if ip is not None:
 					resolved = self.resolveDecision(command, decision, ip)
-					response = client_id, command, resolved
+					response = (client_id, command) + resolved
 
 				else:
 					response = client_id, 'rewrite', '503', 'dns.html', 'http', '', '', hostname, 'peer'
