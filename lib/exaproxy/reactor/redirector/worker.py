@@ -143,7 +143,10 @@ class Redirector:
 		return HTTP(self.configuration, http_header, peer)
 
 	def validateHTTP (self, client_id, message):
-		if not message.parse(self._transparent):
+		if message is None:
+			response = None
+
+		elif not message.parse(self._transparent):
 			try:
 				version = message.request.version
 			except AttributeError:
@@ -156,16 +159,13 @@ class Redirector:
 			else:
 				response = Respond.http(client_id, http(str(message.reply_code),'',version))
 
-			message = None
-
 		elif message.reply_code:
 			response = Respond.http(client_id, http(str(message.reply_code), message.reply_string, message.request.version))
-			message = None
 
 		else:
 			response = None
 
-		return message, response
+		return response
 
 	def doHTTPRequest (self, client_id, peer, message, http_header, source):
 		method = message.request.method
@@ -267,6 +267,9 @@ class Redirector:
 				# NOTE: we are always returning an HTTP/1.1 respons
 				response = Respond.http(client_id, http('405', '')) # METHOD NOT ALLOWED
 				self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
+
+		else:
+			response = Respond.hangup(client_id)
 
 		return response
 
