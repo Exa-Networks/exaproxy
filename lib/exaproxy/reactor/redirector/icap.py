@@ -121,10 +121,10 @@ Encapsulated: req-hdr=0, null-body=%d
 			classification, data, comment = 'permit', None, None
 
 		elif icap_response.isContent():
-			classification, data, comment = 'http', icap_response.http_header, icap_response.comment
+			classification, data, comment = 'http', icap_response.http_header, icap_response.pragma.get('comment', '')
 
 		elif icap_response.isIntercept():
-			classification, data, comment = 'intercept', icap_response.destination, icap_response.comment
+			classification, data, comment = 'intercept', icap_response.destination, icap_response.pragma.get('comment', '')
 
 		else:
 			classification, data, comment = 'permit', None, None

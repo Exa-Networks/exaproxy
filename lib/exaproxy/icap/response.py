@@ -10,6 +10,10 @@ class ICAPResponse (object):
 		self.http_header = http_header
 		self.intercept_header = intercept_header
 
+	@property
+	def pragma (self):
+		return self.headers.get('pragma', {})
+
 	def isContent (self):
 		return bool(self.http_header) and self.intercept_header is None
 
