@@ -154,8 +154,7 @@ class ResolverManager (object):
 
 		if hostname:
 			# Resolution is already in our cache
-			if hostname in self.cache:
-				identifier = None
+			if hostname in self.cache and identifier is None:
 				ip = self.cache[hostname]
 
 				if ip is not None:
