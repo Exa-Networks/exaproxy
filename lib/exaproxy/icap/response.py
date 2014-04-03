@@ -14,11 +14,21 @@ class ICAPResponse (object):
 	def pragma (self):
 		return self.headers.get('pragma', {})
 
-	def isContent (self):
-		return bool(self.http_header) and self.intercept_header is None
+	@property
+	def is_permit (self):
+		return self.code == 304
 
-	def isIntercept (self):
-		return bool(self.intercept_header is not None)
+	@property
+	def is_modify (self):
+		return self.code == 302 and self.intercept_header is None
+
+	@property
+	def is_content (self):
+		return self.code == 200
+
+	@property
+	def is_intercept (self):
+		return self.code == 302 and self.intercept_header is not None
 		
 
 class ICAPResponseFactory:

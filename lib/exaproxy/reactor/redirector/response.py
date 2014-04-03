@@ -23,8 +23,8 @@ class ResponseEncoder (object):
 		return client_id, 'rewrite', (code, reason, comment, message.request.protocol, message.url, message.host, str(message.client))
 
 	@staticmethod
-	def http (client_id, *data):
-		return (client_id, 'http'),  data
+	def http (client_id, data):
+		return client_id, 'http',  data
 
 	@staticmethod
 	def monitor (client_id, path):
@@ -105,6 +105,6 @@ class ResponseFactory (object):
 			return ('FILE', data), self.encoder.rewrite(client_id, '200', data, comment, message)
 
 		if classification == 'http':
-			return ('LOCAL', ''), self.encoder.http(client_id, data,message.request.version)
+			return ('LOCAL', ''), self.encoder.http(client_id, data)
 
 		return ('PERMIT', message.host), self.encoder.connect(client_id, message.host, message.port, message)

@@ -117,10 +117,10 @@ Encapsulated: req-hdr=0, null-body=%d
 
 	def decideHTTP (self, client_id, icap_response, message, peer, source):
 		# 304 (not modified)
-		if icap_response.code == 304:
+		if icap_response.is_permit:
 			classification, data, comment = 'permit', None, None
 
-		elif icap_response.code == 302:
+		elif icap_response.is_modify:
 			message = self.parseHTTP(client_id, peer, icap_response.http_header)
 			if message.validated:
 				classification, data, comment = 'permit', None, None
@@ -128,10 +128,10 @@ Encapsulated: req-hdr=0, null-body=%d
 			else:
 				classification, data, comment = None, None, None
 
-		elif icap_response.isContent():
+		elif icap_response.is_content:
 			classification, data, comment = 'http', icap_response.http_header, icap_response.pragma.get('comment', '')
 
-		elif icap_response.isIntercept():
+		elif icap_response.is_intercept:
 			classification, data, comment = 'intercept', icap_response.destination, icap_response.pragma.get('comment', '')
 
 		else:
