@@ -140,13 +140,12 @@ class Redirector:
 
 
 	def parseHTTP (self, client_id, peer, http_header):
-		return HTTP(self.configuration, http_header, peer)
+		message = HTTP(self.configuration, http_header, peer)
+		message.parse(self._transparent)
+		return message
 
 	def validateHTTP (self, client_id, message):
-		if message is None:
-			response = None
-
-		elif not message.parse(self._transparent):
+		if message.reply_code:
 			try:
 				version = message.request.version
 			except AttributeError:
@@ -158,9 +157,6 @@ class Redirector:
 				response = Respond.http(client_id, http(str(message.reply_code), content, version))
 			else:
 				response = Respond.http(client_id, http(str(message.reply_code),'',version))
-
-		elif message.reply_code:
-			response = Respond.http(client_id, http(str(message.reply_code), message.reply_string, message.request.version))
 
 		else:
 			response = None
@@ -309,10 +305,10 @@ class Redirector:
 			classification, data, comment = response
 
 			if message.request.method in ('GET','PUT','POST','HEAD','DELETE','PATCH'):
-				(operation, destination), decision = self.response_factory.contentResponse(client_id, message, classification, data, comment, peer, http_header, source)
+				(operation, destination), decision = self.response_factory.contentResponse(client_id, message, classification, data, comment)
 
 			elif message.request.method == 'CONNECT':
-				(operation, destination), decision = self.response_factory.connectResponse(client_id, message, classification, data, comment, peer, http_header, source)
+				(operation, destination), decision = self.response_factory.connectResponse(client_id, message, classification, data, comment)
 
 			else:
 				# How did we get here

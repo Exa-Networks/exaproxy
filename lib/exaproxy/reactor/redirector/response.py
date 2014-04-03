@@ -63,7 +63,7 @@ class ResponseEncoder (object):
 class ResponseFactory (object):
 	encoder = ResponseEncoder
 
-	def contentResponse (self, client_id, message, classification, data, comment, peer, header, source):
+	def contentResponse (self, client_id, message, classification, data, comment):
 		if classification == 'permit':
 			return ('PERMIT', message.host), self.encoder.download(client_id, message.host, message.port, message.upgrade, message.content_length, message)
 
@@ -88,7 +88,7 @@ class ResponseFactory (object):
 
 		return ('PERMIT', message.host), self.encoder.download(client_id, message.host, message.port, message.upgrade, message.content_length, message)
 
-	def connectResponse (self, client_id, message, classification, data, comment, peer, header, source):
+	def connectResponse (self, client_id, message, classification, data, comment):
 		if classification == 'permit':
 			return ('PERMIT', message.host), self.encoder.connect(client_id, message.host, message.port, message)
 

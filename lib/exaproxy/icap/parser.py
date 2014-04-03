@@ -111,6 +111,8 @@ class ICAPParser (object):
 
 		if http_string is not None and http_string.startswith('CONNECT'):
 			intercept_string, http_string = self.splitResponse(http_string)
+			if not http_string:
+				intercept_string, http_string = None, intercept_string
 
 		else:
 			intercept_string = None

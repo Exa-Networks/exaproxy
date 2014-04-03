@@ -117,8 +117,16 @@ Encapsulated: req-hdr=0, null-body=%d
 
 	def decideHTTP (self, client_id, icap_response, message, peer, source):
 		# 304 (not modified)
-		if icap_response.code == '304':
+		if icap_response.code == 304:
 			classification, data, comment = 'permit', None, None
+
+		elif icap_response.code == 302:
+			message = self.parseHTTP(client_id, peer, icap_response.http_header)
+			if message.validated:
+				classification, data, comment = 'permit', None, None
+
+			else:
+				classification, data, comment = None, None, None
 
 		elif icap_response.isContent():
 			classification, data, comment = 'http', icap_response.http_header, icap_response.pragma.get('comment', '')
@@ -129,12 +137,20 @@ Encapsulated: req-hdr=0, null-body=%d
 		else:
 			classification, data, comment = 'permit', None, None
 
+		if classification is None:
+			response = self.validateHTTP(client_id, message)
+			if response:
+				classification, data, comment = response
+
+			else:
+				classification, data, comment = 'error', None, None
+
 		if classification is not None:
 			if message.request.method in ('GET','PUT','POST','HEAD','DELETE','PATCH'):
-				(operation, destination), decision = self.response_factory.contentResponse(client_id, message, classification, data, comment, peer, icap_response.http_header, source)
+				(operation, destination), decision = self.response_factory.contentResponse(client_id, message, classification, data, comment)
 
 			elif message.request.method == 'CONNECT':
-				(operation, destination), decision = self.response_factory.connectResponse(client_id, message, classification, data, comment, peer, icap_response.http_header, source)
+				(operation, destination), decision = self.response_factory.connectResponse(client_id, message, classification, data, comment)
 
 			else:
 				# How did we get here
