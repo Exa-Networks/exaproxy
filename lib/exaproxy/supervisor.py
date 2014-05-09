@@ -308,7 +308,7 @@ class Supervisor (object):
 					expired = 0
 
 				if expired:
-					self.proxy.notifyClose(expired)
+					self.proxy.notifyClose(None, count=expired)
 
 				if count_minute == 0:
 					self.monitor.minute()
