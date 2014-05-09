@@ -137,7 +137,7 @@ class ContentManager(object):
 		try:
 			if command == 'download':
 				try:
-					host, port, upgrade, length, request = args.split('\0', 4)
+					host, port, upgrade, length, request = args
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 
@@ -155,7 +155,7 @@ class ContentManager(object):
 
 			elif command == 'connect':
 				try:
-					host, port, request = args.split('\0', 2)
+					host, port, request = args
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 
@@ -194,7 +194,7 @@ class ContentManager(object):
 
 			elif command == 'file':
 				try:
-					code, reason = args.split('\0', 1)
+					code, reason = args
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 
@@ -206,7 +206,7 @@ class ContentManager(object):
 
 			elif command == 'rewrite':
 				try:
-					code, reason, comment, protocol, url, host, client_ip = args.split('\0', 6)
+					code, reason, comment, protocol, url, host, client_ip = args
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 

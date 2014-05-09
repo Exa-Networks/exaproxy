@@ -32,6 +32,7 @@ class HTTP (object):
 		self.request = None
 		self.headers = None
 		self.expect = configuration.http.expect
+		self.validated = False
 
 	def parse (self,transparent):
 		self.log.debug('parsing header [[%s]]' % str(self.raw).replace('\t','\\t').replace('\r','\\r').replace('\n','\\n\n'))
@@ -118,6 +119,8 @@ class HTTP (object):
 			self.reply_code = 400
 			self.reply_string = 'problem parsing the request'
 			return None
+
+		self.validated = True
 		return self
 
 	def redirect (self, host, path):

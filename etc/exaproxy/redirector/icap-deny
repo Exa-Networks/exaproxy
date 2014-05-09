@@ -55,7 +55,7 @@ Connection: close
 """
 		# Always return the Encapsulated size as last header and with a null-body
 		reply = """\
-ICAP/1.0 200 OK
+ICAP/1.0 302 OK
 Encapsulated: res-hdr=0, null-body=%d
 
 %s""" % (len(headers),headers)

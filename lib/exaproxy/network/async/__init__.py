@@ -6,9 +6,9 @@ from exaproxy.configuration import load
 configuration = load()
 log = Logger('supervisor', configuration.log.supervisor)
 
-def Poller (configuration):
+def Poller (configuration, speed=None):
 	reactor = configuration.reactor
-	timeout = configuration.speed
+	timeout = speed if speed is not None else configuration.speed
 	if reactor not in ('epoll','select'):
 		log.warning('unknown reactor %s' % reactor)
 	if reactor == 'epoll' and hasattr(select, 'epoll'):

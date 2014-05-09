@@ -116,19 +116,21 @@ class Monitor (object):
 	def statistics (self):
 		content = self._supervisor.content
 		client = self._supervisor.client
-		manager = self._supervisor.manager
+		redirector = self._supervisor.redirector
 		reactor = self._supervisor.reactor
+
+		[redirector_stats] = redirector.getStats()
 
 		return {
 			'pid.saved' : self._supervisor.pid._saved_pid,
-			'processes.forked' : len(manager.worker),
-			'processes.min' : manager.low,
-			'processes.max' : manager.high,
-			'clients.silent': len(client.norequest),
-			'clients.speaking': len(client.byname),
-			'clients.requests': client.total_requested,
-			'servers.opening': len(content.opening),
-			'servers.established': len(content.established),
+			'processes.forked' : redirector_stats['forked'],
+			'processes.min' : redirector_stats['min'],
+			'processes.max' : redirector_stats['max'],
+			'clients.silent' : len(client.norequest),
+			'clients.speaking' : len(client.byname),
+			'clients.requests' : client.total_requested,
+			'servers.opening' : len(content.opening),
+			'servers.established' : len(content.established),
 			'transfer.client4' : client.total_sent4,
 			'transfer.client6' : client.total_sent6,
 			'transfer.client' : client.total_sent4 + client.total_sent6,
@@ -137,7 +139,7 @@ class Monitor (object):
 			'transfer.content' : content.total_sent4 + content.total_sent6,
 			'load.loops' : reactor.nb_loops,
 			'load.events' : reactor.nb_events,
-			'queue.size' : manager.queue.qsize(),
+			'queue.size' : redirector_stats['queue'],
 		}
 
 	def second (self):

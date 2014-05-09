@@ -109,7 +109,7 @@ class ResolverManager (object):
 						continue
 
 					self.log.error('given up trying to resolve %s after %s attempts' % (hostname, self.configuration.dns.retries))
-					yield client_id, 'rewrite', '\0'.join(('503', 'dns.html', '', '', '', hostname, 'peer'))
+					yield client_id, 'rewrite', '503', 'dns.html', '', '', '', hostname, 'peer'
 
 			if worker is not None:
 				if worker is not self.worker:
@@ -121,7 +121,7 @@ class ResolverManager (object):
 
 	def resolves(self, command, decision):
 		if command in ('download', 'connect'):
-			hostname = decision.split('\0')[0]
+			hostname = decision[0]
 			if isip(hostname):
 				res = False
 			else:
@@ -132,13 +132,8 @@ class ResolverManager (object):
 		return res
 
 	def extractHostname(self, command, decision):
-		data = decision.split('\0')
-
-		if command == 'download':
-			hostname = data[0]
-
-		elif command == 'connect':
-			hostname = decision.split('\0')[0]
+		if command in ('download', 'connect'):
+			hostname = decision[0]
 
 		else:
 			hostname = None
@@ -147,8 +142,8 @@ class ResolverManager (object):
 
 	def resolveDecision(self, command, decision, ip):
 		if command in ('download', 'connect'):
-			hostname, args = decision.split('\0', 1)
-			newdecision = '\0'.join((ip, args))
+			hostname, args = decision[0], decision[1:]
+			newdecision = (ip,) + args
 		else:
 			newdecision = None
 
@@ -159,28 +154,26 @@ class ResolverManager (object):
 
 		if hostname:
 			# Resolution is already in our cache
-			if hostname in self.cache:
-				identifier = None
+			if hostname in self.cache and identifier is None:
 				ip = self.cache[hostname]
 
 				if ip is not None:
 					resolved = self.resolveDecision(command, decision, ip)
-					response = client_id, command, resolved
+					response = (client_id, command) + resolved
 
 				else:
-					newdecision = '\0'.join(('503', 'dns.html', 'http', '', '', hostname, 'peer'))
-					response = client_id, 'rewrite', newdecision
+					response = client_id, 'rewrite', '503', 'dns.html', 'http', '', '', hostname, 'peer'
+
 			# do not try to resolve domains which are not FQDN
 			elif self.configuration.dns.fqdn and '.' not in hostname:
 				identifier = None
-				newdecision = '\0'.join(('200', 'dns.html', 'http', '', '', hostname, 'peer'))
-				response = client_id, 'rewrite', newdecision
+				response = client_id, 'rewrite', '200', 'dns.html', 'http', '', '', hostname, 'peer'
+
 			# each DNS part (between the dots) must be under 256 chars
 			elif max(len(p) for p in hostname.split('.')) > 255:
 				identifier = None
 				self.log.info('jumbo hostname: %s' % hostname)
-				newdecision = '\0'.join(('503', 'dns.html', 'http', '', '', hostname, 'peer'))
-				response = client_id, 'rewrite', newdecision
+				response = client_id, 'rewrite', '503', 'dns.html', 'http', '', '', hostname, 'peer'
 			# Lookup that DNS name
 			else:
 				identifier, _ = self.worker.resolveHost(hostname, identifier=identifier)
@@ -316,13 +309,12 @@ class ResolverManager (object):
 				# success
 				elif ip is not None:
 					resolved = self.resolveDecision(command, decision, ip)
-					response = client_id, command, resolved
+					response = (client_id, command) + resolved
 					self.cacheDestination(original, ip)
 
 				# not found
 				else:
-					newdecision = '\0'.join(('503', 'dns.html', 'http', '', '', hostname, 'peer'))
-					response = client_id, 'rewrite', newdecision
+					response = client_id, 'rewrite', '503', 'dns.html', 'http', '', '', hostname, 'peer'
 					#self.cacheDestination(original, ip)
 			else:
 				response = None
