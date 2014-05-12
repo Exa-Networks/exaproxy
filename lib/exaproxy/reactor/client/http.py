@@ -141,7 +141,7 @@ class HTTPClient (object):
 						continue
 
 					if nb_to_send:
-						if mode == 'transfer' :
+						if mode == 'transfer':
 							r_len = len(r_buffer)
 							length = min(r_len, nb_to_send)
 
