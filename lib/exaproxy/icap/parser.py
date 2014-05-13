@@ -147,7 +147,7 @@ class ICAPParser (object):
 		else:
 			intercept_string = None
 
-		return self.response_factory.createRequestModification(version, code, status, headers, icap_string, request_string, response_string, intercept_string)
+		return self.response_factory.create(version, code, status, headers, icap_string, request_string, response_string, intercept_string)
 
 	def splitResponse (self, response_string):
 		response_string = response_string.replace('\r\n', '\n')
