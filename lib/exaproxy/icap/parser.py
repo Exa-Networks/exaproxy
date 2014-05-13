@@ -3,6 +3,14 @@
 from .request import ICAPRequestFactory
 from .response import ICAPResponseFactory
 
+def grouped (values):
+	end = len(values) - 1
+
+	for pos in range(end):
+		yield values[pos], values[pos+1]
+
+	yield values[end], None
+
 class ICAPParser (object):
 	ICAPRequestFactory = ICAPRequestFactory
 	ICAPResponseFactory = ICAPResponseFactory
@@ -93,6 +101,21 @@ class ICAPParser (object):
 
 		return self.request_factory.create(headers, icap_string, http_string) if headers else None
 
+	def deencapsulate (self, encapsulated_line, body):
+		if ':' in encapsulated_line:
+			data = encapsulated_line.split(':', 1)[1]
+			parts = (p.strip() for p in data.split(',') if '=' in p)
+			pairs = (p.split('=',1) for p in parts)
+			
+			positions = dict((int(v),k) for (k,v) in pairs if v.isdigit())
+
+		else:
+			positions = {}
+
+		for start, end in grouped(ordered(positions)):
+			yield positions[start], body[start:end]
+		
+
 	def parseResponse (self, icap_string, http_string):
 		response_lines = (p for ss in icap_string.split('\r\n') for p in ss.split('\n'))
 		try:
@@ -107,17 +130,26 @@ class ICAPParser (object):
 			headers['server'] = 'EXA Proxy 1.0'
 
 		else:
-			headers = None
+			headers = {}
 
-		if http_string is not None and http_string.startswith('CONNECT'):
-			intercept_string, http_string = self.splitResponse(http_string)
-			if not http_string:
-				intercept_string, http_string = None, intercept_string
+		encapsulated_line = headers.get('encapsulated', '')
+		encapsulated = dict(self.deencapsulate(encapsulated_line, http_string))
+
+		response_string = encapsulated.get('res-hdr', '')
+		response_string += encapsulated.get('res-body', '')
+
+		request_string = encapsulated.get('req-hdr', '')
+		request_string += encapsulated.get('req-body', '')
+
+		if request_string.startswith('CONNECT'):
+			intercept_string, request_string = self.splitResponse(request_string)
+			if not request_string:
+				intercept_string, request_string = None, intercept_string
 
 		else:
 			intercept_string = None
 
-		return self.response_factory.create(version, code, status, headers, icap_string, http_string, intercept_string)
+		return self.response_factory.createRequestModification(version, code, status, headers, icap_string, request_string, response_string, intercept_string)
 
 	def splitResponse (self, response_string):
 		response_string = response_string.replace('\r\n', '\n')
