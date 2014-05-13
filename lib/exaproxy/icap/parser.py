@@ -4,6 +4,9 @@ from .request import ICAPRequestFactory
 from .response import ICAPResponseFactory
 
 def grouped (values):
+	if not values:
+		return
+
 	end = len(values) - 1
 
 	for pos in range(end):
