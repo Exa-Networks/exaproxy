@@ -105,15 +105,10 @@ class ICAPParser (object):
 		return self.request_factory.create(headers, icap_string, http_string) if headers else None
 
 	def deencapsulate (self, encapsulated_line, body):
-		if ':' in encapsulated_line:
-			data = encapsulated_line.split(':', 1)[1]
-			parts = (p.strip() for p in data.split(',') if '=' in p)
-			pairs = (p.split('=',1) for p in parts)
+		parts = (p.strip() for p in encapsulated_line.split(',') if '=' in p)
+		pairs = (p.split('=',1) for p in parts)
 			
-			positions = dict((int(v),k) for (k,v) in pairs if v.isdigit())
-
-		else:
-			positions = {}
+		positions = dict((int(v),k) for (k,v) in pairs if v.isdigit())
 
 		for start, end in grouped(ordered(positions)):
 			yield positions[start], body[start:end]
