@@ -243,7 +243,7 @@ class RedirectorManager (object):
 			self.persist(worker.wid, client_id, peer, decision, header, subheader, source, tainted)
 			command, decision = None, None
 
-		else:
+		elif worker is not None:
 			self.release(worker.wid)
 
 		return client_id, command, decision
