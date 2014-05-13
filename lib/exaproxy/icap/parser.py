@@ -110,7 +110,7 @@ class ICAPParser (object):
 			
 		positions = dict((int(v),k) for (k,v) in pairs if v.isdigit())
 
-		for start, end in grouped(ordered(positions)):
+		for start, end in grouped(sorted(positions)):
 			yield positions[start], body[start:end]
 		
 
