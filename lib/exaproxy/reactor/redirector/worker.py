@@ -260,7 +260,7 @@ class Redirector:
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.request)
 
 			else:
-				# NOTE: we are always returning an HTTP/1.1 respons
+				# NOTE: we are always returning an HTTP/1.1 response
 				response = Respond.http(client_id, http('405', '')) # METHOD NOT ALLOWED
 				self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
 
