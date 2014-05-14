@@ -207,7 +207,7 @@ class RedirectorManager (object):
 
 	def doqueue (self):
 		if self.available and not self.queue.isempty():
-			client_id, peer, header, subheader, source, tainted = self.queue.pop()
+			client_id, peer, header, subheader, source, tainted = self.queue.get()
 			_, command, decision = self.request(client_id, peer, header, subheader, source, tainted=tainted)
 
 		else:
