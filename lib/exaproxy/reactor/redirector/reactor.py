@@ -61,7 +61,8 @@ class RedirectorReactor (object):
 			# decisions made by the child processes
 			for worker in events.get('read_workers', []):
 				client_id, command, decision = self.decider.getDecision(worker)
-				self.querier.sendResponse(client_id, command, decision)
+				if client_id is not None:
+					self.querier.sendResponse(client_id, command, decision)
 
 			# we should have available workers now so check for queued requests
 			for worker in events.get('read_workers', []):

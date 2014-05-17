@@ -274,6 +274,9 @@ class RedirectorManager (object):
 		else:
 			client_id, command, decision = None, None, None
 
+		if worker is not None and client_id is None:
+			self.reap(worker.wid)
+
 		return client_id, command, decision
 
 
