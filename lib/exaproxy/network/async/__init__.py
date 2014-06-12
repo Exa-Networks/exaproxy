@@ -15,7 +15,7 @@ def Poller (configuration, speed=None):
 		from epoll import EPoller as Poller
 		return Poller(timeout)
 	if reactor == 'kqueue' and hasattr(select, 'kqueue'):
-		from kqueue import KQuuePoller as Poller
+		from kqueue import KQueuePoller as Poller
 		return Poller(timeout)
 	from selectpoll import SelectPoller as Poller
 	return Poller(timeout)
