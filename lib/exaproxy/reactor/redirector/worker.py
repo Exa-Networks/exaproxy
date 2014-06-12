@@ -268,7 +268,7 @@ class Redirector:
 
 	def doMonitor (self, client_id, peer, http_header, source):
 		message = self.parseHTTP(client_id, peer, http_header)
-		response = self.validateHTTP(client_id, message)
+		response = self.validateHTTP(client_id, message)  # pylint: disable=W0612
 
 		return Respond.monitor(client_id, message.request.path)
 
