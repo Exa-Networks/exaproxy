@@ -1,12 +1,12 @@
 from .messagebox import MessageBox
 
 def cycler():
-    def cycle_identifiers():
-        while True:
-            for identifier in xrange(0xffff):
-                yield identifier
+	def cycle_identifiers():
+		while True:
+			for identifier in xrange(0xffff):
+				yield identifier
 
-    return cycle_identifiers().next
+	return cycle_identifiers().next
 
 
 

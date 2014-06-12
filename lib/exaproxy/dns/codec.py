@@ -23,7 +23,7 @@ class DNSHeader:
 		self.tc = (flags >> 9) & 1         # truncated             (bool)      # 00000010 00000000
 		self.rd = (flags >> 8) & 1         # recursion desired     (bool)      # 00000001 00000000
 		self.ra = (flags >> 7) & 1         # recursion available   (bool)      # 00000000 10000000
-		self.z =  (flags >> 6) & 1         # no idea - rfc2929 2.1             # 00000000 01000000
+		self.z  = (flags >> 6) & 1         # no idea - rfc2929 2.1             # 00000000 01000000
 		self.ad = (flags >> 5) & 1         # authenticated         (bool)      # 00000000 00100000
 		self.cd = (flags >> 4) & 1         # checking disabled     (bool)      # 00000000 00010000
 		self.rcode = flags & 1             # return code                       # 00000000 00001111

@@ -12,11 +12,12 @@ import datetime
 
 from interface import IPoller
 
-from select import KQ_FILTER_READ, KQ_FILTER_WRITE, \
-	KQ_EV_ADD, KQ_EV_DELETE, \
-	KQ_EV_ENABLE, KQ_EV_DISABLE, KQ_EV_ONESHOT, KQ_EV_CLEAR, \
-	KQ_EV_ERROR, KQ_EV_EOF, \
-	kevent
+from select import KQ_FILTER_READ, KQ_FILTER_WRITE, KQ_EV_ADD, KQ_EV_DELETE, kevent
+# KQ_EV_ENABLE, KQ_EV_DISABLE,
+# KQ_EV_CLEAR, KQ_EV_ONESHOT,
+# KQ_EV_ERROR,
+# KQ_EV_EOF,
+
 
 from exaproxy.util.log.logger import Logger
 from exaproxy.configuration import load
@@ -279,7 +280,7 @@ class KQueuePoller (IPoller):
 
 				if sock_events.flags & select.KQ_EV_ERROR:
 					log.warning("%s KQ_EV_ERROR: fd=%d filter=%d fflags=%d flags=%d data=%d udata=%d" % (
-						str(datetime.datetime.now()), 
+						str(datetime.datetime.now()),
 						sock_events.ident, sock_events.filter, sock_events.flags, sock_events.fflags,
 						sock_events.data, sock_events.udata))
 
@@ -294,4 +295,3 @@ class KQueuePoller (IPoller):
 			response.setdefault(name, []).append(fd)
 
 		return response
-

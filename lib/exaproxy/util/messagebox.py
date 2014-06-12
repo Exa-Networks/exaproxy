@@ -21,7 +21,7 @@ class MessageReader:
 				message_s += pipe_in.read(1)
 			except IOError:
 				pass
-			
+
 		try:
 			if self.delimiter in message_s:
 				pickled_size, pickled = message_s.split(self.delimiter, 1)

@@ -34,13 +34,13 @@ from exaproxy.util.log.writer import UsageWriter
 from exaproxy.util.interfaces import getifaddrs,AF_INET,AF_INET6
 
 class Supervisor (object):
-	alarm_time = 0.1							# regular backend work
-	second_frequency = int(1/alarm_time)		# when we record history
-	minute_frequency = int(60/alarm_time)		# when we want to average history
-	increase_frequency = int(5/alarm_time)		# when we add workers
-	decrease_frequency = int(60/alarm_time)		# when we remove workers
-	saturation_frequency = int(20/alarm_time)	# when we report connection saturation
-	interface_frequency = int(300/alarm_time)	# when we check for new interfaces
+	alarm_time = 0.1                           # regular backend work
+	second_frequency = int(1/alarm_time)       # when we record history
+	minute_frequency = int(60/alarm_time)      # when we want to average history
+	increase_frequency = int(5/alarm_time)     # when we add workers
+	decrease_frequency = int(60/alarm_time)    # when we remove workers
+	saturation_frequency = int(20/alarm_time)  # when we report connection saturation
+	interface_frequency = int(300/alarm_time)  # when we check for new interfaces
 
 	# import os
 	# clear = [hex(ord(c)) for c in os.popen('clear').read()]
@@ -73,20 +73,20 @@ class Supervisor (object):
 		self.daemon = Daemon(self.configuration)
 		self.poller = Poller(self.configuration.daemon)
 
-		self.poller.setupRead('read_proxy')			# Listening proxy sockets
-		self.poller.setupRead('read_web')			# Listening webserver sockets
-		self.poller.setupRead('read_icap')			# Listening icap sockets
-		self.poller.setupRead('read_redirector')	# Pipes carrying responses from the redirector process
-		self.poller.setupRead('read_resolver')		# Sockets currently listening for DNS responses
+		self.poller.setupRead('read_proxy')       # Listening proxy sockets
+		self.poller.setupRead('read_web')         # Listening webserver sockets
+		self.poller.setupRead('read_icap')        # Listening icap sockets
+		self.poller.setupRead('read_redirector')  # Pipes carrying responses from the redirector process
+		self.poller.setupRead('read_resolver')    # Sockets currently listening for DNS responses
 
-		self.poller.setupRead('read_client')		# Active clients
-		self.poller.setupRead('opening_client')		# Clients we have not yet read a request from
-		self.poller.setupWrite('write_client')		# Active clients with buffered data to send
-		self.poller.setupWrite('write_resolver')	# Active DNS requests with buffered data to send
+		self.poller.setupRead('read_client')      # Active clients
+		self.poller.setupRead('opening_client')   # Clients we have not yet read a request from
+		self.poller.setupWrite('write_client')    # Active clients with buffered data to send
+		self.poller.setupWrite('write_resolver')  # Active DNS requests with buffered data to send
 
-		self.poller.setupRead('read_download')		# Established connections
-		self.poller.setupWrite('write_download')	# Established connections we have buffered data to send to
-		self.poller.setupWrite('opening_download')	# Opening connections
+		self.poller.setupRead('read_download')      # Established connections
+		self.poller.setupWrite('write_download')    # Established connections we have buffered data to send to
+		self.poller.setupWrite('opening_download')  # Opening connections
 
 		self.monitor = Monitor(self)
 		self.page = Page(self)

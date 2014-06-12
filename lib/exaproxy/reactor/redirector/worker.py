@@ -12,9 +12,6 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 # NOTE: We NEED to respect Keep-Alive rules http://tools.ietf.org/html/rfc2068#section-19.7.1
 # NOTE: We may look at Max-Forwards
 
-import traceback
-from exaproxy.util.messagequeue import Empty
-
 import os
 import time
 
@@ -23,7 +20,6 @@ from .response import ResponseFactory
 from .response import ResponseEncoder as Respond
 
 from exaproxy.http.message import HTTP
-from exaproxy.http.request import Request
 from exaproxy.http.response import http
 from exaproxy.http.factory import HTTPRequestFactory
 
@@ -239,7 +235,7 @@ class Redirector:
 		if message is not None:
 			message = self.addHeaders(message, peer)
 			method = message.request.method
-		
+
 			if method in ('GET', 'PUT', 'POST','HEAD','DELETE','PATCH'):
 				response = self.doHTTPRequest(client_id, peer, message, http_header, source)
 
@@ -261,7 +257,7 @@ class Redirector:
 
 			else:
 				# NOTE: we are always returning an HTTP/1.1 response
-				response = Respond.http(client_id, http('405', '')) # METHOD NOT ALLOWED
+				response = Respond.http(client_id, http('405', ''))  # METHOD NOT ALLOWED
 				self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
 
 		else:

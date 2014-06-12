@@ -289,7 +289,8 @@ def main ():
 		__exit(configuration.debug.memory,0)
 
 	notice = ''
-	if os.path.isdir(configuration.profile.destination):
+	profiled = configuration.profile.destination
+	if os.path.isdir(profiled):
 		notice = 'profile can not use this filename as outpout, it is not a directory (%s)' % profiled
 	if os.path.exists(configuration.profile.destination):
 		notice = 'profile can not use this filename as outpout, it already exists (%s)' % profiled
@@ -306,4 +307,3 @@ def main ():
 
 if __name__ == '__main__':
 	main()
-

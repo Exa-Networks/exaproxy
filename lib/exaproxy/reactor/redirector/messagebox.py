@@ -1,10 +1,13 @@
-import os
-import signal
+# encoding: utf-8
+"""
+messagebox.py
 
-from exaproxy.util.messagebox import MessageBox, MessageReader
+Created by David Farrar on 2014-06-10 (or earlier).
+Copyright (c) 2011-2013  Exa Networks. All rights reserved.
+"""
+
+from exaproxy.util.messagebox import MessageBox
 from exaproxy.util.control import ControlBox
-
-
 
 class ProxyToRedirectorMessageBox:
 	def __init__ (self, pid, pipe_in, pipe_out, control_in, control_out):
@@ -30,16 +33,16 @@ class ProxyToRedirectorMessageBox:
 		return client_id, command, decision
 
 	def stop (self):
-		identifier = self.control.send('STOP')
+		self.control.send('STOP')
 
 	def respawn (self):
-		identifier = self.control.send('RESPAWN')
+		self.control.send('RESPAWN')
 
 	def decreaseSpawnLimit (self, count=1):
-		identifier = self.control.send('DECREASE', count)
+		self.control.send('DECREASE', count)
 
 	def increaseSpawnLimit (self, count=1):
-		identifier = self.control.send('INCREASE', count)
+		self.control.send('INCREASE', count)
 
 	def getStats (self):
 		identifier = self.control.send('STATS')
@@ -63,5 +66,3 @@ class RedirectorToProxyMessageBox:
 	def sendResponse (self, client_id, command, decision):
 		message = client_id, command, decision
 		return self.box.put(message)
-
-
