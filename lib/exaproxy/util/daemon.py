@@ -32,8 +32,12 @@ class Daemon (object):
 			self.log.critical('WARNING: python remote execution via the web server is enabled')
 
 		if configuration.daemon.reactor == 'epoll' and not sys.platform.startswith('linux'):
-			self.log.error('exaproxy.daemon.reactor can only be epoll on Linux, changing the reactor to select')
+			self.log.error('exaproxy.daemon.reactor can only be epoll only on Linux, changing the reactor to select')
 			configuration.daemon.reactor = 'select'
+
+        if configuration.daemon.reactor == 'kqueue' and not sys.platform.startswith('freebsd') and not sys.platform.startswith('darwin'):
+            self.log.error('exaproxy.daemon.reactor can only be kqueue only on FreeBSD or OS X, changing the reactor to select')
+            configuration.daemon.reactor = 'select'
 
 		self.nb_descriptors = 40  # some to be safe ...
 		self.nb_descriptors += configuration.http.connections*2  # one socket for client and server connection
