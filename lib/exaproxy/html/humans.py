@@ -14,11 +14,16 @@ class humans:
 
   Slave Driver / Grand Visionary: Thomas Mangin
   Google+: https://plus.google.com/104241996506596749840
+  Github: https://github.com/thomas-mangin
 
   Engineer Extraordinaire: David Farrar
   Google+: https://plus.google.com/108845019528954357090
+  Github: https://github.com/david-farrar
 
 /* Other contributors */
+  Marek Obuchowicz (kqueue reactor)
+  Github: https://github.com/marek-obuchowicz
+
 """
 
 	html = """\
@@ -42,6 +47,8 @@ class humans:
 </div>
 <div style="padding: 20px 20px 20px 20px;">
 	<b>/* Other contributors */</b>
+	<br/>
+	<a href="https://github.com/marek-obuchowicz">Marek Obuchowicz</a> (kqueue reactor)
 	<br/>
 </div>
 """ % (thomas,david)
