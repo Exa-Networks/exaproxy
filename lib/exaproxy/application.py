@@ -175,7 +175,7 @@ def main ():
 			'pidfile'     : (value.unquote,string.quote,'',      'where to save the pid if we manage it'),
 			'user'        : (value.user,string.quote,'nobody',   'user to run as'),
 			'daemonize'   : (value.boolean,string.lower,'false', 'should we run in the background'),
-			'reactor'     : (value.unquote,string.quote,'epoll', 'event polling mechanism to use (select/epoll/kqueue)'),
+			'reactor'     : (value.unquote,string.quote,'best', 'event polling mechanism to use (select/epoll/kqueue/best)'),
 			'speed'       : (value.integer,string.nop,'2',       'sleep duration when waiting for connection'),
 			'poll-interfaces' : (value.boolean,string.lower,'true',  'periodically poll for local addresses the proxy should not connect to'),
 		},
