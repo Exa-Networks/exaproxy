@@ -30,7 +30,8 @@ def Poller (configuration, speed=None):
 		log.info('the chosen polling reactor was %s' % reactor)
 
 	if reactor not in ('epoll','kqueue','select'):
-		log.warning('unknown reactor %s' % reactor)
+		log.error('invalid reactor name: %s' % reactor)
+		sys.exit(1)
 
 	timeout = speed if speed is not None else configuration.speed
 
@@ -42,5 +43,9 @@ def Poller (configuration, speed=None):
 		from kqueue import KQueuePoller as Poller
 		return Poller(timeout)
 
-	from selectpoll import SelectPoller as Poller
-	return Poller(timeout)
+	if hasattr(select, 'select'):
+		from selectpoll import SelectPoller as Poller
+		return Poller(timeout)
+
+	log.error('this version of python does not have the requested reactor %s or select' % reactor)
+	sys.exit(1)

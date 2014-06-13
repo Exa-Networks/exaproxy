@@ -12,6 +12,8 @@ Version 1.2.0 - June 2014
  * Improvement: automatically pick the best reactor by default
  * Improvement: kqueue reactor added by Marek Obuchowicz
  * Fix: client tracking code was reporting bad information
+ * Fix: on exit try to flush the last logs
+ * Change: do not fail back to select if the request reactor is not available
 
 Version 1.1.2 - 6th of July 2013
  * Improvement: added the opened connection where the client never spoke to the graphs
