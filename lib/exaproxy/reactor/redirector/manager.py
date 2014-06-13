@@ -16,17 +16,17 @@ from exaproxy.util.log.logger import Logger
 
 class RedirectorManager (object):
 	def __init__ (self, configuration, poller):
-		self.low = configuration.redirector.minimum 		# minimum concurrent redirector workers
-		self.high = configuration.redirector.maximum		# maximum concurrent redirector workers
+		self.low = configuration.redirector.minimum   # minimum concurrent redirector workers
+		self.high = configuration.redirector.maximum  # maximum concurrent redirector workers
 
 		self.poller = poller
 		self.configuration = configuration
 		self.queue = Queue()    # store requests we do not immediately have the resources to process
 
-		self.nextid = 1			# unique id to give to the next spawned worker
-		self.worker = {}		# worker tasks for each spawned child
-		self.processes = {}		# worker tasks indexed by file descriptors we can poll
-		self.available = set()	# workers that are currently available to handle new requests
+		self.nextid = 1         # unique id to give to the next spawned worker
+		self.worker = {}        # worker tasks for each spawned child
+		self.processes = {}     # worker tasks indexed by file descriptors we can poll
+		self.available = set()  # workers that are currently available to handle new requests
 		self.active = {}        # workers that are currently busy waiting for a response from the spawned process
 		self.stopping = set()   # workers we want to stop as soon as they stop being active
 
@@ -282,4 +282,3 @@ class RedirectorManager (object):
 
 	def showInternalError(self):
 		return 'file', ('200', 'internal_error.html')
-

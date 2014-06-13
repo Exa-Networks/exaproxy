@@ -64,7 +64,7 @@ class ClientManager (object):
 	def icapConnection (self, sock, peer, source):
 		name = self.getnextid()
 		client = ICAPClient(name, sock, peer, self.log, self.icap_max_buffer)
-	
+
 		self.norequest[sock] = client, source
 		self.byname[name] = client, source
 

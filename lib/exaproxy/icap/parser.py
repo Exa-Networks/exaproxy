@@ -17,7 +17,7 @@ def grouped (values):
 class ICAPParser (object):
 	ICAPRequestFactory = ICAPRequestFactory
 	ICAPResponseFactory = ICAPResponseFactory
-	
+
 	VERSIONS = ('ICAP/1.0',)
 	METHODS = ('REQMOD', 'OPTIONS')
 	HEADERS = ('cache-control', 'connection', 'date', 'trailer', 'upgrade', 'via',
@@ -107,12 +107,12 @@ class ICAPParser (object):
 	def deencapsulate (self, encapsulated_line, body):
 		parts = (p.strip() for p in encapsulated_line.split(',') if '=' in p)
 		pairs = (p.split('=',1) for p in parts)
-			
+
 		positions = dict((int(v),k) for (k,v) in pairs if v.isdigit())
 
 		for start, end in grouped(sorted(positions)):
 			yield positions[start], body[start:end]
-		
+
 
 	def parseResponse (self, icap_string, http_string):
 		response_lines = (p for ss in icap_string.split('\r\n') for p in ss.split('\n'))

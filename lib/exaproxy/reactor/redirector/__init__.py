@@ -13,7 +13,7 @@ def fork_redirector (poller, configuration):
 
 	pid = os.fork()
 
-	if pid == 0: # the child process
+	if pid == 0:  # the child process
 		os.close(r1)
 		os.close(w2)
 		os.close(cr1)

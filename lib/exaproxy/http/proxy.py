@@ -48,6 +48,6 @@ class ProxyProtocol:
 
 		validate = self.ip_validators.get(fproto, invalidate)
 		source_addr = validate(source)
-		dest_addr = validate(destination)
+		dest_addr = validate(destination)  # pylint: disable=W0612
 
 		return source_addr, http_request

@@ -141,7 +141,7 @@ def main(host, port, path):
 
     # We need the integer FDs for splice to work
     pipe_fd = proc.stdout.fileno()
-    conn_fd = conn.fileno() #pylint: disable-msg=E1101
+    conn_fd = conn.fileno()  # pylint: disable-msg=E1101
     print 'Will splice data from FD', pipe_fd, 'to', conn_fd
 
     transferred = 0

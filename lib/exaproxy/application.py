@@ -175,8 +175,8 @@ def main ():
 			'pidfile'     : (value.unquote,string.quote,'',      'where to save the pid if we manage it'),
 			'user'        : (value.user,string.quote,'nobody',   'user to run as'),
 			'daemonize'   : (value.boolean,string.lower,'false', 'should we run in the background'),
-			'reactor'     : (value.unquote,string.quote,'epoll', 'what event mechanism to use (select/epoll)'),
-			'speed'       : (value.integer,string.nop,'2',       'when waiting for connection how long are we sleeping for'),
+			'reactor'     : (value.unquote,string.quote,'epoll', 'event polling mechanism to use (select/epoll/kqueue)'),
+			'speed'       : (value.integer,string.nop,'2',       'sleep duration when waiting for connection'),
 			'poll-interfaces' : (value.boolean,string.lower,'true',  'periodically poll for local addresses the proxy should not connect to'),
 		},
 		'security' : {
@@ -289,7 +289,8 @@ def main ():
 		__exit(configuration.debug.memory,0)
 
 	notice = ''
-	if os.path.isdir(configuration.profile.destination):
+	profiled = configuration.profile.destination
+	if os.path.isdir(profiled):
 		notice = 'profile can not use this filename as outpout, it is not a directory (%s)' % profiled
 	if os.path.exists(configuration.profile.destination):
 		notice = 'profile can not use this filename as outpout, it already exists (%s)' % profiled
@@ -306,4 +307,3 @@ def main ():
 
 if __name__ == '__main__':
 	main()
-

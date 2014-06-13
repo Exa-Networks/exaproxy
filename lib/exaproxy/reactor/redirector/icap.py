@@ -214,5 +214,3 @@ Encapsulated: req-hdr=0, null-body=%d
 			decision = Respond.error(client_id)
 
 		return decision
-
-

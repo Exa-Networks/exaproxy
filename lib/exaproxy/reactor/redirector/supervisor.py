@@ -6,8 +6,6 @@ Created by Thomas Mangin on 2011-11-29.
 Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
-import os
-import sys
 import signal
 
 from exaproxy.network.async import Poller
@@ -17,9 +15,9 @@ from .reactor import RedirectorReactor
 
 
 class RedirectorSupervisor (object):
-	alarm_time = 1							# regular backend work
-	increase_frequency = int(5/alarm_time)	# when we add workers
-	decrease_frequency = int(60/alarm_time)	# when we remove workers
+	alarm_time = 1                           # regular backend work
+	increase_frequency = int(5/alarm_time)   # when we add workers
+	decrease_frequency = int(60/alarm_time)  # when we remove workers
 
 	def __init__ (self, configuration, messagebox, controlbox):
 		self.configuration = configuration
@@ -41,9 +39,9 @@ class RedirectorSupervisor (object):
 
 		# poller for the reactor
 		poller = Poller(self.configuration.daemon)
-		poller.setupRead('read_request')		# requests passed from the main process
-		poller.setupRead('read_workers')		# responses from the child processes
-		poller.setupRead('control')				# the reactor needs to yield to the supervisor
+		poller.setupRead('read_request')  # requests passed from the main process
+		poller.setupRead('read_workers')  # responses from the child processes
+		poller.setupRead('control')       # the reactor needs to yield to the supervisor
 		poller.addReadSocket('read_request', messagebox.box.pipe_in)
 		poller.addReadSocket('control', controlbox.box.pipe_in)
 
@@ -142,4 +140,3 @@ class RedirectorSupervisor (object):
 					break
 
 				events = self.poller.poll()
-
