@@ -80,9 +80,6 @@ class ResponseFactory (object):
 		if classification == 'intercept':
 			return ('INTERCEPT', data), self.encoder.download(client_id, data, message.port, '', message.content_length, message)
 
-		if classification == 'requeue':
-			return (None, None), self.encoder.requeue(client_id, peer, header, '', source)
-
 		if classification == 'http':
 			return ('LOCAL', ''), self.encoder.http(client_id, data)
 
@@ -91,9 +88,6 @@ class ResponseFactory (object):
 	def connectResponse (self, client_id, message, classification, data, comment):
 		if classification == 'permit':
 			return ('PERMIT', message.host), self.encoder.connect(client_id, message.host, message.port, message)
-
-		if classification == 'requeue':
-			return (None, None), self.encoder.requeue(client_id, peer, header, '', source)
 
 		if classification == 'redirect':
 			return ('REDIRECT', data), self.encoder.redirect(client_id, data)
