@@ -145,16 +145,19 @@ Encapsulated: req-hdr=0, null-body=%d
 			else:
 				classification, data, comment = 'error', None, None
 
-		if classification is not None:
-			if message.request.method in ('GET','PUT','POST','HEAD','DELETE','PATCH'):
-				(operation, destination), decision = self.response_factory.contentResponse(client_id, message, classification, data, comment)
+		if classification == 'requeue':
+			(operation, destination) = None, None
+			decision = Respond.requeue(client_id, peer, header, subheader, source)
 
-			elif message.request.method == 'CONNECT':
-				(operation, destination), decision = self.response_factory.connectResponse(client_id, message, classification, data, comment)
+		elif message.request.method in ('GET','PUT','POST','HEAD','DELETE','PATCH'):
+			(operation, destination), decision = self.response_factory.contentResponse(client_id, message, classification, data, comment)
 
-			else:
-				# How did we get here
-				operation, destination, decision = None, None, None
+		elif message.request.method == 'CONNECT':
+			(operation, destination), decision = self.response_factory.connectResponse(client_id, message, classification, data, comment)
+
+		else:
+			# How did we get here
+			operation, destination, decision = None, None, None
 
 		return decision
 
