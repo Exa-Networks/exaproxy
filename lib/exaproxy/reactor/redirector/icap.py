@@ -112,8 +112,8 @@ Encapsulated: req-hdr=0, null-body=%d
 
 
 
-	def decideICAP (self, response_string):
-		return Respond.icap(client_id, response_string) if icap_response else None
+	def decideICAP (self, client_id, icap_response):
+		return Respond.icap(client_id, icap_response) if icap_response else None
 
 	def decideHTTP (self, client_id, icap_response, message, peer, source):
 		# 304 (not modified)
@@ -196,7 +196,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			response_string = None
 
 		if response_string is not None and source == 'icap':
-			decision = self.decideICAP(response_string)
+			decision = self.decideICAP(client_id, response_string)
 
 		elif response_string is not None and source == 'proxy':
 			icap_header, http_header = self.icap_parser.splitResponse(response_string)
