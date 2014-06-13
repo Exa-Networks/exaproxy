@@ -37,20 +37,6 @@ def poll_select(read, write, timeout=None):
 		else:
 			log.critical('select problem, debug it. errno %d: %s' % (e.args[0], errno.errorcode.get(e.args[0], '')))
 
-		for f in read:
-			try:
-				poll([f], [], [f], 0.1)
-			except socket.error:
-				print "CANNOT POLL (read): %s" % str(f)
-				log.error('can not poll (read) : %s' % str(f))
-
-		for f in write:
-			try:
-				poll([], [f], [f], 0.1)
-			except socket.error:
-				print "CANNOT POLL (write): %s" % str(f)
-				log.error('can not poll (write) : %s' % str(f))
-
 		raise e
 	except (ValueError, AttributeError, TypeError), e:
 		log.error("fatal error encountered during select - %s %s" % (type(e),str(e)))
