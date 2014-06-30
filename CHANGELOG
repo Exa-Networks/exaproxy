@@ -3,6 +3,18 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
+Version 1.2.0 - June 2014
+ * Feature: ICAP is the new black
+ * Feature: Separate process to manage workers
+ * Improvement: Smaller, faster core reactor ( only moving data around )
+ * Improvement: better logging
+ * Improvement: internal APC API ( should you care :p )
+ * Improvement: automatically pick the best reactor by default
+ * Improvement: kqueue reactor added by Marek Obuchowicz
+ * Fix: client tracking code was reporting bad information
+ * Fix: on exit try to flush the last logs
+ * Change: do not fail back to select if the request reactor is not available
+
 Version 1.1.2 - 6th of July 2013
  * Improvement: added the opened connection where the client never spoke to the graphs
  * Improvement: can timeout new HTTP connection which does not send data (new connections idle timeout)

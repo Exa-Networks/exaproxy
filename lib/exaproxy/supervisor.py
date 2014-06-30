@@ -58,6 +58,8 @@ class Supervisor (object):
 		self.log_writer = SysLogWriter('log', configuration.log.destination, configuration.log.enable, level=configuration.log.level)
 		self.usage_writer = UsageWriter('usage', configuration.usage.destination, configuration.usage.enable)
 
+		sys.exitfunc = self.log_writer.writeMessages
+
 		self.log_writer.setIdentifier(configuration.daemon.identifier)
 		#self.usage_writer.setIdentifier(configuration.daemon.identifier)
 
