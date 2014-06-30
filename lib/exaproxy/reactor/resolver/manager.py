@@ -109,7 +109,7 @@ class ResolverManager (object):
 						continue
 
 					self.log.error('given up trying to resolve %s after %s attempts' % (hostname, self.configuration.dns.retries))
-					yield client_id, 'rewrite', '503', 'dns.html', '', '', '', hostname, 'peer'
+					yield client_id, 'rewrite', ('503', 'dns.html', '', '', '', hostname, 'peer')
 
 			if worker is not None:
 				if worker is not self.worker:
