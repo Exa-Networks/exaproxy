@@ -34,6 +34,7 @@ class ProxyToRedirectorMessageBox:
 
 	def stop (self):
 		self.control.send('STOP')
+		return self.control.wait_stop()
 
 	def respawn (self):
 		self.control.send('RESPAWN')

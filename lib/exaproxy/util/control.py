@@ -34,6 +34,14 @@ class ControlBox:
 
 		return data
 
+	def wait_stop (self):
+		message = self.box.get()
+
+		if message is None:
+			return True
+
+		raise RuntimeError, 'got data from a process that should have stopped'
+
 
 class SlaveBox:
 	def __init__ (self, channel_in, channel_out):

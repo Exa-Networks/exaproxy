@@ -1,8 +1,18 @@
 import os
 import sys
+
+from exaproxy.util.control import SlaveBox
+
 from .supervisor import RedirectorSupervisor
 from .messagebox import ProxyToRedirectorMessageBox, RedirectorToProxyMessageBox
-from exaproxy.util.control import SlaveBox
+from .dispatch import RedirectorDispatcher
+
+def redirector_message_thread (message_box):
+	dispatcher = RedirectorDispatcher(message_box)
+	dispatcher.start()
+
+	return dispatcher
+	
 
 def fork_redirector (poller, configuration):
 	r1, w1 = os.pipe()

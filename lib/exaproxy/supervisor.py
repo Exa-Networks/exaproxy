@@ -25,6 +25,7 @@ from .monitor import Monitor
 
 from .reactor import Reactor
 from .reactor.redirector import fork_redirector
+from .reactor.redirector import redirector_message_thread
 
 from .configuration import load
 from exaproxy.util.log.logger import Logger
@@ -120,7 +121,11 @@ class Supervisor (object):
 			self._shutdown = True
 
 		# fork the redirector process before performing any further setup
-		self.redirector = fork_redirector(self.poller, self.configuration)
+		redirector = fork_redirector(self.poller, self.configuration)
+
+		# create threads _after_ all forking is done
+		self.redirector = redirector_message_thread(redirector)
+
 		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.icap, self.redirector, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
 
 		self.interfaces()
