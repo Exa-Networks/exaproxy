@@ -16,10 +16,11 @@ def debug (item, message):
 	print
 
 class RedirectorReactor (object):
-	def __init__ (self, configuration, querier, decider, logger, poller):
+	def __init__ (self, configuration, querier, decider, logger, usage, poller):
 		self.querier = querier    # Incoming requests from the proxy
 		self.decider = decider    # Decides how each request should be handled
 		self.logger = logger      # Log writing interfaces
+		self.usage = usage
 		self.poller = poller
 
 		# NOT the same logger the rest of the proxy uses since we're running in a different process
@@ -72,5 +73,6 @@ class RedirectorReactor (object):
 					self.querier.sendResponse(client_id, command, decision)
 
 			self.logger.writeMessages()
+			self.usage.writeMessages()
 
 		return True

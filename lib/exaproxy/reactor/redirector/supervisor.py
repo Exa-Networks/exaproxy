@@ -10,6 +10,7 @@ import signal
 
 from exaproxy.network.async import Poller
 from exaproxy.util.log.writer import UsageWriter
+from exaproxy.util.log.writer import SysLogWriter
 from .manager import RedirectorManager
 from .reactor import RedirectorReactor
 
@@ -21,6 +22,7 @@ class RedirectorSupervisor (object):
 
 	def __init__ (self, configuration, messagebox, controlbox):
 		self.configuration = configuration
+                self.log_writer = SysLogWriter('log', configuration.log.destination, configuration.log.enable, level=configuration.log.level)
 		self.usage_writer = UsageWriter('usage', configuration.usage.destination, configuration.usage.enable)
 
 		if configuration.debug.log:
@@ -50,7 +52,7 @@ class RedirectorSupervisor (object):
 		# start the child processes
 		self.manager.provision()
 
-		self.reactor = RedirectorReactor(self.configuration, self.messagebox, self.manager, self.usage_writer, poller)
+		self.reactor = RedirectorReactor(self.configuration, self.messagebox, self.manager, self.log_writer, self.usage_writer, poller)
 		self.running = True
 
 	def sigalrm (self, signum, frame):
