@@ -34,6 +34,8 @@ class Redirector:
 	ResponseFactory = ResponseFactory
 	ChildFactory = ChildFactory
 
+	__slots__ = ['configuration', 'http_parser', 'enabled', '_transparent', 'log', 'usage', 'response_factory', 'child_factory', 'wid', 'creationg', 'program', 'running', 'stats_timestamp', '_proxy', 'universal', 'process']
+
 	def __init__ (self, configuration, name, program, protocol):
 		self.configuration = configuration
 		self.http_parser = self.HTTPParser(configuration)

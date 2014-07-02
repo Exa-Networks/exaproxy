@@ -20,6 +20,8 @@ def next_identifier():
 class DNSClient (object):
 	extended = False
 
+	__slots__ = ['w_id', 'dns_factory', 'configuration', 'servers', 'port', 'next_identifier', 'socket']
+
 	def __init__(self, w_id, dns_factory, configuration, servers, port=53):
 		self.w_id = w_id
 		self.dns_factory = dns_factory

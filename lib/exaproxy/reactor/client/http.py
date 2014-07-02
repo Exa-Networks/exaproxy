@@ -21,6 +21,8 @@ def count_quotes (data):
 class HTTPClient (object):
 	eor = ['\r\n\r\n', '\n\n']
 
+	__slots__ = ['name', 'ipv4', 'sock', 'peer', 'reader', 'writer', 'w_buffer', 'log']
+
 	def __init__(self, name, sock, peer, logger, max_buffer):
 		self.name = name
 		self.ipv4 = isipv4(sock.getsockname()[0])
@@ -31,7 +33,6 @@ class HTTPClient (object):
 		self.w_buffer = ''
 
 		self.log = logger
-		self.blockupload = None
 
 		# start the _read coroutine
 		self.reader.next()
