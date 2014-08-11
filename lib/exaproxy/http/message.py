@@ -73,6 +73,10 @@ class HTTP (object):
 				#else:
 				#	self.log.info('Invalid address in Client identifier header: %s' % client)
 
+				# Remove x-forwarded-for when running in transparent mode
+				if transparent:
+					self.headers.pop(self.forward, None)
+
 			# encoding can contain trailers and other information see RFC2516 section 14.39
 			encoding = self.headers.get('transfer-encoding', [':'])[0].split(':', 1)[1].strip()
 			if not encoding:
