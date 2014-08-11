@@ -8,10 +8,8 @@ Exaproxy is used in production since early 2013, and proxies millions of URL per
 
 ## News
 
-Juilly 6th 2013, released ExaProxy 1.1.2
+August 14th 2014, released ExaProxy 1.2.0
 
-This release fixes one scalability issue when the proxy is processing over several ten of thousand connections, adds support for pre-RFC 2616 syntaxes (used by bad embeded systems) and adds many features (see our [changelog](https://exaproxy.googlecode.com/hg/CHANGELOG))
- 
 ## Features
 
  * Non-caching HTTP/HTTPS (with CONNECT) Proxy
@@ -27,7 +25,7 @@ This release fixes one scalability issue when the proxy is processing over sever
  * Support for [HAProxy proxy protocol](http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt)
  * Built-in web servers to monitor the proxy via local webpage ( default http://127.0.0.1:8080 )
    * dynamic configuration change
-   * running information in json format (/json) 
+   * running information in json format (/json)
 
 ## Usage
 
@@ -49,9 +47,9 @@ Tested with [Co-Advisor](http://coad.measurement-factory.com/). We are failing H
 ## Get it
 
 ```sh
-> wget http://exaproxy.googlecode.com/files/exaproxy-1.1.2.tgz
-> tar zxvf exaproxy-1.1.2.tgz
-> cd exaproxy-1.1.2
+> wget http://exaproxy.googlecode.com/files/exaproxy-1.2.0.tgz
+> tar zxvf exaproxy-1.2.0.tgz
+> cd exaproxy-1.2.0
 > ./sbin/exaproxy
 ```
 
@@ -68,7 +66,7 @@ will give you a definition of all the configuration options
 
 exaproxy.tcp4.port='8088'
 ```
-or 
+or
 ```sh
 > export exaproxy_tcp4_port=8088
 > ./sbin/exaproxy -de

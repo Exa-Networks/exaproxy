@@ -3,17 +3,26 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
-Version 1.2.0 - June 2014
+Version 1.2.0 - 11th of August 2014
  * Feature: ICAP is the new black
  * Feature: Separate process to manage workers
  * Improvement: Smaller, faster core reactor ( only moving data around )
  * Improvement: better logging
  * Improvement: internal APC API ( should you care :p )
  * Improvement: automatically pick the best reactor by default
- * Improvement: kqueue reactor added by Marek Obuchowicz
+ * Improvement: kqueue reactor
+   patch by: Marek Obuchowicz
+ * Improvement: exaproxy.http.mask to remove the presence of any previous proxy
+   patch by: Emanuele Rocca
+ * Improvement: Forked children managed by a dedicated process (as Squid wants to do)
+ * Change: do not fail back to select if the request reactor is not available
  * Fix: client tracking code was reporting bad information
  * Fix: on exit try to flush the last logs
- * Change: do not fail back to select if the request reactor is not available
+ * Fix: badly tracking processes
+   patch by: Tim Watts
+ * Fix: references to closed sockets
+ * Fix: correctly reports version on help
+ * Fix: And many more David did not record  tsss tsss ...
 
 Version 1.1.2 - 6th of July 2013
  * Improvement: added the opened connection where the client never spoke to the graphs
