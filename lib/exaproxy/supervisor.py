@@ -220,9 +220,6 @@ class Supervisor (object):
 		else:
 			self.local = local
 
-
-		self.local = set()
-
 	def run (self):
 		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
 
