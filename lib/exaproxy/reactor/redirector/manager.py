@@ -189,7 +189,7 @@ class RedirectorManager (object):
 			if identifier in self.worker:
 				break
 			else:
-				self.log.warning("Worker %d was in available list, but it does not exist anymore" % identifier)
+				self.log.warning("Worker %s was in available list, but it does not exist anymore" % identifier)
 				identifier = None
 
 		if identifier != None:
