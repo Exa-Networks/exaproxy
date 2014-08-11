@@ -245,7 +245,7 @@ class Supervisor (object):
 				# check for IO change with select
 				status = self.reactor.run()
 				if status is False:
-					self.exit()
+					self._shutdown = True
 
 				# must follow the reactor so we are sure to go through the reactor at least once
 				# and flush any logs
