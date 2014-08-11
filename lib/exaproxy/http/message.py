@@ -25,6 +25,7 @@ class HTTP (object):
 		self.client = remote_ip
 		self.proxy_name = "X-Proxy-Version: ExaProxy version %s" % configuration.proxy.version
 		self.forward = configuration.http.forward
+		self.mask = configuration.http.mask
 		self.log = Logger('header', configuration.log.header)
 		self.reply_code = 0
 		self.reply_string = ''
@@ -72,6 +73,10 @@ class HTTP (object):
 					self.client = client
 				#else:
 				#	self.log.info('Invalid address in Client identifier header: %s' % client)
+
+				# Remove x-forwarded-for if exaproxy.http.mask is set
+				if self.mask:
+					self.headers.pop(self.forward, None)
 
 			# encoding can contain trailers and other information see RFC2516 section 14.39
 			encoding = self.headers.get('transfer-encoding', [':'])[0].split(':', 1)[1].strip()
