@@ -32,7 +32,7 @@ class RedirectorReactor (object):
 
 		# we may have new workers to deal with queued requests
 		client_id, command, decision = self.decider.doqueue()
-		while client_id is not None:
+		while command is not None:
 			self.querier.sendResponse(client_id, command, decision)
 			client_id, command, decision = self.decider.doqueue()
 
@@ -62,7 +62,7 @@ class RedirectorReactor (object):
 			# decisions made by the child processes
 			for worker in events.get('read_workers', []):
 				client_id, command, decision = self.decider.getDecision(worker)
-				if client_id is not None:
+				if command is not None:
 					self.querier.sendResponse(client_id, command, decision)
 
 			# we should have available workers now so check for queued requests
