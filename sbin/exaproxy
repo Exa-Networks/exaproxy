@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION="1.1.2"
+export exaproxy_release="1.2.0"
 
 dirname=`dirname $0`
 
@@ -64,4 +64,4 @@ APPLICATION=`echo $APPLICATIONS | awk '{ print $1; }'`
 # 3x (2^16) = 196608 (should be enough for everyone as otherwise we will run of TCP port for outgoing connections anyway)
 ulimit -n 196608 > /dev/null 2> /dev/null
 
-exec $INTERPRETER -m exaproxy.util.debug $APPLICATION --release $VERSION $*
+exec $INTERPRETER -m exaproxy.util.debug $APPLICATION $*

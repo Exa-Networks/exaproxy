@@ -102,7 +102,6 @@ def main ():
 	next = ''
 	arguments = {
 		'configuration' : '',
-		'release' : '',
 	}
 
 	for arg in sys.argv[1:]:
@@ -112,13 +111,8 @@ def main ():
 			continue
 		if arg in ['-c','--conf-file']:
 			next = 'configuration'
-		if arg in ['--release','-r']:
-			next = 'release'
 
-	if arguments['release']:
-		version = arguments['release']
-	else:
-		version = os.environ['release']
+	version = os.environ.get('exaproxy_release','unknown')
 
 	defaults = {
 		'tcp4' : {

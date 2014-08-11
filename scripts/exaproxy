@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os
-os.environ['release'] = '1.1.2'
+os.environ['exaproxy_release'] = '1.2.0'
 
 from exaproxy.application import main
 main()
