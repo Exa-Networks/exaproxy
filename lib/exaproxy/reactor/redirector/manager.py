@@ -183,10 +183,17 @@ class RedirectorManager (object):
 
 
 	def acquire (self):
-		if self.available:
+		identifier = None
+		while self.available:
 			identifier = self.available.pop()
-			worker = self.worker[identifier]
+			if identifier in self.worker:
+				break
+			else:
+				self.log.warn("Worker %d was in available list, but it does not exist anymore" % identifier)
+				identifier = None
 
+		if identifier != None:
+			worker = self.worker[identifier]
 		else:
 			worker = None
 
