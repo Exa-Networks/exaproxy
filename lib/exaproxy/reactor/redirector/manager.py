@@ -200,7 +200,7 @@ class RedirectorManager (object):
 		return worker
 
 	def release (self, wid):
-		if wid not in self.stopping:
+		if wid not in self.stopping and wid in self.worker:
 			self.available.add(wid)
 
 		else:
