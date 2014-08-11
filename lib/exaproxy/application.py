@@ -115,6 +115,11 @@ def main ():
 		if arg in ['--release','-r']:
 			next = 'release'
 
+	if arguments['release']:
+		version = arguments['release']
+	else:
+		version = os.environ['release']
+
 	defaults = {
 		'tcp4' : {
 			'host'    : (value.unquote,string.quote,'127.0.0.1', 'the host the proxy listen on'),
@@ -219,7 +224,7 @@ def main ():
 			'destination' : (value.unquote,string.quote,'stdout', 'save profiling to file (instead of to the screen on exit)'),
 		},
 		'proxy' : {
-			'version' : (value.nop,string.nop,'unknown',  'ExaProxy\'s version'),
+			'version' : (value.nop,string.nop,version,  'ExaProxy\'s version'),
 		},
 		# Here for internal use
 		'debug' : {
@@ -235,10 +240,7 @@ def main ():
 		print >> sys.stderr, 'configuration issue,', str(e)
 		sys.exit(1)
 
-	if arguments['release']:
-		configuration.proxy.version = arguments['release']
-	else:
-		configuration.proxy.version = os.environ['release']
+	configuration.proxy.version = version
 
 	from exaproxy.util.log.logger import Logger
 	log = Logger('supervisor', configuration.log.supervisor)
