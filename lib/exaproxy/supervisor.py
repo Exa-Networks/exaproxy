@@ -220,6 +220,9 @@ class Supervisor (object):
 		else:
 			self.local = local
 
+
+		self.local = set()
+
 	def run (self):
 		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
 
@@ -245,7 +248,7 @@ class Supervisor (object):
 				# check for IO change with select
 				status = self.reactor.run()
 				if status is False:
-					self.exit()
+					self._shutdown = True
 
 				# must follow the reactor so we are sure to go through the reactor at least once
 				# and flush any logs
