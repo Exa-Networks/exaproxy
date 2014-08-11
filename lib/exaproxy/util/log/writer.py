@@ -95,6 +95,8 @@ class SysLogWriter(LogWriter):
 		self.level = level
 
 		_syslog = logging.getLogger(name)
+		for handler in _syslog.handlers:
+			_syslog.removeHandler(handler)
 		_handler = self.getHandler(destination)
 		_syslog.addHandler(_handler)
 		_syslog.setLevel(level)

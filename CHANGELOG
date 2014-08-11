@@ -22,6 +22,7 @@ Version 1.2.0 - 11th of August 2014
    patch by: Tim Watts
  * Fix: references to closed sockets
  * Fix: correctly reports version on help
+ * Fix: duplicate output
  * Fix: And many more David did not record  tsss tsss ...
 
 Version 1.1.2 - 6th of July 2013
