@@ -234,6 +234,9 @@ class Redirector:
 		message = self.parseHTTP(client_id, peer, http_header)
 		response = self.validateHTTP(client_id, message)
 
+		if response is not None:
+			return response
+
 		if message is not None:
 			message = self.addHeaders(message, peer)
 			method = message.request.method
