@@ -201,11 +201,7 @@ Encapsulated: req-hdr=0, null-body=%d
 		elif response_string is not None and source == 'proxy':
 			icap_header, http_header = self.icap_parser.splitResponse(response_string)
 			icap_response = self.icap_parser.parseResponse(icap_header, http_header)
-
-			try:
-				decision = self.decideHTTP(client_id, icap_response, message, peer, source)
-			except Exception, e:
-				print type(e), str(e)
+			decision = self.decideHTTP(client_id, icap_response, message, peer, source)
 
 		elif response_string is not None:
 			decision = Respond.hangup(client_id)

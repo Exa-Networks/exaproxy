@@ -228,7 +228,7 @@ class Redirector:
 		message = self.parseHTTP(client_id, peer, http_header)
 		response = self.validateHTTP(client_id, message)
 
-		if message is not None:
+		if message.validated:
 			message = self.addHeaders(message, peer)
 			method = message.request.method
 
@@ -256,7 +256,7 @@ class Redirector:
 				response = Respond.http(client_id, http('405', ''))  # METHOD NOT ALLOWED
 				self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
 
-		else:
+		elif response is None:
 			response = Respond.hangup(client_id)
 
 		return response
