@@ -189,28 +189,20 @@ Encapsulated: req-hdr=0, null-body=%d
 		return response
 
 	def progress (self, client_id, peer, message, http_header, subheader, source):
+		response_string = None
 		if self.checkChild():
 			response_string = self.readChildResponse()
 
-		else:
-			response_string = None
+		if response_string:
+			if source == 'icap':
+				return self.decideICAP(client_id, response_string)
 
-		if response_string is not None and source == 'icap':
-			decision = self.decideICAP(client_id, response_string)
+			if source == 'proxy':
+				icap_header, http_header = self.icap_parser.splitResponse(response_string)
+				icap_response = self.icap_parser.parseResponse(icap_header, http_header)
+				return self.decideHTTP(client_id, icap_response, message, peer, source)
 
-		elif response_string is not None and source == 'proxy':
-			icap_header, http_header = self.icap_parser.splitResponse(response_string)
-			icap_response = self.icap_parser.parseResponse(icap_header, http_header)
+			return Respond.hangup(client_id)
 
-			try:
-				decision = self.decideHTTP(client_id, icap_response, message, peer, source)
-			except Exception, e:
-				print type(e), str(e)
-
-		elif response_string is not None:
-			decision = Respond.hangup(client_id)
-
-		else:
-			decision = Respond.error(client_id)
-
-		return decision
+		# Something bad happened...
+		return Respond.error(client_id)
