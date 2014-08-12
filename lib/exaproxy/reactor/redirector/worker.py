@@ -208,14 +208,14 @@ class Redirector:
 		# NOTE: we are always returning an HTTP/1.1 response
 		method = message.request.method
 
-		max_forwards_header =  message.headers.get('max-forwards', False)
-		if max_forwards_header:
-			try:
-				max_forwards =int(max_forwards_header[-1].split(':')[-1].strip())
-			except ValueError: 
+		header = message.headers.get('max-forwards', '')
+		if header:
+			value = header[-1].split(':')[-1].strip()
+			if not value.isdigit():
 				self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
 				return Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n'))
 
+			max_forward = int(value)
 			if max_forward == 0:
 				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', method)
 				return Respond.http(client_id, http('200', ''))
