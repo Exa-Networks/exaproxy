@@ -193,16 +193,9 @@ Encapsulated: req-hdr=0, null-body=%d
 		if self.checkChild():
 			response_string = self.readChildResponse()
 
-		else:
-			response_string = None
-
-		if response_string is not None and source == 'icap':
-			decision = self.decideICAP(client_id, response_string)
-
-		elif response_string is not None and source == 'proxy':
-			icap_header, http_header = self.icap_parser.splitResponse(response_string)
-			icap_response = self.icap_parser.parseResponse(icap_header, http_header)
-			decision = self.decideHTTP(client_id, icap_response, message, peer, source)
+		if response_string:
+			if source == 'icap':
+				return self.decideICAP(client_id, response_string)
 
 			if source == 'proxy':
 				icap_header, http_header = self.icap_parser.splitResponse(response_string)
