@@ -296,11 +296,7 @@ class Redirector:
 		if response is not None and source == 'proxy':
 			classification, data, comment = response
 
-			if classification == 'requeue':
-				(operation, destination) = None, None
-				decision = Respond.requeue(client_id, peer, http_header, subheader, source)
-
-			elif message.request.method in ('GET','PUT','POST','HEAD','DELETE','PATCH'):
+			if message.request.method in ('GET','PUT','POST','HEAD','DELETE','PATCH'):
 				(operation, destination), decision = self.response_factory.contentResponse(client_id, message, classification, data, comment)
 
 			elif message.request.method == 'CONNECT':

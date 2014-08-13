@@ -145,11 +145,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			else:
 				classification, data, comment = 'error', None, None
 
-		if classification == 'requeue':
-			(operation, destination) = None, None
-			decision = Respond.requeue(client_id, peer, header, subheader, source)
-
-		elif message.request.method in ('GET','PUT','POST','HEAD','DELETE','PATCH'):
+		if message.request.method in ('GET','PUT','POST','HEAD','DELETE','PATCH'):
 			(operation, destination), decision = self.response_factory.contentResponse(client_id, message, classification, data, comment)
 
 		elif message.request.method == 'CONNECT':
