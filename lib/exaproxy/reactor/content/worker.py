@@ -103,6 +103,7 @@ class Content (object):
 	def shutdown(self):
 		try:
 			self.sock.shutdown(socket.SHUT_RDWR)
-			self.sock.close()
 		except socket.error:
 			pass
+		finally:
+			self.sock.close()
