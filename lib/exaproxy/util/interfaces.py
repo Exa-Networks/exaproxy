@@ -3,7 +3,11 @@
 
 from collections import namedtuple
 from sys import platform
-from ctypes import *
+
+from ctypes import c_short, c_ushort, c_char
+from ctypes import c_void_p, c_char_p, pointer
+from ctypes import c_uint, c_uint8, c_uint16, c_uint32
+from ctypes import Structure, Union, CDLL
 
 from socket import AF_INET, AF_INET6, inet_ntop
 from struct import pack
