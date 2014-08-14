@@ -111,34 +111,38 @@ class RedirectorSupervisor (object):
 		count_increase = 0
 		count_decrease = 0
 
-		while self.running is True:
-			count_increase = (count_increase + 1) % self.increase_frequency
-			count_decrease = (count_decrease + 1) % self.decrease_frequency
-
-			# check for IO change with select
-			status = self.reactor.run()
-			if status is False:
-				break
-
-
-			# make sure we have enough workers
-			if count_increase == 0:
-				self.manager.provision()
-
-			# and every so often remove useless workers
-			if count_decrease == 0:
-				self.manager.deprovision()
-
-			# check to respawn command
-			if self._respawn is True:
-				self._respawn = False
-				self.manager.respawn()
-
-
-			events = self.poller.poll()
-			while events.get('control'):
-				if not self.control():
-					self.running = False
+		try:
+			while self.running is True:
+				count_increase = (count_increase + 1) % self.increase_frequency
+				count_decrease = (count_decrease + 1) % self.decrease_frequency
+	
+				# check for IO change with select
+				status = self.reactor.run()
+				if status is False:
 					break
-
+	
+	
+				# make sure we have enough workers
+				if count_increase == 0:
+					self.manager.provision()
+	
+				# and every so often remove useless workers
+				if count_decrease == 0:
+					self.manager.deprovision()
+	
+				# check to respawn command
+				if self._respawn is True:
+					self._respawn = False
+					self.manager.respawn()
+	
+	
 				events = self.poller.poll()
+				while events.get('control'):
+					if not self.control():
+						self.running = False
+						break
+	
+					events = self.poller.poll()
+
+		except KeyboardInterrupt:
+			pass
