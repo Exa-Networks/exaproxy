@@ -119,7 +119,11 @@ class Monitor (object):
 		redirector = self._supervisor.redirector
 		reactor = self._supervisor.reactor
 
-		[redirector_stats] = redirector.getStats()
+		redirector_stats_output = redirector.getStats()
+		if redirector_stats_output == None:
+			return {}
+
+		[redirector_stats] = redirector_stats_output
 
 		return {
 			'pid.saved' : self._supervisor.pid._saved_pid,
