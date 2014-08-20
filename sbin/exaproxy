@@ -1,7 +1,5 @@
 #!/bin/sh
 
-export exaproxy_release="1.2.0"
-
 dirname=`dirname $0`
 
 case $dirname in

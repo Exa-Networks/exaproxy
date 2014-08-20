@@ -11,6 +11,8 @@ import sys
 
 from exaproxy.configuration import default,value,string
 
+version = '1.2.0'
+
 def version_warning ():
 	sys.stdout.write('\n')
 	sys.stdout.write('************ WARNING *** WARNING *** WARNING *** WARNING *********\n')
@@ -70,7 +72,7 @@ def help ():
 			sys.stdout.write(' - %s\n' % line)
 	sys.stdout.write('\n')
 
-def version (version):
+def show_version (version):
 	print 'exaproxy %s' % version
 
 def __exit(memory,code):
@@ -111,8 +113,6 @@ def main ():
 			continue
 		if arg in ['-c','--conf-file']:
 			next = 'configuration'
-
-	version = os.environ.get('exaproxy_release','unknown')
 
 	defaults = {
 		'tcp4' : {
@@ -258,7 +258,7 @@ def main ():
 			env(True)
 			sys.exit(0)
 		if arg in ['-v','--version']:
-			version(configuration.proxy.version)
+			show_version(version)
 			sys.exit(0)
 		if arg in ['-d','--debug']:
 			configuration.debug.log = True
