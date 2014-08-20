@@ -147,7 +147,9 @@ class Supervisor (object):
 
 		# make sure we always have data in history
 		# (done in zero for dependencies reasons)
-		self.monitor.zero()
+		ok = self.monitor.zero()
+		if not ok:
+			self._shutdown = True
 
 	def exit (self):
 		sys.exit()
@@ -297,16 +299,20 @@ class Supervisor (object):
 
 				# save our monitoring stats
 				if count_second == 0:
-					self.monitor.second()
+					ok = self.monitor.second()
 					expired = self.reactor.client.expire()
 				else:
+					ok = True
 					expired = 0
+
+				if ok is True and count_minute == 0:
+					ok = self.monitor.minute()
+
+				if ok is not True:
+					self._shutdown = True
 
 				if expired:
 					self.proxy.notifyClose(None, count=expired)
-
-				if count_minute == 0:
-					self.monitor.minute()
 
 				# report if we saw too many connections
 				if count_saturation == 0:
@@ -319,6 +325,7 @@ class Supervisor (object):
 			except KeyboardInterrupt:
 				self.log.critical('^C received')
 				self._shutdown = True
+
 			except OSError,e:
 				# This shoould never happen as we are limiting how many connections we accept
 				if e.errno == 24:  # Too many open files

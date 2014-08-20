@@ -34,7 +34,12 @@ class RedirectorDispatcher (object):
 	def stop (self):
 		self.queue.put(('STOP', ''))
 		self.thread.join()
-		return self.messagebox.stop()
+		try:
+			res = self.messagebox.stop()
+		except IOError, e:
+			res = None
+
+		return res
 
 	def sendRequest (self, client_id, peer, request, subrequest, source):
 		message = client_id, peer, request, subrequest, source
@@ -53,4 +58,5 @@ class RedirectorDispatcher (object):
 		return self.messagebox.increaseSpawnLimit(*args)
 
 	def getStats (self):
-		return self.messagebox.getStats()
+		[stats] = self.messagebox.getStats() or [None]
+		return stats

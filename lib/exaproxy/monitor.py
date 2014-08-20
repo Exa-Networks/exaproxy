@@ -24,11 +24,16 @@ class Monitor (object):
 	def zero (self):
 		# make sure we always have data in seconds
 		start = dict()
-		for k in self.statistics():
+		stats = self.statistics()
+
+		for k in stats:
 			start[k] = 0
 
-		self.seconds.append(start)
-		self.minutes.append(start)
+		if start:
+			self.seconds.append(start)
+			self.minutes.append(start)
+
+		return bool(stats)
 
 	def introspection (self,objects):
 		obj = self._container
@@ -119,7 +124,10 @@ class Monitor (object):
 		redirector = self._supervisor.redirector
 		reactor = self._supervisor.reactor
 
-		[redirector_stats] = redirector.getStats()
+		redirector_stats = redirector.getStats()
+
+		if not redirector_stats:
+			return {}
 
 		return {
 			'pid.saved' : self._supervisor.pid._saved_pid,
@@ -143,21 +151,21 @@ class Monitor (object):
 		}
 
 	def second (self):
-		self.seconds.append(self.statistics())
+		stats = self.statistics()
+		if stats:
+			self.seconds.append(stats)
+
 		if len(self.seconds) > self.nb_recorded:
 			self.seconds.popleft()
 
+		return bool(stats)
+
 	def minute (self):
-		self.minutes.append(self.statistics())
+		stats = self.statistics()
+		if stats:
+			self.minutes.append(stats)
+
 		if len(self.minutes) > self.nb_recorded:
 			self.minutes.popleft()
 
-		# minutes = defaultdict(lambda: 0)
-
-		# for record in self.seconds:
-		# 	for k,v in record.items():
-		# 		minutes[k] += v
-
-		# self.minutes.append(minutes)
-		# if len(self.minutes) > self.nb_recorded:
-		# 	self.seconds.popleft()
+		return bool(stats)
