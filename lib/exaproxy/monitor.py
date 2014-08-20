@@ -124,7 +124,10 @@ class Monitor (object):
 		redirector = self._supervisor.redirector
 		reactor = self._supervisor.reactor
 
-		[redirector_stats] = redirector.getStats() or [{}]
+		redirector_stats = redirector.getStats()
+
+		if not redirector_stats:
+			return {}
 
 		return {
 			'pid.saved' : self._supervisor.pid._saved_pid,
@@ -145,7 +148,7 @@ class Monitor (object):
 			'load.loops' : reactor.nb_loops,
 			'load.events' : reactor.nb_events,
 			'queue.size' : redirector_stats['queue'],
-		} if redirector_stats else {}
+		}
 
 	def second (self):
 		stats = self.statistics()

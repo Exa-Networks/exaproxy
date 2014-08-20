@@ -6,6 +6,9 @@ Version explained:
 Version 1.2.1
  * Fix: issue with handling of max-forwards
    patch by Tim Watts
+ * Fix: gracefully shutdown when trying to read over a closed pipe for communication
+        with another process
+   reported by Emanuele Rocca
 
 Version 1.2.0 - 11th of August 2014
  * Feature: ICAP is the new black
