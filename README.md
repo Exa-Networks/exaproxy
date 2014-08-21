@@ -47,8 +47,8 @@ Tested with [Co-Advisor](http://coad.measurement-factory.com/). We are failing H
 ## Get it
 
 ```sh
-> wget http://exaproxy.googlecode.com/files/exaproxy-1.2.1.tgz
-> tar zxvf exaproxy-1.2.1.tgz
+> wget https://codeload.github.com/Exa-Networks/exaproxy/tar.gz/1.2.1
+> tar xzvf 1.2.1
 > cd exaproxy-1.2.1
 > ./sbin/exaproxy
 ```
