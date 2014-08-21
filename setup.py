@@ -12,11 +12,24 @@ import sys
 import glob
 from distutils.core import setup
 from distutils.util import get_platform
+from setuptools.command.install import install
+from setuptools.command.easy_install import chmod
 
 try:
-	version = os.popen('git describe --tags').read().split('-')[0].strip()
+	version = None
+	root = os.path.dirname(os.path.join(os.getcwd(),sys.argv[0]))
+	with open(os.path.join(root,'lib/exaproxy/application.py'),'r') as stream:
+		for line in stream:
+			if line.startswith("version = '"):
+				_,version,_ = line.split("'")
+				break
+	if version is None:
+		raise Exception()
+	if False in [ _.isdigit() for _ in version.split('.')]:
+		raise Exception()
+	print 'exaproxy version', version
 except Exception,e:
-	print "can not find the hgtags file in the repository"
+	print "can not extract exaproxy version"
 	sys.exit(1)
 
 def packages (lib):
@@ -47,6 +60,19 @@ def files ():
 	r.extend(configuration('etc/exaproxy'))
 	return r
 
+class custom_install (install):
+	def run (self):
+		install.run(self)
+
+		if not self.dry_run:
+			for names in ( names for section,names in files() if section == 'etc/exaproxy/redirector'):
+				for name in names:
+					location = os.path.join(self.install_data,name)
+					chmod(location, 0755) # the 0 make the value octal
+			self.install_data
+
+
+
 setup(name='exaproxy',
 	version=version,
 	description='non-caching http/https proxy',
@@ -72,4 +98,6 @@ setup(name='exaproxy',
 		'Programming Language :: Python',
 		'Topic :: Internet :: WWW/HTTP',
 	],
+	cmdclass={'install': custom_install},
 )
+
