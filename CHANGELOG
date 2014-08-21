@@ -9,6 +9,7 @@ Version 1.2.1
  * Fix: gracefully shutdown when trying to read over a closed pipe for communication
         with another process
    reported by Emanuele Rocca
+ * Fix: issue #9, pip installation
 
 Version 1.2.0 - 11th of August 2014
  * Feature: ICAP is the new black

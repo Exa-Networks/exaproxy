@@ -8,7 +8,7 @@ Exaproxy is used in production since early 2013, and proxies millions of URL per
 
 ## News
 
-August 14th 2014, released ExaProxy 1.2.0
+August 21st 2014, released ExaProxy 1.2.1
 
 ## Features
 
@@ -47,9 +47,9 @@ Tested with [Co-Advisor](http://coad.measurement-factory.com/). We are failing H
 ## Get it
 
 ```sh
-> wget http://exaproxy.googlecode.com/files/exaproxy-1.2.0.tgz
-> tar zxvf exaproxy-1.2.0.tgz
-> cd exaproxy-1.2.0
+> wget http://exaproxy.googlecode.com/files/exaproxy-1.2.1.tgz
+> tar zxvf exaproxy-1.2.1.tgz
+> cd exaproxy-1.2.1
 > ./sbin/exaproxy
 ```
 

@@ -11,7 +11,7 @@ import sys
 
 from exaproxy.configuration import default,value,string
 
-version = '1.2.0'
+version = '1.2.1'
 
 def version_warning ():
 	sys.stdout.write('\n')
