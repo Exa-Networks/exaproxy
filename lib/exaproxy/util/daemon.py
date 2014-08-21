@@ -64,7 +64,7 @@ class Daemon (object):
 				resource.setrlimit(resource.RLIMIT_NOFILE, (wanted_limit, hard_limit))
 
 			except (resource.error,ValueError),e:
-				self.log.warning('problem when trying to increase resource limit : ' % str(e))
+				self.log.warning('problem when trying to increase resource limit : %s' % str(e))
 
 		soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 		if soft < self.nb_descriptors:
