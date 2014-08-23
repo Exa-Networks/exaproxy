@@ -3,7 +3,11 @@ Version explained:
  minor : increase on new features
  bug   : increase on bug fixes
 
-Version 1.2.1
+Version 1.2.2 - 
+ * Fix: handle blocking exception when writing on messagebox
+   reported by Tim Watts
+
+Version 1.2.1 - 21st of August 2014
  * Fix: issue with handling of max-forwards
    patch by Tim Watts
  * Fix: gracefully shutdown when trying to read over a closed pipe for communication

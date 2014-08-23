@@ -1,6 +1,7 @@
 import os
 import pickle
 
+from exaproxy.network.errno_list import errno_block
 
 class MessageReader:
 	delimiter = ':'
@@ -88,10 +89,21 @@ class MessageBox (MessageReader):
 		pickled = pickle.dumps(message)
 		message_s = str(len(pickled)) + self.delimiter + str(pickled) + self.eom
 
-		self.pipe_out.write(message_s)
+		while True:
+			try:
+				return self.pipe_out.write(message_s)
+			except IOError, e:
+				if e.errno not in errno_block:
+					raise e
 
 	def get (self):
-		pickled = self.read(self.pipe_in)
+		while True:
+			try:
+				pickled = self.read(self.pipe_in)
+				break
+			except IOError, e:
+				if e.errno not in errno_block:
+					raise e
 
 		if pickled is not None:
 			try:
