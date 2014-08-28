@@ -69,9 +69,19 @@ class Daemon (object):
 		soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 		if soft < self.nb_descriptors:
 			self.log.critical('could not increase file descriptor limit to %d, limit is still %d' % (self.nb_descriptors,signed(soft)))
+			self.log.critical('on Linux you may want to increase the value in /proc/sys/fs/file-max')
 			self.log.critical('please increase your system maximum limit, alternatively you can reduce')
 			self.log.critical('exaproxy.http.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
 			return
+
+		# on linux :
+		# need to get page size, and box memory, read /proc/sys/net/ipv4/tcp_mem and make sure the values are same.
+		# look at /proc/sys/net/ipv4/tcp_max_orphans and make sure the value is high enough for the number of FD
+		# > free -m
+		# > getconf PAGESIZE
+		# we should monitor and graph some of the values of /proc/net/sockstat and add it to our web page
+		# like TCP inuse, orphan, etc.
+
 
 		self.log.info('for information, your configuration requires %d available file descriptors' % self.nb_descriptors)
 		self.filemax = self.nb_descriptors
