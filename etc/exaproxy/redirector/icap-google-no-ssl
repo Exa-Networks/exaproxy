@@ -51,10 +51,10 @@ Host: nosslsearch.google.com
 		# Always return the Encapsulated size as last header and with a null-body
 		reply = """\
 ICAP/1.0 200 OK
-Encapsulated: res-hdr=0, null-body=%d
+Encapsulated: req-hdr=0, null-body=%d
 
 %s""" % (len(headers),headers)
-		print >> sys.stderr, reply
+		#print >> sys.stderr, reply
 		sys.stdout.write(reply)
 		sys.stdout.flush()
 except KeyboardInterrupt, e:
