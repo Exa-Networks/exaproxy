@@ -158,12 +158,14 @@ Encapsulated: req-hdr=0, null-body=%d
 		return decision
 
 
-	def doICAP (self, client_id, peer, icap_header, http_header, tainted):
+	def doICAP (self, client_id, peer, icap_header, http_header):
 		icap_request = self.icap_parser.parseRequest(peer, icap_header, http_header)
 		http_request = self.http_parser.parseRequest(peer, http_header)
 
 		request_string = self.createICAPRequest(peer, http_request, icap_request, http_header) if icap_request else None
-		return self.queryChild(request_string) if request_string else None
+		status = self.writeChild(request_string) if request_string else None
+
+		return Respond.defer(client_id, icap_request) if status else None
 
 	def decide (self, client_id, peer, header, subheader, source):
 		if self.checkChild():
