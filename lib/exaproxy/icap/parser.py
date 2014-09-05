@@ -114,8 +114,8 @@ class ICAPParser (object):
 			yield positions[start], body[start:end]
 
 
-	def parseResponse (self, icap_string, http_string):
-		response_lines = (p for ss in icap_string.split('\r\n') for p in ss.split('\n'))
+	def parseResponse (self, header_string, body_string):
+		response_lines = (p for ss in header_string.split('\r\n') for p in ss.split('\n'))
 		try:
 			response_line = response_lines.next()
 		except StopIteration:
@@ -131,7 +131,7 @@ class ICAPParser (object):
 			headers = {}
 
 		encapsulated_line = headers.get('encapsulated', '')
-		encapsulated = dict(self.deencapsulate(encapsulated_line, http_string))
+		encapsulated = dict(self.deencapsulate(encapsulated_line, body_string))
 
 		response_string = encapsulated.get('res-hdr', '')
 		response_string += encapsulated.get('res-body', '')
@@ -147,7 +147,7 @@ class ICAPParser (object):
 		else:
 			intercept_string = None
 
-		return self.response_factory.create(version, code, status, headers, icap_string, request_string, response_string, intercept_string)
+		return self.response_factory.create(version, code, status, headers, header_string, request_string, response_string, intercept_string)
 
 	def splitResponse (self, response_string):
 		response_string = response_string.replace('\r\n', '\n')
