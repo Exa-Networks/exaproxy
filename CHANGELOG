@@ -6,6 +6,10 @@ Version explained:
 Version 1.2.2 - 
  * Fix: handle blocking exception when writing on messagebox
    reported by Tim Watts
+ * Fix: honour configuration directing the proxy to use the source IP address
+	provided over the proxy protocol
+ * Fix: error sending requests to the backend decider processes when running as
+	an ICAP server
 
 Version 1.2.1 - 21st of August 2014
  * Fix: issue with handling of max-forwards
