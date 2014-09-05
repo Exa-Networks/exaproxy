@@ -27,9 +27,12 @@ class ClientManager (object):
 		self._nextid = 0
 		self.poller = poller
 		self.log = Logger('client', configuration.log.client)
-		self.proxied = configuration.http.proxied
 		self.http_max_buffer = configuration.http.header_size
 		self.icap_max_buffer = configuration.icap.header_size
+		self.proxied = {
+			'proxy' : configuration.http.proxied,
+			'icap'  : configuration.icap.proxied,
+		}
 
 	def __contains__(self, item):
 		return item in self.byname
@@ -94,7 +97,7 @@ class ClientManager (object):
 			self.log.error('trying to read headers from a client that does not exist %s' % sock)
 			name, peer, request, subrequest, content, source = None, None, None, None, None, None
 
-		if request and self.proxied is True and source == 'proxy':
+		if request and self.proxied.get(source) is True:
 			client_ip, client_request = self.unproxy(request)
 
 			if client_ip and client_request:
