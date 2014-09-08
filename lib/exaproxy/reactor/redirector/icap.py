@@ -42,6 +42,9 @@ class ICAPRedirector (Redirector):
 				if line.startswith('Encapsulated: res-hdr=0, null-body='):
 					length = int(line.split('=')[-1])
 
+				if line.startswith('Encapsulated: req-hdr=0, null-body='):
+					length = int(line.split('=')[-1])
+
 			read_bytes = 0
 			bytes_to_read = max(0, length)
 
