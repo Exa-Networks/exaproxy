@@ -42,6 +42,10 @@ try:
 		headers = """\
 HTTP/1.1 200 OK
 
+"""
+
+
+		body = """\
 <html>
 <head>
 </head>
@@ -50,14 +54,13 @@ no, you are stuck on this dummy page<br/>
 this dummy page is your life ...
 </body>
 </html>
-
 """
 		# Always return the Encapsulated size as last header and with a null-body
 		reply = """\
 ICAP/1.0 200 OK
-Encapsulated: res-hdr=0, null-body=%d
+Encapsulated: res-hdr=0, res-body=%d
 
-%s""" % (len(headers),headers)
+%s""" % (len(headers),headers + ('%x\n' % len(body)) + body + '0\n')
 		sys.stdout.write(reply)
 		sys.stdout.flush()
 except KeyboardInterrupt, e:
