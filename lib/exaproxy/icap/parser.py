@@ -94,7 +94,13 @@ class ICAPParser (object):
 		else:
 			headers = None
 
-		return self.request_factory.create(headers, icap_string, http_string) if headers else None
+		offsets = self.getOffsets(headers) if headers is not None else []
+		length, complete = self.getBodyLength(offsets)
+
+		if set(('res-hdr', 'res-body')).intersection(dict(offsets)):
+			headers = None
+
+		return self.request_factory.create(method, url, version, headers, icap_string, http_string, offsets, length, complete) if headers else None
 
 	def getOffsets (self, headers):
 		encapsulated_line = headers.get('encapsulated', '')
@@ -138,7 +144,7 @@ class ICAPParser (object):
 		else:
 			headers = {}
 
-		offsets = self.getOffsets(headers)
+		offsets = self.getOffsets(headers) if headers is not None else []
 		length, complete = self.getBodyLength(offsets)
 
 		return self.header_factory.create(version, code, status, headers, header_string, offsets, length, complete)
