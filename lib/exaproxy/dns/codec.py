@@ -36,18 +36,7 @@ class DNSHeader:
 
 class DNSQuery:
 	def __init__(self, data, packet_s, names):
-		name, ptr = convert.dns_string(data)
-		total_read = len(name) + 2
-
-		if ptr is not None:
-			parts = [name] if name else []
-			extra = convert.dns_to_string(packet_s[ptr:], packet_s)
-
-			if extra is not None:
-				parts += [extra] if extra else []
-				name = '.'.join(parts)
-			else:
-				name = None
+		total_read, name = convert.dns_to_string_info(data, packet_s)
 
 		if name:
 			data = data[total_read:]
@@ -72,18 +61,7 @@ class DNSResource:
 			ptr = None
 			total_read = 1
 		else:
-			name, ptr = convert.dns_string(data)
-			total_read = len(name) + 2
-
-		if ptr is not None:
-			parts = [name] if name else []
-			extra = convert.dns_to_string(packet_s[ptr:], packet_s)
-
-			if extra is not None:
-				parts += [extra] if extra else []
-				name = '.'.join(parts)
-			else:
-				name = None
+			total_read, name = convert.dns_to_string_info(data, packet_s)
 
 		if name:
 			data = data[total_read:]
