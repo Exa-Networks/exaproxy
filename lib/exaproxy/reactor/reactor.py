@@ -23,7 +23,6 @@ class Reactor(object):
 		self.poller = poller      # Interface to the poller
 		self.logger = logger      # Log writing interfaces
 		self.usage = usage        # Request logging
-		self.running = True       # Until we stop we run :)
 		self.nb_events = 0L       # Number of events received
 		self.nb_loops = 0L        # Number of loop iteration
 		self.events = []          # events so we can report them once in a while
@@ -31,8 +30,6 @@ class Reactor(object):
 		self.log = Logger('supervisor', configuration.log.supervisor)
 
 	def run(self):
-		self.running = True
-
 		poller = self.poller
 
 #		count = 0
@@ -48,7 +45,7 @@ class Reactor(object):
 
 		self.resolver.expireCache()
 
-		while self.running:
+		while True:
 			# wait until we have something to do
 			events = poller.poll()
 			self.events = events
@@ -278,5 +275,9 @@ class Reactor(object):
 
 			self.logger.writeMessages()
 			self.usage.writeMessages()
+
+			# check to see if the reactor has been told to stop
+			if events.get('read_interrupt'):
+				break
 
 		return True
