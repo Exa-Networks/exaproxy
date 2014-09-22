@@ -48,5 +48,6 @@ def fork_redirector (poller, configuration):
 
 		redirector = ProxyToRedirectorMessageBox(pid, r1, w2, cr1, cw2)
 		poller.addReadSocket('read_redirector', redirector.box.pipe_in)
+		poller.addReadSocket('read_control', redirector.control.box.pipe_in)
 
 	return redirector

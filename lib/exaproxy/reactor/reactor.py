@@ -165,7 +165,7 @@ class Reactor(object):
 
 				if command is None:
 					# if the redirector process disappears then we must close the proxy
-					return False
+					return False, {}
 
 				# check that the client didn't get bored and go away
 				if client_id in self.client:
@@ -280,4 +280,4 @@ class Reactor(object):
 			if events.get('read_interrupt'):
 				break
 
-		return True
+		return True, set(k for k in ['read_control'] if events.get(k))

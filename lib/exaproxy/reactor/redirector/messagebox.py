@@ -45,9 +45,11 @@ class ProxyToRedirectorMessageBox:
 	def increaseSpawnLimit (self, count=1):
 		self.control.send('INCREASE', count)
 
-	def getStats (self):
+	def requestStats (self):
 		identifier = self.control.send('STATS')
-		return self.control.receive(identifier)
+
+	def readResponse (self):
+		return self.control.receive()
 
 
 

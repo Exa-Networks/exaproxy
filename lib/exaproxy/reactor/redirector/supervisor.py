@@ -77,7 +77,7 @@ class RedirectorSupervisor (object):
 		self.manager.decrease(count)
 
 	def sendStats (self, identifier):
-		self.controlbox.respond(identifier, {
+		self.controlbox.respond(identifier, 'STATS', {
 			'forked' : len(self.manager.worker),
 			'min' :    self.manager.low,
 			'max' :    self.manager.high,
