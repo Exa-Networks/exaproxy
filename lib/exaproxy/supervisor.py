@@ -14,6 +14,7 @@ from socket import has_ipv6
 
 from .util.pid import PID
 from .util.daemon import Daemon
+from .util.alarm import alarm_thread
 
 from .reactor.content.manager import ContentManager
 from .reactor.client.manager import ClientManager
@@ -91,6 +92,9 @@ class Supervisor (object):
 		self.poller.setupWrite('write_download')    # Established connections we have buffered data to send to
 		self.poller.setupWrite('opening_download')  # Opening connections
 
+		self.poller.setupRead('read_interrupt')		# Scheduled events
+		self.poller.setupRead('read_control')		# Responses from commands sent to the redirector process
+
 		self.monitor = Monitor(self)
 		self.page = Page(self)
 		self.content = ContentManager(self,configuration)
@@ -123,7 +127,12 @@ class Supervisor (object):
 		# fork the redirector process before performing any further setup
 		redirector = fork_redirector(self.poller, self.configuration)
 
-		# create threads _after_ all forking is done
+		# NOTE: create threads _after_ all forking is done
+
+		# regularly interrupt the reactor for maintenance
+		self.interrupt_scheduler = alarm_thread(self.poller, self.alarm_time)
+
+		# use simple blocking IO for communication with the redirector process
 		self.redirector = redirector_message_thread(redirector)
 
 		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.icap, self.redirector, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
@@ -143,12 +152,20 @@ class Supervisor (object):
 		signal.signal(signal.SIGTTOU, self.sigttou)
 		signal.signal(signal.SIGTTIN, self.sigttin)
 
-		signal.signal(signal.SIGALRM, self.sigalrm)
-
 		# make sure we always have data in history
 		# (done in zero for dependencies reasons)
-		ok = self.monitor.zero()
-		if not ok:
+
+		self.redirector.requestStats()
+		command, control_data = self.redirector.readResponse()
+		stats_data = control_data if command == 'STATS' else None
+
+		stats = self.monitor.statistics(stats_data)
+		ok = self.monitor.zero(stats)
+
+		if ok:
+			self.redirector.requestStats()
+
+		else:
 			self._shutdown = True
 
 	def exit (self):
@@ -201,11 +218,6 @@ class Supervisor (object):
 		self._listen = True
 
 
-	def sigalrm (self,signum, frame):
-		self.reactor.running = False
-		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
-
-
 	def interfaces (self):
 		local = set(['127.0.0.1','::1'])
 		for interface in getifaddrs():
@@ -223,8 +235,6 @@ class Supervisor (object):
 			self.local = local
 
 	def run (self):
-		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
-
 		count_second = 0
 		count_minute = 0
 		count_saturation = 0
@@ -243,11 +253,18 @@ class Supervisor (object):
 					import pdb
 					pdb.set_trace()
 
+				# prime the alarm
+				self.interrupt_scheduler.setAlarm()
 
 				# check for IO change with select
-				status = self.reactor.run()
+				status, events = self.reactor.run()
+
+				# shut down the server if a child process disappears
 				if status is False:
 					self._shutdown = True
+
+				# clear the alarm condition
+				self.interrupt_scheduler.acknowledgeAlarm()
 
 				# must follow the reactor so we are sure to go through the reactor at least once
 				# and flush any logs
@@ -297,19 +314,37 @@ class Supervisor (object):
 					self.redirector.increaseSpawnLimit(count)
 					self._increase_spawn_limit = 0
 
-				# save our monitoring stats
-				if count_second == 0:
-					ok = self.monitor.second()
-					expired = self.reactor.client.expire()
+
+				if 'read_control' in events:
+					command, control_data = self.redirector.readResponse()
+					stats_data = control_data if command == 'STATS' else None
+
 				else:
-					ok = True
-					expired = 0
+					stats_data = None
 
-				if ok is True and count_minute == 0:
-					ok = self.monitor.minute()
+				if stats_data is not None:
+					# parse the data we were sent
+					stats = self.monitor.statistics(stats_data)
 
-				if ok is not True:
-					self._shutdown = True
+					# and request more for the next maintenance window
+					self.redirector.requestStats()
+
+					# save our monitoring stats
+					if count_second == 0:
+						ok = self.monitor.second(stats)
+					else:
+						ok = True
+						expired = 0
+
+					if ok is True and count_minute == 0:
+						ok = self.monitor.minute(stats)
+
+					if ok is not True:
+						self._shutdown = True
+
+				# cleanup idle connections
+				# TODO: track all idle connections, not just the ones that have never sent data
+				expired = self.reactor.client.expire()
 
 				if expired:
 					self.proxy.notifyClose(None, count=expired)
@@ -418,10 +453,10 @@ class Supervisor (object):
 			self.web.stop()  # accept no new web connection
 			self.proxy.stop()  # accept no new proxy connections
 			self.redirector.stop()  # shut down redirector children
-			os.kill(os.getpid(),signal.SIGALRM)
 			self.content.stop()  # stop downloading data
 			self.client.stop()  # close client connections
 			self.pid.remove()
+			self.interrupt_scheduler.stop()
 		except KeyboardInterrupt:
 			self.log.info('^C received while shutting down. Exiting immediately because you insisted.')
 			sys.exit()

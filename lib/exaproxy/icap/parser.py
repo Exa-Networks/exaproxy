@@ -2,19 +2,10 @@
 # encoding: utf-8
 from .request import ICAPRequestFactory
 from .response import ICAPResponseFactory
-
-def grouped (values):
-	if not values:
-		return
-
-	end = len(values) - 1
-
-	for pos in range(end):
-		yield values[pos], values[pos+1]
-
-	yield values[end], None
+from .header import ICAPResponseHeaderFactory
 
 class ICAPParser (object):
+	ICAPResponseHeaderFactory = ICAPResponseHeaderFactory
 	ICAPRequestFactory = ICAPRequestFactory
 	ICAPResponseFactory = ICAPResponseFactory
 
@@ -26,6 +17,7 @@ class ICAPParser (object):
 
 	def __init__ (self, configuration):
 		self.configuration = configuration
+		self.header_factory = self.ICAPResponseHeaderFactory(configuration)
 		self.request_factory = self.ICAPRequestFactory(configuration)
 		self.response_factory = self.ICAPResponseFactory(configuration)
 
@@ -102,19 +94,41 @@ class ICAPParser (object):
 		else:
 			headers = None
 
-		return self.request_factory.create(headers, icap_string, http_string) if headers else None
+		offsets = self.getOffsets(headers) if headers is not None else []
+		length, complete = self.getBodyLength(offsets)
 
-	def deencapsulate (self, encapsulated_line, body):
+		if set(('res-hdr', 'res-body')).intersection(dict(offsets)):
+			headers = None
+
+		return self.request_factory.create(method, url, version, headers, icap_string, http_string, offsets, length, complete) if headers else None
+
+	def getOffsets (self, headers):
+		encapsulated_line = headers.get('encapsulated', '')
+
 		parts = (p.strip() for p in encapsulated_line.split(',') if '=' in p)
 		pairs = (p.split('=',1) for p in parts)
+		offsets = ((k,int(v)) for (k,v) in pairs if v.isdigit())
 
-		positions = dict((int(v),k) for (k,v) in pairs if v.isdigit())
+		return sorted(offsets, lambda (_,a), (__,b): 1 if a >= b else -1)
 
-		for start, end in grouped(sorted(positions)):
-			yield positions[start], body[start:end]
+	def getBodyLength (self, offsets):
+		final, offset = offsets[-1] if offsets else ('null-body', 0)
+		return offset, offset and final == 'null-body'
 
+	def splitResponseParts (self, offsets, body_string):
+		final, offset = offsets[-1] if offsets else (None, None)
+		if final != 'null-body':
+			offsets = offsets + [('null-body', len(body_string))]
 
-	def parseResponse (self, header_string, body_string):
+		names = [name for name,offset in offsets]
+		positions = [offset for name,offset in offsets]
+
+		blocks = ((positions[i], positions[i+1]) for i in xrange(len(positions)-1))
+		strings = (body_string[start:end] for start,end in blocks)
+
+		return dict(zip(names, strings))
+
+	def parseResponseHeader (self, header_string):
 		response_lines = (p for ss in header_string.split('\r\n') for p in ss.split('\n'))
 		try:
 			response_line = response_lines.next()
@@ -130,14 +144,24 @@ class ICAPParser (object):
 		else:
 			headers = {}
 
-		encapsulated_line = headers.get('encapsulated', '')
-		encapsulated = dict(self.deencapsulate(encapsulated_line, body_string))
+		offsets = self.getOffsets(headers) if headers is not None else []
+		length, complete = self.getBodyLength(offsets)
 
-		response_string = encapsulated.get('res-hdr', '')
-		response_string += encapsulated.get('res-body', '')
+		return self.header_factory.create(version, code, status, headers, header_string, offsets, length, complete)
 
-		request_string = encapsulated.get('req-hdr', '')
-		request_string += encapsulated.get('req-body', '')
+	def continueResponse (self, response_header, body_string):
+		version, code, status = response_header.info
+		headers = response_header.headers
+		header_string = response_header.header_string
+
+		# split the body string into components
+		offsets = self.splitResponseParts(response_header.offsets, body_string)
+
+		response_string = offsets.get('res-hdr', '')
+		response_string += offsets.get('res-body', '')
+
+		request_string = offsets.get('req-hdr', '')
+		request_string += offsets.get('req-body', '')
 
 		if request_string.startswith('CONNECT'):
 			intercept_string, request_string = self.splitResponse(request_string)
@@ -146,6 +170,7 @@ class ICAPParser (object):
 
 		else:
 			intercept_string = None
+
 
 		return self.response_factory.create(version, code, status, headers, header_string, request_string, response_string, intercept_string)
 

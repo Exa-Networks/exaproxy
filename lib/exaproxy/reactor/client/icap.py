@@ -12,6 +12,8 @@ import errno
 from exaproxy.network.functions import isipv4
 from exaproxy.network.errno_list import errno_block
 
+from exaproxy.icap.parser import ICAPParser
+
 def ishex (s):
 	return bool(s) and not bool(s.strip('0123456789abcdefABCDEF'))
 
@@ -21,7 +23,7 @@ def count_quotes (data):
 class ICAPClient (object):
 	eor = ['\r\n\r\n', '\n\n']
 
-	__slots__ = ['name', 'ipv4', 'sock', 'peer', 'reader', 'writer', 'w_buffer', 'log']
+	__slots__ = ['name', 'ipv4', 'sock', 'peer', 'reader', 'writer', 'w_buffer', 'icap_parser', 'log']
 
 	def __init__(self, name, sock, peer, logger, max_buffer):
 		self.name = name
@@ -32,6 +34,7 @@ class ICAPClient (object):
 		self.writer = self._write(sock)
 		self.w_buffer = ''
 
+		self.icap_parser = ICAPParser(configuration={})
 		self.log = logger
 
 		# start the _read coroutine
@@ -112,6 +115,7 @@ class ICAPClient (object):
 
 		r_buffer = ''
 		nb_to_send = 0
+		content_length = 0
 		seek = 0
 		processing = False
 
@@ -231,31 +235,57 @@ class ICAPClient (object):
 						self.log.error('.. if it works, we are lucky - but it may work.')
 						mode = 'icap'
 
-					# ignore EOL
-					r_buffer = r_buffer.lstrip('\r\n')
 
-					# check to see if we have read an entire request
-					request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
+					if mode == 'icap':
+						# ignore EOL
+						r_buffer = r_buffer.lstrip('\r\n')
 
-					if request is None:
-						# most likely could not find an header
-						break
+						# check to see if we have read an entire request
+						request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
 
-					if request and mode == 'icap':
-						icap_request = request
-						request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, 0)
-						mode = 'request'
+						if request is None:
+							# most likely could not find a header
+							break
 
-					if not request:
-						yield '', '', ''
-						continue
+						if request:
+							icap_request = request
+
+							parsed_request = self.icap_parser.parseRequest(self.peer, icap_request, '')
+							content_length = parsed_request.content_length
+
+							if parsed_request is None or parsed_request.contains_body:
+								# we do not (yet) support having content sent to us
+								break
+
+							if not parsed_request.contains_headers:
+								# we need at least an HTTP header
+								break
+
+							# no reason to keep this around in memory longer than we need it
+							parsed_request = None
+
+							request, seek = '', 0
+							mode = 'request'
+
+						else:
+							yield '', '', ''
+							continue
+
+					if mode == 'request':
+						r_len = len(r_buffer)
+
+						if r_len < content_length:
+							yield '', '', ''
+							continue
+
+					request, r_buffer = r_buffer[:content_length], r_buffer[content_length:]
 
 					seek = 0
 					processing = True
 
 					# nb_to_send is how much we expect to need to get the rest of the request
 					mode, nb_to_send = yield icap_request, request, ''
-					icap_request = ''
+					icap_request = request = ''
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution

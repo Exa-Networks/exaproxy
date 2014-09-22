@@ -5,8 +5,39 @@ class ICAPResponse (object):
 		self.code = code
 		self.status = status
 		self.headers = headers
-		self.icap_header = icap_header
-		self.http_header = http_header
+
+		icap_len = len(icap_header)
+		http_len = len(http_header)
+		
+		icap_end = icap_len
+
+		if http_header:
+			http_len_string = '%x\n' % http_len
+			http_string = http_len_string + http_header + '0\n'
+
+			http_offset = icap_end + len(http_len_string)
+			http_end = http_offset + http_len
+
+		else:
+			http_string = http_header
+			http_offset = icap_end
+			http_end = icap_end
+
+		self.response_view = memoryview(icap_header + http_string)
+		self.icap_view = self.response_view[:icap_end]
+		self.http_view = self.response_view[http_offset:http_end]
+
+	@property
+	def response_string (self):
+		return self.response_view.tobytes()
+
+	@property
+	def icap_header (self):
+		return self.icap_view.tobytes()
+
+	@property
+	def http_header (self):
+		return self.http_view.tobytes()
 
 	@property
 	def pragma (self):

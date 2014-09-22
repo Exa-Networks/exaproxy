@@ -24,44 +24,54 @@ class ICAPRedirector (Redirector):
 
 	def readChildResponse (self):
 		try:
-			response = self.process.stdout.readline()
-			code = (response.rstrip().split()+[None])[1] if response else None
-			length = -1
-
+			header_string = self.process.stdout.readline()
 			while True:
 				line = self.process.stdout.readline()
-				response += line
+				header_string += line
 
 				if not line:
-					response = None
+					header_string = None
 					break
 
 				elif not line.rstrip():
 					break
 
-				if line.startswith('Encapsulated: res-hdr=0, null-body='):
-					length = int(line.split('=')[-1])
 
-				if line.startswith('Encapsulated: req-hdr=0, null-body='):
-					length = int(line.split('=')[-1])
+			header = self.icap_parser.parseResponseHeader(header_string)
 
+			body_string = ''
+			bytes_to_read = header.content_length
 			read_bytes = 0
-			bytes_to_read = max(0, length)
 
-			while read_bytes < bytes_to_read:
-				headers_s = self.process.stdout.read(bytes_to_read-read_bytes)
-				response += headers_s
-				read_bytes += len(headers_s)
+			while bytes_to_read > 0:
+				while read_bytes < bytes_to_read:
+					headers_s = self.process.stdout.read(bytes_to_read-read_bytes)
+					body_string += headers_s
+					read_bytes += len(headers_s)
 
-			if code is None:
-				response = None
+				if header.body_complete:
+					bytes_to_read = 0
 
-			# 304 (not modified)
-			elif code != '304' and length < 0:
-				response = None
+				else:
+					line = self.process.stdout.readline()
+					bytes_to_read = int(line.strip(), 16)
+					read_bytes = 0
 
-		except IOError:
-			response = None
+			if bytes_to_read != 0:
+				header_string = None
+				body_string = None
+
+			elif header.code is None:
+				header_string = None
+				body_string = None
+
+			elif header.code != '304' and bytes_to_read is None:
+				header_string = None
+				body_string = None
+
+		except IOError, e:
+			header_string = None
+			body_string = None
 
 		try:
 			child_stderr = self.process.stderr.read(4096)
@@ -69,10 +79,13 @@ class ICAPRedirector (Redirector):
 			child_stderr = ''
 
 		if child_stderr:
-			response = None
+			header_string = None
+			body_string = None
 
-		return response
+		if header_string is None:
+			return None
 
+		return self.icap_parser.continueResponse(header, body_string)
 
 	def createChildRequest (self, peer, message, http_header):
 		return self.createICAPRequest(peer, message, None, http_header)
@@ -190,17 +203,17 @@ Encapsulated: req-hdr=0, null-body=%d
 		return response
 
 	def progress (self, client_id, peer, message, http_header, subheader, source):
-		response_string = None
 		if self.checkChild():
-			response_string = self.readChildResponse()
+			icap_response = self.readChildResponse()
 
-		if response_string:
+		else:
+			icap_response = None
+
+		if icap_response:
 			if source == 'icap':
-				return self.decideICAP(client_id, response_string)
+				return self.decideICAP(client_id, icap_response.response_string)
 
 			if source == 'proxy':
-				icap_header, http_header = self.icap_parser.splitResponse(response_string)
-				icap_response = self.icap_parser.parseResponse(icap_header, http_header)
 				return self.decideHTTP(client_id, icap_response, message, peer, source)
 
 			return Respond.hangup(client_id)
