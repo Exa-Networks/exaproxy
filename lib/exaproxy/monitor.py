@@ -21,17 +21,10 @@ class Monitor (object):
 		self.seconds = deque()
 		self.minutes = deque()
 
-	def zero (self):
-		# make sure we always have data in seconds
-		start = dict()
-		stats = self.statistics()
-
-		for k in stats:
-			start[k] = 0
-
-		if start:
-			self.seconds.append(start)
-			self.minutes.append(start)
+	def zero (self, stats):
+		if stats:
+			self.seconds.append(stats)
+			self.minutes.append(stats)
 
 		return bool(stats)
 
@@ -118,22 +111,19 @@ class Monitor (object):
 			'exaproxy.web.debug' : conf.web.debug,
 		}
 
-	def statistics (self):
+	def statistics (self, stats):
 		content = self._supervisor.content
 		client = self._supervisor.client
-		redirector = self._supervisor.redirector
 		reactor = self._supervisor.reactor
 
-		redirector_stats = redirector.getStats()
-
-		if not redirector_stats:
+		if not stats:
 			return {}
 
 		return {
 			'pid.saved' : self._supervisor.pid._saved_pid,
-			'processes.forked' : redirector_stats['forked'],
-			'processes.min' : redirector_stats['min'],
-			'processes.max' : redirector_stats['max'],
+			'processes.forked' : stats['forked'],
+			'processes.min' : stats['min'],
+			'processes.max' : stats['max'],
 			'clients.silent' : len(client.norequest),
 			'clients.speaking' : len(client.byname),
 			'clients.requests' : client.total_requested,
@@ -147,25 +137,21 @@ class Monitor (object):
 			'transfer.content' : content.total_sent4 + content.total_sent6,
 			'load.loops' : reactor.nb_loops,
 			'load.events' : reactor.nb_events,
-			'queue.size' : redirector_stats['queue'],
+			'queue.size' : stats['queue'],
 		}
 
-	def second (self):
-		stats = self.statistics()
-		if stats:
-			self.seconds.append(stats)
+	def second (self, stats):
+		self.seconds.append(stats)
 
 		if len(self.seconds) > self.nb_recorded:
 			self.seconds.popleft()
 
-		return bool(stats)
+		return True
 
-	def minute (self):
-		stats = self.statistics()
-		if stats:
-			self.minutes.append(stats)
+	def minute (self, stats):
+		self.minutes.append(stats)
 
 		if len(self.minutes) > self.nb_recorded:
 			self.minutes.popleft()
 
-		return bool(stats)
+		return True

@@ -23,6 +23,7 @@ def dns_string(s):
 	parts = []
 	ptr = None
 	remaining = len(s)
+	bytes_read = 0
 
 	while s:
 		length = u8(s[0])
@@ -30,14 +31,19 @@ def dns_string(s):
 
 		if length >= 0xc0:
 			ptr = ((length - 0xc0)<<8) + u8(s[1])
+			bytes_read += 2
 			break
 
 		if length == 0:
+			bytes_read += 1
 			break
 
 		if remaining <= 0:
+			bytes_read = None
 			parts = []
 			break
+
+		bytes_read += length + 1
 
 		parts.append(s[1:1+length])
 		s = s[1+length:]
@@ -45,7 +51,7 @@ def dns_string(s):
 		parts = []
 		ptr = None
 
-	return '.'.join(parts) if parts is not None else None, ptr
+	return bytes_read, '.'.join(parts) if parts is not None else None, ptr
 
 def dns_to_ipv4(ip, packet_s):
 	return socket.inet_ntoa(ip)
@@ -59,12 +65,12 @@ def dns_to_ipv6(ip, packet_s):
 def ipv6_to_dns(s, packet_s):
 	return socket.inet_pton(socket.AF_INET6, s)
 
-def dns_to_string(s, packet_s):
-	value, ptr = dns_string(s)
+def dns_to_string_info (s, packet_s):
+	bytes_read, value, ptr = dns_string(s)
 
 	parts = [value] if value else []
 	while ptr is not None:
-		value, ptr = dns_string(packet_s[ptr:])
+		_, value, ptr = dns_string(packet_s[ptr:])
 
 		if value:
 			parts.append(value)
@@ -77,7 +83,11 @@ def dns_to_string(s, packet_s):
 			parts = None
 			break
 
-	return '.'.join(parts) if parts is not None else None
+	return bytes_read, '.'.join(parts) if parts is not None else None
+
+def dns_to_string (s, packet_s):
+	_, value_s = dns_to_string_info(s, packet_s)
+	return value_s
 
 def string_to_dns(s, packet_s=None):
 	try:

@@ -20,19 +20,19 @@ class ControlBox:
 		self.box.put((identifier, command, args))
 		return identifier
 
-	def receive (self, identifier):
+	def receive (self, identifier=None):
 		message = self.box.get()
 
 		if message is not None:
-			ack, data = message
+			ack, command, data = message
 
 		else:
-			ack, data = None, None
+			ack, command, data = None, None
 
-		if ack != identifier:
+		if identifier is not None and ack != identifier:
 			data = None
 
-		return data
+		return command, data
 
 	def wait_stop (self):
 		message = self.box.get()
@@ -58,5 +58,5 @@ class SlaveBox:
 
 		return identifier, command, data
 
-	def respond (self, identifier, *args):
-		self.box.put((identifier, args))
+	def respond (self, identifier, command, *args):
+		self.box.put((identifier, command, args))
