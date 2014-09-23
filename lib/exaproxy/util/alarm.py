@@ -38,7 +38,7 @@ class AlarmThread (Thread):
 class AlarmDispatcher (object):
 	dispatcher_factory = AlarmThread
 
-   	def __init__ (self, messagebox, period):
+	def __init__ (self, messagebox, period):
 		self.messagebox = messagebox
 		self.queue = Queue()
 		self.thread = self.dispatcher_factory(messagebox, self.queue, period)
