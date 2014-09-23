@@ -14,6 +14,7 @@ from socket import has_ipv6
 
 from .util.pid import PID
 from .util.daemon import Daemon
+from .util.alarm import alarm_thread
 
 from .reactor.content.manager import ContentManager
 from .reactor.client.manager import ClientManager
@@ -91,6 +92,8 @@ class Supervisor (object):
 		self.poller.setupWrite('write_download')    # Established connections we have buffered data to send to
 		self.poller.setupWrite('opening_download')  # Opening connections
 
+		self.poller.setupRead('read_interrupt')		# Scheduled events
+
 		self.monitor = Monitor(self)
 		self.page = Page(self)
 		self.content = ContentManager(self,configuration)
@@ -123,7 +126,12 @@ class Supervisor (object):
 		# fork the redirector process before performing any further setup
 		redirector = fork_redirector(self.poller, self.configuration)
 
-		# create threads _after_ all forking is done
+		# NOTE: create threads _after_ all forking is done
+
+		# regularly interrupt the reactor for maintenance
+		self.interrupt_scheduler = alarm_thread(self.poller, self.alarm_time)
+
+		# use simple blocking IO for communication with the redirector process
 		self.redirector = redirector_message_thread(redirector)
 
 		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.icap, self.redirector, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
@@ -142,8 +150,6 @@ class Supervisor (object):
 		signal.signal(signal.SIGUSR2, self.sigusr2)
 		signal.signal(signal.SIGTTOU, self.sigttou)
 		signal.signal(signal.SIGTTIN, self.sigttin)
-
-		signal.signal(signal.SIGALRM, self.sigalrm)
 
 		# make sure we always have data in history
 		# (done in zero for dependencies reasons)
@@ -201,11 +207,6 @@ class Supervisor (object):
 		self._listen = True
 
 
-	def sigalrm (self,signum, frame):
-		self.reactor.running = False
-		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
-
-
 	def interfaces (self):
 		local = set(['127.0.0.1','::1'])
 		for interface in getifaddrs():
@@ -223,8 +224,6 @@ class Supervisor (object):
 			self.local = local
 
 	def run (self):
-		signal.setitimer(signal.ITIMER_REAL,self.alarm_time,self.alarm_time)
-
 		count_second = 0
 		count_minute = 0
 		count_saturation = 0
@@ -243,11 +242,16 @@ class Supervisor (object):
 					import pdb
 					pdb.set_trace()
 
+				# prime the alarm
+				self.interrupt_scheduler.setAlarm()
 
 				# check for IO change with select
 				status = self.reactor.run()
 				if status is False:
 					self._shutdown = True
+
+				# clear the alarm condition
+				self.interrupt_scheduler.acknowledgeAlarm()
 
 				# must follow the reactor so we are sure to go through the reactor at least once
 				# and flush any logs
@@ -418,10 +422,10 @@ class Supervisor (object):
 			self.web.stop()  # accept no new web connection
 			self.proxy.stop()  # accept no new proxy connections
 			self.redirector.stop()  # shut down redirector children
-			os.kill(os.getpid(),signal.SIGALRM)
 			self.content.stop()  # stop downloading data
 			self.client.stop()  # close client connections
 			self.pid.remove()
+			self.interrupt_scheduler.stop()
 		except KeyboardInterrupt:
 			self.log.info('^C received while shutting down. Exiting immediately because you insisted.')
 			sys.exit()
