@@ -57,6 +57,9 @@ class RedirectorDispatcher (object):
 	def increaseSpawnLimit (self, *args):
 		return self.messagebox.increaseSpawnLimit(*args)
 
-	def getStats (self):
-		[stats] = self.messagebox.getStats() or [None]
-		return stats
+	def requestStats (self):
+		return self.messagebox.requestStats()
+
+	def readResponse (self):
+		command, [data] = self.messagebox.readResponse()
+		return command, data
