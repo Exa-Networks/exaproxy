@@ -171,14 +171,13 @@ class ICAPParser (object):
 		else:
 			intercept_string = None
 
-
 		return self.response_factory.create(version, code, status, headers, header_string, request_string, response_string, intercept_string)
 
 	def splitResponse (self, response_string):
-		response_string = response_string.replace('\r\n', '\n')
-		if '\n\n' in response_string:
-			header_string, subheader_string = response_string.split('\n\n', 1)
-
+		for delimiter in ('\n\n', '\r\n\r\n'):
+			if delimiter in response_string:
+				header_string, subheader_string = response_string.split(delimiter, 1)
+				break
 		else:
 			header_string, subheader_string = response_string, ''
 
