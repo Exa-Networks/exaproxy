@@ -145,6 +145,9 @@ class RedirectorManager (object):
 
 		return oldest
 
+	def startup (self):
+		self.spawn(self.low)
+
 	def provision (self):
 		"""manage our workers to make sure we have enough to consume the queue"""
 		size = self.queue.qsize()

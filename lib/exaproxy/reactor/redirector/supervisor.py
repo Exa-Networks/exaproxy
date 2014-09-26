@@ -50,7 +50,7 @@ class RedirectorSupervisor (object):
 		self.manager = RedirectorManager(configuration, poller)
 
 		# start the child processes
-		self.manager.provision()
+		self.manager.startup()
 
 		self.reactor = RedirectorReactor(self.configuration, self.messagebox, self.manager, self.log_writer, self.usage_writer, poller)
 		self.running = True
