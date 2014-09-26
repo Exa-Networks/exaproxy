@@ -10,6 +10,8 @@ Version 1.2.2 -
 	provided over the proxy protocol
  * Fix: error sending requests to the backend decider processes when running as
 	an ICAP server
+ * Fix: error enumerating network interfaces that do not have IP addresses
+   reported with fix by asthomas
 
 Version 1.2.1 - 21st of August 2014
  * Fix: issue with handling of max-forwards

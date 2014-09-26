@@ -230,6 +230,10 @@ def getifaddrs():
 	result = namedtuple('ifaddrs', 'name flags family address netmask scope')
 
 	while ifa:
+		if ifa.ifa_addr is None:
+			ifa = ifaddrs.from_address(ifa.ifa_next) if ifa.ifa_next else None
+			continue
+
 		sa = sockaddr.from_address(ifa.ifa_addr)
 
 		if sa.sa_family == AF_INET:
