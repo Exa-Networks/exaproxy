@@ -35,7 +35,14 @@ def fork_redirector (poller, configuration):
 		redirector = None
 
 		# run forever
-		supervisor.run()
+		try:
+			supervisor.run()
+
+		except KeyboardInterrupt:
+			pass
+
+		except IOError:
+			pass
 
 		# unless we don't
 		sys.exit()
