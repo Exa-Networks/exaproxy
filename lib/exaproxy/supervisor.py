@@ -49,7 +49,6 @@ class Supervisor (object):
 	# clear = ''.join([chr(int(c,16)) for c in ['0x1b', '0x5b', '0x48', '0x1b', '0x5b', '0x32', '0x4a']])
 
 	def __init__ (self,configuration):
-		configuration = load()
 		self.configuration = configuration
 
 		# Only here so the introspection code can find them
@@ -219,7 +218,7 @@ class Supervisor (object):
 
 
 	def interfaces (self):
-		local = set(['127.0.0.1','::1'])
+		local = { '127.0.0.1', '::1' }
 		for interface in getifaddrs():
 			if interface.family not in (AF_INET,AF_INET6):
 				continue
@@ -462,5 +461,5 @@ class Supervisor (object):
 			sys.exit()
 
 	def reload (self):
-		self.log.info('Performing reload of exaproxy %s' % self.configuration.proxy.version ,'supervisor')
+		self.log.info('Performing reload of exaproxy %s' % self.configuration.proxy.version)
 		self.redirector.respawn()

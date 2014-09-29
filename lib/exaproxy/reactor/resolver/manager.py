@@ -19,8 +19,9 @@ class ResolverManager (object):
 		self.worker = self.resolver_factory.createUDPClient()
 
 		# All currently active clients (one UDP and many TCP)
-		self.workers = {}
-		self.workers[self.worker.socket] = self.worker
+		self.workers = {
+			self.worker.socket: self.worker
+		}
 		self.poller.addReadSocket('read_resolver', self.worker.socket)
 
 		# Track the clients currently expecting results
@@ -339,7 +340,7 @@ class ResolverManager (object):
 		if data:
 			client_id, original, hostname, command, decision = data
 		else:
-			client_id, original, hostname, command, decision = None, None, None, None, None, None
+			client_id, original, hostname, command, decision = None, None, None, None, None
 
 		worker = self.workers[sock]
 		res = worker.continueSending()

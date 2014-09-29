@@ -95,8 +95,8 @@ _listing = """\
 </div>
 """""
 
-def Bpstobps (bytes):
-	return bytes * 8
+def Bpstobps (nbbytes):
+	return nbbytes * 8
 
 class Page (object):
 
@@ -255,9 +255,10 @@ class Page (object):
 		for host,number in clients.items():
 			ordered[number].append(host)
 
-		result = []
-		result.append('<div style="padding: 10px 10px 10px 10px; font-weight:bold;">ExaProxy Statistics</div><br/>')
-		result.append('<center>we have %d connection(s) from %d source(s)</center><br/>' % (conns, len(clients)))
+		result = [
+			'<div style="padding: 10px 10px 10px 10px; font-weight:bold;">ExaProxy Statistics</div><br/>',
+			'<center>we have %d connection(s) from %d source(s)</center><br/>' % (conns, len(clients))
+		]
 		for number in reversed(sorted(ordered)):
 			for host in ordered[number]:
 				result.append('<span class="key">%s</span><span class="value">&nbsp; %s</span><br/>' % (host,number))
@@ -389,7 +390,7 @@ class Page (object):
 			return menu(index)
 
 		if section == 'control':
-			action = (sections + [None,]) [2]
+			action = (sections + [None,None,None]) [2]
 
 			if subsection == 'debug':
 				if not self.supervisor.configuration.web.debug:

@@ -195,7 +195,7 @@ class RedirectorManager (object):
 				self.log.warning("Worker %s was in available list, but it does not exist anymore" % identifier)
 				identifier = None
 
-		if identifier != None:
+		if identifier is not None:
 			worker = self.worker[identifier]
 		else:
 			worker = None
@@ -270,7 +270,7 @@ class RedirectorManager (object):
 			try:
 				_, command, decision = worker.progress(client_id, peer, request, header, subheader, source)
 
-			except Exception, e:
+			except Exception:
 				command, decision = None, None
 
 			self.release(worker.wid)

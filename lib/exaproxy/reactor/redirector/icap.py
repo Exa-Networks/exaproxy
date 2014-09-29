@@ -75,7 +75,7 @@ class ICAPRedirector (Redirector):
 
 		try:
 			child_stderr = self.process.stderr.read(4096)
-		except Exception, e:
+		except Exception:
 			child_stderr = ''
 
 		if child_stderr:

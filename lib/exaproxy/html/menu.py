@@ -109,7 +109,7 @@ def Menu (options):
 	menu += '\t<h1><a href="/index.html">Home</a></h1>\n'
 
 	for name, url, section in options:
-		menu += '\t<h1>%s</h1>\n' % (name)
+		menu += '\t<h1>%s</h1>\n' % name
 
 		if section:
 			menu += '\t<ul>\n'

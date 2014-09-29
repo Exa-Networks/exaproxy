@@ -45,9 +45,11 @@ conversion = {
 class DNSTypeFactory:
 	CLASS = 1   # Internet
 
-	def createQuery(self, name, question):
+	@staticmethod
+	def createQuery(name, question):
 		return DNSQueryType(name, question)
 
+	@staticmethod
 	def createResource(name, question, response, ttl):
 		return DNSResourceType(name, question, response, ttl)
 
@@ -94,15 +96,15 @@ class DNSTypeCodec:
 		except IOError:
 			raise RuntimeError('Cannot read DNS type definition file: %s' % filename)
 
-	def decodeQuery(self, value, question, data_s=''):
+	def decodeQuery (self, value, question, data_s=''):
 		name, decoder = self.byvalue.get(value, (None, None))
 		return DNSQueryType(name, question)
 
-	def encodeQuery(self, query, data_s=''):
+	def encodeQuery (self, query, data_s=''):
 		value, encoder = self.byname.get(query.querytype, (None, None))
 		return value, query.question if value is not None else None
 
-	def decodeResource(self, value, question, response, ttl, data_s=''):
+	def decodeResource (self, value, question, response, ttl, data_s=''):
 		name, decoder = self.byvalue.get(value, (None, None))
 		if name is not None and decoder is not None:
 			decoded = decoder(response, data_s)
@@ -111,7 +113,7 @@ class DNSTypeCodec:
 
 		return DNSResourceType(name, question, decoded, ttl)
 
-	def encodeResource(self, resource, data_s=''):
+	def encodeResource (self, resource, data_s=''):
 		value, encoder = self.byname.get(resource.querytype, (None, None))
 		if value is not None:
 			encoded = encoder(resource.response, data_s)

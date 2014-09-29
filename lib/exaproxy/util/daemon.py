@@ -118,7 +118,7 @@ class Daemon (object):
 	def _is_socket (self,fd):
 		try:
 			s = socket.fromfd(fd, socket.AF_INET, socket.SOCK_RAW)
-		except ValueError,e:
+		except ValueError:
 			# The file descriptor is closed
 			return False
 		try:
@@ -152,7 +152,7 @@ class Daemon (object):
 
 	def silence (self):
 		maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
-		if (maxfd == resource.RLIM_INFINITY):
+		if maxfd == resource.RLIM_INFINITY:
 			maxfd = 1024
 
 		for fd in range(0, maxfd):

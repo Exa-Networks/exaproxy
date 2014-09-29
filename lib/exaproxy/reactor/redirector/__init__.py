@@ -32,7 +32,6 @@ def fork_redirector (poller, configuration):
 		messagebox = RedirectorToProxyMessageBox(r2, w1)
 		controlbox = SlaveBox(cr2, cw1)
 		supervisor = RedirectorSupervisor(configuration, messagebox, controlbox)
-		redirector = None
 
 		# run forever
 		try:
@@ -45,6 +44,7 @@ def fork_redirector (poller, configuration):
 			pass
 
 		# unless we don't
+		messagebox.close()
 		sys.exit()
 
 	else:
@@ -57,4 +57,4 @@ def fork_redirector (poller, configuration):
 		poller.addReadSocket('read_redirector', redirector.box.pipe_in)
 		poller.addReadSocket('read_control', redirector.control.box.pipe_in)
 
-	return redirector
+		return redirector

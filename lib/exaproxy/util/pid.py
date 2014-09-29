@@ -45,7 +45,7 @@ class PID (object):
 				self.log.warning("PIDfile already exists, not updated %s" % self.pid_file)
 				return
 			raise
-		except ValueError, e:
+		except ValueError:
 			# Non numeric data in PID file
 			pass
 
@@ -64,7 +64,7 @@ class PID (object):
 
 		try:
 			fd = os.open(self.pid_file,flags,mode)
-		except OSError, e:
+		except OSError:
 			self.log.warning("PIDfile already exists, not updated %s" % self.pid_file)
 			return
 
@@ -74,7 +74,7 @@ class PID (object):
 			f.write(line)
 			f.close()
 			self._saved_pid = True
-		except IOError, e:
+		except IOError:
 			self.log.warning("Can not create PIDfile %s" % self.pid_file)
 			return
 		self.log.info("Created PIDfile %s with value %d" % (self.pid_file,ownid))

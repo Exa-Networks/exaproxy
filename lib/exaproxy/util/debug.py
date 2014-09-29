@@ -14,7 +14,7 @@ import traceback
 from exaproxy.util.log.history import History
 
 
-def bug_report (type, value, trace):
+def bug_report (exc_type, value, trace):
 	print >> sys.stderr, ''
 	print >> sys.stderr, ''
 	print >> sys.stderr, '-'*80
@@ -38,7 +38,7 @@ def bug_report (type, value, trace):
 	print >> sys.stderr, '-- Traceback'
 	print >> sys.stderr, ''
 	print >> sys.stderr, ''
-	traceback.print_exception(type,value,trace)
+	traceback.print_exception(exc_type,value,trace)
 	print >> sys.stderr, ''
 	print >> sys.stderr, ''
 	print >> sys.stderr, '-'*80
@@ -50,14 +50,14 @@ def bug_report (type, value, trace):
 
 	#print >> sys.stderr, 'the program failed with message :', value
 
-def intercept (type, value, trace):
+def intercept (exc_type, value, trace):
 	interactive = os.environ.get('PDB',None)
 
 	if interactive in ['0','']:
 		# PDB was set to 0 or '' which is undocumented, and we do nothing
 		pass
 	else:
-		bug_report(type, value, trace)
+		bug_report(exc_type, value, trace)
 		if interactive == 'true':
 			import pdb
 			pdb.pm()

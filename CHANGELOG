@@ -6,6 +6,7 @@ Version explained:
 Version 1.2.2 - 
  * Fix: handle blocking exception when writing on messagebox
    reported by Tim Watts
+ * Fix: a few issues reported by pycharm
  * Fix: honour configuration directing the proxy to use the source IP address
 	provided over the proxy protocol
  * Fix: error sending requests to the backend decider processes when running as

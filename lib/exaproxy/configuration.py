@@ -154,10 +154,10 @@ class value (object):
 		return first
 
 	@staticmethod
-	def services (all):
+	def services (string):
 		try:
 			services = []
-			for service in value.unquote(all).split():
+			for service in value.unquote(string).split():
 				host,port = service.split(':')
 				services.append((host,int(port)))
 			return services
@@ -273,7 +273,7 @@ def _configuration (conf):
 						# raise and set the default
 						conf = value.unquote(ini.get(proxy_section,option,nonedict))
 					# name without an = or : in the configuration and no value
-					if conf == None:
+					if conf is None:
 						conf = default[option][2]
 			except (ConfigParser.NoSectionError,ConfigParser.NoOptionError):
 				conf = default[option][2]

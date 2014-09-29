@@ -28,7 +28,7 @@ from exaproxy.util.log.logger import UsageLogger
 
 from exaproxy.util.log.history import Errors,History,Level
 
-class Redirector:
+class Redirector (object):
 	# TODO : if the program is a function, fork and run :)
 	HTTPParser = HTTPRequestFactory
 	ResponseFactory = ResponseFactory

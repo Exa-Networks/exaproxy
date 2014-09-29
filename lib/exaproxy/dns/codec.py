@@ -45,7 +45,6 @@ class DNSQuery:
 			data = ''
 			ok = False
 
-		ok = len(data) >= 4
 		self.question = name if ok else None
 		self.querytype = convert.u16(data[:2]) if ok else None
 		self.queryclass = convert.u16(data[2:4]) if ok else None

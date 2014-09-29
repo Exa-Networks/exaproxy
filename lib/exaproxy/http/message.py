@@ -100,7 +100,7 @@ class HTTP (object):
 
 		except KeyboardInterrupt:
 			raise
-		except ExpectationFailed,e:
+		except ExpectationFailed:
 			self.reply_code = 417
 			return None
 		except ValueError,e:

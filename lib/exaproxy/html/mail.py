@@ -6,7 +6,7 @@ Created by Thomas Mangin on 2012-02-25.
 Copyright (c) 2011-2013 Exa Networks. All rights reserved.
 """
 
-import cgi
+import urlparse
 import time
 from email.mime.text import MIMEText
 from email.Utils import formatdate
@@ -112,7 +112,7 @@ PS: ExaProxy will stop answering HTTP requests while it sends the email. Only on
 
 	@staticmethod
 	def send (args):
-		answers = cgi.parse_qs(args)
+		answers = urlparse.parse_qs(args)
 
 		_from = answers.get('email',[None,])[0]
 		_to = 'The ExaProxy Team <exaproxy@exa-networks.co.uk>'

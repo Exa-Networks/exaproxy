@@ -36,7 +36,7 @@ class RedirectorDispatcher (object):
 		self.thread.join()
 		try:
 			res = self.messagebox.stop()
-		except IOError, e:
+		except IOError:
 			res = None
 
 		return res

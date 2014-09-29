@@ -516,7 +516,7 @@ def show_graph(objs, edge_func, swap_source_target,
     else:
         fd, dot_filename = tempfile.mkstemp('.dot', text=True)
         f = os.fdopen(fd, "w")
-        if f.encoding != None:
+        if f.encoding is not None:
             # Python 3 will wrap the file in the user's preferred encoding
             # Re-wrap it for utf-8
             import io
@@ -744,7 +744,7 @@ is_identifier = re.compile('[a-zA-Z_][a-zA-Z_0-9]*$').match
 
 def program_in_path(program):
     path = os.environ.get("PATH", os.defpath).split(os.pathsep)
-    path = [os.path.join(dir, program) for dir in path]
-    path = [True for file in path
-            if os.path.isfile(file) or os.path.isfile(file + '.exe')]
+    path = [os.path.join(directory, program) for directory in path]
+    path = [True for filename in path
+            if os.path.isfile(filename) or os.path.isfile(filename + '.exe')]
     return bool(path)

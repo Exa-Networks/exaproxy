@@ -23,7 +23,7 @@ def version_warning ():
 	sys.stdout.write('************ WARNING *** WARNING *** WARNING *** WARNING *********\n')
 	sys.stdout.write('\n')
 
-def help ():
+def usage ():
 	sys.stdout.write('usage:\n exaproxy [options]\n')
 	sys.stdout.write('\n')
 	sys.stdout.write('  -h, --help      : this help\n')
@@ -90,29 +90,29 @@ def __exit(memory,code):
 	sys.exit(code)
 
 def main ():
-	main = int(sys.version[0])
+	primary = int(sys.version[0])
 	secondary = int(sys.version[2])
 
-	if main != 2 or secondary < 4:
+	if primary != 2 or secondary < 4:
 		sys.exit('This program can not work (is not tested) with your python version (< 2.4 or >= 3.0)')
 
-	if main == 2 and secondary == 4:
+	if primary == 2 and secondary == 4:
 		version_warning()
 
 	from exaproxy.configuration import ConfigurationError,load,ini,env
 
-	next = ''
+	followup = ''
 	arguments = {
 		'configuration' : '',
 	}
 
 	for arg in sys.argv[1:]:
-		if next:
-			arguments[next] = arg
-			next = ''
+		if followup:
+			arguments[followup] = arg
+			followup = ''
 			continue
 		if arg in ['-c','--conf-file']:
-			next = 'configuration'
+			followup = 'configuration'
 
 	defaults = {
 		'tcp4' : {
@@ -243,7 +243,7 @@ def main ():
 		if arg in ['--',]:
 			break
 		if arg in ['-h','--help']:
-			help()
+			usage()
 			sys.exit(0)
 		if arg in ['-i','-fi','--ini']:
 			ini()

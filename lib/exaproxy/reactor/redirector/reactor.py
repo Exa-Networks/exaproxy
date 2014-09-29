@@ -47,7 +47,7 @@ class RedirectorReactor (object):
 			if events.get('read_request'):
 				try:
 					message = self.querier.getRequest()
-				except Exception, e:
+				except Exception:
 					message = None
 
 				if message is None:

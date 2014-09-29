@@ -58,7 +58,7 @@ class ContentManager(object):
 					cache_time, header = None, None
 
 				if cache_time is None or cache_time < stat.st_mtime:
-					header = file_header(code, stat.st_size, filename)
+					header = file_header(code, stat.st_size)
 					self._header[filename] = stat.st_size, header
 
 				content = 'file', (header, filename)

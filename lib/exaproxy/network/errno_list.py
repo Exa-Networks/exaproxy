@@ -10,22 +10,22 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 
 import errno
 
-errno_block = set((
+errno_block = {
 	errno.EINPROGRESS, errno.EALREADY,
 	errno.EAGAIN, errno.EWOULDBLOCK,
 	errno.EINTR, errno.EDEADLK,
 	errno.EBUSY, errno.ENOBUFS,
 	errno.ENOMEM,
-))
+}
 
-errno_fatal = set((
+errno_fatal = {
 	errno.ECONNABORTED, errno.EPIPE,
 	errno.ECONNREFUSED, errno.EBADF,
 	errno.ESHUTDOWN, errno.ENOTCONN,
 	errno.ECONNRESET, errno.ETIMEDOUT,
 	errno.EINVAL,
-))
+}
 
-errno_unavailable = set((
+errno_unavailable = {
 	errno.ECONNREFUSED, errno.EHOSTUNREACH,
-))
+}

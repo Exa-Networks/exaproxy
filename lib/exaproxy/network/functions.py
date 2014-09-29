@@ -76,7 +76,7 @@ def connect (ip,port,bind,immediate=True):
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 		else:
 			return None
-	except socket.error,e:
+	except socket.error:
 		return None
 
 #	try:
@@ -99,7 +99,7 @@ def connect (ip,port,bind,immediate=True):
 	if bind not in ('0.0.0.0','::'):
 		try:
 			s.bind((bind,0))
-		except socket.error,e:
+		except socket.error:
 			log.critical('could not bind to the requested ip "%s" - using OS default' % bind)
 
 	try:

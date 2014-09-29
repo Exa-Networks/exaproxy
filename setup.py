@@ -9,7 +9,6 @@ Copyright (c) 2011-2012 Exa Networks. All rights reserved.
 
 import os
 import sys
-import glob
 from distutils.core import setup
 from distutils.util import get_platform
 from setuptools.command.install import install
@@ -69,7 +68,7 @@ class custom_install (install):
 				for name in names:
 					location = os.path.join(self.install_data,name)
 					chmod(location, 0755) # the 0 make the value octal
-			self.install_data
+			self.install_data()
 
 
 

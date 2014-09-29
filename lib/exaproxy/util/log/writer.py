@@ -27,14 +27,14 @@ class LogWriter (RecordedLog):
 
 	def writeMessages (self):
 		messages = self.mailbox.readMessages() if self.mailbox is not None else []
-		messages = self.active and ((n,l,t,m) for (n,l,t,m) in messages if l >= self.level) or []
+		messages = ((n,l,t,m) for (n,l,t,m) in messages if l >= self.level) if self.active else []
 		for name, level, timestamp, message in messages:
 			text = self.formatMessage(name, level, timestamp, message)
 			self.writeMessage(level, text)
 
 		self.finishWriting()
 
-	def writeMessage (self, message):
+	def writeMessage (self, level, message):
 		raise NotImplementedError
 
 	def finishWriting (self):

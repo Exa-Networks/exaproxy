@@ -82,7 +82,7 @@ class KQueuePoller (IPoller):
 		if sock in self.errors:
 			self.errors.pop(sock)
 
-	def removeClosedReadSocket(self, name, sock):
+	def removeClosedReadSocket (self, name, sock):
 		print "%s - KQ: ignore remove closed read socket %d" % (str(datetime.datetime.now()), sock.fileno())
 		pass
 
@@ -258,7 +258,7 @@ class KQueuePoller (IPoller):
 		else:
 			# response['poller1']=[] ; response['poller2']=[] etc.
 			response = dict((name, []) for (name, _, _, _) in self.pollers.values())
-			if (len(res) == self.max_events):
+			if len(res) == self.max_events:
 				log.warning("polled max_events from master kqueue")
 
 		for events in res:
@@ -267,14 +267,14 @@ class KQueuePoller (IPoller):
 			name, poller, sockets, fdtosock = self.pollers[fd]
 			events = poller.control(None, self.max_events, 0)
 
-			if (len(events) == self.max_events):
-				log.warning("polled max_events from queue %s" % (name))
+			if len(events) == self.max_events:
+				log.warning("polled max_events from queue %s" % name)
 
 			for sock_events in events:
 				sock_fd = sock_events.ident
 				try:
 					response[name].append(fdtosock[sock_fd])
-				except KeyError, e:
+				except KeyError:
 					log.error("KQueue register called before fdtosock registered! Skipping event")
 					continue
 

@@ -222,7 +222,6 @@ def getifaddrs():
 		raise OSError('can not use libc to get interfaces')
 
 	ifa = ifaddrs.from_address(ptr.value)
-	result = {}
 
 	# Python 2 gives us a string, Python 3 an array of bytes
 	name = lambda _: _.ifa_name if type(ifa.ifa_name) is str else lambda _: _.ifa_name.decode()

@@ -56,7 +56,7 @@ class DNSClient (object):
 		try:
 			if request_s:
 				self.socket.sendto(request_s, (self.server, self.port))
-		except IOError, e:
+		except IOError:
 			pass
 
 		return identifier, True

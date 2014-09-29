@@ -1,10 +1,10 @@
 # encoding: utf-8
-'''
+"""
 http.py
 
 Created by Thomas Mangin on 2011-12-02.
 Copyright (c) 2011-2013  Exa Networks. All rights reserved.
-'''
+"""
 
 import sys
 import time
@@ -60,7 +60,7 @@ _HTTP_NAMES = {
 }
 
 
-def file_header(code, size, name, protocol='1.1'):
+def file_header (code, size, protocol='1.1'):
 	date = time.strftime('%c %Z')
 	version = load().proxy.version
 

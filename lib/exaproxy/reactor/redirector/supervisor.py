@@ -22,7 +22,7 @@ class RedirectorSupervisor (object):
 
 	def __init__ (self, configuration, messagebox, controlbox):
 		self.configuration = configuration
-                self.log_writer = SysLogWriter('log', configuration.log.destination, configuration.log.enable, level=configuration.log.level)
+		self.log_writer = SysLogWriter('log', configuration.log.destination, configuration.log.enable, level=configuration.log.level)
 		self.usage_writer = UsageWriter('usage', configuration.usage.destination, configuration.usage.enable)
 
 		if configuration.debug.log:
@@ -35,8 +35,6 @@ class RedirectorSupervisor (object):
 		self.poller.addReadSocket('control', controlbox.box.pipe_in)
 
 		signal.signal(signal.SIGALRM, self.sigalrm)
-		self._increase_spawn_limit = 0
-		self._decrease_spawn_limit = 0
 		self._respawn = False
 
 		# poller for the reactor
@@ -60,18 +58,12 @@ class RedirectorSupervisor (object):
 		signal.setitimer(signal.ITIMER_REAL, self.alarm_time, self.alarm_time)
 
 
-	def increase_spawn_limit (self):
-		count = self._increase_spawn_limit
-		self._increase_spawn_limit = 0
-
+	def increase_spawn_limit (self,count):
 		self.manager.low += count
 		self.manager.high = max(self.manager.low, self.manager.high)
 		self.manager.increase(count)
 
-	def decrease_spawn_limit (self):
-		count = self._decrease_spawn_limit
-		self._decrease_spawn_limit = 0
-
+	def decrease_spawn_limit (self,count):
 		self.manager.high = max(1, self.manager.high - count)
 		self.manager.low = min(self.manager.high, self.manager.low)
 		self.manager.decrease(count)

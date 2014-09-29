@@ -80,10 +80,16 @@ class MessageBox (MessageReader):
 
 	def close (self):
 		if self.pipe_in is not None:
-			os.close(self.pipe_in)
+			try:
+				self.pipe_in.close()
+			except IOError:
+				pass
 
 		if self.pipe_out is not None:
-			os.close(self.pipe_out)
+			try:
+				self.pipe_out.close()
+			except IOError:
+				pass
 
 	def put (self, message):
 		pickled = pickle.dumps(message)

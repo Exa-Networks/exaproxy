@@ -2,7 +2,7 @@
 
 # from https://gist.github.com/NicolasT/4519146
 
-'''
+"""
 Demonstration of using splice from Python
 
 This code starts a TCP/IP server, waits for a connection, and once a connection
@@ -27,7 +27,7 @@ It comes without warranty blah blah blah do whatever you want with it but don't
 blame me if anything breaks.
 
 If you find any errors, please let me know!
-'''
+"""
 
 import os
 import os.path
@@ -39,7 +39,7 @@ import ctypes
 import ctypes.util
 
 def make_splice():
-    '''Set up a splice(2) wrapper'''
+    """Set up a splice(2) wrapper"""
 
     # Load libc
     libc_name = ctypes.util.find_library('c')
@@ -118,7 +118,7 @@ SPLICE_F_GIFT = 8
 
 
 def main(host, port, path):
-    '''Server implementation'''
+    """Server implementation"""
 
     # Set up a simple server socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
