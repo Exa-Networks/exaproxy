@@ -280,4 +280,8 @@ class Reactor(object):
 			if events.get('read_interrupt'):
 				break
 
-		return True, set(k for k in ['read_control'] if events.get(k))
+			# or if we have any control responses
+			if events.get('read_control'):
+				break
+
+		return True, set(k for k in ['read_interrupt', 'read_control'] if events.get(k))

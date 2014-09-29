@@ -242,6 +242,8 @@ class Supervisor (object):
 		count_saturation = 0
 		count_interface = 0
 
+		events = {'read_interrupt'}
+
 		while True:
 			count_second = (count_second + 1) % self.second_frequency
 			count_minute = (count_minute + 1) % self.minute_frequency
@@ -256,7 +258,8 @@ class Supervisor (object):
 					pdb.set_trace()
 
 				# prime the alarm
-				self.interrupt_scheduler.setAlarm()
+				if 'read_interrupt' in events:
+					self.interrupt_scheduler.setAlarm()
 
 				# check for IO change with select
 				status, events = self.reactor.run()
@@ -264,6 +267,24 @@ class Supervisor (object):
 				# shut down the server if a child process disappears
 				if status is False:
 					self._shutdown = True
+
+				# respond to control responses immediately
+				if 'read_control' in events:
+					command, control_data = self.redirector.readResponse()
+
+					if command == 'STATS':
+						ok = self.doStats(count_second, count_minute, control_data)
+
+					if ok is False:
+						self._shutdown = True
+
+					# jump straight back into the reactor if we haven't yet received an
+					# interrupt event
+					if 'read_interrupt' not in events:
+						continue
+
+				# ask the redirector process for stats
+				self.redirector.requestStats()
 
 				# clear the alarm condition
 				self.interrupt_scheduler.acknowledgeAlarm()
@@ -317,33 +338,6 @@ class Supervisor (object):
 					self._increase_spawn_limit = 0
 
 
-				if 'read_control' in events:
-					command, control_data = self.redirector.readResponse()
-					stats_data = control_data if command == 'STATS' else None
-
-				else:
-					stats_data = None
-
-				if stats_data is not None:
-					# parse the data we were sent
-					stats = self.monitor.statistics(stats_data)
-
-					# and request more for the next maintenance window
-					self.redirector.requestStats()
-
-					# save our monitoring stats
-					if count_second == 0:
-						ok = self.monitor.second(stats)
-					else:
-						ok = True
-						expired = 0
-
-					if ok is True and count_minute == 0:
-						ok = self.monitor.minute(stats)
-
-					if ok is not True:
-						self._shutdown = True
-
 				# cleanup idle connections
 				# TODO: track all idle connections, not just the ones that have never sent data
 				expired = self.reactor.client.expire()
@@ -390,6 +384,22 @@ class Supervisor (object):
 #				except KeyboardInterrupt:
 #					self.log.info('^C received')
 #					self._shutdown = True
+
+	def doStats (self, count_second, count_minute, stats_data):
+		# parse the data we were sent
+		stats = self.monitor.statistics(stats_data)
+
+		# save our monitoring stats
+		if count_second == 0:
+			ok = self.monitor.second(stats)
+		else:
+			ok = True
+			expired = 0
+
+		if ok is True and count_minute == 0:
+			ok = self.monitor.minute(stats)
+
+		return ok
 
 
 	def initialise (self):
