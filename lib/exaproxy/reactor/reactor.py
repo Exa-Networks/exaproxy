@@ -32,6 +32,9 @@ class Reactor(object):
 	def run(self):
 		poller = self.poller
 
+		interrupt_events = {'read_interrupt', 'read_control'}
+		received_interrupts = set()
+
 #		count = 0
 #		s_times = []
 #		w_times = []
@@ -276,12 +279,8 @@ class Reactor(object):
 			self.logger.writeMessages()
 			self.usage.writeMessages()
 
-			# check to see if the reactor has been told to stop
-			if events.get('read_interrupt'):
+			received_interrupts = {k for k in interrupt_events if events.get(k)}
+			if received_interrupts:
 				break
 
-			# or if we have any control responses
-			if events.get('read_control'):
-				break
-
-		return True, set(k for k in ['read_interrupt', 'read_control'] if events.get(k))
+		return True, received_interrupts
