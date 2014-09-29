@@ -123,16 +123,18 @@ class Supervisor (object):
 			self.log.critical('Set the environment value USER to change the unprivileged user')
 			self._shutdown = True
 
+
 		# fork the redirector process before performing any further setup
 		redirector = fork_redirector(self.poller, self.configuration)
+
+		# use simple blocking IO for communication with the redirector process
+		self.redirector = redirector_message_thread(redirector)
+
 
 		# NOTE: create threads _after_ all forking is done
 
 		# regularly interrupt the reactor for maintenance
 		self.interrupt_scheduler = alarm_thread(self.poller, self.alarm_time)
-
-		# use simple blocking IO for communication with the redirector process
-		self.redirector = redirector_message_thread(redirector)
 
 		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.icap, self.redirector, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
 
