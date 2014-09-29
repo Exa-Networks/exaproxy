@@ -156,18 +156,19 @@ class Supervisor (object):
 		# make sure we always have data in history
 		# (done in zero for dependencies reasons)
 
-		self.redirector.requestStats()
-		command, control_data = self.redirector.readResponse()
-		stats_data = control_data if command == 'STATS' else None
-
-		stats = self.monitor.statistics(stats_data)
-		ok = self.monitor.zero(stats)
-
-		if ok:
+		if self._shutdown is False:
 			self.redirector.requestStats()
+			command, control_data = self.redirector.readResponse()
+			stats_data = control_data if command == 'STATS' else None
 
-		else:
-			self._shutdown = True
+			stats = self.monitor.statistics(stats_data)
+			ok = self.monitor.zero(stats)
+
+			if ok:
+				self.redirector.requestStats()
+
+			else:
+				self._shutdown = True
 
 	def exit (self):
 		sys.exit()
