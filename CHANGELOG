@@ -13,6 +13,9 @@ Version 1.2.2 -
 	an ICAP server
  * Fix: error enumerating network interfaces that do not have IP addresses
    reported with fix by asthomas
+ * Fix: do not block waiting for a response from the redirector process since we can
+	end up with a deadlock
+   reported by Emanuele Rocca
 
 Version 1.2.1 - 21st of August 2014
  * Fix: issue with handling of max-forwards
