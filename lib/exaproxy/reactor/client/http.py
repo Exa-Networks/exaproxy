@@ -137,8 +137,8 @@ class HTTPClient (object):
 						processing = False
 
 					if mode == 'passthrough':
-						yield '', r_buffer
-						r_buffer = ''
+						r_buffer, tmp = '', [r_buffer]
+						yield [''], tmp
 						continue
 
 					if nb_to_send:
@@ -146,9 +146,8 @@ class HTTPClient (object):
 							r_len = len(r_buffer)
 							length = min(r_len, nb_to_send)
 
-							# do not yield yet if we are chunked since the end of the chunk may
-							# very well be in the rest of the data we just read
-							_, extra_size = yield '', r_buffer[:length]
+							r_buffer, tmp = r_buffer[length:], [r_buffer[:length]]
+							_, extra_size = yield [''], tmp
 
 							r_buffer = r_buffer[length:]
 							nb_to_send = nb_to_send - length + extra_size
@@ -165,9 +164,9 @@ class HTTPClient (object):
 							# do not yield yet if we are chunked since the end of the chunk may
 							# very well be in the rest of the data we just read
 							if r_len <= nb_to_send:
-								_, extra_size = yield '', r_buffer[:length]
+								r_buffer, tmp = r_buffer[length:], [r_buffer[:length]]
+								_, extra_size = yield [''], tmp
 
-								r_buffer = r_buffer[length:]
 								nb_to_send = nb_to_send - length + extra_size
 
 								# we still have data to read before we can send more.
@@ -202,7 +201,7 @@ class HTTPClient (object):
 							continue
 
 						if not r_buffer[nb_to_send:]:
-							yield '',''
+							yield [''], ['']
 							continue
 
 						mode = 'extra-headers'
@@ -216,9 +215,12 @@ class HTTPClient (object):
 							# most likely could not find an header
 							break
 
-						yield '', related
+						if related:
+							tmp, related = [related], ''
+							yield [''], tmp
 
-						if not related:
+						else:
+							yield [''], ['']
 							continue
 
 						seek = 0
@@ -242,13 +244,14 @@ class HTTPClient (object):
 						break
 
 					if not request:
-						yield '', ''
+						yield [''], ['']
 						continue
 					seek = 0
 					processing = True
 
 					# nb_to_send is how much we expect to need to get the rest of the request
-					mode, nb_to_send = yield request, ''
+					tmp, request = [request], ''
+					mode, nb_to_send = yield tmp, ['']
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
@@ -256,11 +259,11 @@ class HTTPClient (object):
 
 			except socket.error, e:
 				if e.args[0] in errno_block:
-					yield '', ''
+					yield [''], ['']
 				else:
 					break
 
-		yield None,None
+		yield [None], [None]
 
 
 	def setPeer (self, peer):
@@ -269,12 +272,18 @@ class HTTPClient (object):
 		self.peer = peer
 
 	def readData(self):
-		request,content = self.reader.send(('transfer',0))
+		request_l, content_l = self.reader.send(('transfer',0))
+		request = request_l.pop()
+		content = content_l.pop()
+
 		return self.name, self.peer, request, '', content
 
 	def readRelated(self, mode, remaining):
 		mode = mode or 'request'
-		request, content = self.reader.send((mode,remaining))
+		request_l, content_l = self.reader.send((mode,remaining))
+		request = request_l.pop()
+		content = content_l.pop()
+
 		return self.name, self.peer, request, '', content
 
 	def _write(self, sock):
