@@ -283,9 +283,6 @@ class Supervisor (object):
 					if 'read_interrupt' not in events:
 						continue
 
-				# ask the redirector process for stats
-				self.redirector.requestStats()
-
 				# clear the alarm condition
 				self.interrupt_scheduler.acknowledgeAlarm()
 
@@ -305,6 +302,9 @@ class Supervisor (object):
 					# refork the program (as we have been updated)
 					# just handle current open connection
 
+
+				# ask the redirector process for stats
+				self.redirector.requestStats()
 
 				if self._softstop:
 					if self._listen == False:
