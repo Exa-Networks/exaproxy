@@ -272,6 +272,7 @@ class HTTPClient (object):
 		self.peer = peer
 
 	def readData(self):
+		# pop data from lists to free memory held by the coroutine
 		request_l, content_l = self.reader.send(('transfer',0))
 		request = request_l.pop()
 		content = content_l.pop()
@@ -279,6 +280,7 @@ class HTTPClient (object):
 		return self.name, self.peer, request, '', content
 
 	def readRelated(self, mode, remaining):
+		# pop data from lists to free memory held by the coroutine
 		mode = mode or 'request'
 		request_l, content_l = self.reader.send((mode,remaining))
 		request = request_l.pop()

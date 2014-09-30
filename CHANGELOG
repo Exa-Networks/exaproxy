@@ -16,6 +16,7 @@ Version 1.2.2 -
  * Fix: do not block waiting for a response from the redirector process since we can
 	end up with a deadlock
    reported by Emanuele Rocca
+ * Improvement: free memory that could be held by the client coroutine during long lived connections
 
 Version 1.2.1 - 21st of August 2014
  * Fix: issue with handling of max-forwards

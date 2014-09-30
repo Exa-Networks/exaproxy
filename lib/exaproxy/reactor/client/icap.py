@@ -142,8 +142,8 @@ class ICAPClient (object):
 						processing = False
 
 					if mode == 'passthrough':
-						yield '', '', r_buffer
-						r_buffer = ''
+						r_buffer, tmp = '', [r_buffer]
+						yield [''], [''], tmp
 						continue
 
 					if nb_to_send:
@@ -153,9 +153,9 @@ class ICAPClient (object):
 
 							# do not yield yet if we are chunked since the end of the chunk may
 							# very well be in the rest of the data we just read
-							_, extra_size = yield '', '', r_buffer[:length]
+							r_buffer, tmp = r_buffer[length:], [r_buffer[:length]]
+							_, extra_size = yield [''], [''], tmp
 
-							r_buffer = r_buffer[length:]
 							nb_to_send = nb_to_send - length + extra_size
 
 							# we still have data to read before we can send more.
@@ -170,9 +170,9 @@ class ICAPClient (object):
 							# do not yield yet if we are chunked since the end of the chunk may
 							# very well be in the rest of the data we just read
 							if r_len <= nb_to_send:
-								_, extra_size = yield '', '', r_buffer[:length]
+								r_buffer, tmp = r_buffer[length:], [r_buffer[:length]]
+								_, extra_size = yield '', '', tmp
 
-								r_buffer = r_buffer[length:]
 								nb_to_send = nb_to_send - length + extra_size
 
 								# we still have data to read before we can send more.
@@ -207,7 +207,7 @@ class ICAPClient (object):
 							continue
 
 						if not r_buffer[nb_to_send:]:
-							yield '','',''
+							yield [''], [''], ['']
 							continue
 
 						mode = 'extra-headers'
@@ -221,9 +221,12 @@ class ICAPClient (object):
 							# most likely could not find an header
 							break
 
-						yield '', '', related
+						if related:
+							related, tmp = '', [related]
+							yield [''], [''], tmp
 
-						if not related:
+						else:
+							yield [''], [''], ['']
 							continue
 
 						seek = 0
@@ -268,14 +271,14 @@ class ICAPClient (object):
 							mode = 'request'
 
 						else:
-							yield '', '', ''
+							yield [''], [''], ['']
 							continue
 
 					if mode == 'request':
 						r_len = len(r_buffer)
 
 						if r_len < content_length:
-							yield '', '', ''
+							yield [''], [''], ['']
 							continue
 
 					request, r_buffer = r_buffer[:content_length], r_buffer[content_length:]
@@ -284,8 +287,10 @@ class ICAPClient (object):
 					processing = True
 
 					# nb_to_send is how much we expect to need to get the rest of the request
-					mode, nb_to_send = yield icap_request, request, ''
-					icap_request = request = ''
+					icap_request, tmp_icap = '', [icap_request]
+					request, tmp = '', [request]
+
+					mode, nb_to_send = yield tmp_icap, tmp, ['']
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
@@ -293,11 +298,11 @@ class ICAPClient (object):
 
 			except socket.error, e:
 				if e.args[0] in errno_block:
-					yield '', '', ''
+					yield [''], [''], ['']
 				else:
 					break
 
-		yield None,None,None
+		yield [None], [None], [None]
 
 
 	def setPeer (self, peer):
@@ -306,12 +311,20 @@ class ICAPClient (object):
 		self.peer = peer
 
 	def readData(self):
-		icap_header, http_header, content = self.reader.send(('transfer',0))
+		# pop data from lists to free memory held by the coroutine
+		icap_header_l, http_header_l, content_l = self.reader.send(('transfer',0))
+		icap_header = icap_header_l.pop()
+		http_header = http_header_l.pop()
+		content = content_l.pop()
 		return self.name, self.peer, icap_header, http_header, content
 
 	def readRelated(self, mode, remaining):
+		# pop data from lists to free memory held by the coroutine
 		mode = mode or 'icap'
-		icap_header, http_header, content = self.reader.send((mode,remaining))
+		icap_header_l, http_header_l, content_l = self.reader.send((mode,remaining))
+		icap_header = icap_header_l.pop()
+		http_header = http_header_l.pop()
+		content = content_l.pop()
 		return self.name, self.peer, icap_header, http_header, content
 
 	def _write(self, sock):
