@@ -253,7 +253,7 @@ class ICAPClient (object):
 						if request:
 							icap_request = request
 
-							parsed_request = self.icap_parser.parseRequest(self.peer, icap_request, '')
+							parsed_request = self.icap_parser.parseRequest(icap_request, '')
 							content_length = parsed_request.content_length
 
 							if parsed_request is None or parsed_request.contains_body:

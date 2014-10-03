@@ -175,8 +175,8 @@ Encapsulated: req-hdr=0, null-body=%d
 
 
 	def doICAP (self, client_id, peer, icap_header, http_header):
-		icap_request = self.icap_parser.parseRequest(peer, icap_header, http_header)
-		http_request = self.http_parser.parseRequest(peer, http_header)
+		icap_request = self.icap_parser.parseRequest(icap_header, http_header)
+		http_request = self.http_parser.parseRequest(http_header)
 
 		request_string = self.createICAPRequest(peer, http_request, icap_request, http_header) if icap_request else None
 		status = self.writeChild(request_string) if request_string else None

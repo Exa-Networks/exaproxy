@@ -77,7 +77,7 @@ class ICAPParser (object):
 
 		return headers
 
-	def parseRequest (self, peer, icap_string, http_string):
+	def parseRequest (self, icap_string, http_string):
 		request_lines = (p for ss in icap_string.split('\r\n') for p in ss.split('\n'))
 		try:
 			request_line = request_lines.next()
