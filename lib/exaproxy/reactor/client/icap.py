@@ -260,10 +260,6 @@ class ICAPClient (object):
 								# we do not (yet) support having content sent to us
 								break
 
-							if not parsed_request.contains_headers:
-								# we need at least an HTTP header
-								break
-
 							# no reason to keep this around in memory longer than we need it
 							parsed_request = None
 
