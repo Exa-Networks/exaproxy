@@ -1,5 +1,7 @@
 ## ExaProxy
 
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Exa-Networks/exaproxy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ExaProxy is a a high-performance non-caching proxy. It is able to filter HTTP traffic using your favorite programming language.
 
 It is part of Exa Networks' [SurfProtect](http://www.surfprotect.co.uk/) solution.
