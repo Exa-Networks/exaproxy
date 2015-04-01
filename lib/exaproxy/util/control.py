@@ -27,7 +27,7 @@ class ControlBox:
 			ack, command, data = message
 
 		else:
-			ack, command, data = None, None
+			ack, command, data = None, None, [None]
 
 		if identifier is not None and ack != identifier:
 			data = None
