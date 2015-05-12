@@ -174,6 +174,10 @@ class ICAPClient (object):
 					# stream data to the remote server
 					yield [''], [''], [data]
 
+				# break out of the outer loop as soon as we leave the inner loop
+				# through normal execution
+				break
+
 			except socket.error, e:
 				if e.args[0] in errno_block:
 					yield [''], [''], ['']
