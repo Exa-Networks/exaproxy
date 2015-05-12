@@ -181,7 +181,7 @@ class ICAPClient (object):
 				else:
 					break
 
-			yield [None], [None], [None]
+		yield [None], [None], [None]
 
 	def process (self, r_buffer, mode, nb_to_send, max_buffer, seek):
 		if mode == 'transfer':
