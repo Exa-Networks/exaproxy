@@ -111,6 +111,7 @@ class ICAPClient (object):
 		yield ''
 
 		r_buffer = ''
+		processing = False
 		nb_to_send = 0
 		seek = 0
 
@@ -129,35 +130,37 @@ class ICAPClient (object):
 		while True:
 			try:
 				while True:
-					new_data = sock.recv(read_size)
-					if not new_data:
-						break # read failed so we abort
+					if processing is False:
+						new_data = sock.recv(read_size)
+						if not new_data:
+							break # read failed so we abort
+					else:
+						processing = False
 
 					r_buffer += new_data
 
-					if mode == 'icap':
-						# ignore EOL
-						r_buffer = r_buffer.lstrip('\r\n')
-
-						# check to see if we have read an entire request
-						icap_request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
-
-						if icap_request:
-							mode = 'request'
-							seek = 0
-
-					if mode == 'request':
-						# check to see if we have read an entire request
-						http_request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
-
 					if mode in ('icap', 'request'):
+						if mode == 'icap':
+							# ignore EOL
+							r_buffer = r_buffer.lstrip('\r\n')
+
+							# check to see if we have read an entire request
+							icap_request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
+
+							if icap_request:
+								mode = 'request'
+								seek = 0
+
+						if mode == 'request':
+							# check to see if we have read an entire request
+							http_request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
+
 						if http_request:
 							icap_request = [icap_request]
 							http_request = [http_request]
 							seek = 0
 
 							mode, nb_to_send = yield icap_request, http_request, ['']
-							continue
 
 						elif icap_request is not None:
 							yield [''], [''], ['']
@@ -171,8 +174,12 @@ class ICAPClient (object):
 					if data is None:
 						break
 
+					if mode == 'icap':
+						processing = True if r_buffer else False
+
 					# stream data to the remote server
-					yield [''], [''], [data]
+					data = [data]
+					yield [''], [''], data
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
@@ -200,6 +207,9 @@ class ICAPClient (object):
 			self.log.error('The programmers are monkeys - please give them bananas ..')
 			self.log.error('the mode was spelled : [%s]' % mode)
 			data, r_buffer, new_mode, new_to_send, seek = None, None, None, None, 0
+
+		if new_mode == 'transfer' and mode != 'transfer':
+			_, r_buffer, new_mode, new_to_send, seek = self._transfer(r_buffer, new_mode, new_to_send)
 
 		return data, r_buffer, new_mode, new_to_send, seek
 
@@ -237,7 +247,7 @@ class ICAPClient (object):
 			data = None
 
 		if not chunked:
-			mode = 'icap'
+			mode = 'transfer' if nb_to_send > 0 else 'icap'
 
 		return data, r_buffer, mode, nb_to_send, 0
 
