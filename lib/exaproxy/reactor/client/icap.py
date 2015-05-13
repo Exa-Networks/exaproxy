@@ -169,17 +169,18 @@ class ICAPClient (object):
 						else:
 							break
 
-					# all modes that are not directly related to reading a new request
-					data, r_buffer, mode, nb_to_send, seek = self.process(r_buffer, mode, nb_to_send, max_buffer, seek)
-					if data is None:
-						break
+					if mode not in ('icap', 'request'):
+						# all modes that are not directly related to reading a new request
+						data, r_buffer, mode, nb_to_send, seek = self.process(r_buffer, mode, nb_to_send, max_buffer, seek)
+						if data is None:
+							break
+
+						# stream data to the remote server
+						data = [data]
+						yield [''], [''], data
 
 					if mode == 'icap':
 						processing = True if r_buffer else False
-
-					# stream data to the remote server
-					data = [data]
-					yield [''], [''], data
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
