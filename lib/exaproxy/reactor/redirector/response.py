@@ -3,8 +3,8 @@
 
 class ResponseEncoder (object):
 	@staticmethod
-	def icap (client_id, response):
-		return client_id, 'icap', response
+	def icap (client_id, response, length):
+		return client_id, 'icap', (response, str(length))
 
 	@staticmethod
 	def download (client_id, ip, port, upgrade, length, message):

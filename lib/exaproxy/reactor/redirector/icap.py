@@ -99,10 +99,14 @@ class ICAPRedirector (Redirector):
 		icap_request = """\
 REQMOD %s ICAP/1.0
 Host: %s
+Pragma: transport=%s
 Pragma: client=%s
-Pragma: host=%s""" % (
-			self.protocol, self.icap,
-			peer, message.host,
+Pragma: host=%s
+Pragma: path=%s
+Pragma: method=%s""" % (
+
+			self.protocol, self.icap, message.request.protocol,
+			peer, message.request.host, message.request.path, message.request.method,
 			)
 
 		if ip_addr:
@@ -128,8 +132,14 @@ Encapsulated: req-hdr=0, null-body=%d
 
 
 
-	def decideICAP (self, client_id, icap_response):
-		return Respond.icap(client_id, icap_response) if icap_response else None
+	def decideICAP (self, client_id, icap_response, message):
+		if message.complete:
+			length = max(0, message.content_length - len(message.http_header))
+
+		else:
+			length = 'chunked'
+
+		return Respond.icap(client_id, icap_response, length) if icap_response else None
 
 	def decideHTTP (self, client_id, icap_response, message, peer, source):
 		# 304 (not modified)
@@ -202,7 +212,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		return response
 
-	def progress (self, client_id, peer, message, http_header, subheader, source):
+	def progress (self, client_id, peer, message, icap_header, http_header, source):
 		if self.checkChild():
 			icap_response = self.readChildResponse()
 
@@ -211,7 +221,7 @@ Encapsulated: req-hdr=0, null-body=%d
 
 		if icap_response:
 			if source == 'icap':
-				return self.decideICAP(client_id, icap_response.response_string)
+				return self.decideICAP(client_id, icap_response.response_string, message)
 
 			if source == 'proxy':
 				return self.decideHTTP(client_id, icap_response, message, peer, source)

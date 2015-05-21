@@ -186,11 +186,16 @@ class ContentManager(object):
 				length = 0
 
 			elif command == 'icap':
+				try:
+					response, length = args
+				except (ValueError, TypeError), e:
+					raise ParsingError()
+
 				downloader = None
 				newdownloader = False
 				request = ''
-				content = ('stream', args)
-				length = 0
+				content = ('stream', response)
+				length = int(length) if length.isdigit() else length
 
 			elif command == 'file':
 				try:
