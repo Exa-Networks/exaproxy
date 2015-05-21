@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+icap-allow-304.py
+
+Created by Thomas Mangin on 2011-11-29.
+Copyright (c) 2011-2013  Exa Networks. All rights reserved.
+"""
+
+import os
+import sys
+import time
+
+try:
+	pid = os.getpid()
+
+	while True:
+		#with open(os.path.join('/tmp/debugging/', str(pid)), 'a+') as w_fd:
+			#w_fd.write('READING:\n')
+			line = sys.stdin.readline()
+			#w_fd.write(line)
+			method,uri,version = line.rstrip().split()
+			if method != 'REQMOD':
+				sys.stderr.write('ICAP METHOD not supported %s\n' % method)
+				sys.stderr.flush()
+			if version != 'ICAP/1.0':
+				sys.stderr.write('ICAP version not supported %s\n' % version)
+				sys.stderr.flush()
+	
+			# consume the message
+			empty = 2
+			while empty:
+				line = sys.stdin.readline()
+				#w_fd.write(line)
+				if not line.rstrip():
+					empty -= 1
+
+			#w_fd.write('\nWRITE:\n')
+			sys.stdout.write("""ICAP/1.0 204 OK
+Connection: close
+ISTAG: surfprotect-%s
+Encapsulated: null-body=0
+Server: Exa ICAP Server 1.0\n\n""" % time.time())
+			#w_fd.write("ICAP/1.0 304 OK\n\n")
+			sys.stdout.flush()
+except KeyboardInterrupt, e:
+	sys.stderr.write('^C keyboard interrupt. exiting.\n')
+	sys.stderr.flush()
+except Exception, e:
+	sys.stderr.write('CHILD FAILED %s\n' % str(e))
+	sys.stderr.flush()
