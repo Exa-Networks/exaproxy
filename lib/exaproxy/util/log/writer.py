@@ -25,6 +25,10 @@ class LogWriter (RecordedLog):
 	mailbox = None
 	debug_level = Level.value.DEBUG
 
+	level = None
+	active = None
+	backup = None
+
 	def writeMessages (self):
 		messages = self.mailbox.readMessages() if self.mailbox is not None else []
 		messages = ((n,l,t,m) for (n,l,t,m) in messages if l >= self.level) if self.active else []
@@ -33,6 +37,9 @@ class LogWriter (RecordedLog):
 			self.writeMessage(level, text)
 
 		self.finishWriting()
+
+	def formatMessage (self, name, level, timestamp, message):
+		return message
 
 	def writeMessage (self, level, message):
 		raise NotImplementedError
