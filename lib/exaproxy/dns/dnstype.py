@@ -9,6 +9,10 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 import convert
 
 class DNSType:
+	dnsclass = None
+	querytype = None
+	question = None
+
 	def __str__(self):
 		return str(self.question)
 
