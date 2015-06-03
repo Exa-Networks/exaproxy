@@ -219,7 +219,6 @@ class ClientManager (object):
 			res = client.startData(command, d)
 
 		else:
-			print 'GRRRRRRRRRRRRRR', sock, sock in self.bysock, sock in self.norequest
 			res = None
 
 		if res is not None:
@@ -257,15 +256,11 @@ class ClientManager (object):
 			content = None
 
 		if buffered and had_buffer is False:
-			if sock in self.buffered:
-				print '++++++++++++++++++', 'ARRRRRGH', sock, 'already in self.buffered'
 			self.buffered.append(client.sock)
 
 			self.poller.addWriteSocket('write_client', client.sock)
 
 		elif buffered is False and had_buffer is True:
-			if sock not in self.buffered:
-				print '++++++++++++++++++', 'ARRRRRGH', sock, 'not in self.buffered'
 			self.buffered.remove(client.sock)
 
 			self.poller.removeWriteSocket('write_client', client.sock)
