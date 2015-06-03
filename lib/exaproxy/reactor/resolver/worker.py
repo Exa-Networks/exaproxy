@@ -9,7 +9,7 @@ from exaproxy.network.functions import errno_block
 def next_identifier():
 	def cycle_identifiers():
 		while True:
-			for identifier in xrange(0xffff):
+			for identifier in xrange(1, 0xffff):
 				yield identifier
 
 	return cycle_identifiers().next

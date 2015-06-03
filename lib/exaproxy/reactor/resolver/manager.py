@@ -264,7 +264,7 @@ class ResolverManager (object):
 				client_id, original, hostname, command, decision = data
 				clidata = self.clients.pop(client_id, None)
 
-				if completed:
+				if identifier is not None:
 					if clidata is not None:
 						key = clidata[2], client_id, worker.socket
 						if key in self.active:
@@ -278,13 +278,13 @@ class ResolverManager (object):
 
 				# check to see if the worker started a new request
 				if newidentifier:
+					response = None
+
 					if completed:
 						active_time = time.time()
 						self.resolving[(worker.w_id, newidentifier)] = client_id, original, newhost, command, decision
 						self.clients[client_id] = (worker.w_id, newidentifier, active_time, 1)
 						self.active.append((active_time, client_id, worker.socket))
-
-					response = None
 
 					if completed and newcomplete:
 						self.poller.addReadSocket('read_resolver', worker.socket)
