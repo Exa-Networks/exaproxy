@@ -84,7 +84,6 @@ class KQueuePoller (IPoller):
 
 	def removeClosedReadSocket (self, name, sock):
 		print "%s - KQ: ignore remove closed read socket %d" % (str(datetime.datetime.now()), sock.fileno())
-		pass
 
 	def corkReadSocket(self, name, sock):
 		sockets, poller, fdtosock, corked = self.sockets[name]
@@ -188,7 +187,6 @@ class KQueuePoller (IPoller):
 
 	def removeClosedWriteSocket(self, name, sock):
 		print "%s - KQ: ignore remove closed write socket %d" % (str(datetime.datetime.now()), sock.fileno())
-		pass
 
 	def corkWriteSocket(self, name, sock):
 		sockets, poller, fdtosock, corked = self.sockets[name]
