@@ -35,7 +35,10 @@ class ClientManager (object):
 		}
 
 	def __contains__(self, item):
-		return item in self.byname
+		return item in self.bysock
+
+	def lookupSocket (self, item):
+		return self.byname.get(item, None)
 
 	def getnextid(self):
 		self._nextid += 1
@@ -56,7 +59,7 @@ class ClientManager (object):
 		client = HTTPClient(name, sock, peer, self.log, self.http_max_buffer)
 
 		self.norequest[sock] = client, source
-		self.byname[name] = client, source
+		self.byname[name] = sock
 
 		# watch for the opening request
 		self.poller.addReadSocket('opening_client', client.sock)
@@ -69,7 +72,7 @@ class ClientManager (object):
 		client = ICAPClient(name, sock, peer, self.log, self.icap_max_buffer)
 
 		self.norequest[sock] = client, source
-		self.byname[name] = client, source
+		self.byname[name] = sock
 
 		# watch for the opening request
 		self.poller.addReadSocket('opening_client', client.sock)
@@ -81,12 +84,18 @@ class ClientManager (object):
 		"""Read only the initial HTTP headers sent by the client"""
 
 		client, source = self.norequest.get(sock, (None, None))
+
 		if client:
 			name, peer, request, subrequest, content = client.readData()
 			if request:
 				self.total_requested += 1
+
 				# headers can be read only once
 				self.norequest.pop(sock, (None, None))
+				self.bysock[sock] = client, source
+
+				# watch for the client sending new data
+				self.poller.addReadSocket('read_client', client.sock)
 
 				# we have now read the client's opening request
 				self.poller.removeReadSocket('opening_client', client.sock)
@@ -108,7 +117,7 @@ class ClientManager (object):
 		return name, peer, request, subrequest, content, source
 
 
-	def readDataBySocket(self, sock):
+	def readData (self, sock):
 		client, source = self.bysock.get(sock, (None, None))
 		if client:
 			name, peer, request, subrequest, content = client.readData()
@@ -130,30 +139,7 @@ class ClientManager (object):
 
 		return name, peer, request, subrequest, content, source
 
-
-	def readDataByName(self, name):
-		client, source = self.byname.get(name, (None, None))
-		if client:
-			name, peer, request, subrequest, content = client.readData()
-			if request:
-				self.total_requested += 1
-				# Parsing of the new request will be handled asynchronously. Ensure that
-				# we do not read anything from the client until a request has been sent
-				# to the remote webserver.
-				# Since we just read a request, we know that the cork is not currently
-				# set and so there's no risk of it being erroneously removed.
-				self.poller.corkReadSocket('read_client', client.sock)
-
-			elif request is None:
-				self.cleanup(client.sock, name)
-		else:
-			self.log.error('trying to read from a client that does not exist %s' % name)
-			name, peer, request, subrequest, content = None, None, None, None, None
-
-
-		return name, peer, request, subrequest, content
-
-	def sendDataBySocket(self, sock, data):
+	def sendData (self, sock, data):
 		client, source = self.bysock.get(sock, (None, None))
 		if client:
 			name = client.name
@@ -199,155 +185,106 @@ class ClientManager (object):
 
 		return result, buffer_change, name, source
 
-	def sendDataByName(self, name, data):
-		client, source = self.byname.get(name, (None, None))
-		if client:
-			res = client.writeData(data)
 
-			if res is None:
-				# we cannot write to the client so clean it up
-				self.cleanup(client.sock, name)
-
-				buffered, had_buffer, sent4, sent6 = None, None, 0, 0
-				result = None
-				buffer_change = None
-			else:
-				buffered, had_buffer, sent4, sent6 = res
-				self.total_sent4 += sent4
-				self.total_sent6 += sent6
-				result = buffered
-
-			if buffered:
-				if client.sock not in self.buffered:
-					self.buffered.append(client.sock)
-					buffer_change = True
-
-					# watch for the socket's send buffer becoming less than full
-					self.poller.addWriteSocket('write_client', client.sock)
-				else:
-					buffer_change = False
-
-			elif had_buffer and client.sock in self.buffered:
-				self.buffered.remove(client.sock)
-				buffer_change = True
-
-				# we no longer care about writing to the client
-				self.poller.removeWriteSocket('write_client', client.sock)
-
-			else:
-				buffer_change = False
-		else:
-			result = None
-			buffer_change = None
-
-		return result, buffer_change, client
-
-
-	def startData(self, name, data, remaining):
-		# NOTE: soo ugly but fast to code
+	def parseRemaining (self, remaining):
 		nb_to_read = 0
-		if type(remaining) == type(''):
-			if 'chunked' in remaining:
-				mode = 'chunked'
-			else:
-				mode = 'passthrough'
+
+		if isinstance(remaining, basestring):
+			mode = 'chunked' if remaining == 'chunked' else 'passthrough'
+
 		elif remaining > 0:
 			mode = 'transfer'
 			nb_to_read = remaining
+
 		elif remaining == 0:
 			mode = ''
+
 		else:
 			mode = 'passthrough'
 
-		client, source = self.byname.get(name, (None, None))
+		return mode, nb_to_read
+
+	def startData(self, sock, data, remaining):
+		client, source = self.bysock.get(sock, (None, None))
+
+		try:
+			mode, nb_to_read = self.parseRemaining(remaining)
+			command, d = data if client is not None else (None, None)
+
+		except (ValueError, TypeError), e:
+			self.log.error('invalid command sent to client %s' % client.name)
+			command, d = None, None
+
 		if client:
-			try:
-				command, d = data
-			except (ValueError, TypeError):
-				self.log.error('invalid command sent to client %s' % name)
-				res = None
-			else:
-				if client.sock not in self.bysock:
-					# Start checking for content sent by the client
-					self.bysock[client.sock] = client, source
+			res = client.startData(command, d)
 
-					# watch for the client sending new data
-					self.poller.addReadSocket('read_client', client.sock)
+		else:
+			print 'GRRRRRRRRRRRRRR', sock, sock in self.bysock, sock in self.norequest
+			res = None
 
-					# make sure we don't somehow end up with this still here
-					self.norequest.pop(client.sock, (None,None))
+		if res is not None:
+			buffered, had_buffer, sent4, sent6 = res
 
-					# NOTE: always done already in readRequest
-					self.poller.removeReadSocket('opening_client', client.sock)
-					res = client.startData(command, d)
+			self.poller.uncorkReadSocket('read_client', client.sock)
 
-				else:
-					res = client.restartData(command, d)
+			self.total_sent4 += sent4
+			self.total_sent6 += sent6
 
-					# If we are here then we must have prohibited reading from the client
-					# and it must otherwise have been in a readable state
-					self.poller.uncorkReadSocket('read_client', client.sock)
+		else:
+			buffered, had_buffer = None, None
 
+		if command is not None:
+			name, peer, request, subrequest, content = client.readRelated(mode, nb_to_read)
 
-
-			if res is not None:
-				buffered, had_buffer, sent4, sent6 = res
-
-				# buffered data we read with the HTTP headers
-				name, peer, request, subrequest, content = client.readRelated(mode,nb_to_read)
-				if request:
-					self.total_requested += 1
-					self.log.info('reading multiple requests')
-					self.cleanup(client.sock, name)
-					buffered, had_buffer = None, None
-					content = None
-
-				elif request is None:
-					self.cleanup(client.sock, name)
-					buffered, had_buffer = None, None
-					content = None
-
-			else:
-				# we cannot write to the client so clean it up
+			if request:
+				self.total_requested += 1
+				self.log.info('reading multiple requests')
 				self.cleanup(client.sock, name)
-
 				buffered, had_buffer = None, None
 				content = None
 
-			if buffered:
-				if client.sock not in self.buffered:
-					self.buffered.append(client.sock)
+			elif request is None:
+				self.cleanup(client.sock, name)
+				buffered, had_buffer = None, None
+				content = None
 
-					# watch for the socket's send buffer becoming less than full
-					self.poller.addWriteSocket('write_client', client.sock)
-
-			elif had_buffer and client.sock in self.buffered:
-				self.buffered.remove(client.sock)
-
-				# we no longer care about writing to the client
-				self.poller.removeWriteSocket('write_client', client.sock)
 		else:
+			# we cannot write to the client so clean it up
+			if client:
+				self.cleanup(client.sock, name)
+
+			buffered, had_buffer = None, None
 			content = None
 
-		return client, content, source
+		if buffered and had_buffer is False:
+			if sock in self.buffered:
+				print '++++++++++++++++++', 'ARRRRRGH', sock, 'already in self.buffered'
+			self.buffered.append(client.sock)
+
+			self.poller.addWriteSocket('write_client', client.sock)
+
+		elif buffered is False and had_buffer is True:
+			if sock not in self.buffered:
+				print '++++++++++++++++++', 'ARRRRRGH', sock, 'not in self.buffered'
+			self.buffered.remove(client.sock)
+
+			self.poller.removeWriteSocket('write_client', client.sock)
+
+		return content, source
 
 
-	def corkUploadByName(self, name):
-		client, source = self.byname.get(name, (None, None))
-		if client:
-			self.poller.corkReadSocket('read_client', client.sock)
+	def corkUpload(self, sock):
+		if sock in self.bysock:
+			self.poller.corkReadSocket('read_client', sock)
 
-	def uncorkUploadByName(self, name):
-		client, source = self.byname.get(name, (None, None))
-		if client:
-			if client.sock in self.bysock:
-				self.poller.uncorkReadSocket('read_client', client.sock)
+	def uncorkUpload(self, sock):
+		if sock in self.bysock:
+			self.poller.uncorkReadSocket('read_client', sock)
 
 	def cleanup(self, sock, name):
 		self.log.debug('cleanup for socket %s' % sock)
 		client, source = self.bysock.get(sock, (None,None))
 		client, source = (client,None) if client else self.norequest.get(sock, (None,None))
-		client, source = (client,None) if client else self.byname.get(name, (None,None))
 
 		self.bysock.pop(sock, None)
 		self.norequest.pop(sock, (None,None))

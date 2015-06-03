@@ -19,12 +19,12 @@ class ParsingError (Exception):
 class ContentManager(object):
 	downloader_factory = Content
 
-	def __init__(self, supervisor, configuration):
+	def __init__ (self, supervisor, configuration):
 		self.total_sent4 = 0L
 		self.total_sent6 = 0L
 		self.opening = {}
 		self.established = {}
-		self.byclientid = {}
+		self.byclient = {}
 		self.buffered = []
 		self.retry = []
 		self.configuration = configuration
@@ -37,10 +37,10 @@ class ContentManager(object):
 		self.page = supervisor.page
 		self._header = {}
 
-	def hasClient(self, client_id):
-		return client_id in self.byclientid
+	def hasClient (self, client):
+		return client in self.byclient
 
-	def getLocalContent(self, code, name):
+	def getLocalContent (self, code, name):
 		filename = os.path.normpath(os.path.join(self.location, name))
 		if not filename.startswith(self.location + os.path.sep):
 			filename = ''
@@ -69,7 +69,7 @@ class ContentManager(object):
 
 		return content
 
-	def readLocalContent(self, code, reason, data={}):
+	def readLocalContent (self, code, reason, data={}):
 		filename = os.path.normpath(os.path.join(self.location, reason))
 		if not filename.startswith(self.location + os.path.sep):
 			filename = ''
@@ -93,15 +93,15 @@ class ContentManager(object):
 		return content
 
 
-	def getDownloader(self, client_id, host, port, command, request):
-		downloader = self.byclientid.get(client_id, None)
+	def getDownloader (self, client, host, port, command, request):
+		downloader = self.byclient.get(client, None)
 		if downloader:
 			# NOTE: with pipeline, consequent request could go to other sites if the browser knows we are a proxy
 			# NOTE: therefore the second request could reach the first site
 			# NOTE: and we could kill the connection before the data is fully back to the client
 			# NOTE: in practice modern browser are too clever and test for it !
 			if host != downloader.host or port != downloader.port:
-				self.endClientDownload(client_id)
+				self.endClientDownload(client)
 				downloader = None
 			else:
 				newdownloader = False
@@ -125,7 +125,7 @@ class ContentManager(object):
 					# we did not break
 					return None, False
 
-			downloader = self.downloader_factory(client_id, host, port, bind, command, request, self.log)
+			downloader = self.downloader_factory(client, host, port, bind, command, request, self.log)
 			newdownloader = True
 
 		if downloader.sock is None:
@@ -133,7 +133,7 @@ class ContentManager(object):
 
 		return downloader, newdownloader
 
-	def getContent(self, client_id, command, args):
+	def getContent (self, client, command, args):
 		try:
 			if command == 'download':
 				try:
@@ -141,7 +141,7 @@ class ContentManager(object):
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 
-				downloader, newdownloader = self.getDownloader(client_id, host, int(port), command, request)
+				downloader, newdownloader = self.getDownloader(client, host, int(port), command, request)
 
 				if downloader is not None:
 					content = ('stream', '')
@@ -159,7 +159,7 @@ class ContentManager(object):
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 
-				downloader, newdownloader = self.getDownloader(client_id, host, int(port), command, '')
+				downloader, newdownloader = self.getDownloader(client, host, int(port), command, '')
 
 				if downloader is not None:
 					content = ('stream', '')
@@ -255,7 +255,7 @@ class ContentManager(object):
 
 		if newdownloader is True:
 			self.opening[downloader.sock] = downloader
-			self.byclientid[downloader.client_id] = downloader
+			self.byclient[downloader.client] = downloader
 
 			buffered = None
 			buffer_change = None
@@ -284,12 +284,12 @@ class ContentManager(object):
 			else:
 				buffer_change = False
 
-		elif client_id in self.byclientid:
+		elif client in self.byclient:
 			buffered = None
 			buffer_change = None
 
 			# we have replaced the downloader with local content
-			self.endClientDownload(client_id)
+			self.endClientDownload(client)
 
 		else:
 			buffered = None
@@ -298,14 +298,14 @@ class ContentManager(object):
 		return content, length, buffered, buffer_change
 
 
-	def startDownload(self, sock):
+	def startDownload (self, sock):
 		# shift the downloader to the other connected sockets
 		downloader = self.opening.pop(sock, None)
 		if downloader:
 			self.poller.removeWriteSocket('write_download', downloader.sock)
 
 			self.established[sock] = downloader
-			client_id, res, response = downloader.startConversation()
+			client, res, response = downloader.startConversation()
 
 			# check to see if we were unable to connect
 			if res is not True:
@@ -324,33 +324,33 @@ class ContentManager(object):
 			buffer_change = downloader.sock in self.buffered
 
 		else:
-			client_id, response, buffer_change = None, None, None
+			client, response, buffer_change = None, None, None
 
-		return client_id, response, buffer_change
+		return client, response, buffer_change
 
-	def retryDownload(self, client_id, command, args):
+	def retryDownload (self, client, command, args):
 		return None
 
-	def readData(self, sock):
+	def readData (self, sock):
 		downloader = self.established.get(sock, None)
 		if downloader:
-			client_id = downloader.client_id
+			client = downloader.client
 			data = downloader.readData()
 
 			if data is None:
-				self._terminate(sock, client_id)
+				self._terminate(sock, client)
 		else:
-			client_id, data = None, None
+			client, data = None, None
 
-		return client_id, data
+		return client, data
 
-	def sendSocketData(self, sock, data):
+	def sendSocketData (self, sock, data):
 		downloader = self.established.get(sock, None)
 		if downloader:
 			buffered,sent4,sent6 = downloader.writeData(data)
 			self.total_sent4 += sent4
 			self.total_sent6 += sent6
-			client_id = downloader.client_id
+			client = downloader.client
 
 			if buffered:
 				if sock not in self.buffered:
@@ -374,12 +374,12 @@ class ContentManager(object):
 		else:
 			buffered = None
 			buffer_change = None
-			client_id = None
+			client = None
 
-		return buffered, buffer_change, client_id
+		return buffered, buffer_change, client
 
-	def sendClientData(self, client_id, data):
-		downloader = self.byclientid.get(client_id, None)
+	def sendClientData (self, client, data):
+		downloader = self.byclient.get(client, None)
 		if downloader:
 			if downloader.sock in self.established:
 				buffered,sent4,sent6 = downloader.writeData(data)
@@ -418,7 +418,7 @@ class ContentManager(object):
 
 
 			else:  # what is going on if we reach this point
-				self._terminate(downloader.sock, client_id)
+				self._terminate(downloader.sock, client)
 				buffered = None
 				buffer_change = None
 		else:
@@ -428,27 +428,27 @@ class ContentManager(object):
 		return buffered, buffer_change
 
 
-	def endClientDownload(self, client_id):
-		downloader = self.byclientid.get(client_id, None)
+	def endClientDownload (self, client):
+		downloader = self.byclient.get(client, None)
 		if downloader:
-			res = self._terminate(downloader.sock, client_id)
+			res = self._terminate(downloader.sock, client)
 		else:
 			res = False
 
 		return res
 
-	def corkClientDownload(self, client_id):
-		downloader = self.byclientid.get(client_id, None)
+	def corkClientDownload (self, client):
+		downloader = self.byclient.get(client, None)
 		if downloader:
 			self.poller.corkReadSocket('read_download', downloader.sock)
 
-	def uncorkClientDownload(self, client_id):
-		downloader = self.byclientid.get(client_id, None)
+	def uncorkClientDownload (self, client):
+		downloader = self.byclient.get(client, None)
 		if downloader:
 			if downloader.sock in self.established:
 				self.poller.uncorkReadSocket('read_download', downloader.sock)
 
-	def _terminate(self, sock, client_id):
+	def _terminate (self, sock, client):
 		downloader = self.established.get(sock, None)
 		if downloader is None:
 			downloader = self.opening.get(sock, None)
@@ -463,7 +463,7 @@ class ContentManager(object):
 		if downloader:
 			self.established.pop(sock, None)
 			self.opening.pop(sock, None)
-			self.byclientid.pop(client_id, None)
+			self.byclient.pop(client, None)
 
 			if sock in self.buffered:
 				self.buffered.remove(sock)
@@ -490,7 +490,7 @@ class ContentManager(object):
 
 		self.established = {}
 		self.opening = {}
-		self.byclientid = {}
+		self.byclient = {}
 		self.buffered = []
 
 		self.poller.clearRead('read_download')

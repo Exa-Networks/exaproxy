@@ -224,12 +224,13 @@ class HTTPClient (object):
 							continue
 
 						seek = 0
-						mode = 'transfer'
+						mode = 'request'
 
 
 					if mode != 'request':
 						self.log.error('The programmers are monkeys - please give them bananas ..')
 						self.log.error('the mode was spelled : [%s]' % mode)
+						self.log.error('bytes to send : [%s]' % nb_to_send)
 						self.log.error('.. if it works, we are lucky - but it may work.')
 						mode = 'request'
 
@@ -273,7 +274,7 @@ class HTTPClient (object):
 
 	def readData(self):
 		# pop data from lists to free memory held by the coroutine
-		request_l, content_l = self.reader.send(('transfer',0))
+		request_l, content_l = self.reader.send(('request',0))
 		request = request_l.pop()
 		content = content_l.pop()
 
@@ -297,14 +298,16 @@ class HTTPClient (object):
 			try:
 				# NOTE: we must read from the file on demand rather than doing this
 				with open(filename) as fd:
-					self.w_buffer += fd.read()
+					file_data = fd.read()
 
 				found = True, False, 0, 0
 			except IOError:
 				found = None
 
 			data = yield found
-			self.w_buffer = data + self.w_buffer
+			self.w_buffer += data + file_data
+			file_data = ''
+
 		else:
 			found = None
 
@@ -364,9 +367,9 @@ class HTTPClient (object):
 	def writeData(self, data):
 		return self.writer.send(data)
 
-
 	def startData(self, command, data):
 		# start the _write coroutine
+		self.writer = self._write(self.sock)
 		self.writer.next()
 
 		if command == 'stream':
@@ -384,15 +387,13 @@ class HTTPClient (object):
 			self.writer.send(header)  # write the response headers before the file
 
 			self.writer.send(None)  # close the connection once the buffer is empty
+
 		else:
+			print '????????????? command is', command
 			res = None
 
 		# buffered, had_buffer
 		return res
-
-	def restartData(self, command, data):
-		self.writer = self._write(self.sock)
-		return self.startData(command, data)
 
 	def shutdown(self):
 		try:

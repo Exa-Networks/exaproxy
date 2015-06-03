@@ -23,10 +23,10 @@ DEFAULT_READ_BUFFER_SIZE = 64*1024
 class Content (object):
 	_connect = staticmethod(connect)
 
-	__slots__ = ['client_id', 'sock', 'host', 'port', 'method', 'w_buffer', 'log', 'ipv4']
+	__slots__ = ['client', 'sock', 'host', 'port', 'method', 'w_buffer', 'log', 'ipv4']
 
-	def __init__(self, client_id, host, port, bind, method, request, logger):
-		self.client_id = client_id
+	def __init__(self, client, host, port, bind, method, request, logger):
+		self.client = client
 		self.sock = self._connect(host, port, bind)
 		self.host = host
 		self.port = port
@@ -40,12 +40,12 @@ class Content (object):
 		Don't send anything yet if the client sent a CONNECT - instead,
 		we respond with our own HTTP header indicating that we connected"""
 
-		#self.log.info('download socket is now open for client %s %s' % (self.client_id, self.sock))
+		#self.log.info('download socket is now open for client %s %s' % (self.client, self.sock))
 
 		res,sent4,sent6 = self.writeData('')
 		# XXX: Are we not accounting this data transfer ! ?
 		response='HTTP/1.1 200 Connection Established\r\n\r\n' if self.method == 'connect' else ''
-		return self.client_id, res is not None, response
+		return self.client, res is not None, response
 
 	def readData(self, buflen=DEFAULT_READ_BUFFER_SIZE):
 		"""Read data that we have already received from the remote server"""

@@ -90,176 +90,180 @@ class Reactor(object):
 					elif source == 'web':
 						self.web.notifyClose(client)
 
-
 			# incoming data from clients
 			for client in events.get('read_client',[]):
-				client_id, peer, request, subrequest, data, source = self.client.readDataBySocket(client)
+				client_id, peer, request, subrequest, data, source = self.client.readData(client)
+
 				if request:
 					# we have a new request - decide what to do with it
 					self.decider.sendRequest(client_id, peer, request, subrequest, source)
 
 				if data:
 					# we read something from the client so pass it on to the remote server
-					status, buffer_change = self.content.sendClientData(client_id, data)
+					status, buffer_change = self.content.sendClientData(client, data)
 
 					if buffer_change:
 						if status:
-							self.client.corkUploadByName(client_id)
+							self.client.corkUpload(client)
 						else:
-							self.client.uncorkUploadByName(client_id)
+							self.client.uncorkUpload(client)
 
 				elif data is None and client_id is not None:
-					self.content.endClientDownload(client_id)
+					self.content.endClientDownload(client)
+
 					if source == 'proxy':
 						self.proxy.notifyClose(client)
+
 					elif source == 'web':
 						self.web.notifyClose(client)
 
-
 			# clients we can write buffered data to
 			for client in events.get('write_client',[]):
-				status, buffer_change, name, source = self.client.sendDataBySocket(client, '')
+				status, buffer_change, name, source = self.client.sendData(client, '')
 
 				if status is None and name is not None:
-					self.content.endClientDownload(name)
+					self.content.endClientDownload(client)
+
 					if source == 'proxy':
 						self.proxy.notifyClose(client)
+
 					elif source == 'web':
 						self.web.notifyClose(client)
 
 				if buffer_change:
 					# status should be False - we're here because we flushed buffered data
 					if not status:    # No buffer
-						self.content.uncorkClientDownload(name)
+						self.content.uncorkClientDownload(client)
 
 					else:         # Buffering
-						self.content.corkClientDownload(name)
+						self.content.corkClientDownload(client)
 
 
 			# incoming data - web pages
 			for fetcher in events.get('read_download',[]):
-				client_id, page_data = self.content.readData(fetcher)
+				client, page_data = self.content.readData(fetcher)
 
 				# send received data to the client that requested it
-				status, buffer_change, client = self.client.sendDataByName(client_id, page_data)
+				status, buffer_change, name, source = self.client.sendData(client, page_data)
 
 				# check to see if the client went away
 				if status is None and client is not None:
 					# We just closed our connection to the client and need to count the disconnect.
-					self.proxy.notifyClose(client_id)
+					self.proxy.notifyClose(client)
 
 					if page_data is not None:
 						# The client disconnected? Close our connection to the remote webserver.
 						# We'll be notified of the client disconnect so don't count it here
-						self.content.endClientDownload(client_id)
+						self.content.endClientDownload(client)
 
 				elif buffer_change:
 					# status should be true here - we don't read from the server when buffering
 					if status:      # Buffering
-						self.content.corkClientDownload(client_id)
+						self.content.corkClientDownload(client)
 
 					else:            # No buffer
-						self.content.uncorkClientDownload(client_id)
+						self.content.uncorkClientDownload(client)
 
 
 			# decisions made by the child processes
 			for _ in events.get('read_redirector',[]):
-				client_id, command, decision = self.decider.getDecision()
+				name, command, decision = self.decider.getDecision()
+				client = self.client.lookupSocket(name)
 
 				if command is None:
 					# if the redirector process disappears then we must close the proxy
 					return False, {}
 
 				# check that the client didn't get bored and go away
-				if client_id in self.client:
+				if client is not None:
 					if self.resolver.resolves(command, decision):
-						identifier, response = self.resolver.startResolving(client_id, command, decision)
+						identifier, response = self.resolver.startResolving(client, command, decision)
 						if response:
-							cid, command, decision = response[0], response[1], response[2:]
-							decisions.append((client_id, command, decision))
+							_client, command, decision = response[0], response[1], response[2:]
+							decisions.append((client, command, decision))
 
 						# something went wrong
 						elif identifier is None:
 							command, decision = self.decider.showInternalError()
-							decisions.append((client_id, command, decision))
+							decisions.append((client, command, decision))
 					else:
-						decisions.append((client_id, command, decision))
+						decisions.append((client, command, decision))
 
 			# decisions with a resolved hostname
 			for resolver in events.get('read_resolver', []):
 				response = self.resolver.getResponse(resolver)
 				if response:
-					client_id, command, decision = response[0], response[1], response[2:]
-					decisions.append((client_id, command, decision))
+					client, command, decision = response[0], response[1], response[2:]
+					decisions.append((client, command, decision))
 
 			# all decisions we are currently able to process
-			for client_id, command, decision in decisions:
+			for client, command, decision in decisions:
 				# send the possibibly rewritten request to the server
-				response, length, status, buffer_change = self.content.getContent(client_id, command, decision)
+				response, length, status, buffer_change = self.content.getContent(client, command, decision)
 
 				if buffer_change:
 					if status:
-						self.client.corkUploadByName(client_id)
+						self.client.corkUpload(client)
 					else:
-						self.client.uncorkUploadByName(client_id)
+						self.client.uncorkUpload(client)
 
 				# Signal to the client that we'll be streaming data to it or
 				# give it the location of the local content to return.
-				client, data, source = self.client.startData(client_id, response, length)
+				data, source = self.client.startData(client, response, length)
 
 				# Check for any data beyond the initial headers that we may already
 				# have read and cached
 				if data:
-					status, buffer_change = self.content.sendClientData(client_id, data)
+					status, buffer_change = self.content.sendClientData(client, data)
 
 					if buffer_change:
 						if status:
-							self.client.corkUploadByName(client_id)
+							self.client.corkUpload(client)
 						else:
-							self.client.uncorkUploadByName(client_id)
+							self.client.uncorkUpload(client)
 
 				elif data is None and client is not None:
-					self.content.endClientDownload(client_id)
+					self.content.endClientDownload(client)
 					if source == 'proxy':
 						self.proxy.notifyClose(client)
+
 					elif source == 'web':
 						self.web.notifyClose(client)
 
-
 			# remote servers we can write buffered data to
 			for download in events.get('write_download',[]):
-				status, buffer_change, client_id = self.content.sendSocketData(download, '')
+				status, buffer_change, client = self.content.sendSocketData(download, '')
 
 				if buffer_change:
 					if status:
-						self.client.corkUploadByName(client_id)
+						self.client.corkUpload(client)
 					else:
-						self.client.uncorkUploadByName(client_id)
+						self.client.uncorkUpload(client)
 
 
 			# fully connected connections to remote web servers
 			for fetcher in events.get('opening_download',[]):
-				client_id, response, buffer_change = self.content.startDownload(fetcher)
+				client, response, buffer_change = self.content.startDownload(fetcher)
 				if buffer_change:
-					self.client.uncorkUploadByName(client_id)
+					self.client.uncorkUpload(client)
 
-				if client_id in self.client:
+				if client in self.client:
 					if response:
-						status, buffer_change, client = self.client.sendDataByName(client_id, response)
+						status, buffer_change, name, source = self.client.sendData(client, response)
 						if status is None and client is not None:
 							# We just closed our connection to the client and need to count the disconnect.
-							self.proxy.notifyClose(client_id)
+							self.proxy.notifyClose(client)
 
 							if response is not None:
-								self.content.endClientDownload(client_id)
+								self.content.endClientDownload(client)
 
 						elif buffer_change:
 							# status should be True if we're here
 							if status:
-								self.content.corkClientDownload(client_id)
+								self.content.corkClientDownload(client)
 
 							else:
-								self.content.uncorkClientDownload(client_id)
+								self.content.uncorkClientDownload(client)
 
 
 
