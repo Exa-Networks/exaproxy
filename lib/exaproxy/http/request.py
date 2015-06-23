@@ -103,4 +103,9 @@ class Request (object):
 	def __str__ (self):
 		if self.use_raw or self.protocol != 'http':
 			return self.raw
+
+		if self.method == 'CONNECT':
+			host = self.host + ((':' + str(self.port)) if self.port else '')
+			return self.method + ' ' + host + ' HTTP/' + self.version
+
 		return self.method + ' ' + self.path + ' HTTP/' + self.version

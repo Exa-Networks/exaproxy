@@ -158,7 +158,14 @@ Encapsulated: req-hdr=0, null-body=%d
 			classification, data, comment = 'http', icap_response.http_header, icap_response.pragma.get('comment', '')
 
 		elif icap_response.is_intercept:
-			classification, data, comment = 'intercept', icap_response.destination, icap_response.pragma.get('comment', '')
+			intercept_request = self.http_parser.parseRequest(peer, icap_response.intercept_header)
+
+			if intercept_request:
+				destination = intercept_request.host + ':' + str(intercept_request.port)
+				classification, data, comment = 'intercept', destination, icap_response.pragma.get('comment', '')
+
+			else:
+				classification, data, comment = 'error', None, None
 
 		else:
 			classification, data, comment = 'permit', None, None

@@ -153,13 +153,13 @@ class ContentManager(object):
 					content = self.getLocalContent('400', 'noconnect.html')
 					length = 0
 
-			elif command == 'connect':
+			elif command in ('connect', 'intercept'):
 				try:
-					host, port, request = args
+					host, port, data = args
 				except (ValueError, TypeError), e:
 					raise ParsingError()
 
-				downloader, newdownloader = self.getDownloader(client, host, int(port), command, '')
+				downloader, newdownloader = self.getDownloader(client, host, int(port), command, data)
 
 				if downloader is not None:
 					content = ('stream', '')

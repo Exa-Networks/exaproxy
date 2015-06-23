@@ -15,6 +15,10 @@ class ResponseEncoder (object):
 		return client_id, 'connect', (host, str(port), str(message))
 
 	@staticmethod
+	def intercept (client_id, host, port, message):
+		return client_id, 'intercept', (host, str(port), str(message))
+
+	@staticmethod
 	def file (client_id, code, reason):
 		return client_id, 'file', (str(code), reason)
 
@@ -60,6 +64,20 @@ class ResponseEncoder (object):
 		return client_id, None, None
 
 
+
+def splithost (data, default_port):
+	if ':' in data:
+		host, port = data.split(':', 1)
+
+	else:
+		host, port = data, None
+
+	if port is None or not port.isdigit():
+		port = default_port
+
+	return host, port
+
+
 class ResponseFactory (object):
 	encoder = ResponseEncoder
 
@@ -78,7 +96,8 @@ class ResponseFactory (object):
 			return ('REDIRECT', data), self.encoder.redirect(client_id, data)
 
 		if classification == 'intercept':
-			return ('INTERCEPT', data), self.encoder.download(client_id, data, message.port, '', message.content_length, message)
+			host, port = splithost(data, message.port)
+			return ('INTERCEPT', data), self.encoder.download(client_id, host, port, '', message.content_length, message)
 
 		if classification == 'http':
 			return ('LOCAL', ''), self.encoder.http(client_id, data)
@@ -87,13 +106,14 @@ class ResponseFactory (object):
 
 	def connectResponse (self, client_id, message, classification, data, comment):
 		if classification == 'permit':
-			return ('PERMIT', message.host), self.encoder.connect(client_id, message.host, message.port, message)
+			return ('PERMIT', message.host), self.encoder.connect(client_id, message.host, message.port, '')
 
 		if classification == 'redirect':
 			return ('REDIRECT', data), self.encoder.redirect(client_id, data)
 
 		if classification == 'intercept':
-			return ('INTERCEPT', data), self.encoder.connect(client_id, data, message.port, message)
+			host, port = splithost(data, message.port)
+			return ('INTERCEPT', data), self.encoder.intercept(client_id, host, port, message)
 
 		if classification == 'file':
 			return ('FILE', data), self.encoder.rewrite(client_id, '200', data, comment, message)
@@ -101,4 +121,4 @@ class ResponseFactory (object):
 		if classification == 'http':
 			return ('LOCAL', ''), self.encoder.http(client_id, data)
 
-		return ('PERMIT', message.host), self.encoder.connect(client_id, message.host, message.port, message)
+		return ('PERMIT', message.host), self.encoder.connect(client_id, message.host, message.port, '')

@@ -121,7 +121,7 @@ class ResolverManager (object):
 			self.active = self.active[count:]
 
 	def resolves(self, command, decision):
-		if command in ('download', 'connect'):
+		if command in ('download', 'connect', 'intercept'):
 			hostname = decision[0]
 			if isip(hostname):
 				res = False
@@ -133,7 +133,7 @@ class ResolverManager (object):
 		return res
 
 	def extractHostname(self, command, decision):
-		if command in ('download', 'connect'):
+		if command in ('download', 'connect', 'intercept'):
 			hostname = decision[0]
 
 		else:
@@ -142,7 +142,7 @@ class ResolverManager (object):
 		return hostname
 
 	def resolveDecision(self, command, decision, ip):
-		if command in ('download', 'connect'):
+		if command in ('download', 'connect', 'intercept'):
 			hostname, args = decision[0], decision[1:]
 			newdecision = (ip,) + args
 		else:
