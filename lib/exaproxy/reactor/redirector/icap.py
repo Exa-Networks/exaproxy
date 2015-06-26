@@ -106,7 +106,7 @@ Pragma: path=%s
 Pragma: method=%s""" % (
 
 			self.protocol, self.icap, message.request.protocol,
-			peer, message.request.host, message.request.path, message.request.method,
+			peer, message.host, message.request.path, message.request.method,
 			)
 
 		if ip_addr:
