@@ -11,17 +11,9 @@ class ICAPResponse (object):
 		
 		icap_end = icap_len
 
-		if http_header:
-			http_len_string = '%x\n' % http_len
-			http_string = http_len_string + http_header + '0\n'
-
-			http_offset = icap_end + len(http_len_string)
-			http_end = http_offset + http_len
-
-		else:
-			http_string = http_header
-			http_offset = icap_end
-			http_end = icap_end
+		http_string = http_header
+		http_offset = icap_end
+		http_end = http_offset + http_len
 
 		self.response_view = memoryview(icap_header + http_string)
 		self.icap_view = self.response_view[:icap_end]
