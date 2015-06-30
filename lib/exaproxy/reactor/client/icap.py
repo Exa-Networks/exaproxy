@@ -30,6 +30,7 @@ class ICAPClient (object):
 		self.sock = sock
 		self.peer = peer
 		self.reader = self._read(sock,max_buffer)
+		self.writer = self._write(sock)
 		self.w_buffer = ''
 		self.log = logger
 
