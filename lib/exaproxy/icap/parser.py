@@ -155,13 +155,10 @@ class ICAPParser (object):
 		header_string = response_header.header_string
 
 		# split the body string into components
-		offsets = self.splitResponseParts(response_header.offsets, body_string)
+		parts = self.splitResponseParts(response_header.offsets, body_string)
 
-		response_string = offsets.get('res-hdr', '')
-		response_string += offsets.get('res-body', '')
-
-		request_string = offsets.get('req-hdr', '')
-		request_string += offsets.get('req-body', '')
+		response_string = parts.get('res-hdr', '')
+		request_string = parts.get('req-hdr', '')
 
 		if request_string.startswith('CONNECT'):
 			intercept_string, request_string = self.splitResponse(request_string)
@@ -171,7 +168,9 @@ class ICAPParser (object):
 		else:
 			intercept_string = None
 
-		return self.response_factory.create(version, code, status, headers, header_string, request_string, response_string, intercept_string)
+		body_string = parts.get('res-body', '') if response_string else parts.get('req-body', '')
+
+		return self.response_factory.create(version, code, status, headers, header_string, request_string, response_string, body_string, intercept_string)
 
 	def splitResponse (self, response_string):
 		for delimiter in ('\n\n', '\r\n\r\n'):

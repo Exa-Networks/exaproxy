@@ -1,6 +1,6 @@
 
 class ICAPResponse (object):
-	def __init__ (self, version, code, status, headers, icap_header, http_header):
+	def __init__ (self, version, code, status, headers, icap_header, http_header, http_body):
 		self.version = version
 		self.code = code
 		self.status = status
@@ -11,9 +11,17 @@ class ICAPResponse (object):
 		
 		icap_end = icap_len
 
-		http_string = http_header
-		http_offset = icap_end
-		http_end = http_offset + http_len
+		if http_header:
+			http_len_string = '%x\n' % len(http_body)
+			http_string = http_header + http_len_string + http_body + '0\n'
+
+			http_offset = icap_end
+			http_end = http_offset + len(http_string)
+
+		else:
+			http_string = http_header
+			http_offset = icap_end
+			http_end = icap_end
 
 		self.response_view = memoryview(icap_header + http_string + '\r\n')
 		self.icap_view = self.response_view[:icap_end]
@@ -53,8 +61,8 @@ class ICAPResponse (object):
 
 
 class ICAPRequestModification (ICAPResponse):
-	def __init__ (self, version, code, status, headers, icap_header, http_header, intercept_header=None):
-		ICAPResponse.__init__(self, version, code, status, headers, icap_header, http_header)
+	def __init__ (self, version, code, status, headers, icap_header, http_header, http_body, intercept_header=None):
+		ICAPResponse.__init__(self, version, code, status, headers, icap_header, http_body, http_header)
 		self.intercept_header = intercept_header
 
 	@property
@@ -80,11 +88,11 @@ class ICAPResponseFactory:
 	def __init__ (self, configuration):
 		self.configuration = configuration
 
-	def create (self, version, code, status, headers, icap_header, request_header, response_header, intercept_header=None):
+	def create (self, version, code, status, headers, icap_header, request_header, response_header, body_string, intercept_header=None):
 		if response_header:
-			response = ICAPResponseModification(version, code, status, headers, icap_header, response_header)
+			response = ICAPResponseModification(version, code, status, headers, icap_header, response_header, body_string)
 
 		else:
-			response = ICAPRequestModification(version, code, status, headers, icap_header, request_header, intercept_header=intercept_header)
+			response = ICAPRequestModification(version, code, status, headers, icap_header, request_header, body_string, intercept_header=intercept_header)
 
 		return response
