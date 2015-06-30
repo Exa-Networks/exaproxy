@@ -30,7 +30,6 @@ class ICAPClient (object):
 		self.sock = sock
 		self.peer = peer
 		self.reader = self._read(sock,max_buffer)
-		self.writer = self._write(sock)
 		self.w_buffer = ''
 		self.log = logger
 
@@ -353,6 +352,7 @@ class ICAPClient (object):
 
 	def startData(self, command, data):
 		# start the _write coroutine
+		self.writer = self._write(self.sock)
 		self.writer.next()
 
 		if command == 'stream':
@@ -375,10 +375,6 @@ class ICAPClient (object):
 
 		# buffered, had_buffer
 		return res
-
-	def restartData(self, command, data):
-		self.writer = self._write(self.sock)
-		return self.startData(command, data)
 
 	def shutdown(self):
 		try:
