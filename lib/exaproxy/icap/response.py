@@ -15,17 +15,23 @@ class ICAPResponse (object):
 			http_len_string = '%x\n' % len(http_body)
 			http_string = http_header + http_len_string + http_body + '0\n'
 
-			http_offset = icap_end
-			http_end = http_offset + len(http_string)
+			http_header_offset = icap_end
+			http_header_end = http_header_offset + len(http_header)
+
+			http_body_offset = http_header_end + len(http_len_string)
+			http_body_end = http_body_offset + len(http_body)
 
 		else:
 			http_string = http_header
-			http_offset = icap_end
-			http_end = icap_end
+			http_header_offset = icap_end
+			http_header_end = icap_end
+			http_body_offset = icap_end
+			http_body_end = icap_end
 
 		self.response_view = memoryview(icap_header + http_string + '\r\n')
 		self.icap_view = self.response_view[:icap_end]
-		self.http_view = self.response_view[http_offset:http_end]
+		self.http_header_view = self.response_view[http_header_offset:http_header_end]
+		self.http_body_view = self.response_view[http_body_offset:http_body_end]
 
 	@property
 	def response_string (self):
@@ -36,8 +42,8 @@ class ICAPResponse (object):
 		return self.icap_view.tobytes()
 
 	@property
-	def http_header (self):
-		return self.http_view.tobytes()
+	def http_response (self):
+		return self.http_header_view.tobytes() + self.http_body_view.tobytes()
 
 	@property
 	def pragma (self):

@@ -153,7 +153,7 @@ Encapsulated: req-hdr=0, null-body=%d
 			classification, data, comment = 'permit', None, None
 
 		elif icap_response.is_modify:
-			message = self.parseHTTP(client_id, peer, icap_response.http_header)
+			message = self.parseHTTP(client_id, peer, icap_response.http_response)
 			if message.validated:
 				classification, data, comment = 'permit', None, None
 
@@ -161,7 +161,7 @@ Encapsulated: req-hdr=0, null-body=%d
 				classification, data, comment = None, None, None
 
 		elif icap_response.is_content:
-			classification, data, comment = 'http', icap_response.http_header, icap_response.pragma.get('comment', '')
+			classification, data, comment = 'http', icap_response.http_response, icap_response.pragma.get('comment', '')
 
 		elif icap_response.is_intercept:
 			intercept_request = self.http_parser.parseRequest(peer, icap_response.intercept_header)
