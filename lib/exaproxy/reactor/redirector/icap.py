@@ -42,6 +42,7 @@ class ICAPRedirector (Redirector):
 			body_string = ''
 			bytes_to_read = header.content_length
 			read_bytes = 0
+			chunked = False
 
 			while bytes_to_read > 0:
 				while read_bytes < bytes_to_read:
@@ -49,16 +50,17 @@ class ICAPRedirector (Redirector):
 					body_string += headers_s
 					read_bytes += len(headers_s)
 
-					if read_bytes >= bytes_to_read:
-						self.process.stdout.readline()
-
 				if header.body_complete:
 					bytes_to_read = 0
+					break
 
-				else:
-					line = self.process.stdout.readline()
-					bytes_to_read = int(line.strip(), 16)
-					read_bytes = 0
+				if chunked:
+					ignore = self.process.stdout.readline()
+
+				line = self.process.stdout.readline()
+				bytes_to_read = int(line.strip(), 16)
+				chunked = True
+				read_bytes = 0
 
 			if bytes_to_read != 0:
 				header_string = None
