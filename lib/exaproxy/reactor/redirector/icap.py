@@ -23,6 +23,7 @@ class ICAPRedirector (Redirector):
 		Redirector.__init__ (self, configuration, name, program, protocol)
 
 	def readChildResponse (self):
+		header = None
 		try:
 			header_string = self.process.stdout.readline()
 			while True:
@@ -39,16 +40,16 @@ class ICAPRedirector (Redirector):
 
 			header = self.icap_parser.parseResponseHeader(header_string)
 
-			body_string = ''
+			content_s = ''
 			bytes_to_read = header.content_length
 			read_bytes = 0
 			chunked = False
 
 			while bytes_to_read > 0:
 				while read_bytes < bytes_to_read:
-					headers_s = self.process.stdout.read(bytes_to_read-read_bytes)
-					body_string += headers_s
-					read_bytes += len(headers_s)
+					chomp_s = self.process.stdout.read(bytes_to_read-read_bytes)
+					content_s += chomp_s
+					read_bytes += len(chomp_s)
 
 				if header.body_complete:
 					bytes_to_read = 0
@@ -64,19 +65,19 @@ class ICAPRedirector (Redirector):
 
 			if bytes_to_read != 0:
 				header_string = None
-				body_string = None
+				content_s = None
 
 			elif header.code is None:
 				header_string = None
-				body_string = None
+				content_s = None
 
 			elif header.code != '304' and bytes_to_read is None:
 				header_string = None
-				body_string = None
+				content_s = None
 
 		except IOError, e:
 			header_string = None
-			body_string = None
+			content_s = None
 
 		try:
 			child_stderr = self.process.stderr.read(4096)
@@ -85,12 +86,12 @@ class ICAPRedirector (Redirector):
 
 		if child_stderr:
 			header_string = None
-			body_string = None
+			content_s = None
 
 		if header_string is None:
 			return None
 
-		return self.icap_parser.continueResponse(header, body_string)
+		return self.icap_parser.continueResponse(header, content_s)
 
 	def createChildRequest (self, peer, message, http_header):
 		return self.createICAPRequest(peer, message, None, http_header)
