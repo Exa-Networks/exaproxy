@@ -49,6 +49,9 @@ class ICAPRedirector (Redirector):
 					body_string += headers_s
 					read_bytes += len(headers_s)
 
+					if read_bytes >= bytes_to_read:
+						self.process.stdout.readline()
+
 				if header.body_complete:
 					bytes_to_read = 0
 
