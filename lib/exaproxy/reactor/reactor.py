@@ -11,7 +11,23 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 from exaproxy.util.log.logger import Logger
 
 
-class Reactor(object):
+class StopReactor (Exception):
+	pass
+
+
+class Registry:
+	@staticmethod
+	def register (event, handlers):
+		def decorator (method):
+			handlers[event] = method
+			return method
+
+		return decorator
+
+	
+class Reactor (object):
+	handlers = {}
+
 	def __init__(self, configuration, web, proxy, icap, decider, content, client, resolver, logger, usage, poller):
 		self.web = web            # Manage listening web sockets
 		self.proxy = proxy        # Manage listening proxy sockets
@@ -29,262 +45,275 @@ class Reactor(object):
 
 		self.log = Logger('supervisor', configuration.log.supervisor)
 
-	def run(self):
+	@Registry.register('read_proxy', handlers)
+	def acceptProxyConnections (self, socks):
+		for sock in socks:
+			for s, peer in self.proxy.accept(sock):
+				self.client.httpConnection(s, peer, 'proxy')
+
+	@Registry.register('read_icap', handlers)
+	def acceptICAPConnections (self, socks):
+		for sock in socks:
+			for s, peer in self.icap.accept(sock):
+				self.client.icapConnection(s, peer, 'icap')
+
+	@Registry.register('read_web', handlers)
+	def acceptAdminConnections (self, socks):
+		for sock in socks:
+			for s, peer in self.web.accept(sock):
+				self.client.httpConnection(s, peer, 'web')
+
+	def closeClient (self, client, source):
+		if source == 'proxy':
+			self.proxy.notifyClose(client)
+
+		elif source == 'icap':
+			self.icap.notifyClose(client)
+
+		elif source == 'web':
+			self.web.notifyClose(client)
+
+	@Registry.register('opening_client', handlers)
+	def incomingRequest (self, clients):
+		for client in clients:
+			client_id, peer, request, subrequest, data, source = self.client.readRequest(client)
+
+			if request:
+				# we have a new request - decide what to do with it
+				self.decider.sendRequest(client_id, peer, request, subrequest, source)
+
+			elif request is None and client_id is not None:
+				self.closeClient(client, source)
+
+	@Registry.register('read_client', handlers)
+	def incomingClientData (self, clients):
+		for client in clients:
+			client_id, peer, request, subrequest, data, source = self.client.readData(client)
+
+			if request:
+				# we have a new request - decide what to do with it
+				self.decider.sendRequest(client_id, peer, request, subrequest, source)
+
+			if data:
+				# we read something from the client so pass it on to the remote server
+				status, buffer_change = self.content.sendClientData(client, data)
+
+				if buffer_change:
+					if status:
+						self.client.corkUpload(client)
+					else:
+						self.client.uncorkUpload(client)
+
+			elif data is None and client_id is not None:
+				self.content.endClientDownload(client)
+				self.closeClient(client, source)
+
+	@Registry.register('write_client', handlers)
+	def flushClientOutput (self, clients):
+		for client in clients:
+			status, buffer_change, name, source = self.client.sendData(client, '')
+
+			if status is None and name is not None:
+				self.content.endClientDownload(client)
+
+				if source == 'proxy':
+					self.proxy.notifyClose(client)
+
+				elif source == 'web':
+					self.web.notifyClose(client)
+
+			if buffer_change:
+				# status should be False - we're here because we flushed buffered data
+				if not status:    # No buffer
+					self.content.uncorkClientDownload(client)
+
+				else:         # Buffering
+					self.content.corkClientDownload(client)
+
+
+	@Registry.register('opening_download', handlers)
+	def completeWebConnection (self, fetchers):
+		for fetcher in fetchers:
+			client, response, buffer_change = self.content.startDownload(fetcher)
+			if buffer_change:
+				self.client.uncorkUpload(client)
+
+			if client in self.client:
+				if response:
+					status, buffer_change, name, source = self.client.sendData(client, response)
+					if status is None and client is not None:
+						# We just closed our connection to the client and need to count the disconnect.
+						self.proxy.notifyClose(client)
+
+						if response is not None:
+							self.content.endClientDownload(client)
+
+					elif buffer_change:
+						# status should be True if we're here
+						if status:
+							self.content.corkClientDownload(client)
+
+						else:
+							self.content.uncorkClientDownload(client)
+
+	@Registry.register('read_download', handlers)
+	def incomingWebData (self, fetchers):
+		for fetcher in fetchers:
+			client, page_data = self.content.readData(fetcher)
+
+			# send received data to the client that requested it
+			status, buffer_change, name, source = self.client.sendData(client, page_data)
+
+			# check to see if the client went away
+			if status is None and client is not None:
+				# We just closed our connection to the client and need to count the disconnect.
+				self.proxy.notifyClose(client)
+
+				if page_data is not None:
+					# The client disconnected? Close our connection to the remote webserver.
+					# We'll be notified of the client disconnect so don't count it here
+					self.content.endClientDownload(client)
+
+			elif buffer_change:
+				# status should be true here - we don't read from the server when buffering
+				if status:      # Buffering
+					self.content.corkClientDownload(client)
+
+	@Registry.register('write_download', handlers)
+	def flushWebOutput (self, fetchers):
+		for fetcher in fetchers:
+			status, buffer_change, client = self.content.sendSocketData(fetcher, '')
+
+			if buffer_change:
+				if status:
+					self.client.corkUpload(client)
+
+				else:
+					self.client.uncorkUpload(client)
+
+
+	@Registry.register('read_redirector', handlers)
+	def readRedirector (self, deciders):
+		for decider in deciders:
+			name, command, decision = self.decider.getDecision()
+			client = self.client.lookupSocket(name)
+
+			if command is None:
+				# if the redirector process disappears then we must close the proxy
+				raise StopReactor
+
+			# check that the client didn't get bored and go away
+			if client is not None:
+				if self.resolver.resolves(command, decision):
+					identifier, response = self.resolver.startResolving(client, command, decision)
+					if response:
+						_client, command, decision = response[0], response[1], response[2:]
+						yield client, command, decision
+
+					# something went wrong
+					elif identifier is None:
+						command, decision = self.decider.showInternalError()
+						yield client, command, decision
+
+				else:
+					yield client, command, decision
+
+	@Registry.register('read_resolver', handlers)
+	def readResolver (self, resolvers):
+		for resolver in resolvers:
+			response = self.resolver.getResponse(resolver)
+			if response:
+				client, command, decision = response[0], response[1], response[2:]
+				yield client, command, decision
+
+	@Registry.register('write_resolver', handlers)
+	def flushResolver (self, resolvers):
+		for resolver in resolvers:
+			self.resolver.continueSending(resolver)
+
+	def timeoutResolver (self):
+		timedout = self.resolver.cleanup()
+
+		for client, command, decision in timedout:
+			yield client, command, decision
+
+	def enactDecisions (self, decisions):
+		for client, command, decision in decisions:
+			response, length, status, buffer_change = self.content.getContent(client, command, decision)
+
+			if buffer_change:
+				if status:
+					self.client.corkUpload(client)
+
+				else:
+					self.client.uncorkUpload(client)
+
+			# Signal to the client that we'll be streaming data to it or
+			# give it the location of the local content to return.
+			data, source = self.client.startData(client, response, length)
+
+			# Check for any data beyond the initial headers that we may already
+			# have read and cached
+			if data:
+				status, buffer_change = self.content.sendClientData(client, data)
+
+				if buffer_change:
+					if status:
+						self.client.corkUpload(client)
+
+					else:
+						self.client.uncorkUpload(client)
+
+			elif data is None and client is not None:
+				self.content.endClientDownload(client)
+				self.closeClient(client, source)
+
+
+	def handle (self, event, interfaces):
+		handler = self.handlers.get(event, None)
+		if not handler:
+			return None
+
+		return handler(self, interfaces)
+
+
+	def run (self):
 		poller = self.poller
 
 		interrupt_events = {'read_interrupt', 'read_control'}
 		received_interrupts = set()
 
-#		count = 0
-#		s_times = []
-#		w_times = []
-
-		decisions = []
-
-		# Manually timeout queries
-		timedout = self.resolver.cleanup()
-		for client_id, command, decision in timedout:
-			decisions.append((client_id, command, decision))
+		# look for any DNS requests that are taking too long so we can
+		# notify the client of the problem
+		decisions = self.timeoutResolver()
+		self.enactDecisions(decisions)
 
 		self.resolver.expireCache()
 
-		while True:
-			# wait until we have something to do
-			events = poller.poll()
-			self.events = events
 
-			self.nb_loops += 1
-			for name,ev in events.items():
-				self.nb_events += len(ev)
+		try:
+			while True:
+				# wait until we have something to do
+				events = poller.poll()
+				self.events = events
 
-			# handle new connections before anything else
-			for sock in events.get('read_proxy',[]):
-				for s, peer in self.proxy.accept(sock):
-					self.client.httpConnection(s, peer, 'proxy')
+				self.nb_loops += 1
+				for name,ev in events.items():
+					self.nb_events += len(ev)
 
-			# handle new connections before anything else
-			for sock in events.get('read_icap',[]):
-				for s, peer in self.icap.accept(sock):
-					self.client.icapConnection(s, peer, 'icap')
+				for event, interfaces in events.items():
+					decisions = self.handle(event, interfaces) if interfaces else []
+					if decisions:
+						self.enactDecisions(decisions)
 
-			# handle new connections before anything else
-			for sock in events.get('read_web',[]):
-				for s, peer in self.web.accept(sock):
-					self.client.httpConnection(s, peer, 'web')
+				self.logger.writeMessages()
+				self.usage.writeMessages()
 
-			# incoming opening requests from clients
-			for client in events.get('opening_client',[]):
-				client_id, peer, request, subrequest, data, source = self.client.readRequest(client)
+				received_interrupts = {k for k in interrupt_events if events.get(k)}
+				if received_interrupts:
+					break
 
-				if request:
-					# we have a new request - decide what to do with it
-					self.decider.sendRequest(client_id, peer, request, subrequest, source)
-
-				elif request is None and client_id is not None:
-					if source == 'proxy':
-						self.proxy.notifyClose(client)
-
-					elif source == 'icap':
-						self.icap.notifyClose(client)
-
-					elif source == 'web':
-						self.web.notifyClose(client)
-
-			# incoming data from clients
-			for client in events.get('read_client',[]):
-				client_id, peer, request, subrequest, data, source = self.client.readData(client)
-
-				if request:
-					# we have a new request - decide what to do with it
-					self.decider.sendRequest(client_id, peer, request, subrequest, source)
-
-				if data:
-					# we read something from the client so pass it on to the remote server
-					status, buffer_change = self.content.sendClientData(client, data)
-
-					if buffer_change:
-						if status:
-							self.client.corkUpload(client)
-						else:
-							self.client.uncorkUpload(client)
-
-				elif data is None and client_id is not None:
-					self.content.endClientDownload(client)
-
-					if source == 'proxy':
-						self.proxy.notifyClose(client)
-
-					elif source == 'web':
-						self.web.notifyClose(client)
-
-			# clients we can write buffered data to
-			for client in events.get('write_client',[]):
-				status, buffer_change, name, source = self.client.sendData(client, '')
-
-				if status is None and name is not None:
-					self.content.endClientDownload(client)
-
-					if source == 'proxy':
-						self.proxy.notifyClose(client)
-
-					elif source == 'web':
-						self.web.notifyClose(client)
-
-				if buffer_change:
-					# status should be False - we're here because we flushed buffered data
-					if not status:    # No buffer
-						self.content.uncorkClientDownload(client)
-
-					else:         # Buffering
-						self.content.corkClientDownload(client)
-
-
-			# incoming data - web pages
-			for fetcher in events.get('read_download',[]):
-				client, page_data = self.content.readData(fetcher)
-
-				# send received data to the client that requested it
-				status, buffer_change, name, source = self.client.sendData(client, page_data)
-
-				# check to see if the client went away
-				if status is None and client is not None:
-					# We just closed our connection to the client and need to count the disconnect.
-					self.proxy.notifyClose(client)
-
-					if page_data is not None:
-						# The client disconnected? Close our connection to the remote webserver.
-						# We'll be notified of the client disconnect so don't count it here
-						self.content.endClientDownload(client)
-
-				elif buffer_change:
-					# status should be true here - we don't read from the server when buffering
-					if status:      # Buffering
-						self.content.corkClientDownload(client)
-
-					else:            # No buffer
-						self.content.uncorkClientDownload(client)
-
-
-			# decisions made by the child processes
-			for _ in events.get('read_redirector',[]):
-				name, command, decision = self.decider.getDecision()
-				client = self.client.lookupSocket(name)
-
-				if command is None:
-					# if the redirector process disappears then we must close the proxy
-					return False, {}
-
-				# check that the client didn't get bored and go away
-				if client is not None:
-					if self.resolver.resolves(command, decision):
-						identifier, response = self.resolver.startResolving(client, command, decision)
-						if response:
-							_client, command, decision = response[0], response[1], response[2:]
-							decisions.append((client, command, decision))
-
-						# something went wrong
-						elif identifier is None:
-							command, decision = self.decider.showInternalError()
-							decisions.append((client, command, decision))
-					else:
-						decisions.append((client, command, decision))
-
-			# decisions with a resolved hostname
-			for resolver in events.get('read_resolver', []):
-				response = self.resolver.getResponse(resolver)
-				if response:
-					client, command, decision = response[0], response[1], response[2:]
-					decisions.append((client, command, decision))
-
-			# all decisions we are currently able to process
-			for client, command, decision in decisions:
-				# send the possibibly rewritten request to the server
-				response, length, status, buffer_change = self.content.getContent(client, command, decision)
-
-				if buffer_change:
-					if status:
-						self.client.corkUpload(client)
-					else:
-						self.client.uncorkUpload(client)
-
-				# Signal to the client that we'll be streaming data to it or
-				# give it the location of the local content to return.
-				data, source = self.client.startData(client, response, length)
-
-				# Check for any data beyond the initial headers that we may already
-				# have read and cached
-				if data:
-					status, buffer_change = self.content.sendClientData(client, data)
-
-					if buffer_change:
-						if status:
-							self.client.corkUpload(client)
-						else:
-							self.client.uncorkUpload(client)
-
-				elif data is None and client is not None:
-					self.content.endClientDownload(client)
-					if source == 'proxy':
-						self.proxy.notifyClose(client)
-
-					elif source == 'web':
-						self.web.notifyClose(client)
-
-			# remote servers we can write buffered data to
-			for download in events.get('write_download',[]):
-				status, buffer_change, client = self.content.sendSocketData(download, '')
-
-				if buffer_change:
-					if status:
-						self.client.corkUpload(client)
-					else:
-						self.client.uncorkUpload(client)
-
-
-			# fully connected connections to remote web servers
-			for fetcher in events.get('opening_download',[]):
-				client, response, buffer_change = self.content.startDownload(fetcher)
-				if buffer_change:
-					self.client.uncorkUpload(client)
-
-				if client in self.client:
-					if response:
-						status, buffer_change, name, source = self.client.sendData(client, response)
-						if status is None and client is not None:
-							# We just closed our connection to the client and need to count the disconnect.
-							self.proxy.notifyClose(client)
-
-							if response is not None:
-								self.content.endClientDownload(client)
-
-						elif buffer_change:
-							# status should be True if we're here
-							if status:
-								self.content.corkClientDownload(client)
-
-							else:
-								self.content.uncorkClientDownload(client)
-
-
-
-			# DNS servers we still have data to write to (should be TCP only)
-			for resolver in events.get('write_resolver', []):
-				self.resolver.continueSending(resolver)
-
-			decisions = []
-
-#			# retry connecting - opportunistic
-#			for client_id, decision in retry_download:
-#				# if we have a temporary error, the others are likely to be too
-#				if not self.content.retryDownload(client_id, decision):
-#					break
-
-
-			self.logger.writeMessages()
-			self.usage.writeMessages()
-
-			received_interrupts = {k for k in interrupt_events if events.get(k)}
-			if received_interrupts:
-				break
+		except StopReactor:
+			return False, {}
 
 		return True, received_interrupts
