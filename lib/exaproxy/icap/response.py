@@ -12,8 +12,14 @@ class ICAPResponse (object):
 		icap_end = icap_len
 
 		if http_header:
-			http_len_string = '%x\n' % len(http_body)
-			http_string = http_header + http_len_string + http_body + '0\n'
+			http_string = http_header
+
+			if http_body:
+				http_len_string = '%x\n' % len(http_body)
+				http_string += http_len_string + http_body + '0\n'
+
+			else:
+				http_len_string = ''
 
 			http_header_offset = icap_end
 			http_header_end = http_header_offset + len(http_header)
