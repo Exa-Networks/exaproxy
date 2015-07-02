@@ -68,7 +68,7 @@ class ICAPResponse (object):
 
 class ICAPRequestModification (ICAPResponse):
 	def __init__ (self, version, code, status, headers, icap_header, http_header, http_body, intercept_header=None):
-		ICAPResponse.__init__(self, version, code, status, headers, icap_header, http_body, http_header)
+		ICAPResponse.__init__(self, version, code, status, headers, icap_header, http_header, http_body)
 		self.intercept_header = intercept_header
 
 	@property
