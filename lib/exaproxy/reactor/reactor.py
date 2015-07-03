@@ -15,16 +15,6 @@ class StopReactor (Exception):
 	pass
 
 
-class Registry:
-	@staticmethod
-	def register (event, handlers):
-		def decorator (method):
-			handlers[event] = method
-			return method
-
-		return decorator
-
-	
 class Reactor (object):
 	handlers = {}
 
@@ -45,19 +35,26 @@ class Reactor (object):
 
 		self.log = Logger('supervisor', configuration.log.supervisor)
 
-	@Registry.register('read_proxy', handlers)
+	def register (event, handlers=handlers):
+		def decorator (method):
+			handlers[event] = method
+			return method
+
+		return decorator
+
+	@register('read_proxy')
 	def acceptProxyConnections (self, socks):
 		for sock in socks:
 			for s, peer in self.proxy.accept(sock):
 				self.client.httpConnection(s, peer, 'proxy')
 
-	@Registry.register('read_icap', handlers)
+	@register('read_icap')
 	def acceptICAPConnections (self, socks):
 		for sock in socks:
 			for s, peer in self.icap.accept(sock):
 				self.client.icapConnection(s, peer, 'icap')
 
-	@Registry.register('read_web', handlers)
+	@register('read_web')
 	def acceptAdminConnections (self, socks):
 		for sock in socks:
 			for s, peer in self.web.accept(sock):
@@ -73,7 +70,7 @@ class Reactor (object):
 		elif source == 'web':
 			self.web.notifyClose(client)
 
-	@Registry.register('opening_client', handlers)
+	@register('opening_client')
 	def incomingRequest (self, clients):
 		for client in clients:
 			client_id, peer, request, subrequest, data, source = self.client.readRequest(client)
@@ -85,7 +82,7 @@ class Reactor (object):
 			elif request is None and client_id is not None:
 				self.closeClient(client, source)
 
-	@Registry.register('read_client', handlers)
+	@register('read_client')
 	def incomingClientData (self, clients):
 		for client in clients:
 			client_id, peer, request, subrequest, data, source = self.client.readData(client)
@@ -108,7 +105,7 @@ class Reactor (object):
 				self.content.endClientDownload(client)
 				self.closeClient(client, source)
 
-	@Registry.register('write_client', handlers)
+	@register('write_client')
 	def flushClientOutput (self, clients):
 		for client in clients:
 			status, buffer_change, name, source = self.client.sendData(client, '')
@@ -131,7 +128,7 @@ class Reactor (object):
 					self.content.corkClientDownload(client)
 
 
-	@Registry.register('opening_download', handlers)
+	@register('opening_download')
 	def completeWebConnection (self, fetchers):
 		for fetcher in fetchers:
 			client, response, buffer_change = self.content.startDownload(fetcher)
@@ -156,7 +153,7 @@ class Reactor (object):
 						else:
 							self.content.uncorkClientDownload(client)
 
-	@Registry.register('read_download', handlers)
+	@register('read_download')
 	def incomingWebData (self, fetchers):
 		for fetcher in fetchers:
 			client, page_data = self.content.readData(fetcher)
@@ -179,7 +176,7 @@ class Reactor (object):
 				if status:      # Buffering
 					self.content.corkClientDownload(client)
 
-	@Registry.register('write_download', handlers)
+	@register('write_download')
 	def flushWebOutput (self, fetchers):
 		for fetcher in fetchers:
 			status, buffer_change, client = self.content.sendSocketData(fetcher, '')
@@ -192,7 +189,7 @@ class Reactor (object):
 					self.client.uncorkUpload(client)
 
 
-	@Registry.register('read_redirector', handlers)
+	@register('read_redirector')
 	def readRedirector (self, deciders):
 		for decider in deciders:
 			name, command, decision = self.decider.getDecision()
@@ -218,7 +215,7 @@ class Reactor (object):
 				else:
 					yield client, command, decision
 
-	@Registry.register('read_resolver', handlers)
+	@register('read_resolver')
 	def readResolver (self, resolvers):
 		for resolver in resolvers:
 			response = self.resolver.getResponse(resolver)
@@ -226,7 +223,7 @@ class Reactor (object):
 				client, command, decision = response[0], response[1], response[2:]
 				yield client, command, decision
 
-	@Registry.register('write_resolver', handlers)
+	@register('write_resolver')
 	def flushResolver (self, resolvers):
 		for resolver in resolvers:
 			self.resolver.continueSending(resolver)
