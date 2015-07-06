@@ -100,6 +100,9 @@ class ClientManager (object):
 				# we have now read the client's opening request
 				self.poller.removeReadSocket('opening_client', client.sock)
 
+				# do not read more data until we have properly handled the request
+				self.poller.corkReadSocket('read_client', sock)
+
 			elif request is None:
 				self.cleanup(sock, client.name)
 		else:
