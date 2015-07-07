@@ -6,7 +6,7 @@ Created by Thomas Mangin on 2011-11-29.
 Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
-from exaproxy.ipc.response import ResponseEncoder as Respond
+from .response import ResponseEncoder as Respond
 from exaproxy.icap.parser import ICAPParser
 
 from .worker import Redirector
