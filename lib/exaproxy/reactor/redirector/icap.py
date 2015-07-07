@@ -6,7 +6,7 @@ Created by Thomas Mangin on 2011-11-29.
 Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
-from .response import ResponseEncoder as Respond
+from exaproxy.ipc.response import ResponseEncoder as Respond
 from exaproxy.icap.parser import ICAPParser
 
 from .worker import Redirector
@@ -71,7 +71,7 @@ class ICAPRedirector (Redirector):
 				header_string = None
 				content_s = None
 
-			elif header.code != '304' and bytes_to_read is None:
+			elif header.code != '204' and bytes_to_read is None:
 				header_string = None
 				content_s = None
 
