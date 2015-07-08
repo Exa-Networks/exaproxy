@@ -43,7 +43,7 @@ try:
 			headers = _
 
 		reply = """\
-ICAP/1.0 304 OK
+ICAP/1.0 204 No Content
 Encapsulated: res-hdr=0, null-body=%d
 
 %s""" % (len(headers),headers)

@@ -148,7 +148,7 @@ Encapsulated: req-hdr=0, null-body=%d
 		return Respond.icap(client_id, icap_response, length) if icap_response else None
 
 	def decideHTTP (self, client_id, icap_response, message, peer, source):
-		# 304 (not modified)
+		# 204 (not modified)
 		if icap_response.is_permit:
 			classification, data, comment = 'permit', None, None
 

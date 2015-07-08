@@ -79,7 +79,7 @@ class ICAPRequestModification (ICAPResponse):
 
 	@property
 	def is_permit (self):
-		return self.code == 304
+		return self.code == 204
 
 	@property
 	def is_modify (self):

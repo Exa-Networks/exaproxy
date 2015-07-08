@@ -42,7 +42,7 @@ Features
   + parse ICAP response (only accept "Encapsulated: res-hdr=0, null-body=" replies)
   + accept CONNECT with HTTP request, modified replies are then redirected.
   + accept "GET file:// HTTP/1.1" reply to serve local files
-  + 304 not modified support
+  + 204 No Content support (content is not modified by the ICAP server)
  - many examples of helper programs in the repository
 * Built-in web servers to monitor the proxy via local webpage ( default http://127.0.0.1:8080 )
 
