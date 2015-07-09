@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-icap-allow-304.py
+icap-allow-204.py
 
 Created by Thomas Mangin on 2011-11-29.
 Copyright (c) 2011-2013  Exa Networks. All rights reserved.
@@ -36,7 +36,7 @@ try:
 					empty -= 1
 
 			#w_fd.write('\nWRITE:\n')
-			sys.stdout.write("""ICAP/1.0 204 OK
+			sys.stdout.write("""ICAP/1.0 204 No Content
 Connection: close
 ISTAG: surfprotect-%s
 Encapsulated: null-body=0

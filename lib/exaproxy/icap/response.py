@@ -15,8 +15,8 @@ class ICAPResponse (object):
 			http_string = http_header
 
 			if http_body:
-				http_len_string = '%x\n' % len(http_body)
-				http_string += http_len_string + http_body + '0\n'
+				http_len_string = '%x\r\n' % len(http_body)
+				http_string += http_len_string + http_body + '\r\n0\r\n'
 
 			else:
 				http_len_string = ''
@@ -34,7 +34,7 @@ class ICAPResponse (object):
 			http_body_offset = icap_end
 			http_body_end = icap_end
 
-		self.response_view = memoryview(icap_header + http_string + '\r\n')
+		self.response_view = memoryview(icap_header + http_string)
 		self.icap_view = self.response_view[:icap_end]
 		self.http_header_view = self.response_view[http_header_offset:http_header_end]
 		self.http_body_view = self.response_view[http_body_offset:http_body_end]
@@ -79,7 +79,7 @@ class ICAPRequestModification (ICAPResponse):
 
 	@property
 	def is_permit (self):
-		return self.code == 304
+		return self.code == 204
 
 	@property
 	def is_modify (self):

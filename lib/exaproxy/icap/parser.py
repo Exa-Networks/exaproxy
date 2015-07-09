@@ -35,7 +35,7 @@ class ICAPParser (object):
 		return method, url, version
 
 	def parseResponseLine (self, response_line):
-		response_parts = response_line.split() if response_line else []
+		response_parts = response_line.split(' i', 2) if response_line else []
 
 		if len(response_parts) == 3:
 			version, code, status = response_parts
