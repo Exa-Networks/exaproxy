@@ -111,12 +111,12 @@ class ICAPClient (object):
 		yield ''
 
 		r_buffer = ''
-		processing = False
 		nb_to_send = 0
 		seek = 0
 
 		# mode can be one of : request, chunk, extension, relay
 		# icap : we are reading the icap headers
+		# options: we just read an options header
 		# request : we are reading the request (read all you can until a separator)
 		# extra-headers : we are reading data until a separator
 		# chunked : we are reading chunk-encoded data
@@ -126,61 +126,57 @@ class ICAPClient (object):
 		mode = 'icap'
 		icap_request = ''
 		http_request = ''
+		data = ''
 
 		while True:
 			try:
 				while True:
-					if processing is False:
+					if mode != 'new-request':
 						new_data = sock.recv(read_size)
 						if not new_data:
 							break # read failed so we abort
+
+						r_buffer += new_data
+
 					else:
-						processing = False
+						mode = 'icap'
 
-					r_buffer += new_data
-
-					if mode in ('icap', 'request'):
-						if mode == 'icap':
-							# ignore EOL
-							r_buffer = r_buffer.lstrip('\r\n')
-
-							# check to see if we have read an entire request
-							icap_request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
-
-							if icap_request:
-								mode = 'request'
-								seek = 0
-
-						if mode == 'request':
-							# check to see if we have read an entire request
-							http_request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
-
-						if http_request:
-							icap_request = [icap_request]
-							http_request = [http_request]
-							seek = 0
-
-							mode, nb_to_send = yield icap_request, http_request, ['']
-
-						elif icap_request is not None:
-							yield [''], [''], ['']
-							continue
-
-						else:
+					# check for a new icap header
+					if mode == 'icap':
+						# mode:
+						#   icap:     icap header not yet fully received
+						#   http:     fully received icap header, time to read http header
+						#   options:  fully received options request
+						icap_request, r_buffer, mode, nb_to_send, seek = self.processICAPRequest(r_buffer, mode, nb_to_send, max_buffer, seek)
+						if icap_request is None:
 							break
 
-					if mode not in ('icap', 'request'):
-						# all modes that are not directly related to reading a new request
+					# check to see if we have read an entire request
+					if mode == 'http':
+						http_request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
+						if http_request is None:
+							break
+
+					# all modes that are not directly related to reading a new request
+					if mode not in ('icap', 'http', 'options'):
 						data, r_buffer, mode, nb_to_send, seek = self.process(r_buffer, mode, nb_to_send, max_buffer, seek)
 						if data is None:
 							break
 
-						# stream data to the remote server
-						data = [data]
-						yield [''], [''], data
+					# 
+					if (mode == 'http' and http_request) or mode == 'options':
+						icap_response, icap_request = [icap_request], ''
+						http_response, http_request = [http_request], ''
+						seek = 0
 
-					if mode == 'icap':
-						processing = True if r_buffer else False
+						mode, nb_to_send = yield icap_response, http_response, ['']
+
+					elif data:
+						data_response, data = [data], ''
+						yield [''], [''], data_response
+
+					else:
+						yield [''], [''], ['']
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
@@ -195,6 +191,22 @@ class ICAPClient (object):
 
 		yield [None], [None], [None]
 
+	def processICAPRequest (self, r_buffer, mode, nb_to_send, max_buffer, seek):
+		# ignore EOL
+		r_buffer = r_buffer.lstrip('\r\n')
+
+		# check to see if we have read an entire request
+		icap_request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
+
+		if icap_request:
+			preview = icap_request.lstrip()[:8].upper()
+			preview = icap_request.split(' ', 1)[0] if ' ' in preview else ''
+
+			seek = 0
+			mode = 'options' if preview == 'OPTIONS' else 'http' if preview in ('REQMOD', 'RESPMOD') else 'bad'
+
+		return icap_request, r_buffer, mode, nb_to_send, seek
+
 	def process (self, r_buffer, mode, nb_to_send, max_buffer, seek):
 		if mode == 'transfer':
 			_, r_buffer, new_mode, new_to_send, seek = self._transfer(r_buffer, mode, nb_to_send)
@@ -203,6 +215,9 @@ class ICAPClient (object):
 		elif mode == 'chunked':
 			_, r_buffer, new_mode, new_to_send, seek = self._chunked(r_buffer, mode, nb_to_send)
 			data = ''
+
+		elif mode == 'bad':
+			data, r_buffer, new_mode, new_to_send, seek = None, r_buffer, mode, nb_to_send, seek
 
 		else:
 			self.log.error('The programmers are monkeys - please give them bananas ..')
@@ -222,7 +237,7 @@ class ICAPClient (object):
 		nb_to_send = nb_to_send - length
 
 		if nb_to_send == 0:
-			mode = 'icap'
+			mode = 'new-request'
 
 		return data, r_buffer, mode, nb_to_send, 0
 
@@ -230,12 +245,8 @@ class ICAPClient (object):
 		r_len = len(r_buffer)
 		length = min(r_len, nb_to_send)
 
-		if nb_to_send >= r_len:
-			r_buffer, data = r_buffer[length:], r_buffer[:length]
-			nb_to_send = nb_to_send - length
-
-		else:
-			data = ''
+		r_buffer, data = r_buffer[length:], r_buffer[:length]
+		nb_to_send = nb_to_send - length
 
 		# sum of the sizes of all chunks in our buffer
 		chunked, new_to_send = self.checkChunkSize(r_buffer[nb_to_send:])
@@ -248,7 +259,7 @@ class ICAPClient (object):
 			data = None
 
 		if not chunked:
-			mode = 'transfer' if nb_to_send > 0 else 'icap'
+			mode = 'transfer' if nb_to_send > 0 else 'new-request'
 
 		return data, r_buffer, mode, nb_to_send, 0
 
@@ -267,7 +278,7 @@ class ICAPClient (object):
 
 	def readRelated(self, mode, remaining):
 		# pop data from lists to free memory held by the coroutine
-		mode = mode or 'icap'
+		mode = mode or 'new-request'
 		icap_header_l, http_header_l, content_l = self.reader.send((mode,remaining))
 		icap_header = icap_header_l.pop()
 		http_header = http_header_l.pop()
