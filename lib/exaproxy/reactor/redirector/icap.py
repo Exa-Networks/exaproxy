@@ -6,7 +6,9 @@ Created by Thomas Mangin on 2011-11-29.
 Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
+from .serialize.icap import ICAPSerializer
 from .response import ResponseEncoder as Respond
+
 from exaproxy.icap.parser import ICAPParser
 
 from .worker import Redirector
@@ -14,9 +16,12 @@ from .worker import Redirector
 
 class ICAPRedirector (Redirector):
 	ICAPParser = ICAPParser
+	Serializer = ICAPSerializer
 
 	def __init__ (self, configuration, name, program, protocol):
 		self.icap_parser = self.ICAPParser(configuration)
+		self.icap_serializer = self.Serializer(configuration, protocol)
+
 		self.protocol = protocol
 		self.icap = protocol[len('icap://'):].split('/')[0]
 
@@ -94,49 +99,10 @@ class ICAPRedirector (Redirector):
 		return self.icap_parser.continueResponse(header, content_s)
 
 	def createChildRequest (self, peer, message, http_header):
-		return self.createICAPRequest(peer, message, None, http_header)
+		return self.icap_serializer.serialize(peer, message, None, http_header, self.protocol, self.icap)
 
 	def createICAPRequest (self, peer, message, icap_message, http_header):
-		username = icap_message.headers.get('x-authenticated-user', '').strip() if icap_message else None
-		groups = icap_message.headers.get('x-authenticated-groups', '').strip() if icap_message else None
-		ip_addr = icap_message.headers.get('x-client-ip', '').strip() if icap_message else None
-		customer = icap_message.headers.get('x-customer-name', '').strip() if icap_message else None
-
-		icap_request = """\
-REQMOD %s ICAP/1.0
-Host: %s
-Pragma: transport=%s
-Pragma: client=%s
-Pragma: host=%s
-Pragma: path=%s
-Pragma: method=%s""" % (
-
-			self.protocol, self.icap, message.request.protocol,
-			peer, message.host, message.request.path, message.request.method,
-			)
-
-		if ip_addr:
-			icap_request += """
-X-Client-IP: %s""" % ip_addr
-
-		if username:
-			icap_request += """
-X-Authenticated-User: %s""" % username
-
-		if groups:
-			icap_request += """
-X-Authenticated-Groups: %s""" % groups
-
-		if customer:
-			icap_request += """
-X-Customer-Name: %s""" % customer
-
-		return icap_request + """
-Encapsulated: req-hdr=0, null-body=%d
-
-%s""" % (len(http_header), http_header)
-
-
+		return self.icap_serializer.serialize(peer, message, icap_message, http_header, self.protocol, self.icap)
 
 	def decideICAP (self, client_id, icap_response, message):
 		if message.complete:
