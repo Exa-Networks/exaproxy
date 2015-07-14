@@ -15,7 +15,9 @@ class ICAPSerializer (object):
 	def createOptionsRequest (self, peer, icap_message, path):
 		return """\
 OPTIONS %s ICAP/1.0
-Pragma: client=%s""" % (path, peer)
+Pragma: client=%s
+
+""" % (path, peer)
 
 	def createRequest (self, peer, message, icap_message, http_header, path, icap_host):
 		username = icap_message.headers.get('x-authenticated-user', '').strip() if icap_message else None
