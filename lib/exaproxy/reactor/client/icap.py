@@ -150,7 +150,10 @@ class ICAPClient (object):
 
 					if mode == 'proxy':
 						masquerade, r_buffer, mode = self.processProxyHeader(r_buffer, mode)
-						if not masquerade:
+						if masquerade is None:
+							break
+
+						elif not masquerade:
 							continue
 
 						self.setPeer(masquerade)
