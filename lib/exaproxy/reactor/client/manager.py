@@ -11,11 +11,7 @@ from exaproxy.util.cache import TimeCache
 from .http import HTTPClient
 from .icap import ICAPClient
 
-from exaproxy.http.proxy import ProxyProtocol
-
 class ClientManager (object):
-	unproxy = ProxyProtocol().parseRequest
-
 	def __init__(self, poller, configuration):
 		self.total_sent4 = 0L
 		self.total_sent6 = 0L
@@ -69,7 +65,7 @@ class ClientManager (object):
 
 	def icapConnection (self, sock, peer, source):
 		name = self.getnextid()
-		client = ICAPClient(name, sock, peer, self.log, self.icap_max_buffer)
+		client = ICAPClient(name, sock, peer, self.log, self.icap_max_buffer, self.proxied.get(source))
 
 		self.norequest[sock] = client, source
 		self.byname[name] = sock
@@ -108,14 +104,6 @@ class ClientManager (object):
 		else:
 			self.log.error('trying to read headers from a client that does not exist %s' % sock)
 			name, peer, request, subrequest, content, source = None, None, None, None, None, None
-
-		if request and self.proxied.get(source) is True:
-			client_ip, client_request = self.unproxy(request)
-
-			if client_ip and client_request:
-				peer = client_ip
-				request = client_request
-				client.setPeer(client_ip)
 
 		return name, peer, request, subrequest, content, source
 

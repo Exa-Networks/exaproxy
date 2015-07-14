@@ -12,6 +12,10 @@ import errno
 from exaproxy.network.functions import isipv4
 from exaproxy.network.errno_list import errno_block
 
+from exaproxy.util.proxy import ProxyProtocol
+
+
+
 def ishex (s):
 	return bool(s) and not bool(s.strip('0123456789abcdefABCDEF'))
 
@@ -21,15 +25,16 @@ def count_quotes (data):
 class ICAPClient (object):
 	eor = ['\r\n\r\n', '\n\n']
 	eol = ['\r\n', '\n']
+        proxy_protocol = ProxyProtocol()
 
-	__slots__ = ['name', 'ipv4', 'sock', 'peer', 'reader', 'writer', 'w_buffer', 'log']
+	__slots__ = ['name', 'ipv4', 'sock', 'peer', 'reader', 'writer', 'w_buffer', 'log', 'proxied']
 
-	def __init__(self, name, sock, peer, logger, max_buffer):
+	def __init__(self, name, sock, peer, logger, max_buffer, proxied):
 		self.name = name
 		self.ipv4 = isipv4(sock.getsockname()[0])
 		self.sock = sock
 		self.peer = peer
-		self.reader = self._read(sock,max_buffer)
+		self.reader = self._read(sock, max_buffer, proxied=proxied)
 		self.writer = self._write(sock)
 		self.w_buffer = ''
 		self.log = logger
@@ -102,7 +107,7 @@ class ICAPClient (object):
 		return True,total_len
 
 
-	def _read (self, sock, max_buffer, read_size=64*1024):
+	def _read (self, sock, max_buffer, read_size=64*1024, proxied=False):
 		"""Coroutine managing data read from the client"""
 		# yield request, content
 		# request is the text that form the request header
@@ -113,8 +118,10 @@ class ICAPClient (object):
 		r_buffer = ''
 		nb_to_send = 0
 		seek = 0
+		masquerade = None
 
 		# mode can be one of : request, chunk, extension, relay
+		# proxy : we are reading proxy headers at the start of a connection
 		# icap : we are reading the icap headers
 		# options: we just read an options header
 		# request : we are reading the request (read all you can until a separator)
@@ -123,7 +130,7 @@ class ICAPClient (object):
 		# transfer : we are reading as much as requested in remaining
 		# passthrough : read as much as can to be relayed
 
-		mode = 'icap'
+		mode = 'proxy' if proxied else 'icap'
 		icap_request = ''
 		http_request = ''
 		data = ''
@@ -140,6 +147,13 @@ class ICAPClient (object):
 
 					else:
 						mode = 'icap'
+
+					if mode == 'proxy':
+						masquerade, r_buffer, mode = self.processProxyHeader(r_buffer, mode)
+						if not masquerade:
+							continue
+
+						self.setPeer(masquerade)
 
 					# check for a new icap header
 					if mode == 'icap':
@@ -190,6 +204,20 @@ class ICAPClient (object):
 					break
 
 		yield [None], [None], [None]
+
+	def processProxyHeader (self, r_buffer, mode):
+		r_buffer = r_buffer.lstrip('\r\n')
+
+		for eor in self.eor:
+			if eor in r_buffer:
+				client_ip, r_buffer = self.proxy_protocol.parse(r_buffer)
+				mode = 'icap'
+				break
+
+		else:
+			client_ip, r_buffer = '', r_buffer
+
+		return client_ip, r_buffer, mode
 
 	def processICAPRequest (self, r_buffer, mode, nb_to_send, max_buffer, seek):
 		# ignore EOL

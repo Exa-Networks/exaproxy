@@ -29,25 +29,26 @@ class ProxyProtocol:
 		'UNKNOWN' : invalidate
 	}
 
-	def parseRequest (self, header):
+	def parse (self, header):
 		if '\r\n' in header:
-			proxy_line, http_request = header.split('\r\n', 1)
+			proxy_line, request = header.split('\r\n', 1)
 		else:
-			proxy_line, http_request = '', None
+			proxy_line, request = '', None
+
 
 		try:
 			magic, fproto, source, destination, sport, dport = proxy_line.split(' ')
 		except ValueError:
-			proxy_line, http_request = '', None
+			proxy_line, request = '', None
 			magic, fproto, source, destination, sport, dport = None, None, None, None, None, None
 
 		if magic != 'PROXY':
 			# We don't care about parsing the source or destination ports
-			http_request = None
+			request = None
 			source, destination = None, None
 
 		validate = self.ip_validators.get(fproto, invalidate)
 		source_addr = validate(source)
 		dest_addr = validate(destination)  # pylint: disable=W0612
 
-		return source_addr, http_request
+		return source_addr, request
