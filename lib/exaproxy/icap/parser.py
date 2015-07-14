@@ -113,7 +113,7 @@ class ICAPParser (object):
 
 	def getBodyLength (self, offsets):
 		final, offset = offsets[-1] if offsets else ('null-body', 0)
-		return offset, offset and final == 'null-body'
+		return offset, final == 'null-body'
 
 	def splitResponseParts (self, offsets, body_string):
 		final, offset = offsets[-1] if offsets else (None, None)
