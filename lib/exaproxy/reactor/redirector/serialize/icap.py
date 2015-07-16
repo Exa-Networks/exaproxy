@@ -6,7 +6,7 @@ class ICAPSerializer (object):
 		self.protocol = protocol
 
 	def serialize (self, peer, message, icap_message, http_header, path, icap_host):
-		if icap_message.method == 'OPTIONS':
+		if icap_message is not None and icap_message.method == 'OPTIONS':
 			res = self.createOptionsRequest(peer, icap_message, path)
 			return res
 
