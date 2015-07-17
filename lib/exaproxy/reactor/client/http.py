@@ -12,6 +12,8 @@ import errno
 from exaproxy.network.functions import isipv4
 from exaproxy.network.errno_list import errno_block
 
+from exaproxy.util.proxy import ProxyProtocol
+
 def ishex (s):
 	return bool(s) and not bool(s.strip('0123456789abcdefABCDEF'))
 
@@ -20,15 +22,16 @@ def count_quotes (data):
 
 class HTTPClient (object):
 	eor = ['\r\n\r\n', '\n\n']
+	proxy_protocol = ProxyProtocol()
 
 	__slots__ = ['name', 'ipv4', 'sock', 'peer', 'reader', 'writer', 'w_buffer', 'log']
 
-	def __init__(self, name, sock, peer, logger, max_buffer):
+	def __init__(self, name, sock, peer, logger, max_buffer, proxied):
 		self.name = name
 		self.ipv4 = isipv4(sock.getsockname()[0])
 		self.sock = sock
 		self.peer = peer
-		self.reader = self._read(sock,max_buffer)
+		self.reader = self._read(sock, max_buffer, proxied=proxied)
 		self.writer = self._write(sock)
 		self.w_buffer = ''
 
@@ -102,7 +105,7 @@ class HTTPClient (object):
 		return True,total_len
 
 
-	def _read (self, sock, max_buffer, read_size=64*1024):
+	def _read (self, sock, max_buffer, read_size=64*1024, proxied=False):
 		"""Coroutine managing data read from the client"""
 		# yield request, content
 		# request is the text that form the request header
@@ -113,7 +116,7 @@ class HTTPClient (object):
 		r_buffer = ''
 		nb_to_send = 0
 		seek = 0
-		processing = False
+		masquerade = None
 
 		# mode can be one of : request, chunk, extension, relay
 		# request : we are reading the request (read all you can until a separator)
@@ -122,137 +125,60 @@ class HTTPClient (object):
 		# transfer : we are reading as much as requested in remaining
 		# passthrough : read as much as can to be relayed
 
-		mode = 'request'
+		mode = 'proxy' if proxied else 'http'
+		http_request = ''
+		data = ''
 
 		while True:
 			try:
 				while True:
-					if not processing:
-						data = sock.recv(read_size)
-						if not data:
-							break  # read failed so we abort
-						self.log.debug("<< [%s]" % data.replace('\t','\\t').replace('\r','\\r').replace('\n','\\n'))
-						r_buffer += data
-					else:
-						processing = False
+					if mode != 'new-request' and (mode != 'transfer' or r_buffer != ''):
+						new_data = sock.recv(read_size)
+						if not new_data:
+							break # read failed so we abort
 
-					if mode == 'passthrough':
-						r_buffer, tmp = '', [r_buffer]
-						yield [''], tmp
-						continue
+						r_buffer += new_data
 
-					if nb_to_send:
-						if mode == 'transfer':
-							r_len = len(r_buffer)
-							length = min(r_len, nb_to_send)
+					elif mode == 'new-request':
+						mode = 'http'
 
-							r_buffer, tmp = r_buffer[length:], [r_buffer[:length]]
-							_, extra_size = yield [''], tmp
-
-							r_buffer = r_buffer[length:]
-							nb_to_send = nb_to_send - length + extra_size
-
-							# we still have data to read before we can send more.
-							if nb_to_send != 0:
-								continue
-							mode = 'request'
-
-						if mode == 'chunked':
-							r_len = len(r_buffer)
-							length = min(r_len, nb_to_send)
-
-							# do not yield yet if we are chunked since the end of the chunk may
-							# very well be in the rest of the data we just read
-							if r_len <= nb_to_send:
-								r_buffer, tmp = r_buffer[length:], [r_buffer[:length]]
-								_, extra_size = yield [''], tmp
-
-								nb_to_send = nb_to_send - length + extra_size
-
-								# we still have data to read before we can send more.
-								if nb_to_send != 0:
-									continue
-
-					if mode == 'chunked':
-						# sum of the sizes of all chunks in our buffer
-						chunked, new_to_send = self.checkChunkSize(r_buffer[nb_to_send:])
-
-						if new_to_send is None:
-							# could not read any chunk (data is invalid)
+					if mode == 'proxy':
+						masquerade, r_buffer, mode = self.processProxyHeader(r_buffer, mode)
+						if masquerade is None:
 							break
 
-						nb_to_send += new_to_send
-						if chunked:
+						elif not masquerade:
 							continue
 
-						mode = 'end-chunk'
+						self.setPeer(masquerade)
 
-					# seek is only set if we already passed once and found we needed more data to check
-					if mode == 'end-chunk':
-						if r_buffer[nb_to_send:].startswith('\r\n'):
-							nb_to_send += 2
-							processing = True
-							mode = 'transfer'
-							continue
-						elif r_buffer[nb_to_send:].startswith('\n'):
-							nb_to_send += 1
-							processing = True
-							mode = 'transfer'
-							continue
+					# check for a new http header
+					if mode == 'http':
+						r_buffer = r_buffer.lstrip('\r\n')
 
-						if not r_buffer[nb_to_send:]:
-							yield [''], ['']
-							continue
-
-						mode = 'extra-headers'
-						seek = nb_to_send
-
-					if mode == 'extra-headers':
-						# seek is up to where we know there is no double CRLF
-						related, r_buffer, seek = self.checkRequest(r_buffer,max_buffer,seek)
-
-						if related is None:
-							# most likely could not find an header
+						http_request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
+						if http_request is None:
 							break
 
-						if related:
-							tmp, related = [related], ''
-							yield [''], tmp
+					# all modes that are not directly related to reading a new request
+					if mode != 'http':
+						data, r_buffer, mode, nb_to_send, seek = self.process(r_buffer, mode, nb_to_send, max_buffer, seek)
+						if data is None:
+							break
 
-						else:
-							yield [''], ['']
-							continue
-
+					if mode == 'http' and http_request:
+						http_response, http_request = [http_request], ''
 						seek = 0
-						mode = 'request'
 
+						mode, nb_to_send = yield http_response, ['']
 
-					if mode != 'request':
-						self.log.error('The programmers are monkeys - please give them bananas ..')
-						self.log.error('the mode was spelled : [%s]' % mode)
-						self.log.error('bytes to send : [%s]' % nb_to_send)
-						self.log.error('.. if it works, we are lucky - but it may work.')
-						mode = 'request'
+					elif data:
+						data_response, data = [data], ''
+						yield [''], data_response
 
-					# ignore EOL
-					r_buffer = r_buffer.lstrip('\r\n')
-
-					# check to see if we have read an entire request
-					request, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
-
-					if request is None:
-						# most likely could not find an header
-						break
-
-					if not request:
+					else:
 						yield [''], ['']
-						continue
-					seek = 0
-					processing = True
 
-					# nb_to_send is how much we expect to need to get the rest of the request
-					tmp, request = [request], ''
-					mode, nb_to_send = yield tmp, ['']
 
 				# break out of the outer loop as soon as we leave the inner loop
 				# through normal execution
@@ -267,6 +193,101 @@ class HTTPClient (object):
 		yield [None], [None]
 
 
+	def processProxyHeader (self, r_buffer, mode):
+		r_buffer = r_buffer.lstrip('\r\n')
+
+		for eor in self.eor:
+			if eor in r_buffer:
+				client_ip, r_buffer = self.proxy_protocol.parse(r_buffer)
+				mode = 'icap'
+				break
+
+			else:
+				client_ip, r_buffer = '', r_buffer
+
+		return client_ip, r_buffer, mode
+
+	def process (self, r_buffer, mode, nb_to_send, max_buffer, seek):
+		if mode == 'passthrough':
+			data, r_buffer, new_mode, nb_to_send, seek = r_buffer, '', mode, 0, 0
+
+		if mode == 'transfer':
+			data, r_buffer, new_mode, nb_to_send, seek = self._transfer(r_buffer, mode, nb_to_send)
+
+		if mode == 'chunked':
+			data, r_buffer, new_mode, nb_to_send, seek = self._chunked(r_buffer, mode, nb_to_send)
+
+		if mode == 'end-chunk':
+			data, r_buffer, new_mode, nb_to_send, seek = self._endChunk(r_buffer, mode, nb_to_send)
+
+		if mode == 'extra-headers':
+			data, r_buffer, new_mode, nb_to_send, seek = self._headers(r_buffer, mode, nb_to_send, max_buffer, seek)
+
+		return data, r_buffer, new_mode, nb_to_send, seek
+
+	def _transfer (self, r_buffer, mode, nb_to_send):
+		r_len = len(r_buffer)
+		length = min(r_len, nb_to_send)
+
+		r_buffer, data = r_buffer[length:], r_buffer[:length]
+		nb_to_send = nb_to_send - length
+
+		if nb_to_send == 0:
+			mode = 'new-request'
+
+		return data, r_buffer, mode, nb_to_send, 0
+
+	def _chunked (self, r_buffer, mode, nb_to_send):
+		r_len = len(r_buffer)
+		length = min(r_len, nb_to_send)
+
+		r_buffer, data = r_buffer[length:], r_buffer[:length]
+		nb_to_send = nb_to_send - length
+
+		# sum of the sizes of all chunks in our buffer
+		chunked, new_to_send = self.checkChunkSize(r_buffer[nb_to_send:])
+
+		if new_to_send is not None:
+			nb_to_send += new_to_send
+
+		else:
+			# data is invalid
+			data = None
+
+		if not chunked:
+			mode = 'end-chunk' if nb_to_send > 0 else 'new-request'
+
+		return data, r_buffer, mode, nb_to_send, 0
+
+	def _endChunk (self, r_buffer, mode, nb_to_send):
+		header_buffer = r_buffer[nb_to_send:]
+
+		if header_buffer.startswith('\r\n'):
+			nb_to_send += 2
+			seek = 0
+			mode = 'new-request'
+
+		elif header_buffer.startswith('\n'):
+			nb_to_send += 1
+			seek = 0
+			mode = 'new-request'
+
+		elif header_buffer and header_buffer != '\r':
+			mode = 'extra-headers'
+			seek = nb_to_send
+
+		return '', r_buffer, mode, nb_to_send, seek
+
+	def _headers (self, r_buffer, mode, nb_to_send, max_buffer, seek):
+		related, r_buffer, seek = self.checkRequest(r_buffer, max_buffer, seek)
+
+		if related:
+			mode = 'new-request'
+			seek = 0
+
+		return related, r_buffer, mode, nb_to_send, seek
+
+
 	def setPeer (self, peer):
 		"""Set the claimed ip address for this client.
 		Does not effect the ip address we try sending data to."""
@@ -274,7 +295,7 @@ class HTTPClient (object):
 
 	def readData(self):
 		# pop data from lists to free memory held by the coroutine
-		request_l, content_l = self.reader.send(('request',0))
+		request_l, content_l = self.reader.send(('new-request',0))
 		request = request_l.pop()
 		content = content_l.pop()
 
@@ -282,7 +303,7 @@ class HTTPClient (object):
 
 	def readRelated(self, mode, remaining):
 		# pop data from lists to free memory held by the coroutine
-		mode = mode or 'request'
+		mode = mode or 'new-request'
 		request_l, content_l = self.reader.send((mode,remaining))
 		request = request_l.pop()
 		content = content_l.pop()
@@ -329,7 +350,7 @@ class HTTPClient (object):
 
 					if finished:
 						if not w_buffer:
-							break      # terminate the client connection
+							break	  # terminate the client connection
 						elif data:
 							self.log.error('Tried to send data to client after we told it to close. Dropping it.')
 
