@@ -25,7 +25,7 @@ def count_quotes (data):
 class ICAPClient (object):
 	eor = ['\r\n\r\n', '\n\n']
 	eol = ['\r\n', '\n']
-        proxy_protocol = ProxyProtocol()
+	proxy_protocol = ProxyProtocol()
 
 	__slots__ = ['name', 'ipv4', 'sock', 'peer', 'reader', 'writer', 'w_buffer', 'log', 'proxied']
 
