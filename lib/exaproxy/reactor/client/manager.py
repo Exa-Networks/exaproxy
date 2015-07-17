@@ -52,7 +52,7 @@ class ClientManager (object):
 
 	def httpConnection (self, sock, peer, source):
 		name = self.getnextid()
-		client = HTTPClient(name, sock, peer, self.log, self.http_max_buffer)
+		client = HTTPClient(name, sock, peer, self.log, self.http_max_buffer, self.proxied.get(source))
 
 		self.norequest[sock] = client, source
 		self.byname[name] = sock
