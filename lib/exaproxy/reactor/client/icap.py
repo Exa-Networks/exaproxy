@@ -417,7 +417,7 @@ class ICAPClient (object):
 			res = None
 
 		# buffered, had_buffer
-		return res
+		return self.name, self.peer, res
 
 	def shutdown(self):
 		try:

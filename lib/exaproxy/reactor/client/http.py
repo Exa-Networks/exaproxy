@@ -389,11 +389,10 @@ class HTTPClient (object):
 			self.writer.send(None)  # close the connection once the buffer is empty
 
 		else:
-			print '????????????? command is', command
 			res = None
 
 		# buffered, had_buffer
-		return res
+		return self.name, self.peer, res
 
 	def shutdown(self):
 		try:

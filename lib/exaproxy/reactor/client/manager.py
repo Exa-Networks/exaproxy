@@ -206,13 +206,14 @@ class ClientManager (object):
 			self.log.error('invalid command sent to client %s' % client.name)
 			command, d = None, None
 
-		if client:
-			res = client.startData(command, d)
+		if not client or command is None:
+			return None, source
 
-		else:
-			res = None
+		name, peer, res = client.startData(command, d)
 
 		if res is not None:
+			name, peer, request, subrequest, content = client.readRelated(mode, nb_to_read)
+
 			buffered, had_buffer, sent4, sent6 = res
 
 			self.poller.uncorkReadSocket('read_client', client.sock)
@@ -221,32 +222,23 @@ class ClientManager (object):
 			self.total_sent6 += sent6
 
 		else:
-			buffered, had_buffer = None, None
+			self.cleanup(client.sock, name)
+			return None, source
 
-		if command is not None:
-			name, peer, request, subrequest, content = client.readRelated(mode, nb_to_read)
 
-			if request:
-				self.total_requested += 1
-				self.log.info('reading multiple requests')
-				self.cleanup(client.sock, name)
-				buffered, had_buffer = None, None
-				content = None
-
-			elif request is None:
-				self.cleanup(client.sock, name)
-				buffered, had_buffer = None, None
-				content = None
-
-		else:
-			# we cannot write to the client so clean it up
-			if client:
-				self.cleanup(client.sock, name)
-
+		if request:
+			self.total_requested += 1
+			self.log.info('reading multiple requests')
+			self.cleanup(client.sock, name)
 			buffered, had_buffer = None, None
 			content = None
 
-		if buffered and had_buffer is False:
+		elif request is None:
+			self.cleanup(client.sock, name)
+			buffered, had_buffer = None, None
+			content = None
+
+		if buffered is True and had_buffer is False:
 			self.buffered.append(client.sock)
 
 			self.poller.addWriteSocket('write_client', client.sock)
