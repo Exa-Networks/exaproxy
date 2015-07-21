@@ -24,6 +24,7 @@ Pragma: client=%s
 		groups = icap_message.headers.get('x-authenticated-groups', '').strip() if icap_message else None
 		ip_addr = icap_message.headers.get('x-client-ip', '').strip() if icap_message else None
 		customer = icap_message.headers.get('x-customer-name', '').strip() if icap_message else None
+		allow = icap_message.headers.get('allow', '').strip() if icap_message else None
 
 		icap_request = """\
 REQMOD %s ICAP/1.0
@@ -53,6 +54,10 @@ X-Authenticated-Groups: %s""" % groups
 		if customer:
 			icap_request += """
 X-Customer-Name: %s""" % customer
+
+		if allow:
+			icap_request += """
+Allow: %s""" % allow
 
 		return icap_request + """
 Encapsulated: req-hdr=0, null-body=%d
