@@ -132,7 +132,7 @@ class HTTPClient (object):
 		while True:
 			try:
 				while True:
-					if mode != 'new-request' and (mode != 'transfer' or r_buffer != ''):
+					if mode != 'new-request' and (mode != 'transfer' or r_buffer == ''):
 						new_data = sock.recv(read_size)
 						if not new_data:
 							break # read failed so we abort
