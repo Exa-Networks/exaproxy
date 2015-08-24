@@ -199,7 +199,7 @@ class HTTPClient (object):
 		for eor in self.eor:
 			if eor in r_buffer:
 				client_ip, r_buffer = self.proxy_protocol.parse(r_buffer)
-				mode = 'icap'
+				mode = 'http'
 				break
 
 			else:
@@ -211,17 +211,20 @@ class HTTPClient (object):
 		if mode == 'passthrough':
 			data, r_buffer, new_mode, nb_to_send, seek = r_buffer, '', mode, 0, 0
 
-		if mode == 'transfer':
+		elif mode == 'transfer':
 			data, r_buffer, new_mode, nb_to_send, seek = self._transfer(r_buffer, mode, nb_to_send)
 
-		if mode == 'chunked':
+		elif mode == 'chunked':
 			data, r_buffer, new_mode, nb_to_send, seek = self._chunked(r_buffer, mode, nb_to_send)
 
-		if mode == 'end-chunk':
+		elif mode == 'end-chunk':
 			data, r_buffer, new_mode, nb_to_send, seek = self._endChunk(r_buffer, mode, nb_to_send)
 
-		if mode == 'extra-headers':
+		elif mode == 'extra-headers':
 			data, r_buffer, new_mode, nb_to_send, seek = self._headers(r_buffer, mode, nb_to_send, max_buffer, seek)
+
+		else:
+			data, r_buffer, new_mode, nb_to_send, seek = None, r_buffer, None, seek
 
 		return data, r_buffer, new_mode, nb_to_send, seek
 
