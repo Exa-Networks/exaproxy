@@ -79,6 +79,7 @@ class Supervisor (object):
 		self.poller.setupRead('read_proxy')       # Listening proxy sockets
 		self.poller.setupRead('read_web')         # Listening webserver sockets
 		self.poller.setupRead('read_icap')        # Listening icap sockets
+		self.poller.setupRead('read_tls')         # Listening tls sockets
 		self.poller.setupRead('read_redirector')  # Pipes carrying responses from the redirector process
 		self.poller.setupRead('read_resolver')    # Sockets currently listening for DNS responses
 
@@ -102,6 +103,7 @@ class Supervisor (object):
 		self.proxy = Server('http proxy',self.poller,'read_proxy', configuration.http.connections)
 		self.web = Server('web server',self.poller,'read_web', configuration.web.connections)
 		self.icap = Server('icap server',self.poller,'read_icap', configuration.icap.connections)
+		self.tls = Server('tls server', self.poller, 'read_tls', configuration.tls.connections)
 
 		self._shutdown = True if self.daemon.filemax == 0 else False  # stop the program
 		self._softstop = False  # stop once all current connection have been dealt with
@@ -136,7 +138,7 @@ class Supervisor (object):
 		# regularly interrupt the reactor for maintenance
 		self.interrupt_scheduler = alarm_thread(self.poller, self.alarm_time)
 
-		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.icap, self.redirector, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
+		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.icap, self.tls, self.redirector, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
 
 		self.interfaces()
 
@@ -410,6 +412,7 @@ class Supervisor (object):
 		tcp4 = self.configuration.tcp4
 		tcp6 = self.configuration.tcp6
 		icap = self.configuration.icap
+		tls  = self.configuration.tls
 
 		if not has_ipv6 and (tcp6.listen or tcp6.out or icap.ipv6):
 			tcp6.listen = False
@@ -449,6 +452,18 @@ class Supervisor (object):
 			ok = bool(s)
 			if not ok:
 				self.log.critical('ICAP server, unable to listen on %s:%s' % (icap.host, icap.port))
+
+		if ok and tls.enable:
+			s = self.tls.listen(tls.host, tls.port, tcp4.timeout, tcp4.backlog)
+			ok = bool(s)
+			if not ok:
+				self.log.critical('TLS server, unable to listen on %s:%s' % (tls.host, tls.port))
+
+		if ok and tls.enable and tcp6.listen:
+			s = self.tls.listen(tls.ipv6, tls.port, tcp4.timeout, tcp4.backlog)
+			ok = bool(s)
+			if not ok:
+				self.log.critical('TLS server, unable to listen on %s:%s' % (tls.host, tls.port))
 
 		if ok and self.configuration.web.enable:
 			s = self.web.listen(self.configuration.web.host,self.configuration.web.port, 10, 10)

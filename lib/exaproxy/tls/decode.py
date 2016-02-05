@@ -1,5 +1,9 @@
 from struct import unpack
 
+from .header import TLS_HEADER_LEN
+from .header import TLS_HANDSHAKE_CONTENT_TYPE
+from .header import TLS_HANDSHAKE_TYPE_CLIENT_HELLO
+
 
 # inspired from https://raw.githubusercontent.com/dlundquist/sniproxy/master/src/tls.c
 
@@ -10,16 +14,15 @@ ALERT = [
 	0x02, 0x28,  # Fatal, handshake failure
 ]
 
-TLS_HEADER_LEN = 0x5
-TLS_HANDSHAKE_CONTENT_TYPE = 0x16
-TLS_HANDSHAKE_TYPE_CLIENT_HELLO = 0x01
-
-
 def short (data):
 	return unpack('!H',data)[0]
 
 
-def parse_header (data):
+def get_tls_hello_size (data):
+	return short(data[3:5]) + TLS_HEADER_LEN
+
+
+def parse_hello (data):
 	try:
 		# Check that our TCP payload is at least large enough for a TLS header
 
@@ -142,4 +145,5 @@ if __name__ == '__main__':
 		0x02, 0x03, 0x04, 0x02, 0x02, 0x02
 	]])
 
-	print parse_header(raw)
+	print get_tls_hello_size(raw), '==', len(raw)
+	print parse_hello(raw)

@@ -8,8 +8,10 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 
 from exaproxy.util.log.logger import Logger
 from exaproxy.util.cache import TimeCache
+
 from .http import HTTPClient
 from .icap import ICAPClient
+from .tls import TLSClient
 
 class ClientManager (object):
 	def __init__(self, poller, configuration):
@@ -25,9 +27,11 @@ class ClientManager (object):
 		self.log = Logger('client', configuration.log.client)
 		self.http_max_buffer = configuration.http.header_size
 		self.icap_max_buffer = configuration.icap.header_size
+		self.tls_max_buffer = configuration.tls.header_size
 		self.proxied = {
 			'proxy' : configuration.http.proxied,
 			'icap'  : configuration.icap.proxied,
+			'tls'   : configuration.tls.proxied,
 		}
 
 	def __contains__(self, item):
@@ -66,6 +70,19 @@ class ClientManager (object):
 	def icapConnection (self, sock, peer, source):
 		name = self.getnextid()
 		client = ICAPClient(name, sock, peer, self.log, self.icap_max_buffer, self.proxied.get(source))
+
+		self.norequest[sock] = client, source
+		self.byname[name] = sock
+
+		# watch for the opening request
+		self.poller.addReadSocket('opening_client', client.sock)
+
+		#self.log.info('new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
+		return peer
+
+	def tlsConnection (self, sock, peer, source):
+		name = self.getnextid()
+		client = TLSClient(name, sock, peer, self.log, self.tls_max_buffer, self.proxied.get(source))
 
 		self.norequest[sock] = client, source
 		self.byname[name] = sock

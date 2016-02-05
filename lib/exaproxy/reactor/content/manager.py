@@ -143,6 +143,7 @@ class ContentManager(object):
 
 				downloader, newdownloader = self.getDownloader(client, host, int(port), command, request)
 
+
 				if downloader is not None:
 					content = ('stream', '')
 					if upgrade in ('', 'http/1.0', 'http/1.1'):

@@ -7,20 +7,26 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
 from .serialize.icap import ICAPSerializer
+from .serialize.tls import TLSSerializer
 from .response import ResponseEncoder as Respond
 
 from exaproxy.icap.parser import ICAPParser
+from exaproxy.tls.parser import TLSParser
 
 from .worker import Redirector
 
 
 class ICAPRedirector (Redirector):
 	ICAPParser = ICAPParser
-	Serializer = ICAPSerializer
+	TLSParser = TLSParser
+	ICAPSerializer = ICAPSerializer
+	TLSSerializer = TLSSerializer
 
 	def __init__ (self, configuration, name, program, protocol):
 		self.icap_parser = self.ICAPParser(configuration)
-		self.icap_serializer = self.Serializer(configuration, protocol)
+		self.tls_parser = self.TLSParser(configuration)
+		self.icap_serializer = self.ICAPSerializer(configuration, protocol)
+		self.tls_serializer = self.TLSSerializer(configuration, protocol)
 
 		self.protocol = protocol
 		self.icap = protocol[len('icap://'):].split('/')[0]
@@ -104,6 +110,9 @@ class ICAPRedirector (Redirector):
 	def createICAPRequest (self, peer, message, icap_message, http_header):
 		return self.icap_serializer.serialize(peer, message, icap_message, http_header, self.protocol, self.icap)
 
+	def createTLSRequest (self, peer, message, tls_header):
+		return self.tls_serializer.serialize(peer, message, tls_header, self.protocol, self.icap)
+
 	def decideICAP (self, client_id, icap_response, message):
 		if message.complete:
 			length = max(0, message.content_length - len(message.http_header))
@@ -112,6 +121,13 @@ class ICAPRedirector (Redirector):
 			length = 'chunked'
 
 		return Respond.icap(client_id, icap_response, length) if icap_response else None
+
+	def decideTLS (self, client_id, icap_response, message, tls_header):
+		if icap_response.is_permit:
+			return Respond.intercept(client_id, message.hostname, 443, tls_header)
+
+		# XXX: respond with a TLS error
+		return Respond.close(client_id)
 
 	def decideHTTP (self, client_id, icap_response, message, peer, source):
 		# 204 (not modified)
@@ -172,6 +188,13 @@ class ICAPRedirector (Redirector):
 
 		return Respond.defer(client_id, icap_request) if status else None
 
+	def doTLS (self, client_id, peer, tls_header, source):
+		tls_hello = self.tls_parser.parseClientHello(tls_header)
+		request_string = self.createTLSRequest(peer, tls_hello, tls_header) if tls_hello else None
+		status = self.writeChild(request_string) if request_string else None
+
+		return Respond.defer(client_id, tls_hello) if status else None
+
 	def decide (self, client_id, peer, header, subheader, source):
 		if self.checkChild():
 			if source == 'icap':
@@ -183,6 +206,9 @@ class ICAPRedirector (Redirector):
 			elif source == 'web':
 				response = self.doMonitor(client_id, peer, header, source)
 
+			elif source == 'tls':
+				response = self.doTLS(client_id, peer, header, source)
+
 			else:
 				response = Respond.hangup(client_id)
 
@@ -191,7 +217,7 @@ class ICAPRedirector (Redirector):
 
 		return response
 
-	def progress (self, client_id, peer, message, icap_header, http_header, source):
+	def progress (self, client_id, peer, message, header, sub_header, source):
 		if self.checkChild():
 			icap_response = self.readChildResponse()
 
@@ -204,6 +230,10 @@ class ICAPRedirector (Redirector):
 
 			if source == 'proxy':
 				return self.decideHTTP(client_id, icap_response, message, peer, source)
+
+			if source == 'tls':
+				res = self.decideTLS(client_id, icap_response, message, header)
+				return res
 
 			return Respond.hangup(client_id)
 

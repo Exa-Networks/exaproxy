@@ -18,10 +18,11 @@ class StopReactor (Exception):
 class Reactor (object):
 	handlers = {}
 
-	def __init__(self, configuration, web, proxy, icap, decider, content, client, resolver, logger, usage, poller):
+	def __init__(self, configuration, web, proxy, icap, tls, decider, content, client, resolver, logger, usage, poller):
 		self.web = web            # Manage listening web sockets
 		self.proxy = proxy        # Manage listening proxy sockets
 		self.icap = icap          # Manage listening icap sockets
+		self.tls = tls            # Manage listening tls sockets
 		self.decider = decider    # Task manager for handling child decider processes
 		self.content = content    # The Content Download manager
 		self.client = client      # Currently open client connections
@@ -54,6 +55,12 @@ class Reactor (object):
 			for s, peer in self.icap.accept(sock):
 				self.client.icapConnection(s, peer, 'icap')
 
+	@register('read_tls')
+	def acceptTLSConnections (self, socks):
+		for sock in socks:
+			for s, peer in self.tls.accept(sock):
+				self.client.tlsConnection(s, peer, 'tls')
+
 	@register('read_web')
 	def acceptAdminConnections (self, socks):
 		for sock in socks:
@@ -66,6 +73,9 @@ class Reactor (object):
 
 		elif source == 'icap':
 			self.icap.notifyClose(client)
+
+		elif source == 'tls':
+			self.tls.notifyClose(client)
 
 		elif source == 'web':
 			self.web.notifyClose(client)

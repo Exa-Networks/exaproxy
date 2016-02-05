@@ -11,13 +11,28 @@ import os
 import sys
 import time
 
+
+
+def debug(s, message=''):
+    with open('/tmp/debug', 'a+') as w_fd:
+        w_fd.write(str(time.strftime('%Y-%m-%d %H:%M:%S')) + '\n')
+        if message:
+            w_fd.write(message + '\n')
+
+        w_fd.write(str(type(s)) + '\n')
+        w_fd.write(str(len(str(s))) + ': ' + str(s) + '\n\n')
+
+
+
 try:
 	pid = os.getpid()
 
 	while True:
+			debug(True, 'new request')
 		#with open(os.path.join('/tmp/debugging/', str(pid)), 'a+') as w_fd:
 			#w_fd.write('READING:\n')
 			line = sys.stdin.readline()
+			debug(line, 'first line')
 			#w_fd.write(line)
 			method,uri,version = line.rstrip().split()
 			if method != 'REQMOD':
@@ -26,26 +41,66 @@ try:
 			if version != 'ICAP/1.0':
 				sys.stderr.write('ICAP version not supported %s\n' % version)
 				sys.stderr.flush()
-	
-			# consume the message
-			empty = 2
-			while empty:
-				line = sys.stdin.readline()
-				#w_fd.write(line)
-				if not line.rstrip():
-					empty -= 1
 
-			#w_fd.write('\nWRITE:\n')
-			sys.stdout.write("""ICAP/1.0 204 No Content
+
+			content_length = 0
+			host = ''
+
+			while True:
+				line = sys.stdin.readline()
+
+				if 'null-body=' in line:
+					debug(line, 'line')
+					content_length=int(line.rsplit('=', 1)[1])
+					debug(content_length, 'content length')
+
+				if line.startswith('Pragma: host='):
+					host = line.split('=', 1)[1].strip()
+
+				if not line.strip():
+					break
+
+			if not content_length:
+				raise Exception, 'could not extract body length'
+
+			while content_length > 0:
+				data = sys.stdin.read(content_length)
+				content_length = content_length - len(data)
+
+				if not data:
+					raise Exception, 'file closed before all data was read'
+
+			host = host.strip()
+			debug(host, 'HOST')
+
+
+
+			if host == 'www.google.com':
+				headers = """\
+GET / redirect.php HTTP/1.1
+Host: www.surfprotect.co.uk
 Connection: close
-ISTAG: surfprotect-%s
-Encapsulated: null-body=0
-Server: Exa ICAP Server 1.0\n\n""" % time.time())
-			#w_fd.write("ICAP/1.0 304 OK\n\n")
-			sys.stdout.flush()
+
+"""
+				reply = """\
+ICAP/1.0 302 OK
+Encapsulated: res-hdr=0, null-body=%d
+
+%s""" % (len(headers),headers)
+
+
+				sys.stdout.write(reply)
+				sys.stdout.flush()
+
+			else:
+				sys.stdout.write("ICAP/1.0 204 OK\n\n")
+				sys.stdout.flush()
 except KeyboardInterrupt, e:
+	debug(e, 'keyboard interrupt')
 	sys.stderr.write('^C keyboard interrupt. exiting.\n')
 	sys.stderr.flush()
+
 except Exception, e:
+	debug(e, 'exception')
 	sys.stderr.write('CHILD FAILED %s\n' % str(e))
 	sys.stderr.flush()
