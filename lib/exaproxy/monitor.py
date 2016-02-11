@@ -90,7 +90,7 @@ class Monitor (object):
 			'exaproxy.tcp6.listen' : conf.tcp6.listen,
 			'exaproxy.tcp6.out' : conf.tcp6.out,
 			'exaproxy.tcp6.bind' : conf.tcp6.bind,
-			'exaproxy.http.connect' : conf.http.allow_connect,
+			'exaproxy.http.connect' : conf.http.connect,
 			'exaproxy.http.connections' : conf.http.connections,
 			'exaproxy.http.forward' : conf.http.forward,
 			'exaproxy.http.transparent' : conf.http.transparent,

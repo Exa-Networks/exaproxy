@@ -146,7 +146,7 @@ def main ():
 			'transparent'     : (value.boolean,string.lower,'false', 'do not reveal the presence of the proxy'),
 			'forward'         : (value.lowunquote,string.quote,'',   'read client address from this header (normally x-forwarded-for)'),
 			'mask'            : (value.boolean,string.lower,'false', 'hide client address by removing the header specified in exaproxy.http.forward'),
-			'allow-connect'   : (value.boolean,string.lower,'true',  'allow client to use CONNECT and https connections'),
+			'connect'         : (value.boolean,string.lower,'true',  'allow client to use CONNECT and https connections'),
 			'expect'          : (value.boolean,string.lower,'false', 'block messages with EXPECT headers with a 417'),
 			'extensions'      : (value.methods,string.list,'',       'allow new HTTP method (space separated)'),
 			'proxied'         : (value.boolean,string.lower,'false', 'request is encapsulated with haproxy proxy protocol'),

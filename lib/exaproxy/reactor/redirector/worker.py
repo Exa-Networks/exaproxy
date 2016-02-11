@@ -183,7 +183,7 @@ class Redirector (object):
 	def doHTTPConnect (self, client_id, peer, message, http_header, source):
 		method = message.request.method
 
-		if not self.configuration.http.allow_connect or message.port not in self.configuration.security.connect:
+		if not self.configuration.http.connect or message.port not in self.configuration.security.connect:
 			# NOTE: we are always returning an HTTP/1.1 response
 			response = Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n'))
 			self.usage.logRequest(client_id, peer, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
