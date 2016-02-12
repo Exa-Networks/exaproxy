@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# env exaproxy.http.connections=100 exaproxy.tls.enable=false exaproxy.security.connect=80 exaproxy.redirector.enable=true exaproxy.redirector.program=etc/exaproxy/redirector/icap-deny-proxy-explanation exaproxy.redirector.protocol='icap://' ./sbin/exaproxy
+
+( \
+	echo "CONNECT www.google.com:80 HTTP/1.1" ;
+	echo "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0.1) Gecko/20100101 Firefox/8.0.1";
+	echo
+	echo "GET / HTTP/1.1";
+	echo "Host: www.google.com" ;
+	echo "Accept: application/proxy-explanation+json";
+	echo "Accept-Language: en-gb";
+	echo "Connection: close";
+	echo;
+sleep 100) | telnet 127.0.0.1 3128
