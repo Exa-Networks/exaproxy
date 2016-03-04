@@ -305,10 +305,10 @@ class Reactor (object):
 				self.events = events
 
 				self.nb_loops += 1
-				for name,ev in events.items():
-					self.nb_events += len(ev)
 
 				for event, interfaces in events.items():
+					self.nb_events += len(interfaces)
+
 					decisions = self.handle(event, interfaces) if interfaces else []
 					if decisions:
 						self.enactDecisions(decisions)
