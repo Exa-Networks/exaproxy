@@ -108,7 +108,7 @@ class Redirector (object):
 		return response
 
 
-	def createChildRequest (self, peer, message, http_header):
+	def createChildRequest (self, accept_addr, peer, message, http_header):
 		return '%s %s - %s -\n' % (message.url_noport, peer, message.request.method)
 
 	def classifyURL (self, request, url_response):
@@ -161,11 +161,11 @@ class Redirector (object):
 
 		return response
 
-	def doHTTPRequest (self, client_id, peer, message, http_header, source):
+	def doHTTPRequest (self, client_id, accept_addr, peer, message, http_header, source):
 		method = message.request.method
 
 		if self.enabled:
-			request_string = self.createChildRequest(peer, message, http_header) if message else None
+			request_string = self.createChildRequest(accept_addr, peer, message, http_header) if message else None
 			status = self.writeChild(request_string) if request_string else None
 
 			if status is True:
@@ -176,20 +176,20 @@ class Redirector (object):
 
 		else:
 			response = Respond.download(client_id, message.host, message.port, message.upgrade, message.content_length, message)
-			self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
+			self.usage.logRequest(client_id, accept_addr, peer, method, message.url, 'PERMIT', message.host)
 
 		return response
 
-	def doHTTPConnect (self, client_id, peer, message, http_header, source):
+	def doHTTPConnect (self, client_id, accept_addr, peer, message, http_header, source):
 		method = message.request.method
 
 		if not self.configuration.http.connect or message.port not in self.configuration.security.connect:
 			# NOTE: we are always returning an HTTP/1.1 response
 			response = Respond.http(client_id, http('501', 'CONNECT NOT ALLOWED\n'))
-			self.usage.logRequest(client_id, peer, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
+			self.usage.logRequest(client_id, accept_addr, peer, method, message.url, 'DENY', 'CONNECT NOT ALLOWED')
 
 		elif self.enabled:
-			request_string = self.createChildRequest(peer, message, http_header) if message else None
+			request_string = self.createChildRequest(accept_addr, peer, message, http_header) if message else None
 			status = self.writeChild(request_string) if request_string else None
 
 			if status is True:
@@ -200,11 +200,11 @@ class Redirector (object):
 
 		else:
 			response = Respond.connect(client_id, message.host, message.port, message)
-			self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.host)
+			self.usage.logRequest(client_id, accept_addr, peer, method, message.url, 'PERMIT', message.host)
 
 		return response
 
-	def doHTTPOptions (self, client_id, peer, message):
+	def doHTTPOptions (self, client_id, accept_addr, peer, message):
 		# NOTE: we are always returning an HTTP/1.1 response
 		method = message.request.method
 
@@ -212,19 +212,19 @@ class Redirector (object):
 		if header:
 			value = header[-1].split(':')[-1].strip()
 			if not value.isdigit():
-				self.usage.logRequest(client_id, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
+				self.usage.logRequest(client_id, accept_addr, peer, method, message.url, 'ERROR', 'INVALID MAX FORWARDS')
 				return Respond.http(client_id, http('400', 'INVALID MAX-FORWARDS\n'))
 
 			max_forward = int(value)
 			if max_forward == 0:
-				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', method)
+				self.usage.logRequest(client_id, accept_addr, peer, method, message.url, 'PERMIT', method)
 				return Respond.http(client_id, http('200', ''))
 
 			message.headers.set('max-forwards','Max-Forwards: %d' % (max_forward-1))
 
 		return Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, message)
 
-	def doHTTP (self, client_id, peer, http_header, source):
+	def doHTTP (self, client_id, accept_addr, peer, http_header, source):
 		message = self.parseHTTP(client_id, peer, http_header)
 		response = self.validateHTTP(client_id, message)
 
@@ -233,28 +233,28 @@ class Redirector (object):
 			method = message.request.method
 
 			if method in ('GET', 'PUT', 'POST','HEAD','DELETE','PATCH'):
-				response = self.doHTTPRequest(client_id, peer, message, http_header, source)
+				response = self.doHTTPRequest(client_id, accept_addr, peer, message, http_header, source)
 
 			elif method == 'CONNECT':
-				response = self.doHTTPConnect(client_id, peer, message, http_header, source)
+				response = self.doHTTPConnect(client_id, accept_addr, peer, message, http_header, source)
 
 			elif method in ('OPTIONS','TRACE'):
-				response = self.doHTTPOptions(client_id, peer, message)
+				response = self.doHTTPOptions(client_id, accept_addr, peer, message)
 
 			elif method in (
 			'BCOPY', 'BDELETE', 'BMOVE', 'BPROPFIND', 'BPROPPATCH', 'COPY', 'DELETE','LOCK', 'MKCOL', 'MOVE',
 			'NOTIFY', 'POLL', 'PROPFIND', 'PROPPATCH', 'SEARCH', 'SUBSCRIBE', 'UNLOCK', 'UNSUBSCRIBE', 'X-MS-ENUMATTS'):
 				response = Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, message)
-				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', method)
+				self.usage.logRequest(client_id, accept_addr, peer, method, message.url, 'PERMIT', method)
 
 			elif message.request in self.configuration.http.extensions:
 				response = Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, message)
-				self.usage.logRequest(client_id, peer, method, message.url, 'PERMIT', message.request)
+				self.usage.logRequest(client_id, accept_addr, peer, method, message.url, 'PERMIT', message.request)
 
 			else:
 				# NOTE: we are always returning an HTTP/1.1 response
 				response = Respond.http(client_id, http('405', ''))  # METHOD NOT ALLOWED
-				self.usage.logRequest(client_id, peer, method, message.url, 'DENY', method)
+				self.usage.logRequest(client_id, accept_addr, peer, method, message.url, 'DENY', method)
 
 		elif response is None:
 			response = Respond.hangup(client_id)
@@ -262,20 +262,20 @@ class Redirector (object):
 		return response
 
 
-	def doMonitor (self, client_id, peer, http_header, source):
-		message = self.parseHTTP(client_id, peer, http_header)
+	def doMonitor (self, client_id, accept_addr, peer, http_header, source):
+		message = self.parseHTTP(client_id, accept_addr, peer, http_header)
 		response = self.validateHTTP(client_id, message)  # pylint: disable=W0612
 
 		return Respond.monitor(client_id, message.request.path)
 
 
-	def decide (self, client_id, peer, header, subheader, source):
+	def decide (self, client_id, accept_addr, peer, header, subheader, source):
 		if self.checkChild():
 			if source == 'proxy':
-				response = self.doHTTP(client_id, peer, header, source)
+				response = self.doHTTP(client_id, accept_addr, peer, header, source)
 
 			elif source == 'web':
-				response = self.doMonitor(client_id, peer, header, source)
+				response = self.doMonitor(client_id, accept_addr, peer, header, source)
 
 			else:
 				response = Respond.hangup(client_id)
@@ -285,7 +285,7 @@ class Redirector (object):
 
 		return response
 
-	def progress (self, client_id, peer, message, http_header, subheader, source):
+	def progress (self, client_id, accept_addr, peer, message, http_header, subheader, source):
 		if self.checkChild():
 			response_s = self.readChildResponse()
 			response = self.classifyURL(message.request, response_s) if response_s is not None else None
@@ -307,7 +307,7 @@ class Redirector (object):
 				operation, destination, decision = None, None, None
 
 			if operation is not None:
-				self.usage.logRequest(client_id, peer, message.request.method, message.url, operation, message.host)
+				self.usage.logRequest(client_id, accept_addr, peer, message.request.method, message.url, operation, message.host)
 
 		else:
 			decision = None

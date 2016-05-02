@@ -83,11 +83,11 @@ class Reactor (object):
 	@register('opening_client')
 	def incomingRequest (self, clients):
 		for client in clients:
-			client_id, peer, request, subrequest, data, source = self.client.readRequest(client)
+			client_id, accept_addr, peer, request, subrequest, data, source = self.client.readRequest(client)
 
 			if request:
 				# we have a new request - decide what to do with it
-				self.decider.sendRequest(client_id, peer, request, subrequest, source)
+				self.decider.sendRequest(client_id, accept_addr, peer, request, subrequest, source)
 
 			elif request is None and client_id is not None:
 				self.closeClient(client, source)
@@ -95,11 +95,11 @@ class Reactor (object):
 	@register('read_client')
 	def incomingClientData (self, clients):
 		for client in clients:
-			client_id, peer, request, subrequest, data, source = self.client.readData(client)
+			client_id, accept_addr, peer, request, subrequest, data, source = self.client.readData(client)
 
 			if request:
 				# we have a new request - decide what to do with it
-				self.decider.sendRequest(client_id, peer, request, subrequest, source)
+				self.decider.sendRequest(client_id, accept_addr, peer, request, subrequest, source)
 
 			if data:
 				# we read something from the client so pass it on to the remote server

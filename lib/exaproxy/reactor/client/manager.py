@@ -99,7 +99,7 @@ class ClientManager (object):
 		client, source = self.norequest.get(sock, (None, None))
 
 		if client:
-			name, peer, request, subrequest, content = client.readData()
+			name, accept_addr, peer, request, subrequest, content = client.readData()
 			if request:
 				self.total_requested += 1
 
@@ -120,15 +120,15 @@ class ClientManager (object):
 				self.cleanup(sock, client.name)
 		else:
 			self.log.error('trying to read headers from a client that does not exist %s' % sock)
-			name, peer, request, subrequest, content, source = None, None, None, None, None, None
+			name, accept_addr, peer, request, subrequest, content, source = None, None, None, None, None, None, None
 
-		return name, peer, request, subrequest, content, source
+		return name, accept_addr, peer, request, subrequest, content, source
 
 
 	def readData (self, sock):
 		client, source = self.bysock.get(sock, (None, None))
 		if client:
-			name, peer, request, subrequest, content = client.readData()
+			name, accept_addr, peer, request, subrequest, content = client.readData()
 			if request:
 				self.total_requested += 1
 				# Parsing of the new request will be handled asynchronously. Ensure that
@@ -142,10 +142,10 @@ class ClientManager (object):
 				self.cleanup(sock, client.name)
 		else:
 			self.log.error('trying to read from a client that does not exist %s' % sock)
-			name, peer, request, subrequest, content = None, None, None, None, None
+			name, accept_addr, peer, request, subrequest, content = None, None, None, None, None, None
 
 
-		return name, peer, request, subrequest, content, source
+		return name, accept_addr, peer, request, subrequest, content, source
 
 	def sendData (self, sock, data):
 		client, source = self.bysock.get(sock, (None, None))
@@ -229,7 +229,7 @@ class ClientManager (object):
 		name, peer, res = client.startData(command, d)
 
 		if res is not None:
-			name, peer, request, subrequest, content = client.readRelated(mode, nb_to_read)
+			name, accept_addr, peer, request, subrequest, content = client.readRelated(mode, nb_to_read)
 
 			buffered, had_buffer, sent4, sent6 = res
 

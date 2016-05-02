@@ -27,13 +27,17 @@ class ICAPClient (object):
 	eol = ['\r\n', '\n']
 	proxy_protocol = ProxyProtocol()
 
-	__slots__ = ['name', 'ipv4', 'sock', 'peer', 'reader', 'writer', 'w_buffer', 'log', 'proxied']
+	__slots__ = ['name', 'ipv4', 'sock', 'accept_addr', 'accept_port', 'peer', 'reader', 'writer', 'w_buffer', 'log', 'proxied']
 
 	def __init__(self, name, sock, peer, logger, max_buffer, proxied):
+		addr, port = sock.getsockname()
+
 		self.name = name
-		self.ipv4 = isipv4(sock.getsockname()[0])
 		self.sock = sock
 		self.peer = peer
+		self.accept_addr = addr
+		self.accept_port = port
+		self.ipv4 = isipv4(addr)
 		self.reader = self._read(sock, max_buffer, proxied=proxied)
 		self.writer = self._write(sock)
 		self.w_buffer = ''
@@ -305,7 +309,7 @@ class ICAPClient (object):
 		icap_header = icap_header_l.pop()
 		http_header = http_header_l.pop()
 		content = content_l.pop()
-		return self.name, self.peer, icap_header, http_header, content
+		return self.name, self.accept_addr, self.peer, icap_header, http_header, content
 
 	def readRelated(self, mode, remaining):
 		# pop data from lists to free memory held by the coroutine
@@ -314,7 +318,7 @@ class ICAPClient (object):
 		icap_header = icap_header_l.pop()
 		http_header = http_header_l.pop()
 		content = content_l.pop()
-		return self.name, self.peer, icap_header, http_header, content
+		return self.name, self.accept_addr, self.peer, icap_header, http_header, content
 
 	def _write(self, sock):
 		"""Coroutine managing data sent to the client"""

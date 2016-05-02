@@ -41,8 +41,8 @@ class RedirectorDispatcher (object):
 
 		return res
 
-	def sendRequest (self, client_id, peer, request, subrequest, source):
-		message = client_id, peer, request, subrequest, source
+	def sendRequest (self, client_id, local_addr, peer, request, subrequest, source):
+		message = client_id, local_addr, peer, request, subrequest, source
 		return self.queue.put(('REQUEST', message))
 
 	def getDecision (self):
