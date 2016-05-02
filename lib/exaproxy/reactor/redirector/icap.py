@@ -122,7 +122,11 @@ class ICAPRedirector (Redirector):
 
 		return Respond.icap(client_id, icap_response, length) if icap_response else None
 
-	def decideTLS (self, client_id, icap_response, message, tls_header):
+	def decideTLS (self, client_id, icap_response, message, tls_header, peer):
+		if icap_response.is_intercept:
+			intercept_request = self.http_parser.parseRequest(peer, icap_response.intercept_header)
+			return Respond.intercept(client_id, intercept_request.hostname, intercept_request.port, tls_header)
+
 		if icap_response.is_permit:
 			return Respond.intercept(client_id, message.hostname, 443, tls_header)
 
@@ -232,7 +236,7 @@ class ICAPRedirector (Redirector):
 				return self.decideHTTP(client_id, icap_response, message, accept_addr, peer, source)
 
 			if source == 'tls':
-				res = self.decideTLS(client_id, icap_response, message, header)
+				res = self.decideTLS(client_id, icap_response, message, header, peer)
 				return res
 
 			return Respond.hangup(client_id)
