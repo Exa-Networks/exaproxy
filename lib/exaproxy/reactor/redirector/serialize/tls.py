@@ -19,7 +19,7 @@ Pragma: path=%s
 Pragma: method=%s""" % (
 
 			path, icap_host, 'tls',
-			peer, accept_addr, message.hostname, '', 'TLS',
+			accept_addr, peer, message.hostname if message else '', '', 'TLS',
 			)
 
 		return icap_request + """

@@ -127,7 +127,7 @@ class ICAPRedirector (Redirector):
 			intercept_request = self.http_parser.parseRequest(peer, icap_response.intercept_header)
 			return Respond.intercept(client_id, intercept_request.headerhost, intercept_request.port, tls_header)
 
-		if icap_response.is_permit:
+		if icap_response.is_permit and message is not None:
 			return Respond.intercept(client_id, message.hostname, 443, tls_header)
 
 		# XXX: respond with a TLS error
@@ -194,7 +194,7 @@ class ICAPRedirector (Redirector):
 
 	def doTLS (self, client_id, accept_addr, peer, tls_header, source):
 		tls_hello = self.tls_parser.parseClientHello(tls_header)
-		request_string = self.createTLSRequest(accept_addr, peer, tls_hello, tls_header) if tls_hello else None
+		request_string = self.createTLSRequest(accept_addr, peer, tls_hello, tls_header)
 		status = self.writeChild(request_string) if request_string else None
 
 		return Respond.defer(client_id, tls_hello) if status else None
