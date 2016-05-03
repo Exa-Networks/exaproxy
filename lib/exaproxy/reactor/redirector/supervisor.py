@@ -138,3 +138,5 @@ class RedirectorSupervisor (object):
 
 		except KeyboardInterrupt:
 			pass
+
+		self.manager.kill_workers()
