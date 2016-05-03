@@ -236,8 +236,7 @@ class ICAPRedirector (Redirector):
 				return self.decideHTTP(client_id, icap_response, message, accept_addr, peer, source)
 
 			if source == 'tls':
-				res = self.decideTLS(client_id, icap_response, message, header, peer)
-				return res
+				return self.decideTLS(client_id, icap_response, message, header, peer)
 
 			return Respond.hangup(client_id)
 
