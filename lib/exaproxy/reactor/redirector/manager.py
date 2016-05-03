@@ -72,6 +72,10 @@ class RedirectorManager (object):
 
 		self.spawn(number)
 
+	def kill_workers (self):
+		for wid in set(self.worker):
+			self.reap(wid)
+
 	def stopWorker (self, wid):
 		self.log.info('want worker %s to go away' % wid)
 
