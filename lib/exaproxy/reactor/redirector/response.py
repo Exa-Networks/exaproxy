@@ -49,7 +49,7 @@ class ResponseEncoder (object):
 
 	@staticmethod
 	def hangup (wid):
-		return '', 'hangup', wid
+		return '', 'close', wid
 
 	@staticmethod
 	def close (client_id):
