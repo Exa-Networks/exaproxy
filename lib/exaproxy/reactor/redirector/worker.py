@@ -23,6 +23,8 @@ from exaproxy.http.message import HTTP
 from exaproxy.http.response import http
 from exaproxy.http.factory import HTTPRequestFactory
 
+from exaproxy.tls.parser import TLSParser
+
 from exaproxy.util.log.logger import Logger
 from exaproxy.util.log.logger import UsageLogger
 
@@ -31,15 +33,17 @@ from exaproxy.util.log.history import Errors,History,Level
 class Redirector (object):
 	# TODO : if the program is a function, fork and run :)
 	HTTPParser = HTTPRequestFactory
+	TLSParser = TLSParser
 	ResponseFactory = ResponseFactory
 	ChildFactory = ChildFactory
 
-	__slots__ = ['configuration', 'http_parser', 'enabled', '_transparent', 'log', 'usage', 'response_factory', 'child_factory', 'wid', 'creation', 'program', 'running', 'stats_timestamp', '_proxy', 'universal', 'process']
+	__slots__ = ['configuration', 'tls_parser', 'http_parser', 'enabled', '_transparent', 'log', 'usage', 'response_factory', 'child_factory', 'wid', 'creation', 'program', 'running', 'stats_timestamp', '_proxy', 'universal', 'process']
 
 	def __init__ (self, configuration, name, program, protocol):
 		self.configuration = configuration
 		self.http_parser = self.HTTPParser(configuration)
-		self.enabled = bool(program is not None)
+		self.tls_parser = self.TLSParser(configuration)
+		self.enabled = bool(program is not None) and configuration.redirector.enable
 		self._transparent = configuration.http.transparent
 		self.log = Logger('worker ' + str(name), configuration.log.worker)
 		self.usage = UsageLogger('usage', configuration.log.worker)
@@ -59,7 +63,10 @@ class Redirector (object):
 
 		universal = configuration.redirector.protocol == 'url'
 		# Do not move, we need the forking AFTER the setup
-		self.process = self.child_factory.createProcess(self.program, universal=universal)
+		if program:
+			self.process = self.child_factory.createProcess(self.program, universal=universal)
+		else:
+			self.process = None
 
 	def addHeaders (self, message, peer):
 		headers = message.headers
@@ -262,6 +269,27 @@ class Redirector (object):
 		return response
 
 
+	def doTLS (self, client_id, accept_addr, peer, tls_header, source):
+                tls_hello = self.tls_parser.parseClientHello(tls_header)
+
+		if self.enabled and tls_hello:
+			request_string = '%s %s - %s -\n' % (tls_hello.hostname, peer, 'TLS')
+			status = self.writeChild(request_string)
+
+			if status is True:
+				response = Respond.defer(client_id, tls_hello.hostname)
+
+			else:
+				response = None
+
+		elif tls_hello:
+			response = Respond.intercept(client_id, tls_hello.hostname, 443, tls_header)
+
+		else:
+			reponse = None
+
+		return response
+
 	def doMonitor (self, client_id, accept_addr, peer, http_header, source):
 		message = self.parseHTTP(client_id, accept_addr, peer, http_header)
 		response = self.validateHTTP(client_id, message)  # pylint: disable=W0612
@@ -277,6 +305,9 @@ class Redirector (object):
 			elif source == 'web':
 				response = self.doMonitor(client_id, accept_addr, peer, header, source)
 
+			elif source == 'tls':
+				response = self.doTLS(client_id, accept_addr, peer, header, source)
+
 			else:
 				response = Respond.hangup(client_id)
 
@@ -285,14 +316,18 @@ class Redirector (object):
 
 		return response
 
-	def progress (self, client_id, accept_addr, peer, message, http_header, subheader, source):
+
+	def progress (self, client_id, accept_addr, peer, message, header, subheader, source):
 		if self.checkChild():
 			response_s = self.readChildResponse()
-			response = self.classifyURL(message.request, response_s) if response_s is not None else None
 
 		else:
-			response = None
+			response_s = None
 
+		if source == 'tls':
+			return None
+
+		response = self.classifyURL(message.request, response_s) if response_s is not None else None
 		if response is not None and source == 'proxy':
 			classification, data, comment = response
 

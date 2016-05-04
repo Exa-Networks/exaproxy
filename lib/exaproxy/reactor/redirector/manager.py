@@ -30,9 +30,10 @@ class RedirectorManager (object):
 		self.active = {}        # workers that are currently busy waiting for a response from the spawned process
 		self.stopping = set()   # workers we want to stop as soon as they stop being active
 
+		enabled = configuration.redirector.enable
 		program = configuration.redirector.program
 		protocol = configuration.redirector.protocol
-		self.redirector_factory = RedirectorFactory(configuration, program, protocol)
+		self.redirector_factory = RedirectorFactory(configuration, program if enabled else None, protocol)
 
 		self.log = Logger('manager', configuration.log.manager)
 
