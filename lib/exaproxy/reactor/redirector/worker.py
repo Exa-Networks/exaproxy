@@ -286,7 +286,7 @@ class Redirector (object):
 			response = Respond.intercept(client_id, tls_hello.hostname, 443, tls_header)
 
 		else:
-			reponse = None
+			response = Respond.hangup(client_id)
 
 		return response
 
@@ -325,7 +325,7 @@ class Redirector (object):
 			response_s = None
 
 		if source == 'tls':
-			return None
+			return Respond.hangup(client_id)
 
 		response = self.classifyURL(message.request, response_s) if response_s is not None else None
 		if response is not None and source == 'proxy':
