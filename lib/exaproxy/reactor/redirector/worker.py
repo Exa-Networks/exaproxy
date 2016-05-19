@@ -206,7 +206,7 @@ class Redirector (object):
 				response = None
 
 		else:
-			response = Respond.connect(client_id, message.host, message.port, message)
+			response = Respond.connect(client_id, message.host, message.port, '')
 			self.usage.logRequest(client_id, accept_addr, peer, method, message.url, 'PERMIT', message.host)
 
 		return response
