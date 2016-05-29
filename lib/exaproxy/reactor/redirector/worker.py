@@ -144,7 +144,7 @@ class Redirector (object):
 		return 'file', 'internal_error.html', ''
 
 
-	def parseHTTP (self, client_id, peer, http_header):
+	def parseHTTP (self, client_id, accept_addr, peer, http_header):
 		message = HTTP(self.configuration, http_header, peer)
 		message.parse(self._transparent)
 		return message
@@ -232,7 +232,7 @@ class Redirector (object):
 		return Respond.download(client_id, message.headerhost, message.port, message.upgrade, message.content_length, message)
 
 	def doHTTP (self, client_id, accept_addr, peer, http_header, source):
-		message = self.parseHTTP(client_id, peer, http_header)
+		message = self.parseHTTP(client_id, accept_addr, peer, http_header)
 		response = self.validateHTTP(client_id, message)
 
 		if message.validated:
