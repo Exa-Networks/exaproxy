@@ -20,6 +20,7 @@ from exaproxy.util.proxy import ProxyProtocol
 
 class TLSClient (object):
 	eor = ['\r\n\r\n', '\n\n']
+	eol = ['\r\n', '\n']
 	proxy_protocol = ProxyProtocol()
 
 	__slots__ = ['name', 'ipv4', 'sock', 'accept_addr', 'accept_port', 'peer', 'reader', 'writer', 'w_buffer', 'log']
@@ -141,8 +142,8 @@ class TLSClient (object):
 	def processProxyHeader (self, r_buffer, mode):
 		r_buffer = r_buffer.lstrip('\r\n')
 
-		for eor in self.eor:
-			if eor in r_buffer:
+		for eol in self.eol:
+			if eol in r_buffer:
 				client_ip, r_buffer = self.proxy_protocol.parse(r_buffer)
 				mode = 'tls'
 				break
