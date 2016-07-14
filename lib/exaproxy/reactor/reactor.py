@@ -126,6 +126,12 @@ class Reactor (object):
 				if source == 'proxy':
 					self.proxy.notifyClose(client)
 
+				elif source == 'icap':
+					self.icap.notifyClose(client)
+
+				elif source == 'tls':
+					self.tls.notifyClose(client)
+
 				elif source == 'web':
 					self.web.notifyClose(client)
 
@@ -150,7 +156,11 @@ class Reactor (object):
 					status, buffer_change, name, source = self.client.sendData(client, response)
 					if status is None and client is not None:
 						# We just closed our connection to the client and need to count the disconnect.
-						self.proxy.notifyClose(client)
+						if source == 'proxy':
+							self.proxy.notifyClose(client)
+
+						elif source == 'tls':
+							self.tls.notifyClose(client)
 
 						if response is not None:
 							self.content.endClientDownload(client)
@@ -174,7 +184,11 @@ class Reactor (object):
 			# check to see if the client went away
 			if status is None and client is not None:
 				# We just closed our connection to the client and need to count the disconnect.
-				self.proxy.notifyClose(client)
+				if source == 'proxy':
+					self.proxy.notifyClose(client)
+
+				elif source == 'tls':
+					self.tls.notifyClose(client)
 
 				if page_data is not None:
 					# The client disconnected? Close our connection to the remote webserver.
