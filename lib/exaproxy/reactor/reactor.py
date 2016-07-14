@@ -66,7 +66,9 @@ class Reactor (object):
 	def acceptPassthroughConnections (self, socks):
 		for sock in socks:
 			for s, peer in self.passthrough.accept(sock):
-				self.client.passthroughConnection(s, peer, 'passthrough')
+				client_id, accept_addr, accept_port = self.client.passthroughConnection(s, peer, 'passthrough')
+
+				self.decider.sendRequest(client_id, accept_addr, accept_port, peer, '', '', 'passthrough')
 
 	@register('read_web')
 	def acceptAdminConnections (self, socks):

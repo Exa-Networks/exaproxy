@@ -37,6 +37,9 @@ class PassthroughClient (object):
 		# start the _read coroutine
 		self.reader.next()
 
+	def getAcceptAddress (self):
+		return self.accept_addr, self.accept_port
+
 	def _read (self, sock, max_buffer, read_size=64*1024, proxied=False):
 		"""Coroutine managing data read from the client"""
 		# yield request, content
@@ -53,7 +56,7 @@ class PassthroughClient (object):
 		# proxy: we are reading an opening proxy protocol header
 		# passthrough : read as much as can to be relayed
 
-		mode = 'proxy' if proxied else 'begin'
+		mode = 'proxy' if proxied else 'passthrough'
 		data = ''
 
 		while True:
@@ -76,16 +79,12 @@ class PassthroughClient (object):
 
 						self.setPeer(masquerade)
 
-					if mode in ('begin', 'passthrough'):
+					if mode == 'passthrough':
 						data, r_buffer, mode = self.process(r_buffer, mode, max_buffer)
 						if data is None:
 							break
 
-					if data and mode == 'begin':
-						data_response, data = [data], ''
-						mode, _ = yield data_response, ['']
-
-					elif data:
+					if data:
 						data_response, data = [data], ''
 						yield [''], data_response
 
@@ -112,7 +111,7 @@ class PassthroughClient (object):
 		for eol in self.eol:
 			if eol in r_buffer:
 				client_ip, r_buffer = self.proxy_protocol.parse(r_buffer)
-				mode = 'begin'
+				mode = 'passthrough'
 				break
 
 			else:
@@ -121,7 +120,7 @@ class PassthroughClient (object):
 		return client_ip, r_buffer, mode
 
 	def process (self, r_buffer, mode, max_buffer):
-		if mode in ('begin', 'passthrough'):
+		if mode == 'passthrough':
 			data, r_buffer, new_mode = r_buffer, '', mode
 
 		else:

@@ -99,14 +99,16 @@ class ClientManager (object):
 		name = self.getnextid()
 		client = PassthroughClient(name, sock, peer, self.log, self.passthrough_max_buffer, self.proxied.get(source))
 
-		self.norequest[sock] = client, source
+		self.bysock[sock] = client, source
 		self.byname[name] = sock
 
 		# watch for the opening data
-		self.poller.addReadSocket('opening_client', client.sock)
+		self.poller.addReadSocket('read_client', client.sock)
+
+		accept_addr, accept_port = client.getAcceptAddress()
 
 		#self.log.info('new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
-		return peer
+		return name, accept_addr, accept_port
 
 	def readRequest (self, sock):
 		"""Read only the initial HTTP headers sent by the client"""
