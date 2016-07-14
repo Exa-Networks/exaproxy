@@ -53,8 +53,7 @@ class PassthroughClient (object):
 		# proxy: we are reading an opening proxy protocol header
 		# passthrough : read as much as can to be relayed
 
-		mode = 'proxy' if proxied else 'passthrough'
-		tls_header = ''
+		mode = 'proxy' if proxied else 'begin'
 		data = ''
 
 		while True:
@@ -77,12 +76,16 @@ class PassthroughClient (object):
 
 						self.setPeer(masquerade)
 
-					if mode == 'passthrough':
+					if mode in ('begin', 'passthrough'):
 						data, r_buffer, mode = self.process(r_buffer, mode, max_buffer)
 						if data is None:
 							break
 
-					if data:
+					if data and mode == 'begin':
+						data_response, data = [data], ''
+						yield data_response, ['']
+
+					elif data:
 						data_response, data = [data], ''
 						yield [''], data_response
 
@@ -109,7 +112,7 @@ class PassthroughClient (object):
 		for eol in self.eol:
 			if eol in r_buffer:
 				client_ip, r_buffer = self.proxy_protocol.parse(r_buffer)
-				mode = 'tls'
+				mode = 'begin'
 				break
 
 			else:
@@ -118,7 +121,7 @@ class PassthroughClient (object):
 		return client_ip, r_buffer, mode
 
 	def process (self, r_buffer, mode, max_buffer):
-		if mode == 'passthrough':
+		if mode in ('begin', 'passthrough'):
 			data, r_buffer, new_mode = r_buffer, '', mode
 
 		else:
@@ -138,7 +141,7 @@ class PassthroughClient (object):
 		request = request_l.pop()
 		content = content_l.pop()
 
-		return self.name, self.accept_addr, self.peer, request, '', content
+		return self.name, self.accept_addr, self.accept_port, self.peer, request, '', content
 
 	def readRelated (self, mode, remaining):
 		# pop data from lists to free memory held by the coroutine

@@ -217,16 +217,16 @@ class RedirectorManager (object):
 		else:
 			self.reap(wid)
 
-	def persist (self, wid, client_id, accept_addr, peer, data, header, subheader, source, tainted):
-		self.active[wid] = client_id, accept_addr, peer, data, header, subheader, source, tainted
+	def persist (self, wid, client_id, accept_addr, accept_port, peer, data, header, subheader, source, tainted):
+		self.active[wid] = client_id, accept_addr, accept_port, peer, data, header, subheader, source, tainted
 
 	def progress (self, wid):
 		return self.active.pop(wid)
 
 	def doqueue (self):
 		if self.available and not self.queue.isempty():
-			client_id, accept_addr, peer, header, subheader, source, tainted = self.queue.get()
-			_, command, decision = self.request(client_id, accept_addr, peer, header, subheader, source, tainted=tainted)
+			client_id, accept_addr, accept_port, peer, header, subheader, source, tainted = self.queue.get()
+			_, command, decision = self.request(client_id, accept_addr, accept_port, peer, header, subheader, source, tainted=tainted)
 
 		else:
 			client_id, command, decision = None, None, None
@@ -234,12 +234,12 @@ class RedirectorManager (object):
 		return client_id, command, decision
 
 
-	def request (self, client_id, accept_addr, peer, header, subheader, source, tainted=False):
+	def request (self, client_id, accept_addr, accept_port, peer, header, subheader, source, tainted=False):
 		worker = self.acquire()
 
 		if worker is not None:
 			try:
-				_, command, decision = worker.decide(client_id, accept_addr, peer, header, subheader, source)
+				_, command, decision = worker.decide(client_id, accept_addr, accept_port, peer, header, subheader, source)
 
 			except:
 				command, decision = None, None
@@ -248,17 +248,17 @@ class RedirectorManager (object):
 				self.reap(worker.wid)
 
 				if tainted is False:
-					_, command, decision = self.request(client_id, accept_addr, peer, header, subheader, source, tainted=True)
+					_, command, decision = self.request(client_id, accept_addr, accept_port, peer, header, subheader, source, tainted=True)
 
 				else:
 					_, command, decision = Respond.close(client_id)
 
 		else:
 			command, decision = None, None
-			self.queue.put((client_id, accept_addr, peer, header, subheader, source, tainted))
+			self.queue.put((client_id, accept_addr, accept_port, peer, header, subheader, source, tainted))
 
 		if command == 'defer':
-			self.persist(worker.wid, client_id, accept_addr, peer, decision, header, subheader, source, tainted)
+			self.persist(worker.wid, client_id, accept_addr, accept_port, peer, decision, header, subheader, source, tainted)
 			command, decision = None, None
 
 		elif worker is not None:
@@ -271,9 +271,9 @@ class RedirectorManager (object):
 		worker = self.processes.get(pipe_in, None)
 
 		if worker is not None and worker.wid in self.active:
-			client_id, accept_addr, peer, request, header, subheader, source, tainted = self.progress(worker.wid)
+			client_id, accept_addr, accept_port, peer, request, header, subheader, source, tainted = self.progress(worker.wid)
 			try:
-				_, command, decision = worker.progress(client_id, accept_addr, peer, request, header, subheader, source)
+				_, command, decision = worker.progress(client_id, accept_addr, accept_port, peer, request, header, subheader, source)
 
 			except Exception, e:
 				command, decision = None, None
@@ -284,7 +284,7 @@ class RedirectorManager (object):
 				self.reap(worker.wid)
 
 				if tainted is False:
-					_, command, decision = self.request(client_id, accept_addr, peer, header, subheader, source, tainted=True)
+					_, command, decision = self.request(client_id, accept_addr, accept_port, peer, header, subheader, source, tainted=True)
 
 				else:
 					_, command, decision = Respond.close(client_id)

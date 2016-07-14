@@ -306,7 +306,7 @@ class HTTPClient (object):
 		request = request_l.pop()
 		content = content_l.pop()
 
-		return self.name, self.accept_addr, self.peer, request, '', content
+		return self.name, self.accept_addr, self.accept_port, self.peer, request, '', content
 
 	def readRelated(self, mode, remaining):
 		# pop data from lists to free memory held by the coroutine
