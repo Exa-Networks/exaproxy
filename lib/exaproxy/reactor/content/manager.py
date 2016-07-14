@@ -165,8 +165,13 @@ class ContentManager(object):
 				if downloader is not None:
 					content = ('stream', '')
 					length = -1  # the client can send as much data as it wants
-				else:
+
+				elif command == 'connect':
 					content = self.getLocalContent('400', 'noconnect.html')
+					length = 0
+
+				else:
+					content = ('close', '')
 					length = 0
 
 			elif command == 'redirect':
@@ -310,7 +315,11 @@ class ContentManager(object):
 
 			# check to see if we were unable to connect
 			if res is not True:
-				_,response = self.readLocalContent('400', 'noconnect.html')
+				if downloader.method == 'intercept':
+					response = None
+
+				else:
+					_,response = self.readLocalContent('400', 'noconnect.html')
 
 			# we're no longer interested in the socket connecting since it's connected
 			self.poller.removeWriteSocket('opening_download', downloader.sock)
