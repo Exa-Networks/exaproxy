@@ -86,6 +86,9 @@ class Reactor (object):
 		elif source == 'tls':
 			self.tls.notifyClose(client)
 
+		elif source == 'passthrough':
+			self.passthrough.notifyClose(client)
+
 		elif source == 'web':
 			self.web.notifyClose(client)
 
@@ -141,6 +144,9 @@ class Reactor (object):
 				elif source == 'tls':
 					self.tls.notifyClose(client)
 
+				elif source == 'passthrough':
+					self.passthrough.notifyClose(client)
+
 				elif source == 'web':
 					self.web.notifyClose(client)
 
@@ -171,6 +177,9 @@ class Reactor (object):
 						elif source == 'tls':
 							self.tls.notifyClose(client)
 
+						elif source == 'passthrough':
+							self.passthrough.notifyClose(client)
+
 						if response is not None:
 							self.content.endClientDownload(client)
 
@@ -198,6 +207,9 @@ class Reactor (object):
 
 				elif source == 'tls':
 					self.tls.notifyClose(client)
+
+				elif source == 'passthrough':
+					self.passthrough.notifyClose(client)
 
 				if page_data is not None:
 					# The client disconnected? Close our connection to the remote webserver.
