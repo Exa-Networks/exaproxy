@@ -5,21 +5,21 @@ class ICAPSerializer (object):
 		self.configuration = configuration
 		self.protocol = protocol
 
-	def serialize (self, accept_addr, peer, message, icap_message, http_header, path, icap_host):
+	def serialize (self, accept_addr, accept_port, peer, message, icap_message, http_header, path, icap_host):
 		if icap_message is not None and icap_message.method == 'OPTIONS':
 			res = self.createOptionsRequest(accept_addr, peer, icap_message, path)
 			return res
 
-		return self.createRequest(accept_addr, peer, message, icap_message, http_header, path, icap_host)
+		return self.createRequest(accept_addr, accept_port, peer, message, icap_message, http_header, path, icap_host)
 
-	def createOptionsRequest (self, accept_addr, peer, icap_message, path):
+	def createOptionsRequest (self, accept_addr, accept_port, peer, icap_message, path):
 		return """\
 OPTIONS %s ICAP/1.0
 Pragma: client=%s
 
 """ % (path, peer)
 
-	def createRequest (self, accept_addr, peer, message, icap_message, http_header, path, icap_host):
+	def createRequest (self, accept_addr, accept_port, peer, message, icap_message, http_header, path, icap_host):
 		username = icap_message.headers.get('x-authenticated-user', '').strip() if icap_message else None
 		groups = icap_message.headers.get('x-authenticated-groups', '').strip() if icap_message else None
 		ip_addr = icap_message.headers.get('x-client-ip', '').strip() if icap_message else None

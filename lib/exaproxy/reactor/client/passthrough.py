@@ -83,7 +83,7 @@ class PassthroughClient (object):
 
 					if data and mode == 'begin':
 						data_response, data = [data], ''
-						yield data_response, ['']
+						mode, _ = yield data_response, ['']
 
 					elif data:
 						data_response, data = [data], ''
