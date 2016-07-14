@@ -18,21 +18,22 @@ class StopReactor (Exception):
 class Reactor (object):
 	handlers = {}
 
-	def __init__(self, configuration, web, proxy, icap, tls, decider, content, client, resolver, logger, usage, poller):
-		self.web = web            # Manage listening web sockets
-		self.proxy = proxy        # Manage listening proxy sockets
-		self.icap = icap          # Manage listening icap sockets
-		self.tls = tls            # Manage listening tls sockets
-		self.decider = decider    # Task manager for handling child decider processes
-		self.content = content    # The Content Download manager
-		self.client = client      # Currently open client connections
-		self.resolver = resolver  # The DNS query manager
-		self.poller = poller      # Interface to the poller
-		self.logger = logger      # Log writing interfaces
-		self.usage = usage        # Request logging
-		self.nb_events = 0L       # Number of events received
-		self.nb_loops = 0L        # Number of loop iteration
-		self.events = []          # events so we can report them once in a while
+	def __init__(self, configuration, web, proxy, passthrough, icap, tls, decider, content, client, resolver, logger, usage, poller):
+		self.web = web                 # Manage listening web sockets
+		self.proxy = proxy             # Manage listening proxy sockets
+		self.passthrough = passthrough # Manage listening raw data sockets
+		self.icap = icap               # Manage listening icap sockets
+		self.tls = tls                 # Manage listening tls sockets
+		self.decider = decider         # Task manager for handling child decider processes
+		self.content = content         # The Content Download manager
+		self.client = client           # Currently open client connections
+		self.resolver = resolver       # The DNS query manager
+		self.poller = poller           # Interface to the poller
+		self.logger = logger           # Log writing interfaces
+		self.usage = usage             # Request logging
+		self.nb_events = 0L            # Number of events received
+		self.nb_loops = 0L             # Number of loop iteration
+		self.events = []               # events so we can report them once in a while
 
 		self.log = Logger('supervisor', configuration.log.supervisor)
 
@@ -60,6 +61,12 @@ class Reactor (object):
 		for sock in socks:
 			for s, peer in self.tls.accept(sock):
 				self.client.tlsConnection(s, peer, 'tls')
+
+	@register('read_passthrough')
+	def acceptPassthroughConnections (self, socks):
+		for sock in socks:
+			for s, peer in self.passthrough.accept(sock):
+				self.client.passthroughConnection(s, peer, 'passthrough')
 
 	@register('read_web')
 	def acceptAdminConnections (self, socks):

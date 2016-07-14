@@ -12,6 +12,7 @@ from exaproxy.util.cache import TimeCache
 from .http import HTTPClient
 from .icap import ICAPClient
 from .tls import TLSClient
+from .passthrough import PassthroughClient
 
 class ClientManager (object):
 	def __init__(self, poller, configuration):
@@ -88,6 +89,19 @@ class ClientManager (object):
 		self.byname[name] = sock
 
 		# watch for the opening request
+		self.poller.addReadSocket('opening_client', client.sock)
+
+		#self.log.info('new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
+		return peer
+
+	def passthroughConnection (self, sock, peer, source):
+		name = self.getnextid()
+		client = PassthroughClient(name, sock, peer, self.log, self.passthrough_max_buffer, self.proxied.get(source))
+
+		self.norequest[sock] = client, source
+		self.byname[name] = sock
+
+		# watch for the opening data
 		self.poller.addReadSocket('opening_client', client.sock)
 
 		#self.log.info('new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))

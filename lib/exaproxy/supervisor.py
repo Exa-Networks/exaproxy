@@ -21,6 +21,7 @@ from .reactor.client.manager import ClientManager
 from .reactor.resolver.manager import ResolverManager
 from .network.async import Poller
 from .network.server import Server
+from .network.server import InterceptServer
 from .html.page import Page
 from .monitor import Monitor
 
@@ -80,6 +81,7 @@ class Supervisor (object):
 		self.poller.setupRead('read_web')         # Listening webserver sockets
 		self.poller.setupRead('read_icap')        # Listening icap sockets
 		self.poller.setupRead('read_tls')         # Listening tls sockets
+		self.poller.setupRead('read_passthrough') # Listening raw data sockets
 		self.poller.setupRead('read_redirector')  # Pipes carrying responses from the redirector process
 		self.poller.setupRead('read_resolver')    # Sockets currently listening for DNS responses
 
@@ -104,6 +106,7 @@ class Supervisor (object):
 		self.web = Server('web server',self.poller,'read_web', configuration.web.connections)
 		self.icap = Server('icap server',self.poller,'read_icap', configuration.icap.connections)
 		self.tls = Server('tls server', self.poller, 'read_tls', configuration.tls.connections)
+		self.passthrough = InterceptServer('passthrough server', self.poller, 'read_passthrough', configuration.passthrough.connections)
 
 		self._shutdown = True if self.daemon.filemax == 0 else False  # stop the program
 		self._softstop = False  # stop once all current connection have been dealt with
@@ -138,7 +141,7 @@ class Supervisor (object):
 		# regularly interrupt the reactor for maintenance
 		self.interrupt_scheduler = alarm_thread(self.poller, self.alarm_time)
 
-		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.icap, self.tls, self.redirector, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
+		self.reactor = Reactor(self.configuration, self.web, self.proxy, self.passthrough, self.icap, self.tls, self.redirector, self.content, self.client, self.resolver, self.log_writer, self.usage_writer, self.poller)
 
 		self.interfaces()
 
@@ -345,6 +348,7 @@ class Supervisor (object):
 				expired = self.reactor.client.expire()
 
 				if expired:
+					print 'expire connections', expired
 					self.proxy.notifyClose(None, count=expired)
 
 				# report if we saw too many connections
@@ -413,8 +417,9 @@ class Supervisor (object):
 		tcp6 = self.configuration.tcp6
 		icap = self.configuration.icap
 		tls  = self.configuration.tls
+		passthrough = self.configuration.passthrough
 
-		if not has_ipv6 and (tcp6.listen or tcp6.out or icap.ipv6):
+		if not has_ipv6 and (tcp6.listen or tcp6.out or icap.ipv6 or passthrough.ipv6):
 			tcp6.listen = False
 			tcp6.out = False
 			self.log.critical('your python interpreter does not have ipv6 support !')
@@ -423,7 +428,7 @@ class Supervisor (object):
 		if not out:
 			self.log.critical('we need to use IPv4 or IPv6 for outgoing connection - both can not be disabled !')
 
-		listen = bool(tcp4.listen or tcp6.listen) or bool(icap.host or icap.ipv6)
+		listen = bool(tcp4.listen or tcp6.listen) or bool(icap.host or icap.ipv6) or bool(passthrough.host or passthrough.ipv6)
 		if not listen:
 			self.log.critical('Not listening on either IPv4 or IPv6.')
 
@@ -464,6 +469,12 @@ class Supervisor (object):
 			ok = bool(s)
 			if not ok:
 				self.log.critical('TLS server, unable to listen on %s:%s' % (tls.host, tls.port))
+
+		if ok and passthrough.enable:
+			s = self.passthrough.listen(passthrough.host, passthrough.port, tcp4.timeout, tcp4.backlog)
+			ok = bool(s)
+			if not ok:
+				self.log.critical('Passthrough server, unable to listen on %s:%s' % (passthrough.host, passthrough.port))
 
 		if ok and self.configuration.web.enable:
 			s = self.web.listen(self.configuration.web.host,self.configuration.web.port, 10, 10)

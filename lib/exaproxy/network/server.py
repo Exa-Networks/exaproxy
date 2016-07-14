@@ -10,6 +10,7 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 # http://itamarst.org/writings/pycon05/fast.html
 
 from .functions import listen
+from .functions import listen_intercept
 import socket
 
 from exaproxy.util.log.logger import Logger
@@ -113,3 +114,7 @@ class Server(object):
 
 		self.socks = {}
 		self.poller.clearRead(self.read_name)
+
+
+class InterceptServer (Server):
+	_listen = staticmethod(listen_intercept)
