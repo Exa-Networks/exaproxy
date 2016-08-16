@@ -30,14 +30,17 @@ Pragma: client=%s
 REQMOD %s ICAP/1.0
 Host: %s
 Pragma: transport=%s
+Pragma: proxy=test
+Pragma: scheme=http
 Pragma: accept=%s
+Pragma: accept-port=%s
 Pragma: client=%s
 Pragma: host=%s
 Pragma: path=%s
 Pragma: method=%s""" % (
 
 			path, icap_host, message.request.protocol,
-			accept_addr, peer, message.host, message.request.path, message.request.method,
+			accept_addr, accept_port, peer, message.host, message.request.path, message.request.method,
 			)
 
 		if ip_addr:

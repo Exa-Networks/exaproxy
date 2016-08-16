@@ -12,14 +12,17 @@ class TLSSerializer (object):
 REQMOD %s ICAP/1.0
 Host: %s
 Pragma: transport=%s
+Pragma: proxy=test
+Pragma: scheme=http
 Pragma: accept=%s
+Pragma: accept-port=%s
 Pragma: client=%s
 Pragma: host=%s
 Pragma: path=%s
 Pragma: method=%s""" % (
 
 			path, icap_host, 'tls',
-			accept_addr, peer, message.hostname if message else '', '', 'TLS',
+			accept_addr, accept_port, peer, message.hostname if message else '', '', 'TLS',
 			)
 
 		return icap_request + """
