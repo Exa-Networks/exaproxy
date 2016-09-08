@@ -66,7 +66,7 @@ class Logger:
 class UsageLogger (Logger):
 	mailbox = usage_store
 
-	def logRequest (self, client_id, accept_ip, client_ip, command, url, status, destination):
+	def logRequest (self, client_id, client_port, accept_ip, client_ip, command, url, status, destination):
 		if self.active:
 			now = time.time()
 			line = '%s %.02f %s %s %s %s %s %s/%s' % (
