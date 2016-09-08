@@ -406,8 +406,8 @@ class HTTPClient (object):
 
 		elif command == 'close':
 			self.writer.send(None)  # no local file
-			self.writer.send(data)
-			res = self.writer.send(None)  # close the connection once the buffer is empty
+			res = self.writer.send(data)
+			self.writer.send(None)  # close the connection once the buffer is empty
 
 		elif command == 'file':
 			header, filename = data
