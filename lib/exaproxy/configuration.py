@@ -149,9 +149,11 @@ class value (object):
 
 	@staticmethod
 	def exe (path):
-		first = value.conf(path)
-		if not os.access(first, os.X_OK): raise TypeError('%s is not an executable' % first)
-		return first
+		argv = path.split(' ',1)
+		program = value.conf(argv.pop(0))
+		if not os.access(program, os.X_OK):
+			raise TypeError('%s is not an executable' % program)
+		return program if not argv else '%s %s' % (program,argv[0])
 
 	@staticmethod
 	def services (string):

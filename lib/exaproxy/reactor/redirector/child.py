@@ -22,7 +22,7 @@ class ChildFactory:
 
 	def createProcess (self, program, universal=False):
 		try:
-			process = subprocess.Popen([program],
+			process = subprocess.Popen(program.split(' '),
 				stdin=subprocess.PIPE,
 				stdout=subprocess.PIPE,
 				stderr=subprocess.PIPE,
