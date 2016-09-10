@@ -4,74 +4,85 @@ import socket
 import sys
 
 
-DEBUG = False
-
-
 def log(prefix, string):
-	if DEBUG:
+	if False:
 		with open('/tmp/log', 'a+') as fd:
 			fd.write('%-6s %s\n' % (prefix,string.replace('\r','\\r').replace('\n','\\n')))
 
 
 def main (host, port):
-	try:
-		data = ''
+	sock = None
+	while True:
+		try:
+			data = ''
 
-		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		sock.connect((host,port))
-
-		while True:
-			looping = 2
-			while looping:
-				line = sys.stdin.readline()
-				log('STDIN',line)
-				if not line.startswith('Pragma:'):
-					log('SEND',line.strip()+'\r\n')
-					sock.send(line.strip()+'\r\n')
-				if not line.strip():
-					looping -= 1
+			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			sock.connect((host,port))
 
 			while True:
-				recv = sock.recv(1024)
-				log('RECV',recv)
-				data += recv
-				if '\r\n\r\n' in data:
-					break
+				looping = 2
+				while looping:
+					line = sys.stdin.readline()
+					log('STDIN',line)
+					if not line.startswith('Pragma:'):
+						log('SEND',line.strip()+'\r\n')
+						sock.send(line.strip()+'\r\n')
+					if not line.strip():
+						looping -= 1
 
-			response,data = data.split('\r\n\r\n',1)
+				while True:
+					recv = sock.recv(1024)
+					log('RECV',recv)
+					data += recv
+					if '\r\n\r\n' in data:
+						break
 
-			sys.stdout.write(response + '\r\n\r\n')
-			sys.stdout.flush()
-			log('STDOUT',response + '\r\n\r\n')
+				response,data = data.split('\r\n\r\n',1)
 
-			# ExaProxy always put the encapsulation last, this is not a RFC behaviour
-			encapsulation = response.split('\r\n')[-1]
+				sys.stdout.write(response + '\r\n\r\n')
+				sys.stdout.flush()
+				log('STDOUT',response + '\r\n\r\n')
 
-			# Encapsulated: req-hdr=0, null-body=135
-			hdr_body = sum(int(_.split('=')[1].strip()) for _ in encapsulation.split(':')[-1].split(','))
+				# ExaProxy always put the encapsulation last, this is not a RFC behaviour
+				encapsulation = response.split('\r\n')[-1]
 
-			if not hdr_body:
-				continue
+				# Encapsulated: req-hdr=0, null-body=135
+				hdr_body = sum(int(_.split('=')[1].strip()) for _ in encapsulation.split(':')[-1].split(','))
+				# this is wrong in theory .. in practice it works
 
-			while '\r\n\r\n' not in data:
-				recv = sock.recv(1024)
-				log('RECV',recv)
-				data += recv
+				if hdr_body:
+					size = len(data)
+					if size < hdr_body:
+						left = hdr_body-size
+						while left:
+							extra = sock.recv(left)
+							left -= len(extra)
+							data += extra
+						response, data = data, ''
+					else:
+						response,data = data[:hdr_body],data[hdr_body:]
 
-			response,data = data.split('\r\n\r\n',1)
+				sys.stdout.write(response)
+				sys.stdout.flush()
+				log('STDOUT',response)
 
-			sys.stdout.write(response + '\r\n\r\n')
-			sys.stdout.flush()
-			log('STDOUT',response + '\r\n\r\n')
+		except KeyboardInterrupt:
+			sys.exit(0)
 
-	except KeyboardInterrupt:
-		sys.exit(0)
+		except (IOError, socket.error):
+			if sock:
+				try:
+					sock.close()
+				except Exception:
+					pass
+				finally:
+					sock = None
 
-	except Exception, e:
-		sock.close()
-		sys.stderr.write('exaproxy surfprotect connector failed')
-		sys.stderr.write(str(e))
-		sys.exit(1)
+		except Exception, e:
+			sock.close()
+			sys.stderr.write('exaproxy surfprotect connector failed')
+			sys.stderr.write(str(e))
+			sys.exit(1)
 
 
 if __name__ == '__main__':
