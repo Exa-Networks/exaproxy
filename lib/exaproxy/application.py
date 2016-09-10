@@ -153,8 +153,17 @@ def main ():
 			'proxied'         : (value.boolean,string.lower,'false', 'request is encapsulated with haproxy proxy protocol'),
 			'header-size'     : (value.integer,string.nop,'65536',   'maximum size in bytes for HTTP headers (0 : unlimited)'),
 		},
+		'passthrough' : {
+			'enable'          : (value.boolean,string.lower,'false',             'enable the passthrough server'),
+			'host'            : (value.unquote,string.quote,'127.0.0.1',        'the address the passthrough server listens on'),
+			'ipv6'            : (value.unquote,string.quote,'::',               'the ipv6 address the passthrough server listens on'),
+			'port'            : (value.integer,string.nop,'8000',               'port the passthrough server listens on'),
+			'idle-connect'    : (value.integer,string.nop,'300',     'time before we abandon new inactive passthrough client connections (0: unlimited)'),
+			'connections'     : (value.integer,string.nop,'32768',   'the maximum number of passthrough connections'),
+			'proxied'         : (value.boolean,string.lower,'false', 'request is encapsulated with haproxy proxy protocol'),
+		},
 		'icap' : {
-			'enable'          : (value.boolean,string.lower,'true',             'enable the icap server'),
+			'enable'          : (value.boolean,string.lower,'false',             'enable the icap server'),
 			'host'            : (value.unquote,string.quote,'127.0.0.1',        'the address the icap server listens on'),
 			'ipv6'            : (value.unquote,string.quote,'::',               'the ipv6 address the icap server listens on'),
 			'port'            : (value.integer,string.nop,'1344',               'port the icap server listens on'),
@@ -164,7 +173,7 @@ def main ():
 			'header-size'     : (value.integer,string.nop,'65536',   'maximum size in bytes for ICAP headers (0 : unlimited)'),
 		},
 		'tls' : {
-			'enable'          : (value.boolean,string.lower,'true',             'enable the TLS server'),
+			'enable'          : (value.boolean,string.lower,'false',             'enable the TLS server'),
 			'host'            : (value.unquote,string.quote,'127.0.0.1',        'the address the TLS server listens on'),
 			'ipv6'            : (value.unquote,string.quote,'::',               'the ipv6 address the TLS server listens on'),
 			'port'            : (value.integer,string.nop,'443',               'port the TLS server listens on'),

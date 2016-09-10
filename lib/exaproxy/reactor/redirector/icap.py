@@ -8,6 +8,7 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 
 from .serialize.icap import ICAPSerializer
 from .serialize.tls import TLSSerializer
+from .serialize.passthrough import PassthroughSerializer
 from .response import ResponseEncoder as Respond
 
 from exaproxy.icap.parser import ICAPParser
@@ -21,12 +22,14 @@ class ICAPRedirector (Redirector):
 	TLSParser = TLSParser
 	ICAPSerializer = ICAPSerializer
 	TLSSerializer = TLSSerializer
+	PassthroughSerializer = PassthroughSerializer
 
 	def __init__ (self, configuration, name, program, protocol):
 		self.icap_parser = self.ICAPParser(configuration)
 		self.tls_parser = self.TLSParser(configuration)
 		self.icap_serializer = self.ICAPSerializer(configuration, protocol)
 		self.tls_serializer = self.TLSSerializer(configuration, protocol)
+		self.passthrough_serializer = self.PassthroughSerializer(configuration, protocol)
 
 		self.protocol = protocol
 		self.icap = protocol[len('icap://'):].split('/')[0]
@@ -106,14 +109,17 @@ class ICAPRedirector (Redirector):
 
 		return self.icap_parser.continueResponse(header, content_s)
 
-	def createChildRequest (self, accept_addr, peer, message, http_header):
-		return self.icap_serializer.serialize(accept_addr, peer, message, None, http_header, self.protocol, self.icap)
+	def createChildRequest (self, accept_addr, accept_port, peer, message, http_header):
+		return self.icap_serializer.serialize(accept_addr, accept_port, peer, message, None, http_header, self.protocol, self.icap)
 
-	def createICAPRequest (self, accept_addr, peer, message, icap_message, http_header):
-		return self.icap_serializer.serialize(accept_addr, peer, message, icap_message, http_header, self.protocol, self.icap)
+	def createICAPRequest (self, accept_addr, accept_port, peer, message, icap_message, http_header):
+		return self.icap_serializer.serialize(accept_addr, accept_port, peer, message, icap_message, http_header, self.protocol, self.icap)
 
-	def createTLSRequest (self, accept_addr, peer, message, tls_header):
-		return self.tls_serializer.serialize(accept_addr, peer, message, tls_header, self.protocol, self.icap)
+	def createTLSRequest (self, accept_addr, accept_port, peer, message, tls_header):
+		return self.tls_serializer.serialize(accept_addr, accept_port, peer, message, tls_header, self.protocol, self.icap)
+
+	def createPassthroughRequest (self, accept_addr, accept_port, peer):
+		return self.passthrough_serializer.serialize(accept_addr, accept_port, peer, self.protocol, self.icap)
 
 	def decideICAP (self, client_id, icap_response, message):
 		if message.complete:
@@ -135,13 +141,20 @@ class ICAPRedirector (Redirector):
 		# XXX: respond with a TLS error
 		return Respond.close(client_id)
 
-	def decideHTTP (self, client_id, icap_response, message, accept_addr, peer, source):
+	def decidePassthrough (self, client_id, icap_response, message, header, peer):
+		if icap_response.is_intercept:
+			intercept_request = self.http_parser.parseRequest(peer, icap_response.intercept_header)
+			return Respond.intercept(client_id, intercept_request.headerhost, intercept_request.port, header)
+
+		return Response.close(client_id)
+
+	def decideHTTP (self, client_id, icap_response, message, accept_addr, accept_port, peer, source):
 		# 204 (not modified)
 		if icap_response.is_permit:
 			classification, data, comment = 'permit', None, None
 
 		elif icap_response.is_modify:
-			message = self.parseHTTP(client_id, accept_addr, peer, icap_response.http_response)
+			message = self.parseHTTP(client_id, accept_addr, accept_port, peer, icap_response.http_response)
 			if message.validated:
 				classification, data, comment = 'permit', None, None
 
@@ -185,35 +198,44 @@ class ICAPRedirector (Redirector):
 		return decision
 
 
-	def doICAP (self, client_id, accept_addr, peer, icap_header, http_header):
+	def doICAP (self, client_id, accept_addr, accept_port, peer, icap_header, http_header):
 		icap_request = self.icap_parser.parseRequest(icap_header, http_header)
 		http_request = self.http_parser.parseRequest(peer, http_header) if http_header else None
 
-		request_string = self.createICAPRequest(accept_addr, peer, http_request, icap_request, http_header) if icap_request else None
+		request_string = self.createICAPRequest(accept_addr, accept_port, peer, http_request, icap_request, http_header) if icap_request else None
 		status = self.writeChild(request_string) if request_string else None
 
 		return Respond.defer(client_id, icap_request) if status else None
 
-	def doTLS (self, client_id, accept_addr, peer, tls_header, source):
+	def doPassthrough (self, client_id, accept_addr, accept_port, peer, header, source):
+		request_string = self.createPassthroughRequest(accept_addr, accept_port, peer)
+		status = self.writeChild(request_string) if request_string else None
+
+		return Respond.defer(client_id, header) if status else None
+
+	def doTLS (self, client_id, accept_addr, accept_port, peer, tls_header, source):
 		tls_hello = self.tls_parser.parseClientHello(tls_header)
-		request_string = self.createTLSRequest(accept_addr, peer, tls_hello, tls_header)
+		request_string = self.createTLSRequest(accept_addr, accept_port, peer, tls_hello, tls_header)
 		status = self.writeChild(request_string) if request_string else None
 
 		return Respond.defer(client_id, tls_hello) if status else None
 
-	def decide (self, client_id, accept_addr, peer, header, subheader, source):
+	def decide (self, client_id, accept_addr, accept_port, peer, header, subheader, source):
 		if self.checkChild():
 			if source == 'icap':
-				response = self.doICAP(client_id, accept_addr, peer, header, subheader)
+				response = self.doICAP(client_id, accept_addr, accept_port, peer, header, subheader)
 
 			elif source == 'proxy':
-				response = self.doHTTP(client_id, accept_addr, peer, header, source)
+				response = self.doHTTP(client_id, accept_addr, accept_port, peer, header, source)
 
 			elif source == 'web':
-				response = self.doMonitor(client_id, accept_addr, peer, header, source)
+				response = self.doMonitor(client_id, accept_addr, accept_port, peer, header, source)
 
 			elif source == 'tls':
-				response = self.doTLS(client_id, accept_addr, peer, header, source)
+				response = self.doTLS(client_id, accept_addr, accept_port, peer, header, source)
+
+			elif source == 'passthrough':
+				response = self.doPassthrough(client_id, accept_addr, accept_port, peer, header, source)
 
 			else:
 				response = Respond.hangup(client_id)
@@ -223,7 +245,7 @@ class ICAPRedirector (Redirector):
 
 		return response
 
-	def progress (self, client_id, accept_addr, peer, message, header, sub_header, source):
+	def progress (self, client_id, accept_addr, accept_port, peer, message, header, sub_header, source):
 		if self.checkChild():
 			icap_response = self.readChildResponse()
 
@@ -235,10 +257,13 @@ class ICAPRedirector (Redirector):
 				return self.decideICAP(client_id, icap_response.response_string, message)
 
 			if source == 'proxy':
-				return self.decideHTTP(client_id, icap_response, message, accept_addr, peer, source)
+				return self.decideHTTP(client_id, icap_response, message, accept_addr, accept_port, peer, source)
 
 			if source == 'tls':
 				return self.decideTLS(client_id, icap_response, message, header, peer)
+
+			if source == 'passthrough':
+				return self.decidePassthrough(client_id, icap_response, message, header, peer)
 
 			return Respond.hangup(client_id)
 

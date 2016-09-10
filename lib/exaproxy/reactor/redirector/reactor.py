@@ -53,8 +53,8 @@ class RedirectorReactor (object):
 				if message is None:
 					return False
 
-				client_id, accept_addr, peer, header, subheader, source = message
-				_, command, decision = self.decider.request(client_id, accept_addr, peer, header, subheader, source)
+				client_id, accept_addr, accept_port, peer, header, subheader, source = message
+				_, command, decision = self.decider.request(client_id, accept_addr, accept_port, peer, header, subheader, source)
 
 				if command is not None:
 					self.querier.sendResponse(client_id, command, decision)

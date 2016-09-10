@@ -12,15 +12,10 @@ import errno
 from exaproxy.network.functions import isipv4
 from exaproxy.network.errno_list import errno_block
 
-from exaproxy.tls.decode import get_tls_hello_size
-from exaproxy.tls.header import TLS_HEADER_LEN
-
 from exaproxy.util.proxy import ProxyProtocol
 
 
-class TLSClient (object):
-	eor = ['\r\n\r\n', '\n\n']
-	eol = ['\r\n', '\n']
+class PassthroughClient (object):
 	proxy_protocol = ProxyProtocol()
 
 	__slots__ = ['name', 'ipv4', 'sock', 'accept_addr', 'accept_port', 'peer', 'reader', 'writer', 'w_buffer', 'log']
@@ -42,21 +37,8 @@ class TLSClient (object):
 		# start the _read coroutine
 		self.reader.next()
 
-	def checkRequest (self, r_buffer, max_length, size=None):
-		if size == 0 and len(r_buffer) < TLS_HEADER_LEN:
-			return '', r_buffer, None
-
-		if size == 0:
-			size = get_tls_hello_size(r_buffer)
-
-		if size <= 0 or size > max_length:
-			return None, None, None
-
-		if len(r_buffer) >= size:
-			return r_buffer[:size], r_buffer[size:], size
-
-		return '', r_buffer, size
-
+	def getAcceptAddress (self):
+		return self.accept_addr, self.accept_port
 
 	def _read (self, sock, max_buffer, read_size=64*1024, proxied=False):
 		"""Coroutine managing data read from the client"""
@@ -70,13 +52,11 @@ class TLSClient (object):
 		size = 0
 		masquerade = None
 
-		# mode can be one of : request, chunk, extension, relay
+		# mode can be one of : proxy, passthrough
 		# proxy: we are reading an opening proxy protocol header
-		# tls : we are reading the header
 		# passthrough : read as much as can to be relayed
 
-		mode = 'proxy' if proxied else 'tls'
-		tls_header = ''
+		mode = 'proxy' if proxied else 'passthrough'
 		data = ''
 
 		while True:
@@ -99,26 +79,12 @@ class TLSClient (object):
 
 						self.setPeer(masquerade)
 
-					# check for a new tls header
-					if mode == 'tls':
-						tls_header, r_buffer, size = self.checkRequest(r_buffer, max_buffer, size)
-						if tls_header is None:
-							break
-
-					# all modes that are not directly related to reading a new header
-					if mode != 'tls':
+					if mode == 'passthrough':
 						data, r_buffer, mode = self.process(r_buffer, mode, max_buffer)
 						if data is None:
 							break
 
-					# return header or data stream
-					if mode == 'tls' and tls_header:
-						tls_response, tls_header = [tls_header], ''
-						size = 0
-
-						mode, _ = yield tls_response, ['']
-
-					elif data:
+					if data:
 						data_response, data = [data], ''
 						yield [''], data_response
 
@@ -145,7 +111,7 @@ class TLSClient (object):
 		for eol in self.eol:
 			if eol in r_buffer:
 				client_ip, r_buffer = self.proxy_protocol.parse(r_buffer)
-				mode = 'tls'
+				mode = 'passthrough'
 				break
 
 			else:
@@ -170,7 +136,7 @@ class TLSClient (object):
 
 	def readData (self):
 		# pop data from lists to free memory held by the coroutine
-		request_l, content_l = self.reader.send(('new-request',0))
+		request_l, content_l = self.reader.send(('passthrough',0))
 		request = request_l.pop()
 		content = content_l.pop()
 
@@ -178,7 +144,7 @@ class TLSClient (object):
 
 	def readRelated (self, mode, remaining):
 		# pop data from lists to free memory held by the coroutine
-		mode = mode or 'new-request'
+		mode = 'passthrough'
 		request_l, content_l = self.reader.send((mode,remaining))
 		request = request_l.pop()
 		content = content_l.pop()

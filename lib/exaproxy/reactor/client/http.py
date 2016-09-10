@@ -306,7 +306,7 @@ class HTTPClient (object):
 		request = request_l.pop()
 		content = content_l.pop()
 
-		return self.name, self.accept_addr, self.peer, request, '', content
+		return self.name, self.accept_addr, self.accept_port, self.peer, request, '', content
 
 	def readRelated(self, mode, remaining):
 		# pop data from lists to free memory held by the coroutine
@@ -406,8 +406,8 @@ class HTTPClient (object):
 
 		elif command == 'close':
 			self.writer.send(None)  # no local file
-			self.writer.send(data)
-			res = self.writer.send(None)  # close the connection once the buffer is empty
+			res = self.writer.send(data)
+			self.writer.send(None)  # close the connection once the buffer is empty
 
 		elif command == 'file':
 			header, filename = data

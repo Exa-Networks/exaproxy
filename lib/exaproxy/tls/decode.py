@@ -86,6 +86,9 @@ def parse_hello (data):
 			# Received SSL 3.0 handshake without extensions
 			return None
 
+		if not data:
+			return None
+
 		# Extensions
 		length = short(data[:2])
 		data = data[2:]

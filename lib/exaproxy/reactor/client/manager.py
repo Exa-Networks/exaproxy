@@ -12,6 +12,7 @@ from exaproxy.util.cache import TimeCache
 from .http import HTTPClient
 from .icap import ICAPClient
 from .tls import TLSClient
+from .passthrough import PassthroughClient
 
 class ClientManager (object):
 	def __init__(self, poller, configuration):
@@ -28,6 +29,7 @@ class ClientManager (object):
 		self.http_max_buffer = configuration.http.header_size
 		self.icap_max_buffer = configuration.icap.header_size
 		self.tls_max_buffer = configuration.tls.header_size
+		self.passthrough_max_buffer = 0
 		self.proxied = {
 			'proxy' : configuration.http.proxied,
 			'icap'  : configuration.icap.proxied,
@@ -93,13 +95,28 @@ class ClientManager (object):
 		#self.log.info('new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
 		return peer
 
+	def passthroughConnection (self, sock, peer, source):
+		name = self.getnextid()
+		client = PassthroughClient(name, sock, peer, self.log, self.passthrough_max_buffer, self.proxied.get(source))
+
+		self.bysock[sock] = client, source
+		self.byname[name] = sock
+
+		# watch for the opening data
+		self.poller.addReadSocket('read_client', client.sock)
+
+		accept_addr, accept_port = client.getAcceptAddress()
+
+		#self.log.info('new id %s (socket %s) in clients : %s' % (name, sock, sock in self.bysock))
+		return name, accept_addr, accept_port
+
 	def readRequest (self, sock):
 		"""Read only the initial HTTP headers sent by the client"""
 
 		client, source = self.norequest.get(sock, (None, None))
 
 		if client:
-			name, accept_addr, peer, request, subrequest, content = client.readData()
+			name, accept_addr, accept_port, peer, request, subrequest, content = client.readData()
 			if request:
 				self.total_requested += 1
 
@@ -120,15 +137,15 @@ class ClientManager (object):
 				self.cleanup(sock, client.name)
 		else:
 			self.log.error('trying to read headers from a client that does not exist %s' % sock)
-			name, accept_addr, peer, request, subrequest, content, source = None, None, None, None, None, None, None
+			name, accept_addr, accept_port, peer, request, subrequest, content, source = None, None, None, None, None, None, None, None
 
-		return name, accept_addr, peer, request, subrequest, content, source
+		return name, accept_addr, accept_port, peer, request, subrequest, content, source
 
 
 	def readData (self, sock):
 		client, source = self.bysock.get(sock, (None, None))
 		if client:
-			name, accept_addr, peer, request, subrequest, content = client.readData()
+			name, accept_addr, accept_port, peer, request, subrequest, content = client.readData()
 			if request:
 				self.total_requested += 1
 				# Parsing of the new request will be handled asynchronously. Ensure that
@@ -142,10 +159,10 @@ class ClientManager (object):
 				self.cleanup(sock, client.name)
 		else:
 			self.log.error('trying to read from a client that does not exist %s' % sock)
-			name, accept_addr, peer, request, subrequest, content = None, None, None, None, None, None
+			name, accept_addr, accept_port, peer, request, subrequest, content = None, None, None, None, None, None, None
 
 
-		return name, accept_addr, peer, request, subrequest, content, source
+		return name, accept_addr, accept_port, peer, request, subrequest, content, source
 
 	def sendData (self, sock, data):
 		client, source = self.bysock.get(sock, (None, None))

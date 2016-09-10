@@ -309,7 +309,7 @@ class ICAPClient (object):
 		icap_header = icap_header_l.pop()
 		http_header = http_header_l.pop()
 		content = content_l.pop()
-		return self.name, self.accept_addr, self.peer, icap_header, http_header, content
+		return self.name, self.accept_addr, self.accept_port, self.peer, icap_header, http_header, content
 
 	def readRelated(self, mode, remaining):
 		# pop data from lists to free memory held by the coroutine

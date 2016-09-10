@@ -162,8 +162,9 @@ class ICAPParser (object):
 
 		if request_string.startswith('CONNECT'):
 			intercept_string, request_string = self.splitResponse(request_string)
-			if not request_string:
-				intercept_string, request_string = None, intercept_string
+
+			if headers.get('x-intercept', '') != 'active' and not request_string:
+				intercept_string, request_string = None, intercept_string + '\r\n\r\n'
 
 		else:
 			intercept_string = None

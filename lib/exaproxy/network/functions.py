@@ -13,6 +13,8 @@ from exaproxy.util.log.logger import Logger
 from exaproxy.network.errno_list import errno_block
 from exaproxy.configuration import load
 
+IP_TRANSPARENT = 19
+
 configuration = load()
 log = Logger('server', configuration.log.server)
 
@@ -43,6 +45,7 @@ def listen (ip,port,timeout=None,backlog=0):
 			except (AttributeError, socket.error):
 				pass
 			s.bind((ip,port,0,0))
+
 		elif isipv4(ip):
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 			try:
@@ -51,10 +54,55 @@ def listen (ip,port,timeout=None,backlog=0):
 			except (AttributeError, socket.error):
 				pass
 			s.bind((ip,port))
+
 		else:
 			return None
+
 		if timeout:
 			s.settimeout(timeout)
+
+		##s.setblocking(0)
+		s.listen(backlog)
+		return s
+	except socket.error, e:
+		if e.args[0] == errno.EADDRINUSE:
+			log.debug('could not listen, port already in use %s:%d' % (ip,port))
+		elif e.args[0] == errno.EADDRNOTAVAIL:
+			log.debug('could not listen, invalid address %s:%d' % (ip,port))
+		else:
+			log.debug('could not listen on %s:%d - %s' % (ip,port,str(e)))
+		return None
+
+def listen_intercept (ip,port,timeout=None,backlog=0):
+	try:
+		if isipv6(ip):
+			s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+			try:
+				s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+				s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+				s.setsockopt(socket.SOL_IP, IP_TRANSPARENT, 1)
+			except (AttributeError, socket.error):
+				pass
+
+			s.bind((ip,port,0,0))
+
+		elif isipv4(ip):
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+			try:
+				s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+				s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+				s.setsockopt(socket.SOL_IP, IP_TRANSPARENT, 1)
+			except (AttributeError, socket.error):
+				pass
+
+			s.bind((ip,port))
+
+		else:
+			return None
+
+		if timeout:
+			s.settimeout(timeout)
+
 		##s.setblocking(0)
 		s.listen(backlog)
 		return s

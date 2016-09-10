@@ -18,8 +18,8 @@ class ProxyToRedirectorMessageBox:
 	def close (self):
 		return self.box.close()
 
-	def sendRequest (self, client_id, accept_addr, peer, request, subrequest, source):
-		message = client_id, accept_addr, peer, request, subrequest, source
+	def sendRequest (self, client_id, accept_addr, accept_port, peer, request, subrequest, source):
+		message = client_id, accept_addr, accept_port, peer, request, subrequest, source
 		return self.box.put(message)
 
 	def getDecision (self):

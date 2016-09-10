@@ -18,21 +18,22 @@ class StopReactor (Exception):
 class Reactor (object):
 	handlers = {}
 
-	def __init__(self, configuration, web, proxy, icap, tls, decider, content, client, resolver, logger, usage, poller):
-		self.web = web            # Manage listening web sockets
-		self.proxy = proxy        # Manage listening proxy sockets
-		self.icap = icap          # Manage listening icap sockets
-		self.tls = tls            # Manage listening tls sockets
-		self.decider = decider    # Task manager for handling child decider processes
-		self.content = content    # The Content Download manager
-		self.client = client      # Currently open client connections
-		self.resolver = resolver  # The DNS query manager
-		self.poller = poller      # Interface to the poller
-		self.logger = logger      # Log writing interfaces
-		self.usage = usage        # Request logging
-		self.nb_events = 0L       # Number of events received
-		self.nb_loops = 0L        # Number of loop iteration
-		self.events = []          # events so we can report them once in a while
+	def __init__(self, configuration, web, proxy, passthrough, icap, tls, decider, content, client, resolver, logger, usage, poller):
+		self.web = web                 # Manage listening web sockets
+		self.proxy = proxy             # Manage listening proxy sockets
+		self.passthrough = passthrough # Manage listening raw data sockets
+		self.icap = icap               # Manage listening icap sockets
+		self.tls = tls                 # Manage listening tls sockets
+		self.decider = decider         # Task manager for handling child decider processes
+		self.content = content         # The Content Download manager
+		self.client = client           # Currently open client connections
+		self.resolver = resolver       # The DNS query manager
+		self.poller = poller           # Interface to the poller
+		self.logger = logger           # Log writing interfaces
+		self.usage = usage             # Request logging
+		self.nb_events = 0L            # Number of events received
+		self.nb_loops = 0L             # Number of loop iteration
+		self.events = []               # events so we can report them once in a while
 
 		self.log = Logger('supervisor', configuration.log.supervisor)
 
@@ -61,6 +62,14 @@ class Reactor (object):
 			for s, peer in self.tls.accept(sock):
 				self.client.tlsConnection(s, peer, 'tls')
 
+	@register('read_passthrough')
+	def acceptPassthroughConnections (self, socks):
+		for sock in socks:
+			for s, peer in self.passthrough.accept(sock):
+				client_id, accept_addr, accept_port = self.client.passthroughConnection(s, peer, 'passthrough')
+
+				self.decider.sendRequest(client_id, accept_addr, accept_port, peer, '', '', 'passthrough')
+
 	@register('read_web')
 	def acceptAdminConnections (self, socks):
 		for sock in socks:
@@ -77,17 +86,20 @@ class Reactor (object):
 		elif source == 'tls':
 			self.tls.notifyClose(client)
 
+		elif source == 'passthrough':
+			self.passthrough.notifyClose(client)
+
 		elif source == 'web':
 			self.web.notifyClose(client)
 
 	@register('opening_client')
 	def incomingRequest (self, clients):
 		for client in clients:
-			client_id, accept_addr, peer, request, subrequest, data, source = self.client.readRequest(client)
+			client_id, accept_addr, accept_port, peer, request, subrequest, data, source = self.client.readRequest(client)
 
 			if request:
 				# we have a new request - decide what to do with it
-				self.decider.sendRequest(client_id, accept_addr, peer, request, subrequest, source)
+				self.decider.sendRequest(client_id, accept_addr, accept_port, peer, request, subrequest, source)
 
 			elif request is None and client_id is not None:
 				self.closeClient(client, source)
@@ -95,11 +107,11 @@ class Reactor (object):
 	@register('read_client')
 	def incomingClientData (self, clients):
 		for client in clients:
-			client_id, accept_addr, peer, request, subrequest, data, source = self.client.readData(client)
+			client_id, accept_addr, accept_port, peer, request, subrequest, data, source = self.client.readData(client)
 
 			if request:
 				# we have a new request - decide what to do with it
-				self.decider.sendRequest(client_id, accept_addr, peer, request, subrequest, source)
+				self.decider.sendRequest(client_id, accept_addr, accept_port, peer, request, subrequest, source)
 
 			if data:
 				# we read something from the client so pass it on to the remote server
@@ -126,6 +138,15 @@ class Reactor (object):
 				if source == 'proxy':
 					self.proxy.notifyClose(client)
 
+				elif source == 'icap':
+					self.icap.notifyClose(client)
+
+				elif source == 'tls':
+					self.tls.notifyClose(client)
+
+				elif source == 'passthrough':
+					self.passthrough.notifyClose(client)
+
 				elif source == 'web':
 					self.web.notifyClose(client)
 
@@ -150,7 +171,14 @@ class Reactor (object):
 					status, buffer_change, name, source = self.client.sendData(client, response)
 					if status is None and client is not None:
 						# We just closed our connection to the client and need to count the disconnect.
-						self.proxy.notifyClose(client)
+						if source == 'proxy':
+							self.proxy.notifyClose(client)
+
+						elif source == 'tls':
+							self.tls.notifyClose(client)
+
+						elif source == 'passthrough':
+							self.passthrough.notifyClose(client)
 
 						if response is not None:
 							self.content.endClientDownload(client)
@@ -174,7 +202,14 @@ class Reactor (object):
 			# check to see if the client went away
 			if status is None and client is not None:
 				# We just closed our connection to the client and need to count the disconnect.
-				self.proxy.notifyClose(client)
+				if source == 'proxy':
+					self.proxy.notifyClose(client)
+
+				elif source == 'tls':
+					self.tls.notifyClose(client)
+
+				elif source == 'passthrough':
+					self.passthrough.notifyClose(client)
 
 				if page_data is not None:
 					# The client disconnected? Close our connection to the remote webserver.

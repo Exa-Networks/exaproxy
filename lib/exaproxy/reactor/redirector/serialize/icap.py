@@ -5,21 +5,31 @@ class ICAPSerializer (object):
 		self.configuration = configuration
 		self.protocol = protocol
 
-	def serialize (self, accept_addr, peer, message, icap_message, http_header, path, icap_host):
+	def serialize (self, accept_addr, accept_port, peer, message, icap_message, http_header, path, icap_host):
 		if icap_message is not None and icap_message.method == 'OPTIONS':
-			res = self.createOptionsRequest(accept_addr, peer, icap_message, path)
+			res = self.createOptionsRequest(accept_addr, accept_port, peer, icap_message, path)
 			return res
 
-		return self.createRequest(accept_addr, peer, message, icap_message, http_header, path, icap_host)
+		return self.createRequest(accept_addr, accept_port, peer, message, icap_message, http_header, path, icap_host)
 
-	def createOptionsRequest (self, accept_addr, peer, icap_message, path):
+	def createOptionsRequest (self, accept_addr, accept_port, peer, icap_message, path):
 		return """\
 OPTIONS %s ICAP/1.0
+Pragma: transport=
+Pragma: proxy=test
+Pragma: scheme=
+Pragma: accept=%s
+Pragma: accept-port=%s
 Pragma: client=%s
+Pragma: host=
+Pragma: path=
+Pragma: method=
+Encapsulated: req-hdr=0, null-body=0
 
-""" % (path, peer)
 
-	def createRequest (self, accept_addr, peer, message, icap_message, http_header, path, icap_host):
+""" % (path, accept_addr, accept_port, peer)
+
+	def createRequest (self, accept_addr, accept_port, peer, message, icap_message, http_header, path, icap_host):
 		username = icap_message.headers.get('x-authenticated-user', '').strip() if icap_message else None
 		groups = icap_message.headers.get('x-authenticated-groups', '').strip() if icap_message else None
 		ip_addr = icap_message.headers.get('x-client-ip', '').strip() if icap_message else None
@@ -30,14 +40,17 @@ Pragma: client=%s
 REQMOD %s ICAP/1.0
 Host: %s
 Pragma: transport=%s
+Pragma: proxy=test
+Pragma: scheme=http
 Pragma: accept=%s
+Pragma: accept-port=%s
 Pragma: client=%s
 Pragma: host=%s
 Pragma: path=%s
 Pragma: method=%s""" % (
 
 			path, icap_host, message.request.protocol,
-			accept_addr, peer, message.host, message.request.path, message.request.method,
+			accept_addr, accept_port, peer, message.host, message.request.path, message.request.method,
 			)
 
 		if ip_addr:
