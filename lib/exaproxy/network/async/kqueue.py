@@ -250,7 +250,6 @@ class KQueuePoller (IPoller):
 				log.critical('KQueue master poller - unexpected error')
 				raise
 
-			log.warning('KQueue master poller - got EINTR, ignoring it.')
 			res = []
 			response = {}
 		else:
