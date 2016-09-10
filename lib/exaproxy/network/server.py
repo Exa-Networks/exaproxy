@@ -20,19 +20,19 @@ configuration = load()
 class Server(object):
 	_listen = staticmethod(listen)
 
-	def __init__(self, name, poller, read_name, max_clients):
+	def __init__(self, name, poller, read_name, config):
 		self.socks = {}
 		self.name = name
 		self.poller = poller
 		self.read_name = read_name
-		self.max_clients = max_clients
+		self.max_clients = config.connections
 		self.client_count = 0
 		self.saturated = False  # we are receiving more connections than we can handle
 		self.binding = set()
-		self.serving = True  # We are currenrly listening
 		self.log = Logger('server', configuration.log.server)
-		self.log.info('server [%s] accepting up to %d clients' % (name, max_clients))
-
+		self.serving = config.enable  # We are currenrly listening
+		if self.serving:
+			self.log.info('server [%s] accepting up to %d clients' % (name, self.max_clients))
 
 	def accepting (self):
 		if self.serving:

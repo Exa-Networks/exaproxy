@@ -100,10 +100,10 @@ class Supervisor (object):
 		self.content = ContentManager(self,configuration)
 		self.client = ClientManager(self.poller, configuration)
 		self.resolver = ResolverManager(self.poller, self.configuration, configuration.dns.retries*10)
-		self.proxy = Server('http proxy',self.poller,'read_proxy', configuration.http.connections)
-		self.web = Server('web server',self.poller,'read_web', configuration.web.connections)
-		self.icap = Server('icap server',self.poller,'read_icap', configuration.icap.connections)
-		self.tls = Server('tls server', self.poller, 'read_tls', configuration.tls.connections)
+		self.proxy = Server('http proxy',self.poller,'read_proxy', configuration.http)
+		self.web = Server('web server',self.poller,'read_web', configuration.web)
+		self.icap = Server('icap server',self.poller,'read_icap', configuration.icap)
+		self.tls = Server('tls server', self.poller, 'read_tls', configuration.tls)
 
 		self._shutdown = True if self.daemon.filemax == 0 else False  # stop the program
 		self._softstop = False  # stop once all current connection have been dealt with

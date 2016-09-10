@@ -141,6 +141,7 @@ def main ():
 			'protocol': (value.redirector,string.quote,'url',                        'what protocol to use (url -> squid like / icap:://<uri> -> icap like)')
 		},
 		'http' : {
+			'enable'          : (value.boolean,string.lower,'true',  'enable the http server'),
 			'idle-connect'    : (value.integer,string.nop,'300',     'time before we abandon new inactive http client connections (0: unlimited)'),
 			'connections'     : (value.integer,string.nop,'32768',   'the maximum number of proxy connections'),
 			'transparent'     : (value.boolean,string.lower,'false', 'do not reveal the presence of the proxy'),
