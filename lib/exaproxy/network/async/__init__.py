@@ -21,16 +21,21 @@ def Poller (configuration, speed=None):
 	if reactor == 'best':
 		if sys.platform.startswith('linux'):
 			configuration.reactor = 'epoll'
-		elif sys.platform.startswith('freebsd') or sys.platform.startswith('darwin'):
+		elif sys.platform.startswith('freebsd'):
+			configuration.reactor = 'kqueue'
+		elif sys.platform.startswith('darwin'):
 			configuration.reactor = 'kqueue'
 		else:
+			log.error('we could not autodetect an high performance reactor for your OS')
+			log.error('as the "select" reactor is not suitable for production,')
+			log.error('please consider changing reactor by hand')
 			configuration.reactor = 'select'
 
 		reactor = configuration.reactor
 		log.info('the chosen polling reactor was %s' % reactor)
 
 	if reactor not in ('epoll','kqueue','select'):
-		log.error('invalid reactor name: %s' % reactor)
+		log.error('invalid reactor name: "%s"' % reactor)
 		sys.exit(1)
 
 	timeout = speed if speed is not None else configuration.speed
