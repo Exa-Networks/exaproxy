@@ -51,7 +51,8 @@ class Daemon (object):
 				self.log.critical('your configuration requires %d file descriptors' % self.nb_descriptors)
 				self.log.critical('please increase your system maximum limit, alternatively you can reduce')
 				self.log.critical('exaproxy.http.connections, exaproxy.web.connections and/or configuration.redirector.maximum')
-				return
+				self.log.critical('shutting down, we can not safely run with these settings')
+				sys.exit(1)
 
 		soft,hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 
