@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# This requires your IP address to be enabled
+NAME=surfprotect-demonstration
+
+# This is the IP of an ExaProxy ICAP server
+ICAP_SERVER=127.0.0.1
+
+LISTEN_IP=0.0.0.0
+ADMIN_IP=127.0.0.1
+
+HTTP_PORT=3128
+ADMIN_PORT=8080
+
+SURFPROTECT_CONNECTIONS=5
+
+# HIGH >>> EMERG, ALERT, CRIT, ERR, WARNING, NOTICE, INFO, DEBUG  <<< LOW
+LOG_LEVEL=INFO
+
+# DO NOT EDIT BELOW THIS LINE
+
+dirname=`dirname $0`
+
+case $dirname in
+	/*)
+		path=$dirname/../..
+		;;
+	*)
+		cd `pwd`/$dirname/../.. > /dev/null
+		path=`pwd`
+		cd - > /dev/null
+		;;
+esac
+
+PROXYPATH=$path
+REDIRECTOR=$path/sbin/icap-connector
+
+cd $PROXYPATH
+
+# ulimit -n 196608
+export PYTHONPATH=$PYTHONPATH
+export exaproxy_daemon_identifier=$NAME
+export exaproxy_daemon_user=nobody
+export exaproxy_log_level=$LOG_LEVEL
+export exaproxy_http_connections=1000
+export exaproxy_tcp4_host=$LISTEN_IP
+export exaproxy_tcp4_port=$HTTP_PORT
+# export exaproxy_tls_enable=false
+export exaproxy_web_host=$ADMIN_IP
+export exaproxy_web_port=$ADMIN_PORT
+export exaproxy_redirector_enable=true
+export exaproxy_redirector_minimum=$SURFPROTECT_CONNECTIONS
+export exaproxy_redirector_maximum=$SURFPROTECT_CONNECTIONS
+export exaproxy_redirector_program="$REDIRECTOR $ICAP_SERVER"
+export exaproxy_redirector_protocol=icap://$NAME
+export exaproxy_usage_enable=false
+
+exec \
+	$PROXYPATH/sbin/exaproxy 2>&1
