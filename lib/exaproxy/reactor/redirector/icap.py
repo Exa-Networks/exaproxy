@@ -92,6 +92,8 @@ class ICAPRedirector (Redirector):
 
 		try:
 			child_stderr = self.process.stderr.read(4096)
+		except KeyboardInterrupt:
+			raise
 		except Exception:
 			child_stderr = ''
 
