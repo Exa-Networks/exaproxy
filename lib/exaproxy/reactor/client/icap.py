@@ -25,6 +25,7 @@ def count_quotes (data):
 class ICAPClient (object):
 	eor = ['\r\n\r\n', '\n\n']
 	eol = ['\r\n', '\n']
+	eor_len = 4
 	proxy_protocol = ProxyProtocol()
 
 	__slots__ = ['name', 'ipv4', 'sock', 'accept_addr', 'accept_port', 'peer', 'reader', 'writer', 'w_buffer', 'log', 'proxied']
@@ -61,6 +62,37 @@ class ICAPClient (object):
 
 		if size and len(r_buffer) > size:
 			return None,None,None
+
+		return '', r_buffer, seek
+
+	def findEOR (self, r_buffer, seek):
+		eor, pos = '', -1
+		seek_pos = max(0, seek - self.eor_len + 1)
+
+		for match in self.eor:
+			found = r_buffer[seek_pos:].find(eor)
+			if found == -1: continue
+
+			if pos == -1 or found < pos:
+				eor = match
+				pos = found + len(eor)
+
+		return eor, (seek + pos) if eor else -1
+
+	def checkRequest (self, r_buffer, size, seek=0):
+		eor, seek_pos = self.findEOR(r_buffer, seek)
+
+		while eor:
+			buff = r_buffer[:seek_pos]
+
+			if not count_quotes(buff) % 2:  # we have matching pairs
+				return buff, r_buffer[seek_pos:], 0
+
+			seek = seek_pos
+			eor, seek_pos = self.findEOR(r_buffer, seek)
+		
+		if size and len(r_buffer) > size:
+			return None, None, None
 
 		return '', r_buffer, seek
 
