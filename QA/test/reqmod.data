@@ -1,0 +1,10 @@
+REQMOD icap://surfprotect-demonstration ICAP/1.0
+Host: surfprotect-demonstration
+Encapsulated: req-hdr=0, null-body=127
+
+GET http://www.bbc.co.uk/ HTTP/1.1
+Host: www.bbc.co.uk
+User-Agent: curl/7.43.0
+Accept: */*
+Proxy-Connection: Keep-Alive
+
