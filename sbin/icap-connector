@@ -6,9 +6,10 @@ import sys
 
 def log(prefix, string):
 	return
-	sys.stderr.write('%-6s %s\n' % (prefix,string.replace('\r','\\r').replace('\n','\\n')))
-	with open('/tmp/log', 'a+') as fd:
-		fd.write('%-6s %s\n' % (prefix,string.replace('\r','\\r').replace('\n','\\n')))
+	# sys.stderr.write('%-6s %s\n' % (prefix,string.replace('\r','\\r').replace('\n','\\n')))
+	# import os
+	# with open('/tmp/log-%s' % str(os.getpid()), 'a+') as fd:
+	# 	fd.write('%-6s %s\n' % (prefix,string.replace('\r','\\r').replace('\n','\\n')))
 
 
 def main (host, port):
@@ -61,7 +62,6 @@ def main (host, port):
 					if byte == '\n':
 						return total, string
 					total = total * 16
-					log('TEST',byte)
 					total = total + int(byte,16)
 
 			while True:
@@ -69,9 +69,18 @@ def main (host, port):
 				while looping:
 					line = sys.stdin.readline()
 					log('STDIN',line)
-					if not line.startswith('Pragma:'):
-						log('SEND',line.strip()+'\r\n')
-						sock.send(line.strip()+'\r\n')
+					if looping == 2:
+						if line.startswith('Pragma:'):
+							continue
+						# ExaProxy has/had a bug where it will first look for \r\n
+						# and then \n\n for the end of headers.
+						# replacing the ICAP lines to end with \r\ is harmless
+						# and is a good work around the issue
+						log('SEND',line.strip() + '\r\n')
+						sock.send(line.strip() + '\r\n')
+					else:
+						log('SEND',line)
+						sock.send(line)
 					if not line.strip():
 						looping -= 1
 
@@ -84,9 +93,9 @@ def main (host, port):
 
 				response,data = data.split('\r\n\r\n',1)
 
+				log('STDOUT',response + '\r\n\r\n')
 				sys.stdout.write(response + '\r\n\r\n')
 				sys.stdout.flush()
-				log('STDOUT',response + '\r\n\r\n')
 
 				# ExaProxy always put the encapsulation last, this is not a RFC behaviour
 				encapsulation = response.split('\r\n')[-1]
@@ -115,9 +124,9 @@ def main (host, port):
 				else:
 					log('FATAL', 'unknown encapsulation [%s]' % encapsulation)
 
+				log('STDOUT',response)
 				sys.stdout.write(response)
 				sys.stdout.flush()
-				log('STDOUT',response)
 
 		except KeyboardInterrupt:
 			sys.exit(0)
