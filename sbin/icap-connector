@@ -4,12 +4,96 @@ import socket
 import sys
 
 
+class NET (object):
+	def __init__ (self,host,port):
+		self.host = host
+		self.port = port
+		self.socket = None
+		self.buffered = ''
+
+	def connect (self):
+		try:
+			self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			self.socket.connect((self.host,self.port))
+			return True
+		except KeyboardInterrupt:
+			sys.exit(0)
+		except (socket.gaierror,socket.herror):
+			return False
+
+	def read (self,size=1,end=None):
+		buf_data = self.buffered
+
+		if end is not None:
+			if end in buf_data:
+				returned,buf_data = buf_data.split(end,1)
+				self.buffered = buf_data
+				return returned + end
+			else:
+				buf_data += self.socket.recv(4016)
+				self.buffered = buf_data
+				return self.read(end=end)
+
+		buf_size = len(buf_data)
+
+		if size <= buf_size:
+			buf_size -= size
+			returned, buf_data = buf_data[:size],buf_data[size:]
+			self.buffered = buf_data
+			return returned
+
+		read_size = size - len(buf_data)
+		while read_size > 0:
+			extra = self.socket.recv(read_size)
+			read_size -= len(extra)
+			buf_data += extra
+		self.buffered = ''
+		return buf_data
+
+	def read_size (self):
+		total = 0
+		string = ''
+		while True:
+			byte = self.read(1)
+			string += byte
+			# this allows '\r\n' to be zero which is wrong but simple
+			if byte == '\r':
+				continue
+			if byte == '\n':
+				return total, string
+			total = total * 16
+			total = total + int(byte,16)
+
+	def send (self,buffer,reconnect=True):
+		if reconnect:
+			try:
+				return self.socket.send(buffer)
+			except (IOError, socket.error, socket.timeout, ):
+				if self.connect():
+					return self.socket.send(buffer)
+				raise
+
+	def recv (self,number):
+		return self.socket.recv(number)
+
+	def close (self):
+		if self.socket:
+			try:
+				self.socket.close()
+			except Exception:
+				pass
+			finally:
+				self.sock = None
+
+	def __del__ (self):
+		self.close()
+
+
 def log(prefix, string):
-	return
 	# sys.stderr.write('%-6s %s\n' % (prefix,string.replace('\r','\\r').replace('\n','\\n')))
-	# import os
-	# with open('/tmp/log-%s' % str(os.getpid()), 'a+') as fd:
-	# 	fd.write('%-6s %s\n' % (prefix,string.replace('\r','\\r').replace('\n','\\n')))
+	import os
+	with open('/tmp/log-%s' % str(os.getpid()), 'a+') as fd:
+		fd.write('%-6s %s\n' % (prefix,string.replace('\r','\\r').replace('\n','\\n')))
 
 
 def main (host, port):
@@ -18,74 +102,41 @@ def main (host, port):
 		try:
 			data = ''
 
-			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			sock.connect((host,port))
+			net = NET(host,port)
+			if not net.connect():
+				sys.exit(1)
 
-			def read (size=1,end=None,buffered=['']):
-				buf_data = buffered.pop()
-
-				if end is not None:
-					if end in buf_data:
-						returned,buf_data = buf_data.split(end,1)
-						buffered.append(buf_data)
-						return returned + end
-					else:
-						buf_data += sock.recv(4016)
-						buffered.append(buf_data)
-						return read(end=end)
-
-				buf_size = len(buf_data)
-
-				if size <= buf_size:
-					buf_size -= size
-					returned, buf_data = buf_data[:size],buf_data[size:]
-					buffered.append(buf_data)
-					return returned
-
-				read_size = size - len(buf_data)
-				while read_size > 0:
-					extra = sock.recv(read_size)
-					read_size -= len(extra)
-					buf_data += extra
-				buffered.append('')
-				return buf_data
-
-			def read_size ():
-				total = 0
-				string = ''
-				while True:
-					byte = read(1)
-					string += byte
-					# this allows '\r\n' to be zero which is wrong but simple
-					if byte == '\r':
-						continue
-					if byte == '\n':
-						return total, string
-					total = total * 16
-					total = total + int(byte,16)
+			# ExaProxy has/had a bug where it will first look for \r\n
+			# and then \n\n for the end of headers.
+			# replacing the ICAP lines to end with \r\ is harmless
+			# and is a good work around the issue
 
 			while True:
 				looping = 2
+
+				# firewalls can kill long inactive connections,
+				# make sure to reconnect if it happens when reading the REQMOD line
+				line = sys.stdin.readline()
+				log('STDIN',line)
+				log('SEND',line.strip() + '\r\n')
+				net.send(line.strip() + '\r\n',reconnect=True)
+
 				while looping:
 					line = sys.stdin.readline()
 					log('STDIN',line)
 					if looping == 2:
 						if line.startswith('Pragma:'):
 							continue
-						# ExaProxy has/had a bug where it will first look for \r\n
-						# and then \n\n for the end of headers.
-						# replacing the ICAP lines to end with \r\ is harmless
-						# and is a good work around the issue
 						log('SEND',line.strip() + '\r\n')
-						sock.send(line.strip() + '\r\n')
+						net.send(line.strip() + '\r\n')
 					else:
 						log('SEND',line)
-						sock.send(line)
+						net.send(line)
 					if not line.strip():
 						looping -= 1
 
 				while True:
-					recv = read(end='\n')
+					recv = net.read(end='\n')
 					log('RECV',recv)
 					data += recv
 					if '\r\n\r\n' in data:
@@ -106,20 +157,20 @@ def main (host, port):
 				# this is wrong in theory .. in practice it works
 
 				if 'req-hdr' in headers:
-					response = read(headers['null-body'])
+					response = net.read(headers['null-body'])
 				# chunk encoded
 				elif 'res-hdr' in headers:
-					response = read(headers['res-body'])
+					response = net.read(headers['res-body'])
 
 					chunk_size = -1
 					while True:
-						chunk_size, chunk_data = read_size()
+						chunk_size, chunk_data = net.read_size()
 						response += chunk_data
-						chunk = read(chunk_size)
+						chunk = net.read(chunk_size)
 						response += chunk
 						if chunk_size == 0:
 							break
-						eol = read(2)
+						eol = net.read(2)
 						response += eol
 				else:
 					log('FATAL', 'unknown encapsulation [%s]' % encapsulation)
@@ -131,17 +182,8 @@ def main (host, port):
 		except KeyboardInterrupt:
 			sys.exit(0)
 
-		except (IOError, socket.error):
-			if sock:
-				try:
-					sock.close()
-				except Exception:
-					pass
-				finally:
-					sock = None
-
 		except Exception, e:
-			sock.close()
+			net.close()
 			sys.stderr.write('exaproxy surfprotect connector failed\n')
 			sys.stderr.write(str(e))
 			sys.exit(1)
