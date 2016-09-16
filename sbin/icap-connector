@@ -30,7 +30,12 @@ class NET (object):
 				self.buffered = buf_data
 				return returned + end
 			else:
-				buf_data += self.socket.recv(4016)
+				while end not in buf_data:
+					extra = self.socket.recv(4016)
+					buf_data += extra
+					if not extra:
+						log('NO-DATA','')
+						sys.exit(1)
 				self.buffered = buf_data
 				return self.read(end=end)
 
@@ -189,8 +194,8 @@ def main (host, port):
 
 		except Exception, e:
 			net.close()
-			sys.stderr.write('exaproxy surfprotect connector failed\n')
-			sys.stderr.write(str(e))
+			log('CRASH','exaproxy surfprotect connector failed\n')
+			log('CRASH',str(e))
 			sys.exit(1)
 
 
