@@ -112,39 +112,40 @@ def main (host, port):
 			# and is a good work around the issue
 
 			while True:
-				looping = 2
-
 				# firewalls can kill long inactive connections,
 				# make sure to reconnect if it happens when reading the REQMOD line
 				line = sys.stdin.readline()
-				log('STDIN',line)
-				log('SEND',line.strip() + '\r\n')
+				log('STDIN-FIRST',line)
+				log('SEND--FIRST',line.strip() + '\r\n')
 				net.send(line.strip() + '\r\n',reconnect=True)
 
+				looping = 2
 				while looping:
 					line = sys.stdin.readline()
-					log('STDIN',line)
+					log('STDIN-LOOPS',line)
 					if looping == 2:
 						if line.startswith('Pragma:'):
 							continue
-						log('SEND',line.strip() + '\r\n')
+						log('SEND--LOOP2',line.strip() + '\r\n')
 						net.send(line.strip() + '\r\n')
 					else:
-						log('SEND',line)
+						log('SEND--LOOP1',line)
 						net.send(line)
 					if not line.strip():
 						looping -= 1
 
+				log('SENT-ICAP','----')
+
 				while True:
 					recv = net.read(end='\n')
-					log('RECV',recv)
+					log('RECV---ICAP',recv)
 					data += recv
 					if '\r\n\r\n' in data:
 						break
 
 				response,data = data.split('\r\n\r\n',1)
 
-				log('STDOUT',response + '\r\n\r\n')
+				log('STDOUT-ICAP',response + '\r\n\r\n')
 				sys.stdout.write(response + '\r\n\r\n')
 				sys.stdout.flush()
 
@@ -165,21 +166,25 @@ def main (host, port):
 					chunk_size = -1
 					while True:
 						chunk_size, chunk_data = net.read_size()
+						log('RECV--SIZE',chunk_data)
 						response += chunk_data
 						chunk = net.read(chunk_size)
+						log('RECV-CHUNK',chunk)
 						response += chunk
 						if chunk_size == 0:
 							break
 						eol = net.read(2)
+						log('RECV---EOL',eol)
 						response += eol
 				else:
 					log('FATAL', 'unknown encapsulation [%s]' % encapsulation)
 
-				log('STDOUT',response)
+				log('STDOUT-HTTP',response)
 				sys.stdout.write(response)
 				sys.stdout.flush()
 
 		except KeyboardInterrupt:
+			log('KEYBOARD','INTERRUPT')
 			sys.exit(0)
 
 		except Exception, e:
