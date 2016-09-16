@@ -68,7 +68,7 @@ class custom_install (install):
 				for name in names:
 					location = os.path.join(self.install_data,name)
 					chmod(location, 0755) # the 0 make the value octal
-			self.install_data()
+			install.run(self)
 
 
 
