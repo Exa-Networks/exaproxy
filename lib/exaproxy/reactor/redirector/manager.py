@@ -16,6 +16,7 @@ from .response import ResponseEncoder as Respond
 
 from exaproxy.util.log.logger import Logger
 
+
 class RedirectorManager (object):
 	def __init__ (self, configuration, poller):
 		self.low = configuration.redirector.minimum   # minimum concurrent redirector workers
@@ -77,16 +78,18 @@ class RedirectorManager (object):
 		self.spawn(number)
 
 	def kill_workers (self):
+		self.log.info('killing all workings')
 		for wid in set(self.worker):
 			self.reap(wid)
 
 	def stopWorker (self, wid):
-		self.log.info('want worker %s to go away' % wid)
+		self.log.info('actively stoping worker %s' % wid)
 
 		if wid not in self.active:
+			self.log.info('worker %s is not active, killing it' % wid)
 			self.reap(wid)
-
 		else:
+			self.log.info('worker %s is active, stopping it' % wid)
 			self.stopping.add(wid)
 
 	def reap (self, wid):
@@ -136,6 +139,7 @@ class RedirectorManager (object):
 	def stop (self):
 		"""tell all our worker to stop reading the queue and stop"""
 
+		self.log.info('stopping, killing all workers')
 		for wid in self.worker:
 			self.reap(wid)
 
@@ -163,7 +167,7 @@ class RedirectorManager (object):
 
 		# bad we are bleeding workers !
 		if num_workers < self.low:
-			self.log.info("we lost some workers, respawing %d new workers" % (self.low - num_workers))
+			self.log.info("we have less worker than our minimum, respawing %d new workers" % (self.low - num_workers))
 			self.spawn(self.low - num_workers)
 
 		# we need more workers
@@ -190,8 +194,6 @@ class RedirectorManager (object):
 			wid = self._oldest()
 			if wid:
 				self.stopWorker(wid)
-
-
 
 	def acquire (self):
 		identifier = None
@@ -230,12 +232,9 @@ class RedirectorManager (object):
 		if self.available and not self.queue.isempty():
 			client_id, accept_addr, accept_port, peer, header, subheader, source, tainted = self.queue.get()
 			_, command, decision = self.request(client_id, accept_addr, accept_port, peer, header, subheader, source, tainted=tainted)
-
 		else:
 			client_id, command, decision = None, None, None
-
 		return client_id, command, decision
-
 
 	def request (self, client_id, accept_addr, accept_port, peer, header, subheader, source, tainted=False):
 		worker = self.acquire()
@@ -243,19 +242,17 @@ class RedirectorManager (object):
 		if worker is not None:
 			try:
 				_, command, decision = worker.decide(client_id, accept_addr, accept_port, peer, header, subheader, source)
-
 			except:
 				command, decision = None, None
 
 			if command is None:
+				self.log.info('request failed for worker %s' % worker.wid)
 				self.reap(worker.wid)
 
 				if tainted is False:
 					_, command, decision = self.request(client_id, accept_addr, accept_port, peer, header, subheader, source, tainted=True)
-
 				else:
 					_, command, decision = Respond.close(client_id)
-
 		else:
 			command, decision = None, None
 			self.queue.put((client_id, accept_addr, accept_port, peer, header, subheader, source, tainted))
@@ -269,7 +266,6 @@ class RedirectorManager (object):
 
 		return client_id, command, decision
 
-
 	def getDecision (self, pipe_in):
 		worker = self.processes.get(pipe_in, None)
 
@@ -277,29 +273,27 @@ class RedirectorManager (object):
 			client_id, accept_addr, accept_port, peer, request, header, subheader, source, tainted = self.progress(worker.wid)
 			try:
 				_, command, decision = worker.progress(client_id, accept_addr, accept_port, peer, request, header, subheader, source)
-
 			except Exception, e:
 				command, decision = None, None
 
 			self.release(worker.wid)
 
 			if command is None:
+				self.log.info('reaping worker %s due to command' % worker.wid)
 				self.reap(worker.wid)
 
 				if tainted is False:
 					_, command, decision = self.request(client_id, accept_addr, accept_port, peer, header, subheader, source, tainted=True)
-
 				else:
 					_, command, decision = Respond.close(client_id)
-
 		else:
 			client_id, command, decision = None, None, None
 
 		if worker is not None and client_id is None:
+			self.log.info('reaping worker %s due to client id' % worker.wid)
 			self.reap(worker.wid)
 
 		return client_id, command, decision
-
 
 	def showInternalError(self):
 		return 'file', ('200', 'internal_error.html')
