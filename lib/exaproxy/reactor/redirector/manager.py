@@ -192,8 +192,8 @@ class RedirectorManager (object):
 		num_workers = len(self.worker)
 
 		# we are now overprovisioned
-		if size < 2 and num_workers > self.low:
-			self.log.info("we have too many workers (%d), stopping the oldest" % num_workers)
+		if not size and num_workers > self.low:
+			self.log.info("we have no backlog and %d workers, stopping the oldest work" % num_workers)
 			# if we have to kill one, at least stop the one who had the most chance to memory leak :)
 			wid = self._oldest()
 			if wid:
