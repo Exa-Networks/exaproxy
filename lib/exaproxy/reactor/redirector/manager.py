@@ -6,7 +6,9 @@ Created by Thomas Mangin on 2011-11-30.
 Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
+import sys
 import time
+
 from exaproxy.util.messagequeue import Queue
 
 from .redirector import RedirectorFactory
@@ -40,6 +42,7 @@ class RedirectorManager (object):
 	def _getid(self):
 		wid = str(self.nextid)
 		self.nextid += 1
+		self.nextid = self.nextid % sys.maxint
 		return wid
 
 	def _spawn (self):
