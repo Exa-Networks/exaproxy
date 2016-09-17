@@ -220,11 +220,11 @@ class RedirectorManager (object):
 		if wid not in self.worker:
 			return
 
-		if wid not in self.stopping:
-			self.available.add(wid)
-
-		else:
+		if wid in self.stopping:
+			self.log.info('worker %s is to be stopped, killing it' % wid)
 			self.reap(wid)
+		else:
+			self.available.add(wid)
 
 	def persist (self, wid, client_id, accept_addr, accept_port, peer, data, header, subheader, source, tainted):
 		self.active[wid] = client_id, accept_addr, accept_port, peer, data, header, subheader, source, tainted
