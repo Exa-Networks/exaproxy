@@ -94,7 +94,10 @@ class RedirectorManager (object):
 
 	def reap (self, wid):
 		self.log.info('we are killing worker %s' % wid)
-		worker = self.worker[wid]
+
+		if wid not in self.worker:
+			self.log.info('worker %s is already stopped' % wid)
+			return
 
 		if wid in self.active:
 			self.log.error('reaping worker %s even though it is still active' % wid)
@@ -106,12 +109,13 @@ class RedirectorManager (object):
 		if wid in self.available:
 			self.available.remove(wid)
 
+		worker = self.worker.pop(wid,None)
+
 		if worker.process is not None:
 			self.poller.removeReadSocket('read_workers', worker.process.stdout)
 			self.processes.pop(worker.process.stdout)
 
 		worker.shutdown()
-		self.worker.pop(wid)
 
 	def _decrease (self):
 		if self.low < len(self.worker):
