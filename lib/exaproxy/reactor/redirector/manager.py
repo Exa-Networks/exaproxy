@@ -278,6 +278,7 @@ class RedirectorManager (object):
 			try:
 				_, command, decision = worker.progress(client_id, accept_addr, accept_port, peer, request, header, subheader, source)
 			except Exception, e:
+				self.log.info('worker issue: %s' % str(e))
 				command, decision = None, None
 
 			self.release(worker.wid)

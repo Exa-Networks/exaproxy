@@ -338,7 +338,7 @@ class Redirector (object):
 				(operation, destination), decision = self.response_factory.connectResponse(client_id, message, classification, data, comment)
 
 			else:
-				# How did we get here
+				self.log.info('unhandled command %s - dev, please look into it!' % str(message.request.method))
 				operation, destination, decision = None, None, None
 
 			if operation is not None:
