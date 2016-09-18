@@ -47,14 +47,14 @@ class ClientManager (object):
 		return str(self._nextid)
 
 	def expire (self,number=100):
-		count = 0
+		counts = {}
 		for sock in self.norequest.expired(number):
-			client = self.norequest.get(sock,[None,])[0]
+			client, source = self.norequest.get(sock,(None,None))
 			if client:
 				self.cleanup(sock,client.name)
-				count += 1
+				counts[source] = counts.get(source, 0) + 1
 
-		return count
+		return counts
 
 	def httpConnection (self, sock, peer, source):
 		name = self.getnextid()

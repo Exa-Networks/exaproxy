@@ -347,9 +347,21 @@ class Supervisor (object):
 				# TODO: track all idle connections, not just the ones that have never sent data
 				expired = self.reactor.client.expire()
 
-				if expired:
-					print 'expire connections', expired
-					self.proxy.notifyClose(None, count=expired)
+				for expire_source, expire_count in expired.items():
+					if expire_source == 'proxy':
+						self.proxy.notifyClose(None, count=expire_count)
+
+					elif expire_source == 'icap':
+						self.icap.notifyClose(None, count=expire_count)
+
+					elif expire_source == 'passthrough':
+						self.passthrough.notifyClose(None, count=expire_count)
+
+					elif expire_source == 'tls':
+						self.tls.notifyClose(None, count=expire_count)
+
+					elif expire_source == 'web':
+						self.web.notifyClose(None, count=expire_count)
 
 				# report if we saw too many connections
 				if count_saturation == 0:
