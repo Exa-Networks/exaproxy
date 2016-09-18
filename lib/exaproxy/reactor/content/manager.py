@@ -7,6 +7,8 @@ Copyright (c) 2011-2013  Exa Networks. All rights reserved.
 """
 
 import os
+import socket
+import struct
 
 from exaproxy.network.functions import isipv4,isipv6
 from exaproxy.util.log.logger import Logger
@@ -116,6 +118,22 @@ class ContentManager(object):
 			return None, False
 
 		if downloader is None:
+			if self.configuration.security.deny:
+				# deny connecton to the deny list
+				if ':' in host:
+					pr = 6
+					high,low = struct.unpack('!QQ',socket.inet_pton(socket.AF_INET6,host))
+					ip = (high << 64) + low
+				else:
+					pr = 4
+					ip = struct.unpack('!L',socket.inet_pton(socket.AF_INET,host))[0]
+
+				for proto, start, end in self.configuration.security.deny:
+					if pr != proto:
+						continue
+					if start <= ip <= end:
+						return None, False
+
 			# supervisor.local is replaced when interface are changed, so do not cache or reference it in this class
 			if host in self.supervisor.local:
 				for h,p in self.configuration.security.local:
