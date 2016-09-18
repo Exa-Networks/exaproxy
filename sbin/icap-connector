@@ -6,9 +6,9 @@ import socket
 
 
 def log(prefix, string):
-	prefix = os.environ.get('LOG',None)
+	location = os.environ.get('LOG',None)
 	if prefix:
-		with open(prefix+ ('-%s' % str(os.getpid())), 'a+') as fd:
+		with open(location + ('-%s' % str(os.getpid())), 'a+') as fd:
 			fd.write('%-6s %s\n' % (prefix,string.replace('\r','\\r').replace('\n','\\n')))
 
 
