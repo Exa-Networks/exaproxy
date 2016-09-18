@@ -83,6 +83,9 @@ class Reactor (object):
 		elif source == 'icap':
 			self.icap.notifyClose(client)
 
+		elif source == 'passthrough':
+			self.passthrough.notifyClose(client)
+
 		elif source == 'tls':
 			self.tls.notifyClose(client)
 
@@ -140,6 +143,9 @@ class Reactor (object):
 
 				elif source == 'icap':
 					self.icap.notifyClose(client)
+
+				elif source == 'passthrough':
+					self.passthrough.notifyClose(client)
 
 				elif source == 'tls':
 					self.tls.notifyClose(client)
