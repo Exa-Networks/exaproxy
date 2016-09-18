@@ -47,24 +47,6 @@ class ICAPClient (object):
 		# start the _read coroutine
 		self.reader.next()
 
-	def checkRequest (self, r_buffer, size, seek=0):
-		for eor in self.eor:
-			pos = r_buffer[seek:].find(eor)
-			if pos == -1: continue
-
-			buff = r_buffer[:seek+pos]
-			if not buff: continue
-
-			if not count_quotes(buff) % 2:  # we have matching pairs
-				return buff + eor, r_buffer[seek+pos+len(eor):], 0
-
-			seek += pos + len(eor)
-
-		if size and len(r_buffer) > size:
-			return None,None,None
-
-		return '', r_buffer, seek
-
 	def findEOR (self, r_buffer, seek):
 		eor, pos = '', -1
 		seek_pos = max(0, seek - self.eor_len + 1)
