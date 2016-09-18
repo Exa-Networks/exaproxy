@@ -82,13 +82,16 @@ class Redirector (object):
 		return message
 
 	def checkChild (self):
-		if self.enabled:
-			ok = bool(self.process) and self.process.poll() is None
-
-		else:
-			ok = True
-
-		return ok
+		if not self.enabled:
+			return True
+		if not bool(self.process):
+			return False
+		# A None value indicates that the process hasn’t terminated yet.
+		# A negative value -N indicates that the child was terminated by signal N (Unix only).
+		# In practice: also returns 1 ...
+		if self.process.poll() is None:
+			return True
+		return False
 
 	def writeChild (self, request_string):
 		try:
@@ -328,6 +331,7 @@ class Redirector (object):
 			return Respond.hangup(client_id)
 
 		response = self.classifyURL(message.request, response_s) if response_s is not None else None
+
 		if response is not None and source == 'proxy':
 			classification, data, comment = response
 
@@ -338,7 +342,7 @@ class Redirector (object):
 				(operation, destination), decision = self.response_factory.connectResponse(client_id, message, classification, data, comment)
 
 			else:
-				# How did we get here
+				self.log.info('unhandled command %s - dev, please look into it!' % str(message.request.method))
 				operation, destination, decision = None, None, None
 
 			if operation is not None:

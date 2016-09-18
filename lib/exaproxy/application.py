@@ -200,8 +200,9 @@ def main ():
 			'poll-interfaces' : (value.boolean,string.lower,'true',  'periodically poll for local addresses the proxy should not connect to'),
 		},
 		'security' : {
-			'local'       : (value.services,string.services,   '',              'ip:port for allowed services (*:80 or 127.0.0.1:* allowed)'),
+			'local'       : (value.services,string.services,   '',              'ip:port for allowed services (*:80 or 127.0.0.1:*) allowed'),
 			'connect'     : (value.ports,string.list,          '443 981 7000',  'ports allowed with CONNECT'),
+			'deny'        : (value.ranges,string.ranges,        '',             'IP ranges the proxy is not allowed to connect to'),
 		},
 		'dns' : {
 			'resolver'     : (value.resolver,string.path,'/etc/resolv.conf',       'resolver file'),

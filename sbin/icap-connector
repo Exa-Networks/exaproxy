@@ -1,7 +1,15 @@
 #!/usr/bin/env python
 
-import socket
+import os
 import sys
+import socket
+
+
+def log(prefix, string):
+	location = os.environ.get('LOG',None)
+	if prefix:
+		with open(location + ('-%s' % str(os.getpid())), 'a+') as fd:
+			fd.write('%-6s %s\n' % (prefix,string.replace('\r','\\r').replace('\n','\\n')))
 
 
 class NET (object):
@@ -69,13 +77,13 @@ class NET (object):
 			total = total * 16
 			total = total + int(byte,16)
 
-	def send (self,buffer,reconnect=True):
+	def sendall (self,buffer,reconnect=True):
 		if reconnect:
 			try:
-				return self.socket.send(buffer)
+				return self.socket.sendall(buffer)
 			except (IOError, socket.error, socket.timeout, ):
 				if self.connect():
-					return self.socket.send(buffer)
+					return self.socket.sendall(buffer)
 				raise
 
 	def recv (self,number):
@@ -92,13 +100,6 @@ class NET (object):
 
 	def __del__ (self):
 		self.close()
-
-
-def log(prefix, string):
-	# sys.stderr.write('%-6s %s\n' % (prefix,string.replace('\r','\\r').replace('\n','\\n')))
-	import os
-	with open('/tmp/log-%s' % str(os.getpid()), 'a+') as fd:
-		fd.write('%-6s %s\n' % (prefix,string.replace('\r','\\r').replace('\n','\\n')))
 
 
 def main (host, port):
@@ -122,7 +123,7 @@ def main (host, port):
 				line = sys.stdin.readline()
 				log('STDIN-FIRST',line)
 				log('SEND--FIRST',line.strip() + '\r\n')
-				net.send(line.strip() + '\r\n',reconnect=True)
+				net.sendall(line.strip() + '\r\n',reconnect=True)
 
 				looping = 2
 				while looping:
@@ -132,10 +133,10 @@ def main (host, port):
 						if line.startswith('Pragma:'):
 							continue
 						log('SEND--LOOP2',line.strip() + '\r\n')
-						net.send(line.strip() + '\r\n')
+						net.sendall(line.strip() + '\r\n')
 					else:
 						log('SEND--LOOP1',line)
-						net.send(line)
+						net.sendall(line)
 					if not line.strip():
 						looping -= 1
 

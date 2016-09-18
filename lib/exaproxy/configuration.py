@@ -13,6 +13,10 @@ import sys
 import logging
 import pwd
 
+import math
+import socket
+import struct
+
 _application = None
 _config = None
 _defaults = None
@@ -167,6 +171,25 @@ class value (object):
 			raise TypeError('resolv.conf can not be found (are you using DHCP without any network setup ?)')
 
 	@staticmethod
+	def ranges (string):
+		try:
+			ranges = []
+			for service in value.unquote(string).split():
+				network,netmask = service.split('/')
+				if ':' in network:
+					high,low = struct.unpack('!QQ',socket.inet_pton(socket.AF_INET6,network))
+					start = (high << 64) + low
+					end = start + pow(2,128-int(netmask)) - 1
+					ranges.append((6,start,end))
+				else:
+					start = struct.unpack('!L',socket.inet_pton(socket.AF_INET,network))[0]
+					end = start + pow(2,32-int(netmask)) - 1
+					ranges.append((4,start,end))
+			return ranges
+		except ValueError:
+			raise TypeError('Can not parse the data as IP range')
+
+	@staticmethod
 	def redirector (name):
 		if name == 'url' or name.startswith('icap://'):
 			return name
@@ -214,6 +237,22 @@ class string (object):
 	def services (_):
 		l = ' '.join(('%s:%d' % (host,port) for host,port in _))
 		return "'%s'" % l
+
+	@staticmethod
+	def ranges (_):
+		def convert ():
+			for (proto,start,end) in _:
+				bits = int(math.log(end-start+1,2))
+				if proto == 4:
+					network = socket.inet_ntop(socket.AF_INET,struct.pack('!L',start))
+					yield '%s/%d' % (network,32-bits)
+				else:
+					high = struct.pack('!Q',start >> 64)
+					low = struct.pack('!Q',start & 0xFFFFFFFF)
+					network = socket.inet_ntop(socket.AF_INET6,high+low)
+					yield '%s/%d' % (network,128-bits)
+
+		return "'%s'" % ' '.join(convert())
 
 import ConfigParser
 
