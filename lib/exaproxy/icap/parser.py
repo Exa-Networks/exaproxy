@@ -161,15 +161,18 @@ class ICAPParser (object):
 		request_string = parts.get('req-hdr', '')
 
 		if request_string.startswith('CONNECT'):
-			intercept_string, request_string = self.splitResponse(request_string)
+			intercept_string, new_request_string = self.splitResponse(request_string)
 
-			if headers.get('x-intercept', '') != 'active' and not request_string:
-				intercept_string, request_string = None, intercept_string + '\r\n\r\n'
+			if headers.get('x-intercept', '') != 'active' and not new_request_string:
+				intercept_string = None
+
+			else:
+				request_string = new_request_string
 
 		else:
 			intercept_string = None
 
-		body_string = parts.get('res-body', '') if response_string else parts.get('req-body', '')
+		body_string = parts.get('res-body', None) if response_string else parts.get('req-body', None)
 
 		return self.response_factory.create(version, code, status, headers, header_string, request_string, response_string, body_string, intercept_string)
 

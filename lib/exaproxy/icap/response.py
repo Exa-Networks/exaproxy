@@ -18,8 +18,13 @@ class ICAPResponse (object):
 				http_len_string = '%x\r\n' % len(http_body)
 				http_string += http_len_string + http_body + '\r\n0\r\n'
 
+			elif http_body is not None:
+				http_len_string = '0\r\n'
+				http_string += http_len_string
+
 			else:
 				http_len_string = ''
+				http_body = ''
 
 			http_header_offset = icap_end
 			http_header_end = http_header_offset + len(http_header)
