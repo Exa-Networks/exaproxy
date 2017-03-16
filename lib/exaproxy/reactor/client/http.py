@@ -27,7 +27,7 @@ class HTTPClient (object):
 	__slots__ = ['name', 'ipv4', 'sock', 'accept_addr', 'accept_port', 'peer', 'reader', 'writer', 'w_buffer', 'log']
 
 	def __init__(self, name, sock, peer, logger, max_buffer, proxied):
-		addr, port = sock.getsockname()
+		addr, port = sock.getsockname()[:2]
 
 		self.name = name
 		self.sock = sock
