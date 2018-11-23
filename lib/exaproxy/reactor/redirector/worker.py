@@ -300,6 +300,9 @@ class Redirector (object):
 		return Respond.monitor(client_id, message.request.path)
 
 
+	def doPassthrough (self, client_id, accept_addr, accept_port, peer, header, source):
+		return Respond.intercept(client_id, accept_addr, accept_port, header)
+
 	def decide (self, client_id, accept_addr, accept_port, peer, header, subheader, source):
 		if self.checkChild():
 			if source == 'proxy':
@@ -311,7 +314,11 @@ class Redirector (object):
 			elif source == 'tls':
 				response = self.doTLS(client_id, accept_addr, accept_port, peer, header, source)
 
+			elif source == 'passthrough':
+				response = self.doPassthrough(client_id, accept_addr, accept_port, peer, header, source)
+
 			else:
+				self.log.warning('closing unsupported client %s' % (source))
 				response = Respond.hangup(client_id)
 
 		else:

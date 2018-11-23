@@ -103,7 +103,7 @@ class ClientManager (object):
 		self.byname[name] = sock
 
 		# watch for the opening data
-		self.poller.addReadSocket('read_client', client.sock)
+		#self.poller.addReadSocket('read_client', client.sock)
 
 		accept_addr, accept_port = client.getAcceptAddress()
 
