@@ -25,7 +25,7 @@ class EPoller (IPoller):
 
 		self.sockets = {}
 		self.pollers = {}
-		self.master = self.epoll()
+		self.main = self.epoll()
 		self.errors = {}
 
 
@@ -117,12 +117,12 @@ class EPoller (IPoller):
 			self.pollers[poller.fileno()] = name, poller, sockets, fdtosock
 
 			self.sockets[name] = sockets, poller, fdtosock, corked
-			self.master.register(poller, EPOLLIN)
+			self.main.register(poller, EPOLLIN)
 
 	def clearRead(self, name):
 		sockets, poller, fdtosock, corked = self.sockets.pop(name, ({}, None, None, None))
 		if sockets:
-			self.master.unregister(poller)
+			self.main.unregister(poller)
 			self.pollers.pop(poller.fileno(), None)
 			poller.close()
 			self.setupRead(name)
@@ -215,12 +215,12 @@ class EPoller (IPoller):
 			self.pollers[poller.fileno()] = name, poller, sockets, fdtosock
 
 			self.sockets[name] = sockets, poller, fdtosock, corked
-			self.master.register(poller, EPOLLIN)
+			self.main.register(poller, EPOLLIN)
 
 	def clearWrite(self, name):
 		sockets, poller, fdtosock, corked = self.sockets.pop(name, ({}, None, None, None))
 		if sockets:
-			self.master.unregister(poller)
+			self.main.unregister(poller)
 			self.pollers.pop(poller.fileno(), None)
 			poller.close()
 			self.setupWrite(name)
@@ -228,7 +228,7 @@ class EPoller (IPoller):
 
 	def poll(self):
 		try:
-			res = self.master.poll(self.speed)
+			res = self.main.poll(self.speed)
 		except IOError, e:
 			if e.errno != errno.EINTR:
 				raise

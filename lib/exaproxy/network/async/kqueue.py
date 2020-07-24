@@ -33,7 +33,7 @@ class KQueuePoller (IPoller):
 
 		self.sockets = {}
 		self.pollers = {}
-		self.master = self.kqueue()
+		self.main = self.kqueue()
 		self.errors = {}
 		self.max_events = 10000
 
@@ -129,12 +129,12 @@ class KQueuePoller (IPoller):
 			self.pollers[poller.fileno()] = name, poller, sockets, fdtosock
 			self.sockets[name] = sockets, poller, fdtosock, corked
 
-			self.master.control([kevent(poller, KQ_FILTER_READ, KQ_EV_ADD)], 0)
+			self.main.control([kevent(poller, KQ_FILTER_READ, KQ_EV_ADD)], 0)
 
 	def clearRead(self, name):
 		sockets, poller, fdtosock, corked = self.sockets.pop(name, ({}, None, None, None))
 		if sockets:
-			self.master.control([kevent(poller, KQ_FILTER_READ, KQ_EV_DELETE)], 0)
+			self.main.control([kevent(poller, KQ_FILTER_READ, KQ_EV_DELETE)], 0)
 			self.pollers.pop(poller.fileno(), None)
 			poller.close()
 			self.setupRead(name)
@@ -231,23 +231,23 @@ class KQueuePoller (IPoller):
 			self.pollers[poller.fileno()] = name, poller, sockets, fdtosock
 			self.sockets[name] = sockets, poller, fdtosock, corked
 
-			self.master.control([kevent(poller, KQ_FILTER_READ, KQ_EV_ADD)], 0)
+			self.main.control([kevent(poller, KQ_FILTER_READ, KQ_EV_ADD)], 0)
 
 
 	def clearWrite(self, name):
 		sockets, poller, fdtosock, corked = self.sockets.pop(name, ({}, None, None, None))
 		if sockets:
-			self.master.control([kevent(poller, KQ_FILTER_READ, KQ_EV_DELETE)], 0)
+			self.main.control([kevent(poller, KQ_FILTER_READ, KQ_EV_DELETE)], 0)
 			self.pollers.pop(poller.fileno(), None)
 			poller.close()
 			self.setupRead(name)
 
 	def poll(self):
 		try:
-			res = self.master.control(None, self.max_events, self.speed)
+			res = self.main.control(None, self.max_events, self.speed)
 		except EnvironmentError, e:
 			if e.errno != errno.EINTR:
-				log.critical('KQueue master poller - unexpected error')
+				log.critical('KQueue main poller - unexpected error')
 				raise
 
 			res = []
@@ -256,7 +256,7 @@ class KQueuePoller (IPoller):
 			# response['poller1']=[] ; response['poller2']=[] etc.
 			response = dict((name, []) for (name, _, _, _) in self.pollers.values())
 			if len(res) == self.max_events:
-				log.warning("polled max_events from master kqueue")
+				log.warning("polled max_events from main kqueue")
 
 		for events in res:
 			fd = events.ident
