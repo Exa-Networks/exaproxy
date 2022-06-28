@@ -2,7 +2,7 @@
 
 ExaProxy is a a high-performance non-caching proxy. It is able to filter HTTP traffic using your favorite programming language.
 
-It is part of Exa Networks' [SurfProtect](http://www.surfprotect.co.uk/) solution.
+It was part of Exa Networks' [SurfProtect](http://www.surfprotect.co.uk/) solution, but has been replaced by a new codebase in Golang.
 
 Exaproxy is used in production since early 2013, and proxies millions of URL per day, one installation sees Gb/s of HTTP traffic, with hundreds of Mb/s per server, and several tens of thousands of connections per machine, but this does not mean our work is finished. We continue to improve it.
 
