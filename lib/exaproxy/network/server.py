@@ -80,10 +80,10 @@ class Server(object):
 	def accept(self, sock):
 		try:
 			# should we check to make sure it's a socket we provided
-			s, (ip,port) = sock.accept()
+			s, a = sock.accept()
 			s.setblocking(0)
 			# NOTE: we really should try to handle the entire queue at once
-			yield s, ip
+			yield s, a[0]
 		except socket.error, e:
 			# It doesn't really matter if accept fails temporarily. We will
 			# try again next loop
